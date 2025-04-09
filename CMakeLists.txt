@@ -29,7 +29,7 @@ add_subdirectory(deps/gtest)
 # enable testing
 enable_testing()
 # process test/CMakeLists.txt
-add_subdirectory(test)
+add_subdirectory(tests)
 
 
 # install section
