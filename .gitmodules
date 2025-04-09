@@ -1,0 +1,6 @@
+[submodule "deps/gtest"]
+	path = deps/gtest
+	url = https://github.com/google/googletest
+[submodule "deps/eigen"]
+	path = deps/eigen
+	url = https://gitlab.com/libeigen/eigen
