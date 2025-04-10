@@ -1,15 +1,38 @@
 #pragma once
 
 #include <cassert>
+#include <vector>
 
 #include <Eigen/Core>
 
 namespace GPN
 {
+
+    template<typename T>
+    struct custom_vector : public std::vector<T>
+    {
+        // custom_vector(const std::vector<T>& v)
+        //     : std::vector<T>{v}
+        // {}
+        
+        custom_vector(size_t size)
+            : std::vector<T>(size)
+        {}
+
+        T& operator()(ptrdiff_t idx)
+        { return (*this)[static_cast<size_t>(idx)];}
+        
+        const T& operator()(ptrdiff_t idx) const
+        { return (*this)[static_cast<size_t>(idx)];}
+    };
+
+
+
     using float_t = double;
-    using NodesContainer = Eigen::ArrayX<float_t>;
+    using NodesContainer = custom_vector<float_t>; // Eigen::ArrayX<float_t>;
     using MeshStepsContainer = NodesContainer;
     using CellVolumeContainer = NodesContainer;
+
 
     struct Box
     {
