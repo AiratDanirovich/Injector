@@ -28,7 +28,7 @@ add_subdirectory(deps/gtest)
 
 # enable testing
 enable_testing()
-# process test/CMakeLists.txt
+# process tests/CMakeLists.txt
 add_subdirectory(tests)
 
 
