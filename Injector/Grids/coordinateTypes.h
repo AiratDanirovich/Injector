@@ -2,56 +2,73 @@
 
 #include <cmath>
 
-#include "Defines.h"
+#include <Injector/Grids/Defines.h>
 
 namespace GPN
 {
     namespace CoordinateTypes
-    {
-        struct CartesianCoordinate
+    {   
+        struct StepsCalculator
         {
-            static auto volume(const NodesContainer& nodes)
+            static auto steps(const NodesContainer& nodes)
+            {
+                auto size{nodes.size()};
+                MeshStepsContainer out(size-1);
+                for(auto idx{size-size}; idx < size-1; ++idx)
+                    out[idx] = nodes[idx+1] - nodes[idx];
+                return out;
+            }
+        };
+
+        struct CartesianCoordinate : private StepsCalculator
+        {
+            static auto volumes(const NodesContainer& nodes)
             {
                 auto size{nodes.size()};
                 CellVolumeContainer out(size);
                 out(0) = (nodes(1) - nodes(0))/2.0;
-                for(std::ptrdiff_t idx{1}; idx < size-1; ++idx)
+                for(auto idx{size-size+1}; idx < size-1; ++idx)
                     out(idx) = nodes(idx+1) - nodes(idx);
-                out(size-2) = (nodes(size-1) - nodes(size-2))/2.0;
+                out(size-1) = (nodes(size-1) - nodes(size-2))/2.0;
 
-                return nodes;
+                return out;
             }
+            
+            using StepsCalculator::steps;
+
         protected:
-            static float_t volume(float_t x1, float_t x2)
-            {
-                return x2 - x1;
-            }
             static float_t resistivity(float_t x1, float_t x2)
             {
                 return x2 - x1;
             }
         };
 
-        struct RadialCylinderCoordinate
+        struct X : CartesianCoordinate{};
+        struct Y : CartesianCoordinate{};
+        struct Z : CartesianCoordinate{};
+
+        struct RadialCylinderCoordinate  : private StepsCalculator
         {
-            static auto volume(const NodesContainer& nodes)
+            static auto volumes(const NodesContainer& nodes)
             {
                 auto size{nodes.size()};
                 CellVolumeContainer out(size);
+                auto mid_val_l{nodes(0)};
                 auto mid_val_r{(nodes(1) + nodes(0))/2.0};
                 out(0) = volume(nodes(0), mid_val_r);
                 
-                for(std::ptrdiff_t idx{1}; idx < size-1; ++idx)
+                for(auto idx{size-size+1}; idx < size-1; ++idx)
                 {
-                    auto mid_val_l{mid_val_r};
-                    auto mid_val_r{(nodes(idx+1)+nodes(idx))/2.0};
+                    mid_val_l = mid_val_r;
+                    mid_val_r = (nodes(idx+1) + nodes(idx))/2.0;
                     out(idx) = volume(mid_val_l, mid_val_r);
                 }
-                out(size-2) = (nodes(size-1) - nodes(size-2))/2.0;
+                out(size-1) = volume(mid_val_r, nodes(size-1));
 
-                return nodes;
+                return out;
             }
-
+            
+            using StepsCalculator::steps;
         protected:
             static float_t volume(float_t x1, float_t x2)
             {
