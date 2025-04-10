@@ -14,7 +14,6 @@ namespace GPN
 {
     namespace Grids
     {
-
         /// @brief Struct defines the grid stencils, i.e.
         /// nodes that must be included as grid nodes.
         /// Further refinement is possible
@@ -27,11 +26,11 @@ namespace GPN
                 assert(nodes.size() > 1ull);
                 // nodes must be strictly monotonuos
                 for (size_t idx{0}; idx < nodes.size() - 1; ++idx)
-                    assert(nodes[idx] > nodes[idx + 1]);
+                    assert(nodes[idx] < nodes[idx + 1]);
 
                 // copy stencils to local container
                 for (size_t idx{0}; idx < nodes.size(); ++idx)
-                    mesh_nodes[idx] = nodes[idx];
+                    mesh_nodes(idx) = nodes[idx];
             }
 
             GridStencils(GridStencils &&) noexcept = default;
@@ -92,11 +91,12 @@ namespace GPN
             GridNodes(const GridStencils &nodes, const NodesContainer& refined_mesh) noexcept 
             : stencil_nodes{nodes}
             , mesh_nodes{refined_mesh}
-        {
-            // nodes must be strictly monotonuos
-            for (std::ptrdiff_t idx{0}; idx < mesh_nodes.size() - 1; ++idx)
-                assert(mesh_nodes[idx] > mesh_nodes[idx + 1]);
-        }
+            {
+                auto size{mesh_nodes.size()};
+                // nodes must be strictly monotonuos
+                for (auto idx{size-size}; idx < mesh_nodes.size() - 1; ++idx)
+                    assert(mesh_nodes[idx] < mesh_nodes[idx + 1]);
+            }
         };
 
 
@@ -108,8 +108,8 @@ namespace GPN
         {
             Grid1D(const GridNodes &nodes) noexcept 
             : mesh_nodes{nodes}
-            , mesh_steps{CoordinateType_t::steps(nodes)}
-            , cell_volumes{CoordinateType_t::volumes(nodes)}
+            , mesh_steps{CoordinateType_t::steps(nodes.mesh_nodes)}
+            , cell_volumes{CoordinateType_t::volumes(nodes.mesh_nodes)}
             {
                 assert(nodes.size() > 1ull);
             }
