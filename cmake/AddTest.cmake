@@ -23,6 +23,15 @@ macro(add_catch2_test name)
 #       gtest_main
 #   ) 
 
+# set_target_properties(
+#     ${TEST_NAME}
+#       PROPERTIES
+#         CXX_STANDARD 17
+#         CXX_STANDARD_REQUIRED YES
+#         CXX_EXTENSIONS NO
+# )
+# apply_warning_flags_to_targets(TEST_NAME) # Apply warning flags
+
   target_link_libraries(${TEST_NAME} PRIVATE Catch2::Catch2WithMain)
 
   # let the preprocessor know about the system name
