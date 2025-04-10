@@ -2,15 +2,26 @@
 
 #include <cmath>
 
-#include "defines.h"
+#include "Defines.h"
 
 namespace GPN
 {
     namespace CoordinateTypes
     {
-
         struct CartesianCoordinate
         {
+            static auto volume(const NodesContainer& nodes)
+            {
+                auto size{nodes.size()};
+                CellVolumeContainer out(size);
+                out(0) = (nodes(1) - nodes(0))/2.0;
+                for(std::ptrdiff_t idx{1}; idx < size-1; ++idx)
+                    out(idx) = nodes(idx+1) - nodes(idx);
+                out(size-2) = (nodes(size-1) - nodes(size-2))/2.0;
+
+                return nodes;
+            }
+        protected:
             static float_t volume(float_t x1, float_t x2)
             {
                 return x2 - x1;
@@ -23,6 +34,25 @@ namespace GPN
 
         struct RadialCylinderCoordinate
         {
+            static auto volume(const NodesContainer& nodes)
+            {
+                auto size{nodes.size()};
+                CellVolumeContainer out(size);
+                auto mid_val_r{(nodes(1) + nodes(0))/2.0};
+                out(0) = volume(nodes(0), mid_val_r);
+                
+                for(std::ptrdiff_t idx{1}; idx < size-1; ++idx)
+                {
+                    auto mid_val_l{mid_val_r};
+                    auto mid_val_r{(nodes(idx+1)+nodes(idx))/2.0};
+                    out(idx) = volume(mid_val_l, mid_val_r);
+                }
+                out(size-2) = (nodes(size-1) - nodes(size-2))/2.0;
+
+                return nodes;
+            }
+
+        protected:
             static float_t volume(float_t x1, float_t x2)
             {
                 assert(x2 > x1);
