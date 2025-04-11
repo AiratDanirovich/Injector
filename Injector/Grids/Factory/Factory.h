@@ -11,7 +11,7 @@ namespace GPN
     {
         struct Factory
         {
-            static auto generate_z_stencils_uniform(float_t a, float_t b, ptrdiff_t n)
+            static auto generate_stencils_uniform(float_t a, float_t b, ptrdiff_t n)
             {
                 float_t step{(b - a) / (n - 1)};
 
