@@ -19,15 +19,13 @@ TEST_CASE("GridTest", "CartesianCoordinate")
     auto z_grid{Grid1D<CoordinateTypes::Z>{nodes}};
 
     auto r_grid{Grid1D<CoordinateTypes::RadialCylinderCoordinate>{nodes}};
+
+    auto grid_2D{CylinderGrid2D{Grid1D<CoordinateTypes::Z>{nodes}, Grid1D<CoordinateTypes::RadialCylinderCoordinate>{nodes}}};
+
+
 }
 
 // TEST_CASE("GridTest", "RadialCylinderCoordinate")
 // {
     
-// }
-
-// int main(int argc, char **argv) 
-// {
-//     testing::InitGoogleTest(&argc, argv);
-//     return RUN_ALL_TESTS();
 // }

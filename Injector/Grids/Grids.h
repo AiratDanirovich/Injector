@@ -118,7 +118,7 @@ namespace GPN
             Grid1D(const Grid1D &) noexcept = default;
             Grid1D() = delete;
 
-            auto node(auto id) const
+            auto coord(auto id) const
             {
                 assert(id < mesh_nodes.size());
                 return mesh_nodes(id);
@@ -139,6 +139,45 @@ namespace GPN
             GridNodes mesh_nodes;
             MeshStepsContainer mesh_steps;
             CellVolumeContainer cell_volumes;
+        };
+
+        /// @brief Two-dimensional grid
+        /// @tparam FirstDir Type for grid in first [r] direction
+        /// @tparam SecondDir Type for grid in second [z] direction
+        template<typename FirstDir, typename SecondDir>
+        struct Grid2D
+        {
+            FirstDir first_coord;
+            SecondDir second_coord;
+
+            Grid2D(const FirstDir& first_coord, const SecondDir& second_coord) 
+                : first_coord{first_coord}
+                , second_coord{second_coord}
+            {}
+
+            auto coords(auto id1, auto id2) const
+            {
+                return {first_coord.mesh_nodes(id1), second_coord.mesh_nodes(id2)};
+            }
+
+            // steps in two directions,
+            // between nodes id1 and id1+1 in first direction
+            // and between nodes id2 and id2+1 in second direction
+            auto steps(auto id1, auto id2) const
+            {
+                return {first_coord.mesh_steps(id1), second_coord.mesh_steps(id2)};
+            }
+            
+            /// @brief cell volume at node ids {id1, id2}
+            auto volume(auto id1, auto id2) const{
+                return first_coord.cell_volumes(id1)*second_coord.cell_volumes(id2);
+            }
+        };
+
+        struct CylinderGrid2D 
+        : public Grid2D<Grid1D<CoordinateTypes::Z>, Grid1D<CoordinateTypes::RadialCylinderCoordinate>>
+        {
+            using Grid2D<Grid1D<CoordinateTypes::Z>, Grid1D<CoordinateTypes::RadialCylinderCoordinate>>::Grid2D;
         };
 
     } // Grids
