@@ -23,9 +23,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-add_subdirectory(deps/gtest)
-
-
 # enable testing
 enable_testing()
 # process tests/CMakeLists.txt
