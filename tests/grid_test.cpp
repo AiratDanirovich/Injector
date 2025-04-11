@@ -8,27 +8,24 @@
 
 using namespace GPN;
 using namespace GPN::Grids;
-// using namespace GPN::Grids::Factory;
 
 // Tests Cartesian grid
 TEST_CASE("GridTest", "CartesianCoordinate")
 {
-    auto stencils{Factory::generate_z_stencils_uniform(0, 1 , 3)};
+    auto stencils{Factory::generate_stencils_uniform(0, 1 , 3)};
 
     auto nodes{GridNodes{stencils}};
 
     auto z_grid{Grid1D<CoordinateTypes::Z>{nodes}};
 
     auto r_grid{Grid1D<CoordinateTypes::RadialCylinderCoordinate>{nodes}};
+
+    auto grid_2D{CylinderGrid2D{Grid1D<CoordinateTypes::Z>{nodes}, Grid1D<CoordinateTypes::RadialCylinderCoordinate>{nodes}}};
+
+
 }
 
 // TEST_CASE("GridTest", "RadialCylinderCoordinate")
 // {
     
-// }
-
-// int main(int argc, char **argv) 
-// {
-//     testing::InitGoogleTest(&argc, argv);
-//     return RUN_ALL_TESTS();
 // }

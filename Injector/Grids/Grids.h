@@ -118,14 +118,19 @@ namespace GPN
             Grid1D(const Grid1D &) noexcept = default;
             Grid1D() = delete;
 
+            auto coord(auto id) const
+            {
+                assert(id < mesh_nodes.size());
+                return mesh_nodes(id);
+            }
             // step between nodes id and id+1
-            auto step(size_t id) const
+            auto step(auto id) const
             {
                 assert(id < mesh_steps.size());
                 return mesh_steps(id);
             }
 
-            auto cell_volume(size_t idx) const{
+            auto volume(auto idx) const{
                 assert(idx < cell_volumes.size());
                 return cell_volumes(idx);
             }
@@ -136,97 +141,44 @@ namespace GPN
             CellVolumeContainer cell_volumes;
         };
 
-        template<typename CoordinateType_t>
-        struct Grid1DUniform : public Grid1D<CoordinateType_t>
+        /// @brief Two-dimensional grid
+        /// @tparam FirstDir Type for grid in first [r] direction
+        /// @tparam SecondDir Type for grid in second [z] direction
+        template<typename FirstDir, typename SecondDir>
+        struct Grid2D
         {
+            FirstDir first_coord;
+            SecondDir second_coord;
+
+            Grid2D(const FirstDir& first_coord, const SecondDir& second_coord) 
+                : first_coord{first_coord}
+                , second_coord{second_coord}
+            {}
+
+            auto coords(auto id1, auto id2) const
+            {
+                return {first_coord.mesh_nodes(id1), second_coord.mesh_nodes(id2)};
+            }
+
+            // steps in two directions,
+            // between nodes id1 and id1+1 in first direction
+            // and between nodes id2 and id2+1 in second direction
+            auto steps(auto id1, auto id2) const
+            {
+                return {first_coord.mesh_steps(id1), second_coord.mesh_steps(id2)};
+            }
+            
+            /// @brief cell volume at node ids {id1, id2}
+            auto volume(auto id1, auto id2) const{
+                return first_coord.cell_volumes(id1)*second_coord.cell_volumes(id2);
+            }
         };
 
-        
-        /// @brief To generate cell volume along the
-        /// Cartsian direction.
-        template<typename CoordinateType_t>
-        struct GridCartesianCoord : public Grid1D<CoordinateType_t>
+        struct CylinderGrid2D 
+        : public Grid2D<Grid1D<CoordinateTypes::Z>, Grid1D<CoordinateTypes::RadialCylinderCoordinate>>
         {
+            using Grid2D<Grid1D<CoordinateTypes::Z>, Grid1D<CoordinateTypes::RadialCylinderCoordinate>>::Grid2D;
         };
 
-
-        /// @brief To generate cell volume along the
-        /// radial direction of cylinrical coordinates
-        template<typename CoordinateType_t>
-        struct GridRadialCoord : public Grid1DUniform<CoordinateType_t>
-        {
-        };
-
-        struct UniformGrid1D : private std::vector<float_t>
-        {
-            using Cell_Volume = Eigen::ArrayX<float_t>;
-
-        public:
-            static UniformGrid1D CreateFromStep(float_t a, float_t b, float_t step)
-            {
-                assert(b > a);
-                assert(step > 0.0);
-                assert(step < b - a);
-
-                size_t segm_nmbr = static_cast<size_t>((b - a) / step) + 1;
-
-                return CreateFromNodes(a, b, segm_nmbr + 1);
-            }
-
-            static UniformGrid1D CreateFromNodes(float_t a, float_t b, size_t nodes_nmbr)
-            {
-                assert(b > a);
-                assert(nodes_nmbr > 1ull);
-
-                float_t step = (b - a) / (nodes_nmbr - 1ull);
-                std::vector<float_t> nodes(nodes_nmbr, a);
-
-                std::generate(nodes.begin(), nodes.end(), [n = 0, &step, &a]() mutable
-                              { return a + n++ * step; });
-
-                return {nodes};
-            }
-
-            UniformGrid1D(const UniformGrid1D &) noexcept = default;
-            UniformGrid1D(UniformGrid1D &&) noexcept = default;
-
-            float_t step(ptrdiff_t) const
-            {
-                return its_step;
-            }
-
-            const Cell_Volume &cell_volume() const
-            {
-                return its_cell_volume;
-            }
-
-        public:
-            using std::vector<float_t>::operator[];
-            using std::vector<float_t>::data;
-            using std::vector<float_t>::size;
-            using std::vector<float_t>::begin;
-            using std::vector<float_t>::end;
-            using std::vector<float_t>::front;
-            using std::vector<float_t>::back;
-            using std::vector<float_t>::vector;
-
-        protected:
-            UniformGrid1D(const std::vector<float_t> &nodes)
-                : std::vector<float_t>{nodes}
-            {
-                assert(nodes.size() > 1);
-                its_step = nodes[1] - nodes[0];
-
-                // volumes of cells around every node
-                // a Uniform grid is assumed
-                its_cell_volume = Cell_Volume::Constant(nodes.size(), its_step);
-                its_cell_volume(0) /= 2.0;
-                its_cell_volume(its_cell_volume.size() - 1) /= 2.0;
-            }
-
-            float_t its_step;
-
-            Cell_Volume its_cell_volume;
-        };
     } // Grids
 } // GPN
