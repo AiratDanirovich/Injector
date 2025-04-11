@@ -7,14 +7,13 @@
 
 namespace GPN
 {
-
+    /// @brief It is convinient in debug mode to have a standard container.
+    /// custom_vector type is introduced to overload operator() for element access via [].
+    /// While release mode should be compiled with Eigen__Array as container.
+    /// @tparam T value_type for std::vector<T>
     template<typename T>
     struct custom_vector : public std::vector<T>
-    {
-        // custom_vector(const std::vector<T>& v)
-        //     : std::vector<T>{v}
-        // {}
-        
+    {        
         custom_vector(size_t size)
             : std::vector<T>(size)
         {}
@@ -26,10 +25,8 @@ namespace GPN
         { return (*this)[static_cast<size_t>(idx)];}
     };
 
-
-
     using float_t = double;
-    using NodesContainer = custom_vector<float_t>; // Eigen::ArrayX<float_t>;
+    using NodesContainer = custom_vector<float_t>; // use Eigen::ArrayX<float_t>; in Release
     using MeshStepsContainer = NodesContainer;
     using CellVolumeContainer = NodesContainer;
 
