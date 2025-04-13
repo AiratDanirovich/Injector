@@ -21,7 +21,7 @@ namespace GPN
             }
 
             // mesh of intermediate, fractional nodes
-            static auto dual_mesh(const NodesContainer& nodes)
+            static auto dual_nodes(const NodesContainer& nodes)
             {
                 auto size{nodes.size()};
                 assert(size > 0);
@@ -41,7 +41,7 @@ namespace GPN
             {
                 auto size{nodes.size()};
                 assert(size > 0);
-                auto its_dual_mesh{dual_mesh(nodes)};
+                auto its_dual_mesh{dual_nodes(nodes)};
                 // dual nodes include domain boundary and intermidiate nodes
                 DualNodesContainer out(size);
 
@@ -67,7 +67,7 @@ namespace GPN
             }
             
             using StepsCalculator::steps;
-            using StepsCalculator::dual_mesh;
+            using StepsCalculator::dual_nodes;
             using StepsCalculator::dual_steps;
 
         protected:
@@ -104,7 +104,7 @@ namespace GPN
             
             // steps implementation is inhereted
             using StepsCalculator::steps;
-            using StepsCalculator::dual_mesh;
+            using StepsCalculator::dual_nodes;
             using StepsCalculator::dual_steps;
         protected:
             static RealType volume(RealType x1, RealType x2)
