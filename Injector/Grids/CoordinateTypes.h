@@ -13,41 +13,9 @@ namespace GPN
             static auto steps(const NodesContainer& nodes)
             {
                 auto size{nodes.size()};
-                assert(size > 0);
                 MeshStepsContainer out(size-1);
                 for(auto idx{size-size}; idx < size-1; ++idx)
                     out[idx] = nodes[idx+1] - nodes[idx];
-                return out;
-            }
-
-            // mesh of intermediate, fractional nodes
-            static auto dual_mesh(const NodesContainer& nodes)
-            {
-                auto size{nodes.size()};
-                assert(size > 0);
-                // dual nodes include domain boundary and intermidiate nodes
-                DualNodesContainer out(size+1);
-
-                out(0) = nodes(0);
-                for(auto idx{size-size+1}; idx < size+1; ++idx)
-                    out(idx) = (nodes(idx-1)+nodes(idx))/2.0;
-                auto end{size};
-                out(end) = nodes(end-1);
-
-                return out;
-            }
-            // steps of mesh of intermediate, fractional nodes
-            static auto dual_steps(const NodesContainer& nodes)
-            {
-                auto size{nodes.size()};
-                assert(size > 0);
-                auto its_dual_mesh{dual_mesh(nodes)};
-                // dual nodes include domain boundary and intermidiate nodes
-                DualNodesContainer out(size);
-
-                for(auto idx{size-size}; idx < size; ++idx)
-                    out(idx) = its_dual_mesh(idx+1)-its_dual_mesh(idx);
-                
                 return out;
             }
         };
@@ -67,8 +35,6 @@ namespace GPN
             }
             
             using StepsCalculator::steps;
-            using StepsCalculator::dual_mesh;
-            using StepsCalculator::dual_steps;
 
         protected:
             // static RealType resistivity(RealType x1, RealType x2)
@@ -102,22 +68,19 @@ namespace GPN
                 return out;
             }
             
-            // steps implementation is inhereted
             using StepsCalculator::steps;
-            using StepsCalculator::dual_mesh;
-            using StepsCalculator::dual_steps;
         protected:
-            static RealType volume(RealType x1, RealType x2)
+            static float_t volume(float_t x1, float_t x2)
             {
                 assert(x2 > x1);
                 return (x2 * x2 - x1 * x1) / 2.0;
             }
-            // static RealType resistivity(RealType x1, RealType x2)
-            // {
-            //     assert(x2 > x1);
-            //     assert(x1 > 0.0);
-            //     return std::log(x2/x1);
-            // }
+            static float_t resistivity(float_t x1, float_t x2)
+            {
+                assert(x2 > x1);
+                assert(x1 > 0.0);
+                return std::log(x2/x1);
+            }
         };
     } // CoordinateTypes
 } // GPN
