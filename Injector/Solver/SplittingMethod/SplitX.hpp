@@ -46,7 +46,7 @@ namespace GPN
                     const auto &gr_y = grid.first_coord;
                     const auto &x_vol = grid.second_coord.volumes();
 
-//#pragma omp parallel for
+#pragma omp parallel for
                     // m_id --- matrix id or stripe id. Problem is solved along every stripe
                     for (ptrdiff_t m_id = 0; m_id < ptrdiff_t(its_LaplaceTerm.size()); ++m_id)
                     {
