@@ -38,8 +38,8 @@ namespace GPN
 
                 return 
                     StructuredCylinderGrid2D{
-                        Grid1D<CoordinateTypes::Z>{nodes},
-                        Grid1D<CoordinateTypes::RadialCylinderCoordinate>{nodes}};
+                        Grid1D<CoordinateTypes::Z>{z_grid},
+                        Grid1D<CoordinateTypes::RadialCylinderCoordinate>{r_grid}};
             }
         };
     }

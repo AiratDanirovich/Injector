@@ -29,7 +29,7 @@ namespace GPN
                 DualNodesContainer out(size+1);
 
                 out(0) = nodes(0);
-                for(auto idx{size-size+1}; idx < size+1; ++idx)
+                for(auto idx{size-size+1}; idx < size; ++idx)
                     out(idx) = (nodes(idx-1)+nodes(idx))/2.0;
                 auto end{size};
                 out(end) = nodes(end-1);
