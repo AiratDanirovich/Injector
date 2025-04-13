@@ -7,8 +7,8 @@
 #include <Eigen/Core>
 // #include <Eigen/Dense>
 
-#include "Defines.h"
-#include "CoordinateTypes.h"
+#include <Injector/Grids/Defines.h>
+#include <Injector/Grids/CoordinateTypes.h>
 
 namespace GPN
 {
@@ -19,7 +19,7 @@ namespace GPN
         /// Further refinement is possible
         struct GridStencils
         {
-            GridStencils(const std::vector<float_t> &nodes) noexcept 
+            GridStencils(const std::vector<RealType> &nodes) noexcept 
                 : mesh_nodes(nodes.size())
             {
                 // at least two nodes required
@@ -84,7 +84,9 @@ namespace GPN
             // mesh to be used in simulation
             NodesContainer mesh_nodes;
             // stencils of the mesh.
-            // Here, jumps of physical properties occur
+            // Here, jumps of physical properties occur.
+            // These nodes must be included in th mesh_nodes
+            // container. So, that operator== returned true.
             GridStencils stencil_nodes;
 
         protected:
@@ -106,10 +108,13 @@ namespace GPN
         template<typename CoordinateType_t>
         struct Grid1D
         {
+        public:
             Grid1D(const GridNodes &nodes) noexcept 
             : mesh_nodes{nodes}
             , mesh_steps{CoordinateType_t::steps(nodes.mesh_nodes)}
             , cell_volumes{CoordinateType_t::volumes(nodes.mesh_nodes)}
+            , dual_nodes{CoordinateType_t::dual_nodes(nodes.mesh_nodes)}
+            , dual_steps{CoordinateType_t::dual_steps(nodes.mesh_nodes)}
             {
                 assert(nodes.size() > 1ull);
             }
@@ -121,7 +126,7 @@ namespace GPN
             auto coord(auto id) const
             {
                 assert(id < mesh_nodes.size());
-                return mesh_nodes(id);
+                return mesh_nodes.get_nodes()(id);
             }
             // step between nodes id and id+1
             auto step(auto id) const
@@ -135,29 +140,55 @@ namespace GPN
                 return cell_volumes(idx);
             }
 
+            const auto& volumes() const
+            {return cell_volumes;}
+
+            auto size() const
+            {return mesh_nodes.size();}
+
         protected:
             GridNodes mesh_nodes;
+            // distance between adjacent nodes
             MeshStepsContainer mesh_steps;
             CellVolumeContainer cell_volumes;
+
+            DualStepsContainer dual_steps;
+            DualNodesContainer dual_nodes;
         };
 
         /// @brief Two-dimensional grid
         /// @tparam FirstDir Type for grid in first [r] direction
         /// @tparam SecondDir Type for grid in second [z] direction
         template<typename FirstDir, typename SecondDir>
-        struct Grid2D
+        struct StructuredGrid2D
         {
+        public:
+            struct Point
+            {
+                RealType x,y;
+            };
+
             FirstDir first_coord;
             SecondDir second_coord;
 
-            Grid2D(const FirstDir& first_coord, const SecondDir& second_coord) 
+            StructuredGrid2D(const FirstDir& first_coord, const SecondDir& second_coord) 
                 : first_coord{first_coord}
                 , second_coord{second_coord}
-            {}
+                , its_volumes(
+                    first_coord.size(),
+                    second_coord.size())
+            {
+                // set volumes
+                for (std::ptrdiff_t j = 0; j < its_volumes.cols(); ++j)
+                    for (std::ptrdiff_t i = 0; i < its_volumes.rows(); ++i)
+                        its_volumes(i, j) =
+                                first_coord.volume(i)*
+                                second_coord.volume(j);
+            }
 
             auto coords(auto id1, auto id2) const
             {
-                return {first_coord.mesh_nodes(id1), second_coord.mesh_nodes(id2)};
+                return Point{first_coord.mesh_nodes(id1), second_coord.mesh_nodes(id2)};
             }
 
             // steps in two directions,
@@ -172,12 +203,18 @@ namespace GPN
             auto volume(auto id1, auto id2) const{
                 return first_coord.cell_volumes(id1)*second_coord.cell_volumes(id2);
             }
+
+            const auto& volumes() const{
+                return its_volumes;
+            }
+
+            CellVolumeContainer2D its_volumes;
         };
 
-        struct CylinderGrid2D 
-        : public Grid2D<Grid1D<CoordinateTypes::Z>, Grid1D<CoordinateTypes::RadialCylinderCoordinate>>
+        struct StructuredCylinderGrid2D 
+        : public StructuredGrid2D<Grid1D<CoordinateTypes::Z>, Grid1D<CoordinateTypes::RadialCylinderCoordinate>>
         {
-            using Grid2D<Grid1D<CoordinateTypes::Z>, Grid1D<CoordinateTypes::RadialCylinderCoordinate>>::Grid2D;
+            using StructuredGrid2D<Grid1D<CoordinateTypes::Z>, Grid1D<CoordinateTypes::RadialCylinderCoordinate>>::StructuredGrid2D;
         };
 
     } // Grids

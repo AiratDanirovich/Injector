@@ -1,5 +1,3 @@
-// #include <iostream>
-
 #include <Injector/Grids/CoordinateTypes.h>
 #include <Injector/Grids/Grids.h>
 #include <Injector/Grids/Factory/Factory.h>
@@ -16,16 +14,17 @@ TEST_CASE("GridTest", "CartesianCoordinate")
 
     auto nodes{GridNodes{stencils}};
 
-    auto z_grid{Grid1D<CoordinateTypes::Z>{nodes}};
+    auto z_grid{
+        Grid1D<CoordinateTypes::Z>{nodes}
+    };
 
-    auto r_grid{Grid1D<CoordinateTypes::RadialCylinderCoordinate>{nodes}};
+    auto r_grid{
+        Grid1D<CoordinateTypes::RadialCylinderCoordinate>{nodes}
+    };
 
-    auto grid_2D{CylinderGrid2D{Grid1D<CoordinateTypes::Z>{nodes}, Grid1D<CoordinateTypes::RadialCylinderCoordinate>{nodes}}};
-
-
+    auto grid_2D{
+        StructuredCylinderGrid2D{
+            Grid1D<CoordinateTypes::Z>{nodes}, 
+            Grid1D<CoordinateTypes::RadialCylinderCoordinate>{nodes}}
+    };
 }
-
-// TEST_CASE("GridTest", "RadialCylinderCoordinate")
-// {
-    
-// }

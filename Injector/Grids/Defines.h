@@ -23,20 +23,28 @@ namespace GPN
         
         const T& operator()(ptrdiff_t idx) const
         { return (*this)[static_cast<size_t>(idx)];}
+
+        std::ptrdiff_t size() const
+        {
+            return static_cast<std::ptrdiff_t>(std::vector<T>::size());
+        }
     };
 
-    using float_t = double;
-    using NodesContainer = custom_vector<float_t>; // use Eigen::ArrayX<float_t>; in Release
+    using RealType = double;
+    using NodesContainer = custom_vector<RealType>; // use Eigen::ArrayX<RealType>; in Release
+    using DualNodesContainer = NodesContainer;
     using MeshStepsContainer = NodesContainer;
+    using DualStepsContainer = NodesContainer;
     using CellVolumeContainer = NodesContainer;
+    using CellVolumeContainer2D = Eigen::ArrayXX<RealType>;
 
 
     struct Box
     {
-        struct Left {float_t value;};
-        struct Right {float_t value;};
-        struct Top {float_t value;};
-        struct Bottom {float_t value;};
+        struct Left {RealType value;};
+        struct Right {RealType value;};
+        struct Top {RealType value;};
+        struct Bottom {RealType value;};
 
         Box(Left x_a, Right x_b, Top y_a, Bottom y_b)
             : x_a{x_a}, x_b{x_b}, y_a{y_a}, y_b{y_b}
@@ -53,8 +61,8 @@ namespace GPN
 
     struct Steps
     {
-        struct Step_R {float_t step;};
-        struct Step_Z {float_t step;};
+        struct Step_R {RealType step;};
+        struct Step_Z {RealType step;};
 
         Steps(Step_R step_r, Step_Z step_z)
             : step_r{step_r}, step_z{step_z}
@@ -65,6 +73,8 @@ namespace GPN
         Step_Z step_z;
     };
 
+    // x-axis goes up-down, South-North
+    // y-axis goes left-right, East-West
     namespace BoundaryConditions
     {
         struct BoundaryCondition
@@ -82,47 +92,47 @@ namespace GPN
 
         struct BCSouth : public BoundaryCondition
         {
-            BCSouth(float_t fixed_x, BCType type = BCType::first)
+            BCSouth(RealType fixed_x, BCType type = BCType::first)
                 : BoundaryCondition{type}, fixed_x{fixed_x}
             {
             }
 
-            float_t fixed_x;
+            RealType fixed_x;
         };
 
         struct BCNorth : public BoundaryCondition
         {
-            BCNorth(float_t fixed_x, BCType type = BCType::first)
+            BCNorth(RealType fixed_x, BCType type = BCType::first)
                 : BoundaryCondition{type}, fixed_x{fixed_x}
             {
             }
 
-            float_t fixed_x;
+            RealType fixed_x;
         };
 
         struct BCEast : public BoundaryCondition
         {
-            BCEast(float_t fixed_y, BCType type = BCType::first)
+            BCEast(RealType fixed_y, BCType type = BCType::first)
                 : BoundaryCondition{type}, fixed_y{fixed_y}
             {
             }
 
-            float_t fixed_y;
+            RealType fixed_y;
         };
 
         struct BCWest : public BoundaryCondition
         {
-            BCWest(float_t fixed_y, BCType type = BCType::first)
+            BCWest(RealType fixed_y, BCType type = BCType::first)
                 : BoundaryCondition{type}, fixed_y{fixed_y}
             {
             }
 
-            float_t fixed_y;
+            RealType fixed_y;
         };
 
         struct BCFunctorBase
         {
-            virtual float_t operator()(float_t x, float_t y, float_t t) const = 0;
+            virtual RealType operator()(RealType x, RealType y, RealType t) const = 0;
         };
     } // BoundaryConditions
 } // EqSolver
