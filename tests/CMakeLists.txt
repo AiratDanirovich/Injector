@@ -22,6 +22,6 @@ include(Catch)
 
 # Create test executable
 add_catch2_test(grid_test)
-# add_catch2_test(pointval_test)
+add_catch2_test(splitx_test)
 
 
