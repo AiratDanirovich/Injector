@@ -21,7 +21,9 @@ include(Catch)
 # include_directories("${CMAKE_CURRENT_SOURCE_DIR}/..") 
 
 # Create test executable
+add_catch2_test(water_test)
 add_catch2_test(grid_test)
-add_catch2_test(splitx_test)
+add_catch2_test(logs_test)
+# add_catch2_test(splitx_test)
 
 

@@ -48,6 +48,12 @@ namespace GPN
                 return dual_nodes;
             }
 
+            auto operator()(auto idx) const
+            {
+                assert(static_cast<ptrdiff_t>(idx) < static_cast<ptrdiff_t>(dual_nodes.size()));
+                return dual_nodes(idx);
+            }
+
             auto size() const
             {
                 return dual_nodes.size();
@@ -138,7 +144,8 @@ namespace GPN
         {
         public:
             Grid1D(const GridDual &dual_nodes) noexcept
-                : dual_nodes{dual_nodes.dual_nodes}                                 // copy nodes of dual mesh
+                : dual_stencils{dual_nodes.dual_stencils}
+                , dual_nodes{dual_nodes.dual_nodes}                                 // copy nodes of dual mesh
                 , dual_steps{CoordinateType_t::dual_steps(dual_nodes.dual_nodes)} // normal distance between two faces of control volume
                 , control_volumes{CoordinateType_t::control_volumes(dual_nodes.dual_nodes)} // make volumes of control cells
                 , mesh_nodes{CoordinateType_t::cell_centers(dual_nodes.dual_nodes)} // make mesh nodes -- centers of control volumes
@@ -193,11 +200,12 @@ namespace GPN
                 return dual_nodes.size();
             }
 
+            const GridDualStencils dual_stencils;
+            const MeshNodesContainer mesh_nodes; // centers of control volumes
+            const ControlVolumesContainer control_volumes;
         protected:
             DualNodesContainer dual_nodes;
             DualStepsContainer dual_steps;
-            ControlVolumesContainer control_volumes;
-            MeshNodesContainer mesh_nodes; // centers of control volumes
             MeshStepsContainer mesh_steps; // steps between centers of control volumes
         };
 
