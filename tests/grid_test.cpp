@@ -1,6 +1,6 @@
 #include <Injector/Grids/CoordinateTypes.h>
 #include <Injector/Grids/Grids.h>
-#include <Injector/Grids/Factory/Factory.h>
+#include <Injector/Grids/Factory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
