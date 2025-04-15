@@ -31,13 +31,23 @@ namespace GPN
     };
 
     using RealType = double;
-    using NodesContainer = custom_vector<RealType>; // use Eigen::ArrayX<RealType>; in Release
-    using LogValuesContainer = NodesContainer;
-    using DualNodesContainer = NodesContainer;
-    using MeshStepsContainer = NodesContainer;
-    using DualStepsContainer = NodesContainer;
-    using CellVolumeContainer = NodesContainer;
+    using MeshNodesContainer = custom_vector<RealType>; // use Eigen::ArrayX<RealType>; in Release
+    using LogValuesContainer = MeshNodesContainer;
+    struct DualNodesContainer : public MeshNodesContainer{};
+    using MeshStepsContainer = MeshNodesContainer;
+
+    /// @brief Normal distance between two faces of control volume
+    using DualStepsContainer = MeshNodesContainer;
+    using ControlVolumesContainer = MeshNodesContainer;
+
     using CellVolumeContainer2D = Eigen::ArrayXX<RealType>;
+    using FluxComponentContainer = Eigen::ArrayXX<RealType>;
+
+    struct Directions{
+        enum {x1, x2, size};
+    };
+
+
     
     struct ScalarParameter
     {
@@ -58,8 +68,8 @@ namespace GPN
 
     struct LogParameter
     {
-        LogParameter(const NodesContainer& values) noexcept
-        : values{values}
+        LogParameter(const MeshNodesContainer& values) noexcept
+            : values{values}
         {}
         
         RealType operator()(std::ptrdiff_t idx)
@@ -73,10 +83,16 @@ namespace GPN
         //     return values(idx);
         // }
 
-        operator NodesContainer() const { return values; }
+        operator MeshNodesContainer() const { return values; }
 
     protected:
-        NodesContainer values;
+        MeshNodesContainer values;
+    };
+
+    /// @brief Reservoir Flow Profile (RFP)
+    struct RFP
+    {
+
     };
 
     struct Box

@@ -7,24 +7,9 @@
 using namespace GPN;
 using namespace GPN::Grids;
 
-// Tests Cartesian grid
+// Tests Cylinder grid, (r; z)
 TEST_CASE("GridTest", "CartesianCoordinate")
 {
-    auto stencils{Factory::generate_stencils_uniform(0, 1 , 3)};
-
-    auto nodes{GridNodes{stencils}};
-
-    auto z_grid{
-        Grid1D<CoordinateTypes::Z>{nodes}
-    };
-
-    auto r_grid{
-        Grid1D<CoordinateTypes::RadialCylinderCoordinate>{nodes}
-    };
-
-    auto grid_2D{
-        StructuredCylinderGrid2D{
-            Grid1D<CoordinateTypes::Z>{nodes}, 
-            Grid1D<CoordinateTypes::RadialCylinderCoordinate>{nodes}}
-    };
+    Factory::create_cartesian_grid_2D(2);
+    Factory::create_cylinder_grid_2D(5);
 }
