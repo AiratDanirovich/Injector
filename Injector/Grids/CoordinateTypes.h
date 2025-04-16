@@ -8,116 +8,78 @@ namespace GPN
 {
     namespace CoordinateTypes
     {   
-        struct StepsCalculator
+        struct GeneralCoordinate
         {
-            static auto steps(const NodesContainer& nodes)
+            /// @brief Normal distance between two faces of control volume
+            static auto dual_steps(const DualNodesContainer& nodes)
             {
-                auto size{nodes.size()};
+                auto size{nodes.size()-1ull};
                 assert(size > 0);
-                MeshStepsContainer out(size-1);
+                DualStepsContainer out(size);
                 for(auto idx{size-size}; idx < size-1; ++idx)
-                    out[idx] = nodes[idx+1] - nodes[idx];
-                return out;
-            }
-
-            // mesh of intermediate, fractional nodes
-            static auto dual_nodes(const NodesContainer& nodes)
-            {
-                auto size{nodes.size()};
-                assert(size > 0);
-                // dual nodes include domain boundary and intermidiate nodes
-                DualNodesContainer out(size+1);
-
-                out(0) = nodes(0);
-                for(auto idx{size-size+1}; idx < size; ++idx)
-                    out(idx) = (nodes(idx-1)+nodes(idx))/2.0;
-                auto end{size};
-                out(end) = nodes(end-1);
-
-                return out;
-            }
-            // steps of mesh of intermediate, fractional nodes
-            static auto dual_steps(const NodesContainer& nodes)
-            {
-                auto size{nodes.size()};
-                assert(size > 0);
-                auto its_dual_mesh{dual_nodes(nodes)};
-                // dual nodes include domain boundary and intermidiate nodes
-                DualNodesContainer out(size);
-
-                for(auto idx{size-size}; idx < size; ++idx)
-                    out(idx) = its_dual_mesh(idx+1)-its_dual_mesh(idx);
-                
-                return out;
-            }
-        };
-
-        struct CartesianCoordinate : private StepsCalculator
-        {
-            static auto volumes(const NodesContainer& nodes)
-            {
-                auto size{nodes.size()};
-                CellVolumeContainer out(size);
-                out(0) = (nodes(1) - nodes(0))/2.0;
-                for(auto idx{size-size+1}; idx < size-1; ++idx)
                     out(idx) = nodes(idx+1) - nodes(idx);
-                out(size-1) = (nodes(size-1) - nodes(size-2))/2.0;
-
                 return out;
             }
-            
-            using StepsCalculator::steps;
-            using StepsCalculator::dual_nodes;
-            using StepsCalculator::dual_steps;
 
-        protected:
-            // static RealType resistivity(RealType x1, RealType x2)
-            // {
-            //     return x2 - x1;
-            // }
+            static auto cell_centers(const DualNodesContainer& nodes)
+            {
+                auto size{nodes.size()-1ull};
+                MeshNodesContainer out(size);
+                for(auto idx{size-size}; idx < size; ++idx)
+                    out(idx) = (nodes(idx+1) + nodes(idx))/2.0;
+                return out;
+            }
+
+            static auto mesh_steps(const DualNodesContainer& nodes)
+            {
+                auto mesh_nodes{cell_centers(nodes)};
+
+                assert(mesh_nodes.size() >= 1);
+                auto size{mesh_nodes.size()-1ull};
+                MeshStepsContainer out(size);
+                for(auto id{size-size}; id < size; ++id)
+                    out(id) = mesh_nodes(id+1)-mesh_nodes(id);
+                return out;                    
+            }
         };
 
-        struct X : CartesianCoordinate{};
-        struct Y : CartesianCoordinate{};
-        struct Z : CartesianCoordinate{};
-
-        struct RadialCylinderCoordinate  : private StepsCalculator
+        struct CartesianCoordinate : public GeneralCoordinate
         {
-            static auto volumes(const NodesContainer& nodes)
+            /// @brief Generate control volumes from dual mesh
+            /// @param nodes 
+            /// @return 
+            static auto control_volumes(const DualNodesContainer& nodes)
             {
-                auto size{nodes.size()};
-                CellVolumeContainer out(size);
-                auto mid_val_l{nodes(0)};
-                auto mid_val_r{(nodes(1) + nodes(0))/2.0};
-                out(0) = volume(nodes(0), mid_val_r);
+                auto size{nodes.size()-1ull};
+                ControlVolumesContainer out(size);
+                for(auto idx{size-size}; idx < size; ++idx)
+                    out(idx) = nodes(idx+1) - nodes(idx);
+                return out;
+            }
+        };
+
+        struct X : public CartesianCoordinate{};
+        struct Y : public CartesianCoordinate{};
+        struct Z : public CartesianCoordinate{};
+
+        struct RadialCylinderCoordinate  : public GeneralCoordinate
+        {
+            static auto control_volumes(const DualNodesContainer& nodes)
+            {
+                auto size{nodes.size()-1ull};
+                ControlVolumesContainer out(size);
                 
-                for(auto idx{size-size+1}; idx < size-1; ++idx)
-                {
-                    mid_val_l = mid_val_r;
-                    mid_val_r = (nodes(idx+1) + nodes(idx))/2.0;
-                    out(idx) = volume(mid_val_l, mid_val_r);
-                }
-                out(size-1) = volume(mid_val_r, nodes(size-1));
+                for(auto idx{size-size}; idx < size; ++idx)
+                    out(idx) = volume(nodes(idx), nodes(idx+1));
 
                 return out;
             }
-            
-            // steps implementation is inhereted
-            using StepsCalculator::steps;
-            using StepsCalculator::dual_nodes;
-            using StepsCalculator::dual_steps;
         protected:
             static RealType volume(RealType x1, RealType x2)
             {
                 assert(x2 > x1);
                 return (x2 * x2 - x1 * x1) / 2.0;
             }
-            // static RealType resistivity(RealType x1, RealType x2)
-            // {
-            //     assert(x2 > x1);
-            //     assert(x1 > 0.0);
-            //     return std::log(x2/x1);
-            // }
         };
     } // CoordinateTypes
 } // GPN
