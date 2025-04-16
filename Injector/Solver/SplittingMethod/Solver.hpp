@@ -64,7 +64,7 @@ namespace GPN
                         factor.DivideByTemporalStep(tau)};
 
                     // solve a set of 1D problems in y-direction, for various x-coords
-                    bc.set_vals(time_moments.back() + tau / 2.0);
+                    bc.set_vals(time_moments.back() + tau);
 
                     solve_split_x(tau, tau_factor.data());
 
