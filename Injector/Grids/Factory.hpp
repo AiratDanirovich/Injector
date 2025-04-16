@@ -3,6 +3,7 @@
 #include <vector>
 
 #include <Injector/Grids/Defines.h>
+#include <Injector/Grids/SpacialGrids.hpp>
 #include <Injector/Grids/Grids.h>
 
 namespace GPN
@@ -30,7 +31,7 @@ namespace GPN
             {
                 auto stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, n)};
 
-                auto nodes{GridDual{stencils}};
+                auto nodes{SpacialGrid{stencils}};
 
                 auto x_grid{
                     Grid1D<CoordinateTypes::X>{nodes}};

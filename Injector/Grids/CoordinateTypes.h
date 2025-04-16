@@ -8,7 +8,7 @@ namespace GPN
 {
     namespace CoordinateTypes
     {   
-        struct CartesianCoordinate
+        struct GeneralCoordinate
         {
             /// @brief Normal distance between two faces of control volume
             static auto dual_steps(const DualNodesContainer& nodes)
@@ -17,18 +17,6 @@ namespace GPN
                 assert(size > 0);
                 DualStepsContainer out(size);
                 for(auto idx{size-size}; idx < size-1; ++idx)
-                    out(idx) = nodes(idx+1) - nodes(idx);
-                return out;
-            }
-            
-            /// @brief Generate control volumes from dual mesh
-            /// @param nodes 
-            /// @return 
-            static auto control_volumes(const DualNodesContainer& nodes)
-            {
-                auto size{nodes.size()-1ull};
-                ControlVolumesContainer out(size);
-                for(auto idx{size-size}; idx < size; ++idx)
                     out(idx) = nodes(idx+1) - nodes(idx);
                 return out;
             }
@@ -55,14 +43,27 @@ namespace GPN
             }
         };
 
+        struct CartesianCoordinate : public GeneralCoordinate
+        {
+            /// @brief Generate control volumes from dual mesh
+            /// @param nodes 
+            /// @return 
+            static auto control_volumes(const DualNodesContainer& nodes)
+            {
+                auto size{nodes.size()-1ull};
+                ControlVolumesContainer out(size);
+                for(auto idx{size-size}; idx < size; ++idx)
+                    out(idx) = nodes(idx+1) - nodes(idx);
+                return out;
+            }
+        };
+
         struct X : public CartesianCoordinate{};
         struct Y : public CartesianCoordinate{};
         struct Z : public CartesianCoordinate{};
 
-        struct RadialCylinderCoordinate  : private CartesianCoordinate
+        struct RadialCylinderCoordinate  : public GeneralCoordinate
         {
-            using CartesianCoordinate::dual_steps;
-
             static auto control_volumes(const DualNodesContainer& nodes)
             {
                 auto size{nodes.size()-1ull};
@@ -73,9 +74,6 @@ namespace GPN
 
                 return out;
             }
-            
-            using CartesianCoordinate::cell_centers;
-            using CartesianCoordinate::mesh_steps;
         protected:
             static RealType volume(RealType x1, RealType x2)
             {

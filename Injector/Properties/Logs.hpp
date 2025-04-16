@@ -1,12 +1,12 @@
 #pragma once
 
-#include <iostream>
+// #include <iostream>
 
 #include <Eigen/Core>
 
 #include <Injector/Grids/Defines.h>
-#include <Injector/Grids/Grids.h>
 #include <Injector/Grids/CoordinateTypes.h>
+#include <Injector/Grids/Grids1D.hpp>
 
 namespace GPN
 {
@@ -40,21 +40,26 @@ namespace GPN
 
         struct StepPropertyGrid
         {
-            using Grid_t = Grids::Grid1D<CoordinateTypes::Z>;
+            using Grid_t = Grids::GridDual; //Grid1D<CoordinateTypes::Z>;
 
             StepPropertyGrid(
                 const StepProperty &step_vals,                      // stencil values per every layer
                 const InterpolatedDataContainer &interpolated_vals, // interpolated values corresponding to the grid
                 const Grid_t &grid)
-                : property_vals{step_vals}, log_vals{interpolated_vals}, grid{grid}
+                : property_vals{step_vals}
+                , log_vals{interpolated_vals}
+                , grid{grid}
             { }
 
             StepPropertyGrid(
                 const StepProperty &property_vals,
                 const Grid_t &grid)
                 : StepPropertyGrid{
-                    property_vals,     // stencil values per every layer
-                    interpolate(property_vals, grid), // interpolated values corresponding to the grid
+                    // stencil values per every layer
+                    property_vals,     
+                    // interpolated stencil-values 
+                    // on refined grid nodes
+                    interpolate(property_vals, grid), 
                     grid}
             { }
 
@@ -74,21 +79,21 @@ namespace GPN
                 for (
                     // loop through all control_volumes
                     auto volume_id{0ll}, mesh_node_id{0ll}; 
-                    volume_id < grid.control_volumes.size(); 
+                    volume_id < grid.dual_steps.size(); 
                     ++volume_id
                 )
                 {
-                    std::cout << "volume_id =     " << volume_id << std::endl;
-                    std::cout << "mesh_node_ids = " << std::endl;
+                //    std::cout << "volume_id =     " << volume_id << std::endl;
+                //    std::cout << "mesh_node_ids = " << std::endl;
                     // set constant value within a fixed control volume
                     for(; 
-                        (mesh_node_id < grid.size()) &&
+                        (mesh_node_id < grid.dual_steps.size()) &&
                         (grid.mesh_nodes(mesh_node_id) < grid.dual_stencils(volume_id+1ull)); ++mesh_node_id)
                     {
-                        std::cout << mesh_node_id << ' ';
+                //        std::cout << mesh_node_id << ' ';
                         out(mesh_node_id) = property_vals.data(volume_id);
                     }
-                    std::cout << std::endl;
+                //    std::cout << std::endl;
                 }
 
                 return out;
@@ -105,11 +110,11 @@ namespace GPN
                 for(auto idx{0ll}; idx < vals.log_vals.size(); ++idx)
                     assert(log_vals(idx) == 0.0 || log_vals(idx) == 1.0);
             }
-
         };
 
         struct IsPermeable : public IndicatorProperty
         {
+            using IndicatorProperty::IndicatorProperty;
         };
 
         struct Permeability : public StepPropertyGrid
@@ -122,12 +127,19 @@ namespace GPN
         };
         struct SkinFactor : public StepPropertyGrid
         {
+            using StepPropertyGrid::StepPropertyGrid;
         };
         struct HetConductivity : public StepPropertyGrid
         {
+            using StepPropertyGrid::StepPropertyGrid;
         };
         struct MatrixHeatCapacity : public StepPropertyGrid
         {
+            using StepPropertyGrid::StepPropertyGrid;
+        };
+        struct MatrixDensity : public StepPropertyGrid
+        {
+            using StepPropertyGrid::StepPropertyGrid;
         };
     } // Logs
 } // GPN
