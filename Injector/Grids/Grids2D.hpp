@@ -48,7 +48,7 @@ namespace GPN
                             second_coord.volume(j);
             }
 
-            auto ccordinates(auto id1, auto id2) const
+            auto coordinates(auto id1, auto id2) const
             {
                 return Point{first_coord.mesh_nodes(id1), second_coord.mesh_nodes(id2)};
             }

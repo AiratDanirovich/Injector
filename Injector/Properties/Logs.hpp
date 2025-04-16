@@ -13,6 +13,10 @@ namespace GPN
     namespace Logs
     {
         using StepPropertyContainer = Eigen::ArrayX<RealType>;
+        using InternalFaceValues = Eigen::ArrayX<RealType>;
+
+
+
         struct InterpolatedDataContainer : public StepPropertyContainer
         {
             using StepPropertyContainer::StepPropertyContainer;
@@ -63,18 +67,23 @@ namespace GPN
                     grid}
             { }
 
+            auto operator()(auto id) const
+            {
+                assert(id < log_vals.size());
+                return log_vals(id);
+            }
+
             const InterpolatedDataContainer& log_vals;
-        protected:
-            StepProperty property_vals;
-
             const Grid_t &grid;
-
+        protected:
+            // values between stencil nodes
+            StepProperty property_vals;
         private:
             static InterpolatedDataContainer interpolate(
                 const StepProperty &property_vals,
                 const Grid_t &grid)
             {
-                InterpolatedDataContainer out(grid.size());
+                InterpolatedDataContainer out(grid.dual_size());
                 // interpolate property_vals on the grid
                 for (
                     // loop through all control_volumes
@@ -99,6 +108,39 @@ namespace GPN
                 return out;
             }
         };
+
+        template<typename CoordinateType_t>
+        struct FaceInterpolator
+        {
+            const InternalFaceValues face_values;
+
+            FaceInterpolator(
+                const CoordinateType_t& coord,
+                const StepPropertyGrid& log)
+            : face_values{interpolate<CoordinateType_t>(coord, log)}
+            {}
+
+        protected:
+            template<typename CoordinateType_t>
+            static auto interpolate(
+                const CoordinateType_t& coord,
+                const StepPropertyGrid& log)
+            {
+                const auto& grid{log.grid};
+                // if dual_size() == 0 --- no internal faces
+                assert(grid.dual_size() > 2ll);
+
+                InternalFaceValues out(coord.dual_size()-2ll);
+
+                for(auto id{0ll}; id < out.size(); ++id)
+                    out(id) = CoordinateType_t::face_interpolator(
+                        grid.mesh_nodes(id), grid.mesh_nodes(id+1ll), grid.dual_nodes(id+1ll), log(id), log(id+1ll));
+
+                return out;
+            }
+        };
+
+        using ZInterpolator = FaceInterpolator<CoordinateTypes::Z>;
 
 
         /// @brief Property that must only contain {0; 1} values
@@ -129,9 +171,12 @@ namespace GPN
         {
             using StepPropertyGrid::StepPropertyGrid;
         };
-        struct HetConductivity : public StepPropertyGrid
+        struct HetConductivity : public StepPropertyGrid, public ZInterpolator
         {
-            using StepPropertyGrid::StepPropertyGrid;
+            HetConductivity(const StepPropertyGrid& grid, const ZInterpolator& face_vals)
+                : StepPropertyGrid{grid},
+                ZInterpolator{face_vals}
+            {}
         };
         struct MatrixHeatCapacity : public StepPropertyGrid
         {

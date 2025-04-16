@@ -100,7 +100,7 @@ namespace GPN
                 assert(false);
             }
 
-            auto size() const { return dual_nodes.size(); }
+            auto dual_size() const { return dual_nodes.size(); }
 
             GridDual(GridDual &&) noexcept = default;
             GridDual(const GridDual &) noexcept = default;
@@ -164,10 +164,10 @@ namespace GPN
                 , control_volumes{CoordinateType_t::control_volumes(dual_nodes.dual_nodes)} // make volumes of control cells
                 , mesh_steps{CoordinateType_t::mesh_steps(dual_nodes.dual_nodes)}
             {
-                assert(dual_nodes.size() > 1ull);
-                assert(dual_nodes.size() == dual_steps.size() + 1ull);
-                assert(dual_nodes.size() == control_volumes.size() + 1ull);
-                assert(dual_nodes.size() == mesh_nodes.size() + 1ull);
+                assert(dual_nodes.dual_size() > 1ull);
+                assert(dual_nodes.dual_size() == dual_steps.size() + 1ull);
+                assert(dual_nodes.dual_size() == control_volumes.size() + 1ull);
+                assert(dual_nodes.dual_size() == mesh_nodes.size() + 1ull);
                 assert(mesh_nodes.size() == mesh_steps.size() + 1ull);
             }
 
@@ -206,11 +206,6 @@ namespace GPN
             auto size() const
             {
                 return mesh_nodes.size();
-            }
-
-            auto dual_size() const
-            {
-                return dual_nodes.size();
             }
 
             const GridDualStencils dual_stencils;

@@ -56,6 +56,22 @@ namespace GPN
                     out(idx) = nodes(idx+1) - nodes(idx);
                 return out;
             }
+
+            /// @brief 
+            /// @return 
+            static auto face_interpolator(
+                RealType xL, RealType xR, 
+                RealType xMid,
+                RealType valL, RealType valR)
+            {
+                // coordinates must be monotonous
+                assert((xMid-xL)*(xR-xMid) > 0.0);
+                assert(xMid != xL);
+                assert(xMid != xR);
+                assert(xL != xR);
+
+                return (xMid - xL)/valL + (xR - xMid)/valR;
+            }
         };
 
         struct X : public CartesianCoordinate{};
@@ -73,6 +89,22 @@ namespace GPN
                     out(idx) = volume(nodes(idx), nodes(idx+1));
 
                 return out;
+            }
+            
+            /// @brief 
+            /// @return 
+            static auto face_interpolator(
+                RealType xL, RealType xR, 
+                RealType xMid,
+                RealType valL, RealType valR)
+            {
+                // coordinates must be monotonous
+                assert((xMid-xL)*(xR-xMid) > 0.0);
+                assert(xMid != xL);
+                assert(xMid != xR);
+                assert(xL != xR);
+
+                return std::log(xMid/xL)/valL + std::log(xR/xMid)/valR;
             }
         protected:
             static RealType volume(RealType x1, RealType x2)
