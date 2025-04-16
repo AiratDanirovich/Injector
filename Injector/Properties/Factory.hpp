@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include <Injector/Grids/Grids.h>
+#include <Injector/Grids/Grids2D.hpp>
 #include <Injector/Properties/Logs.hpp>
 
 namespace GPN

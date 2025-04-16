@@ -4,7 +4,7 @@
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/SpacialGrids.hpp>
-#include <Injector/Grids/Grids.h>
+#include <Injector/Grids/Grids2D.hpp>
 
 namespace GPN
 {
