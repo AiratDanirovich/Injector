@@ -31,6 +31,14 @@ namespace GPN
                 return vals;
             }
 
+            static auto generate_rates_StepProperty(const Grids::GridDualStencils& dual_stencils)
+            {
+                std::vector<RealType> vals(dual_stencils.size());
+
+                for(ptrdiff_t id{0}; id < dual_stencils.size(); ++id)
+                    vals[id] = (id % 2 == 1) ? 50.0 : 0.0;
+                return vals;
+            }
         };
     }
 }
