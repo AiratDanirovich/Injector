@@ -8,7 +8,6 @@
 // #include <Eigen/Dense>
 
 #include <Injector/Grids/Defines.h>
-#include <Injector/Grids/CoordinateTypes.h>
 
 namespace GPN
 {
