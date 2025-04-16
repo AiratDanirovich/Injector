@@ -8,6 +8,7 @@
 // #include <Eigen/Dense>
 
 #include <Injector/Grids/Defines.h>
+#include <Injector/Grids/CoordinateTypes.h>
 
 namespace GPN
 {
@@ -64,9 +65,12 @@ namespace GPN
         };
 
         /// @brief Container for dual grid nodes (refined as well as stencils).
-        /// The nodes are somehow distributed, uniformly or non-uniformly, between adjuscent stencils.
+        /// The nodes are somehow distributed, 
+        /// uniformly or non-uniformly, between adjuscent stencils.
         struct GridDual
         {
+        private:
+            using CoordinateType = CoordinateTypes::GeneralCoordinate;
         public:
             /// @brief Simple ctor without mesh refinement.
             /// Only stencil nodes are used,
@@ -112,6 +116,12 @@ namespace GPN
                 return dual_nodes(id);
             }
 
+            // steps between dual nodes
+            const DualStepsContainer dual_steps;
+            
+            // centers of control volumes
+            const MeshNodesContainer mesh_nodes; 
+
         public:
             // dual mesh to be used in simulation
             DualNodesContainer dual_nodes;
@@ -125,7 +135,12 @@ namespace GPN
             GridDual(
                 const GridDualStencils &nodes,
                 const DualNodesContainer &refined_mesh) noexcept
-                : dual_stencils{nodes}, dual_nodes{refined_mesh}
+                : dual_stencils{nodes}
+                , dual_nodes{refined_mesh}
+                // make mesh nodes -- centers of control volumes
+                , mesh_nodes{CoordinateType::cell_centers(refined_mesh)} 
+                , dual_steps{CoordinateType::dual_steps(refined_mesh)
+                }
             {
                 assert(dual_stencils.size() <= dual_nodes.size());
                 auto size{dual_nodes.size()};
@@ -139,15 +154,14 @@ namespace GPN
         /// its associated properties, i.e.,
         /// volume per node, heat resistivity etc.
         template <typename CoordinateType_t>
-        struct Grid1D
+        struct Grid1D : public GridDual
         {
         public:
             Grid1D(const GridDual &dual_nodes) noexcept
-                : dual_stencils{dual_nodes.dual_stencils}
+                : GridDual{dual_nodes}
+                , dual_stencils{dual_nodes.dual_stencils}
                 , dual_nodes{dual_nodes.dual_nodes}                                 // copy nodes of dual mesh
-                , dual_steps{CoordinateType_t::dual_steps(dual_nodes.dual_nodes)} // normal distance between two faces of control volume
                 , control_volumes{CoordinateType_t::control_volumes(dual_nodes.dual_nodes)} // make volumes of control cells
-                , mesh_nodes{CoordinateType_t::cell_centers(dual_nodes.dual_nodes)} // make mesh nodes -- centers of control volumes
                 , mesh_steps{CoordinateType_t::mesh_steps(dual_nodes.dual_nodes)}
             {
                 assert(dual_nodes.size() > 1ull);
@@ -200,12 +214,11 @@ namespace GPN
             }
 
             const GridDualStencils dual_stencils;
-            const MeshNodesContainer mesh_nodes; // centers of control volumes
             const ControlVolumesContainer control_volumes;
         protected:
             DualNodesContainer dual_nodes;
-            DualStepsContainer dual_steps;
-            MeshStepsContainer mesh_steps; // steps between centers of control volumes
+            // steps between centers of control volumes
+            MeshStepsContainer mesh_steps; 
         };
     } // Grids
 } // GPN
