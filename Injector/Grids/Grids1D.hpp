@@ -154,10 +154,11 @@ namespace GPN
         /// its associated properties, i.e.,
         /// volume per node, heat resistivity etc.
         template <typename CoordinateType_t>
-        struct Grid1D : public GridDual
+        struct AxesGrid : public GridDual
         {
+            using Axes = CoordinateType_t;
         public:
-            Grid1D(const GridDual &dual_nodes) noexcept
+            AxesGrid(const GridDual &dual_nodes) noexcept
                 : GridDual{dual_nodes}
                 , dual_stencils{dual_nodes.dual_stencils}
                 , dual_nodes{dual_nodes.dual_nodes}                                 // copy nodes of dual mesh
@@ -171,9 +172,9 @@ namespace GPN
                 assert(mesh_nodes.size() == mesh_steps.size() + 1ull);
             }
 
-            Grid1D(Grid1D &&) noexcept = default;
-            Grid1D(const Grid1D &) noexcept = default;
-            Grid1D() = delete;
+            AxesGrid(AxesGrid &&) noexcept = default;
+            AxesGrid(const AxesGrid &) noexcept = default;
+            AxesGrid() = delete;
 
             auto coordinate(auto id) const
             {
@@ -215,5 +216,12 @@ namespace GPN
             // steps between centers of control volumes
             MeshStepsContainer mesh_steps; 
         };
+
+        
+        using RGrid = AxesGrid<CoordinateTypes::R_CylCoord>;
+        using ZGrid = AxesGrid<CoordinateTypes::Z>;
+        
+        using XGrid = AxesGrid<CoordinateTypes::X>;
+        using YGrid = AxesGrid<CoordinateTypes::Y>;
     } // Grids
 } // GPN

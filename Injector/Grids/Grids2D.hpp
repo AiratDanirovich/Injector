@@ -3,6 +3,7 @@
 #include <vector>
 #include <algorithm>
 #include <cassert>
+#include <type_traits>
 
 #include <Eigen/Core>
 // #include <Eigen/Dense>
@@ -21,23 +22,25 @@ namespace GPN
         /// @tparam Axes2 Type for grid in second [z] direction
         
         template<typename CoordinateSystem_t>
-        struct StructuredGrid2D
+        struct StructuredGrid2D : public CoordinateSystem_t
         {
-        private:
-            using Axes1 = CoordinateSystem_t::Axes1;
-            using Axes2 = CoordinateSystem_t::Axes2;
+        //    static_assert(std::is_same<CoordinateSystem_t::Axes1, CoordinateTypes::Z>::value);
+        //    static_assert(std::is_same<CoordinateSystem_t::Axes2, CoordinateTypes::R_CylCoord>::value);
+
+            using typename CoordinateSystem_t::Axes1;
+            using typename CoordinateSystem_t::Axes2;
         public:
             struct Point
             {
                 RealType x, y;
             };
 
-            Axes1 first_coord;
-            Axes2 second_coord;
+            AxesGrid<Axes1> first_coord;
+            AxesGrid<Axes2> second_coord;
 
             StructuredGrid2D(
-                const Axes1 &first_coord, 
-                const Axes2 &second_coord)
+                const AxesGrid<Axes1> &first_coord, 
+                const AxesGrid<Axes2> &second_coord)
                     : first_coord{first_coord}
                     , second_coord{second_coord}
                     , its_volumes(
@@ -80,16 +83,21 @@ namespace GPN
             CellVolumeContainer2D its_volumes;
         };
 
-        using CylinderGrid = 
+        using CylinderCoordinates = 
             CoordinateSystem2D<
                 CoordinateTypes::Z, 
-                CoordinateTypes::RadialCylinderCoordinate
+                CoordinateTypes::R_CylCoord
+            >;
+        using Cartesian2DCoordinates = 
+            CoordinateSystem2D<
+                CoordinateTypes::X, 
+                CoordinateTypes::Y
             >;
 
         struct StructuredCylinderGrid2D
-            : public StructuredGrid2D<CylinderGrid>
+            : public StructuredGrid2D<CylinderCoordinates>
         {
-            using StructuredGrid2D<CylinderGrid>::StructuredGrid2D;
+            using StructuredGrid2D<CylinderCoordinates>::StructuredGrid2D;
         };
 
     } // Grids

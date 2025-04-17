@@ -11,7 +11,7 @@ namespace GPN
     {
         struct Factory
         {
-            using Grid_t = Grids::Grid1D<CoordinateTypes::Z>;
+            using Grid_t = Grids::AxesGrid<CoordinateTypes::Z>;
             
             static auto generate_permeability_StepProperty(const Grids::GridDualStencils& dual_stencils)
             {

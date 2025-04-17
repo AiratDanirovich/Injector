@@ -19,7 +19,7 @@ TEST_CASE("LogsTest")
 
     auto porosity_stencils{Logs::Factory::generate_porosity_StepProperty(grid_stencils)};
 
-    auto grid{Grid1D<Z>{GridDual{grid_stencils}}};
+    auto grid{AxesGrid<Z>{GridDual{grid_stencils}}};
     auto permeability{Permeability{StepProperty{permeability_stencils}, grid}};
     auto porosity{Porosity{StepProperty{porosity_stencils}, grid}};
     

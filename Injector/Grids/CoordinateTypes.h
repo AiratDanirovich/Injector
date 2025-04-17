@@ -78,7 +78,7 @@ namespace GPN
         struct Y : public CartesianCoordinate{};
         struct Z : public CartesianCoordinate{};
 
-        struct RadialCylinderCoordinate  : public GeneralCoordinate
+        struct R_CylCoord  : public GeneralCoordinate
         {
             static auto control_volumes(const DualNodesContainer& nodes)
             {

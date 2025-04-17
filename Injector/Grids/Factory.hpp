@@ -34,13 +34,13 @@ namespace GPN
                 auto nodes{SpacialGrid{stencils}};
 
                 auto x_grid{
-                    Grid1D<CoordinateTypes::X>{nodes}};
+                    AxesGrid<CoordinateTypes::X>{nodes}};
 
                 auto y_grid{
-                    Grid1D<CoordinateTypes::Y>{nodes}};
+                    AxesGrid<CoordinateTypes::Y>{nodes}};
 
                 return 
-                    StructuredGrid2D{x_grid, y_grid};
+                    StructuredGrid2D<Cartesian2DCoordinates>{x_grid, y_grid};
             }
             
             static auto create_cylinder_grid_2D(ptrdiff_t n)
@@ -50,10 +50,10 @@ namespace GPN
                 auto nodes{GridDual{stencils}};
 
                 auto z_grid{
-                    Grid1D<CoordinateTypes::Z>{nodes}};
+                    AxesGrid<CoordinateTypes::Z>{nodes}};
 
                 auto r_grid{
-                    Grid1D<CoordinateTypes::RadialCylinderCoordinate>{nodes}};
+                    AxesGrid<CoordinateTypes::R_CylCoord>{nodes}};
 
                 return 
                     StructuredCylinderGrid2D{z_grid,r_grid};
