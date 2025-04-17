@@ -57,8 +57,8 @@ namespace GPN
                 return out;
             }
 
-            /// @brief 
-            /// @return 
+            /// @brief Interpolate heat conductivity (inverse factor at Laplace term)
+            /// @return Heat resistivity at cell face
             static auto face_interpolator(
                 RealType xL, RealType xR, 
                 RealType xMid,
@@ -91,8 +91,8 @@ namespace GPN
                 return out;
             }
             
-            /// @brief 
-            /// @return 
+            /// @brief Interpolate heat conductivity (inverse factor at Laplace term)
+            /// @return Heat resistivity at cell face
             static auto face_interpolator(
                 RealType xL, RealType xR, 
                 RealType xMid,

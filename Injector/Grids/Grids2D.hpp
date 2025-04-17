@@ -8,31 +8,36 @@
 // #include <Eigen/Dense>
 
 #include <Injector/Grids/Defines.h>
-#include <Injector/Grids/Grids1D.hpp>
 #include <Injector/Grids/CoordinateTypes.h>
+#include <Injector/Grids/Grids1D.hpp>
+#include <Injector/Grids/CoordinateSystem.hpp>
 
 namespace GPN
 {
     namespace Grids
     {
         /// @brief Two-dimensional grid
-        /// @tparam FirstDir Type for grid in first [r] direction
-        /// @tparam SecondDir Type for grid in second [z] direction
-        template <typename FirstDir, typename SecondDir>
+        /// @tparam Axes1 Type for grid in first [r] direction
+        /// @tparam Axes2 Type for grid in second [z] direction
+        
+        template<typename CoordinateSystem_t>
         struct StructuredGrid2D
         {
+        private:
+            using Axes1 = CoordinateSystem_t::Axes1;
+            using Axes2 = CoordinateSystem_t::Axes2;
         public:
             struct Point
             {
                 RealType x, y;
             };
 
-            FirstDir first_coord;
-            SecondDir second_coord;
+            Axes1 first_coord;
+            Axes2 second_coord;
 
             StructuredGrid2D(
-                const FirstDir &first_coord, 
-                const SecondDir &second_coord)
+                const Axes1 &first_coord, 
+                const Axes2 &second_coord)
                     : first_coord{first_coord}
                     , second_coord{second_coord}
                     , its_volumes(
@@ -75,14 +80,16 @@ namespace GPN
             CellVolumeContainer2D its_volumes;
         };
 
+        using CylinderGrid = 
+            CoordinateSystem2D<
+                CoordinateTypes::Z, 
+                CoordinateTypes::RadialCylinderCoordinate
+            >;
+
         struct StructuredCylinderGrid2D
-            : public StructuredGrid2D<
-                  Grid1D<CoordinateTypes::Z>,
-                  Grid1D<CoordinateTypes::RadialCylinderCoordinate>>
+            : public StructuredGrid2D<CylinderGrid>
         {
-            using StructuredGrid2D<
-                Grid1D<CoordinateTypes::Z>,
-                Grid1D<CoordinateTypes::RadialCylinderCoordinate>>::StructuredGrid2D;
+            using StructuredGrid2D<CylinderGrid>::StructuredGrid2D;
         };
 
     } // Grids
