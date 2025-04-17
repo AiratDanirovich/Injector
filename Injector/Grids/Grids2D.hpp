@@ -29,6 +29,7 @@ namespace GPN
 
             using typename CoordinateSystem_t::Axes1;
             using typename CoordinateSystem_t::Axes2;
+            using CoordinateSystem = CoordinateSystem_t;
 
         public:
             struct Point
@@ -81,17 +82,11 @@ namespace GPN
             CellVolumeContainer2D its_volumes;
         };
 
-        using CylinderCoordinates =
-            CoordinateSystem2D<
-                CoordinateTypes::Z,
-                CoordinateTypes::R_CylCoord>;
-        using Cartesian2DCoordinates =
-            CoordinateSystem2D<
-                CoordinateTypes::X,
-                CoordinateTypes::Y>;
-
         using StructuredCylinderGrid2D =
-            StructuredGrid2D<CylinderCoordinates>;
+            StructuredGrid2D<CoordinateTypes::CylinderCoordinates>;
+            
+        using StructuredXYGrid2D =
+            StructuredGrid2D<CoordinateTypes::Cartesian2DCoordinates>;
 
     } // Grids
 } // GPN

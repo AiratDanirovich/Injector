@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include <Injector/Grids/Defines.h>
+#include <Injector/Grids/CoordinateSystem.hpp>
 
 namespace GPN
 {
@@ -77,6 +78,11 @@ namespace GPN
         struct X : public CartesianCoordinate{};
         struct Y : public CartesianCoordinate{};
         struct Z : public CartesianCoordinate{};
+        
+        using Cartesian2DCoordinates =
+            CoordinateSystem2D<
+                CoordinateTypes::X,
+                CoordinateTypes::Y>;
 
         struct R_CylCoord  : public GeneralCoordinate
         {
@@ -113,5 +119,10 @@ namespace GPN
                 return (x2 * x2 - x1 * x1) / 2.0;
             }
         };
+
+        using CylinderCoordinates =
+            CoordinateSystem2D<
+                CoordinateTypes::Z,
+                CoordinateTypes::R_CylCoord>;
     } // CoordinateTypes
 } // GPN

@@ -27,8 +27,8 @@ namespace GPN
             static_assert(Grid_t::Dim() == 2ull);
             static_assert(
                 std::is_same<
-                typename Grid_t::Axes1, 
-                CoordinateTypes::Z>::value);
+                    typename Grid_t::Axes1,
+                    CoordinateTypes::Z>::value);
 
             Field(
                 // propery is along the FIRST Axes1 == Z
@@ -40,6 +40,11 @@ namespace GPN
                 assert(property.log_vals.size() == values.rows());
                 for (std::ptrdiff_t col{0ll}; col < values.cols(); ++col)
                     values.col(col) = property.log_vals;
+
+                assert(values.cols() > 0ll);
+                for (std::ptrdiff_t row{0ll}; row < values.rows(); ++row)
+                    for (std::ptrdiff_t col{1ll}; col < values.cols(); ++col)
+                        assert(values(row, 0) == values(row, col));
             }
 
         protected:
@@ -68,6 +73,14 @@ namespace GPN
                   axes1_vals(property.face_values.size(), grid.second_coord.size()),
                   axes2_vals(property.log_vals.size(), grid.second_coord.dual_size() - 2ll)
             {
+                assert(property.face_values.size() >= 0ll);
+                for (std::ptrdiff_t col{0ll}; col < axes1_vals.cols(); ++col)
+                    axes1_vals.col(col) = property.face_values;
+
+                assert(axes1_vals.cols() > 0ll);
+                for (std::ptrdiff_t row{0ll}; row < axes1_vals.rows(); ++row)
+                    for (std::ptrdiff_t col{1ll}; col < axes1_vals.cols(); ++col)
+                        assert(axes1_vals(row, 0) == axes1_vals(row, col));
             }
 
             FaceAxes1VauesContainer axes1_vals;

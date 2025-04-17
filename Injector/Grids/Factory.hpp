@@ -3,6 +3,7 @@
 #include <vector>
 
 #include <Injector/Grids/Defines.h>
+#include <Injector/Grids/CoordinateTypes.h>
 #include <Injector/Grids/SpacialGrids.hpp>
 #include <Injector/Grids/Grids2D.hpp>
 
@@ -40,7 +41,7 @@ namespace GPN
                     AxesGrid<CoordinateTypes::Y>{nodes}};
 
                 return 
-                    StructuredGrid2D<Cartesian2DCoordinates>{x_grid, y_grid};
+                    StructuredXYGrid2D{x_grid, y_grid};
             }
             
             static auto create_cylinder_grid_2D(ptrdiff_t n)
