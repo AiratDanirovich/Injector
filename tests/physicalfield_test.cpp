@@ -60,7 +60,7 @@ TEST_CASE("LogsTest")
         permeability,
         grid2D};
 #pragma endregion
-#pragma region POROSITY
+#pragma region HEAT-CONDUCTIVITY
     // generate heat conductivity log
     Logs::HeatConductivity conductivity{
         Logs::StepPropertyGrid{

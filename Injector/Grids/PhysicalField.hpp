@@ -7,6 +7,7 @@
 #include <Eigen/Dense>
 
 #include <Injector/Grids/Defines.h>
+#include <Injector/Grids/CoordinateTypes.h>
 #include <Injector/Grids/Grids2D.hpp>
 #include <Injector/Properties/Logs.hpp>
 
@@ -24,10 +25,10 @@ namespace GPN
         struct Field // : public Grid_t //::CoordinateSystem_t
         {
             static_assert(Grid_t::Dim() == 2ull);
-            // static_assert(
-            //     std::is_same<
-            //     typename Grid_t::Axes1, 
-            //     CoordinateTypes::Z>);
+            static_assert(
+                std::is_same<
+                typename Grid_t::Axes1, 
+                CoordinateTypes::Z>::value);
 
             Field(
                 // propery is along the FIRST Axes1 == Z
