@@ -9,9 +9,9 @@
 // #include <Eigen/Dense>
 
 #include <Injector/Grids/Defines.h>
+#include <Injector/Grids/CoordinateSystem.hpp>
 #include <Injector/Grids/CoordinateTypes.h>
 #include <Injector/Grids/Grids1D.hpp>
-#include <Injector/Grids/CoordinateSystem.hpp>
 
 namespace GPN
 {
@@ -20,33 +20,31 @@ namespace GPN
         /// @brief Two-dimensional grid
         /// @tparam Axes1 Type for grid in first [r] direction
         /// @tparam Axes2 Type for grid in second [z] direction
-        
-        template<typename CoordinateSystem_t>
+
+        template <typename CoordinateSystem_t>
         struct StructuredGrid2D : public CoordinateSystem_t
         {
-        //    static_assert(std::is_same<CoordinateSystem_t::Axes1, CoordinateTypes::Z>::value);
-        //    static_assert(std::is_same<CoordinateSystem_t::Axes2, CoordinateTypes::R_CylCoord>::value);
+            //    static_assert(std::is_same<CoordinateSystem_t::Axes1, CoordinateTypes::Z>::value);
+            //    static_assert(std::is_same<CoordinateSystem_t::Axes2, CoordinateTypes::R_CylCoord>::value);
 
             using typename CoordinateSystem_t::Axes1;
             using typename CoordinateSystem_t::Axes2;
+
         public:
             struct Point
             {
                 RealType x, y;
             };
 
-            AxesGrid<Axes1> first_coord;
-            AxesGrid<Axes2> second_coord;
+            const AxesGrid<Axes1> first_coord;
+            const AxesGrid<Axes2> second_coord;
 
             StructuredGrid2D(
-                const AxesGrid<Axes1> &first_coord, 
+                const AxesGrid<Axes1> &first_coord,
                 const AxesGrid<Axes2> &second_coord)
-                    : first_coord{first_coord}
-                    , second_coord{second_coord}
-                    , its_volumes(
-                        first_coord.size(),
-                        second_coord.size()
-                    )
+                : first_coord{first_coord}, second_coord{second_coord}, its_volumes(
+                                                                            first_coord.size(),
+                                                                            second_coord.size())
             {
                 // set volumes
                 for (std::ptrdiff_t j = 0; j < its_volumes.cols(); ++j)
@@ -83,22 +81,17 @@ namespace GPN
             CellVolumeContainer2D its_volumes;
         };
 
-        using CylinderCoordinates = 
+        using CylinderCoordinates =
             CoordinateSystem2D<
-                CoordinateTypes::Z, 
-                CoordinateTypes::R_CylCoord
-            >;
-        using Cartesian2DCoordinates = 
+                CoordinateTypes::Z,
+                CoordinateTypes::R_CylCoord>;
+        using Cartesian2DCoordinates =
             CoordinateSystem2D<
-                CoordinateTypes::X, 
-                CoordinateTypes::Y
-            >;
+                CoordinateTypes::X,
+                CoordinateTypes::Y>;
 
-        struct StructuredCylinderGrid2D
-            : public StructuredGrid2D<CylinderCoordinates>
-        {
-            using StructuredGrid2D<CylinderCoordinates>::StructuredGrid2D;
-        };
+        using StructuredCylinderGrid2D =
+            StructuredGrid2D<CylinderCoordinates>;
 
     } // Grids
 } // GPN

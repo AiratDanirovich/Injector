@@ -48,9 +48,9 @@ namespace GPN
                 const StepProperty &step_vals,                      // stencil values per every layer
                 const InterpolatedDataContainer &interpolated_vals, // interpolated values corresponding to the grid
                 const Grid_t &grid)
-                : property_vals{step_vals}, 
-                log_vals{interpolated_vals}, 
-                grid{grid}
+                : property_vals{step_vals},
+                  log_vals{interpolated_vals},
+                  grid{grid}
             {
             }
 
@@ -73,7 +73,7 @@ namespace GPN
                 return log_vals(id);
             }
 
-            const InterpolatedDataContainer &log_vals;
+            const InterpolatedDataContainer log_vals;
             const Grid_t &grid;
 
         protected:
@@ -85,7 +85,7 @@ namespace GPN
                 const StepProperty &property_vals,
                 const Grid_t &grid)
             {
-                InterpolatedDataContainer out(grid.dual_size());
+                InterpolatedDataContainer out(grid.mesh_size());
                 // interpolate property_vals on the grid
                 for (
                     // loop through all control_volumes
@@ -111,7 +111,7 @@ namespace GPN
             }
         };
 
-        template <typename CoordinateType_t>
+        template <typename CoordinateType_t /* = CoordinateTypes::Z*/>
         struct FaceInterpolator
         {
             using Axes = CoordinateType_t;
@@ -119,23 +119,21 @@ namespace GPN
             const InternalFaceValues face_values;
 
             FaceInterpolator(
-                const CoordinateType_t &coord,
                 const StepPropertyGrid &log)
-                : face_values{interpolate<CoordinateType_t>(coord, log)}
+                : face_values{
+                      interpolate(log)}
             {
             }
 
         protected:
-            template <typename CoordinateType_t>
             static auto interpolate(
-                const CoordinateType_t &coord,
                 const StepPropertyGrid &log)
             {
                 const auto &grid{log.grid};
                 // if dual_size() == 0 --- no internal faces
                 assert(grid.dual_size() > 2ll);
 
-                InternalFaceValues out(coord.dual_size() - 2ll);
+                InternalFaceValues out(log.grid.dual_size() - 2ll);
 
                 for (auto id{0ll}; id < out.size(); ++id)
                     out(id) = CoordinateType_t::face_interpolator(
@@ -151,13 +149,15 @@ namespace GPN
               public FaceInterpolator<CoordinateType_t>
         {
             FaceInterpolatedProperty(
-                const StepPropertyGrid &vals,
-                const FaceInterpolator<CoordinateType_t> &interp) noexcept
+                const StepPropertyGrid &vals) noexcept
                 : StepPropertyGrid{vals},
-                  FaceInterpolator<CoordinateType_t>{interp}
+                  FaceInterpolator<CoordinateType_t>{vals}
             {
             }
         };
+
+        using ZInterpolator =
+            FaceInterpolatedProperty<CoordinateTypes::Z>;
 
         /// @brief Property that must only contain {0; 1} values
         struct IndicatorProperty : public StepPropertyGrid
@@ -187,12 +187,6 @@ namespace GPN
         {
             using StepPropertyGrid::StepPropertyGrid;
         };
-        struct HeatConductivity : public FaceInterpolatedProperty<CoordinateTypes::Z>
-        {
-            using FaceInterpolatedProperty<
-                    CoordinateTypes::Z>
-                ::FaceInterpolatedProperty;
-        };
         struct MatrixHeatCapacity : public StepPropertyGrid
         {
             using StepPropertyGrid::StepPropertyGrid;
@@ -201,5 +195,38 @@ namespace GPN
         {
             using StepPropertyGrid::StepPropertyGrid;
         };
+
+        template <typename Property_t, typename Grid_t>
+        auto generate_log(
+            const std::vector<RealType> &adata,
+            const Grid_t &grid)
+        {
+            assert(grid.dual_stencils.size() == adata.size());
+
+            return Property_t{
+                Logs::StepProperty{
+                    adata},
+                grid};
+        }
+
+        struct HeatConductivity
+            : public ZInterpolator
+        {
+            using ZInterpolator::FaceInterpolatedProperty;
+        };
+
+        // template <typename Property_t, typename Grid_t>
+        // auto generate_faced_log(
+        //     const std::vector<RealType> &adata,
+        //     const Grid_t &grid)
+        // {
+        //     assert(grid.dual_stencils.size() == adata.size());
+
+        //     return Property_t{
+        //         Logs::StepProperty{
+        //             adata},
+        //         grid};
+        // }
+
     } // Logs
 } // GPN

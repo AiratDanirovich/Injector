@@ -101,6 +101,7 @@ namespace GPN
             }
 
             auto dual_size() const { return dual_nodes.size(); }
+            auto mesh_size() const { return mesh_nodes.size(); }
 
             GridDual(GridDual &&) noexcept = default;
             GridDual(const GridDual &) noexcept = default;
@@ -206,7 +207,7 @@ namespace GPN
 
             auto size() const
             {
-                return mesh_nodes.size();
+                return mesh_size();
             }
 
             const GridDualStencils dual_stencils;
@@ -220,7 +221,7 @@ namespace GPN
         
         using RGrid = AxesGrid<CoordinateTypes::R_CylCoord>;
         using ZGrid = AxesGrid<CoordinateTypes::Z>;
-        
+
         using XGrid = AxesGrid<CoordinateTypes::X>;
         using YGrid = AxesGrid<CoordinateTypes::Y>;
     } // Grids
