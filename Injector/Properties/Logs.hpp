@@ -177,11 +177,35 @@ namespace GPN
 
         struct Permeability : public StepPropertyGrid
         {
-            using StepPropertyGrid::StepPropertyGrid;
+            Permeability(
+                const StepPropertyGrid &permeability,
+                const IsPermeable &is_permeable)
+                : StepPropertyGrid{permeability}
+            {
+                assert(permeability.size() == is_permeable.size());
+                for (std::ptrdiff_t id{0ll}; id < permeability.size(); ++id)
+                    assert(
+                        ((is_permeable(id) == 1.0) && (permeability(id) > 0.0)) ||
+                        ((is_permeable(id) == 0.0) && (permeability(id) == 0.0)));
+            }
         };
         struct Porosity : public StepPropertyGrid
         {
-            using StepPropertyGrid::StepPropertyGrid;
+            Porosity(
+                const StepPropertyGrid &porosity,
+                const IsPermeable &is_permeable)
+                : StepPropertyGrid{porosity}
+            {
+                assert(porosity.size() == is_permeable.size());
+                for (std::ptrdiff_t id{0ll}; id < porosity.size(); ++id)
+                {
+                    assert(
+                        ((is_permeable(id) == 1.0) && (porosity(id) > 0.0)) ||
+                        ((is_permeable(id) == 0.0) && (porosity(id) == 0.0)));
+                    assert(porosity(id) >= 0.0);
+                    assert(porosity(id) <= 1.0);
+                }
+            }
         };
         struct SkinFactor : public StepPropertyGrid
         {
