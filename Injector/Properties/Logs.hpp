@@ -61,10 +61,10 @@ namespace GPN
                 return data(id);
             }
 
-            auto operator*(RealType c) const{
+            auto operator*(RealType c) const
+            {
                 const auto &lhs{*this};
-                return StepProperty{lhs.data*c};
-
+                return StepProperty{lhs.data * c};
             }
             auto operator*(const StepProperty &rhs) const
             {
@@ -79,13 +79,10 @@ namespace GPN
             }
         };
 
-        
         auto operator-(RealType v, const StepProperty &rhs)
         {
             return StepProperty{v - rhs.data};
         }
-
-
 
         struct AssertNonNegative
         {
@@ -109,6 +106,7 @@ namespace GPN
                   log_vals{interpolated_vals},
                   grid{grid}
             {
+                assert(property_vals.size() == grid.dual_stencils.size() - 1ll);
             }
 
             StepPropertyGrid(
@@ -143,7 +141,7 @@ namespace GPN
             operator const StepProperty &() const { return property_vals; }
 
             const InterpolatedDataContainer log_vals;
-            const Grid_t &grid;
+            const Grid_t grid;
             // values between stencil nodes
             const StepProperty property_vals;
 
@@ -350,17 +348,16 @@ namespace GPN
             static_assert(
                 std::is_same<
                     Porosity::Grid_t,
-                    SolidVolumetricHeatCapacity::Grid_t>::value
-            );
+                    SolidVolumetricHeatCapacity::Grid_t>::value);
             HeatVolumetricCapacity(
                 const Porosity &porosity,
                 const SolidVolumetricHeatCapacity &matrix_vol_heat_capacity,
                 const Water &water)
                 : StepPropertyGrid{
-                    porosity.property_vals * water.volumetric_heat_capacity + (1 - porosity.property_vals) *matrix_vol_heat_capacity.property_vals,
-                    porosity.grid
-                }
-            {}
+                      porosity.property_vals * water.volumetric_heat_capacity + (1 - porosity.property_vals) * matrix_vol_heat_capacity.property_vals,
+                      porosity.grid}
+            {
+            }
         };
 
         template <typename Property_t, typename Grid_t>
@@ -380,7 +377,12 @@ namespace GPN
             : public ZInterpolator,
               private AssertNonNegative
         {
-            using ZInterpolator::FaceInterpolatedProperty;
+            HeatConductivity(
+                const StepPropertyGrid &conductivity)
+                : ZInterpolator{conductivity},
+                  AssertNonNegative{conductivity}
+            {
+            }
         };
 
         // template <typename Property_t, typename Grid_t>

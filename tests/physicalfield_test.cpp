@@ -28,13 +28,25 @@ TEST_CASE("LogsTest")
                         Grids::Factory::
                             generate_dual_grid_stencils_uniform(0, 1, 11)}}}};
 #pragma endregion
+#pragma region IS_PERMEABLE
+    auto is_permeable{
+        Logs::IsPermeable{
+            Logs::StepPropertyGrid{
+                Logs::StepProperty{
+                    Logs::Factory::generate_is_permeable_StepProperty(grid2D.first_coord.dual_stencils)},
+                grid2D.first_coord}}};
+#pragma endregion
+
 #pragma region PERMEABILITY
     // generate permeability log
     Logs::Permeability permeability{
-        Logs::StepProperty{
-            Logs::Factory::generate_permeability_StepProperty(
-                grid2D.first_coord.dual_stencils)},
-        grid2D.first_coord};
+        Logs::StepPropertyGrid{
+            Logs::StepProperty{
+                Logs::Factory::generate_permeability_StepProperty(
+                    grid2D.first_coord.dual_stencils)} *
+                is_permeable,
+            grid2D.first_coord},
+        is_permeable};
 
     // generate permeability 2D field
     Properties::Permeability permeability_field{
@@ -44,20 +56,17 @@ TEST_CASE("LogsTest")
 #pragma region POROSITY
     // generate porosity log
     Logs::Porosity porosity{
-        Logs::StepProperty{
-            Logs::Factory::generate_porosity_StepProperty(
-                grid2D.first_coord.dual_stencils)},
-        grid2D.first_coord};
-    // another way to generate logs
-    auto porosity2{
-        Logs::generate_log<Logs::Porosity>(
-            Logs::Factory::generate_porosity_StepProperty(
-                grid2D.first_coord.dual_stencils),
-            grid2D.first_coord)};
+        Logs::StepPropertyGrid{
+            Logs::StepProperty{
+                Logs::Factory::generate_porosity_StepProperty(
+                    grid2D.first_coord.dual_stencils)} *
+                is_permeable,
+            grid2D.first_coord},
+        is_permeable};
 
     // generate porosity 2D field
     Properties::Porosity porosity_field{
-        permeability,
+        porosity,
         grid2D};
 #pragma endregion
 #pragma region HEAT-CONDUCTIVITY
@@ -67,8 +76,7 @@ TEST_CASE("LogsTest")
             Logs::StepProperty{
                 Logs::Factory::generate_conductivity_StepProperty(
                     grid2D.first_coord.dual_stencils)},
-            grid2D.first_coord}
-        };
+            grid2D.first_coord}};
     // another way to generate logs
     // auto conductivity2{
     //     Logs::generate_log<Logs::HeatConductivity>(

@@ -17,10 +17,10 @@ namespace GPN
             static auto generate_permeability_StepProperty(
                 const Container_t& dual_stencils)
             {
-                auto size{dual_stencils.size()};
+                auto size{dual_stencils.size()-1};
                 std::vector<RealType> vals(size);
 
-                for(auto id{size-size}; id < dual_stencils.size(); ++id)
+                for(auto id{size-size}; id < size; ++id)
                     vals[id] = (id % 2 == 1) ? 500 : 300;
                 return vals;
             }
@@ -29,32 +29,45 @@ namespace GPN
             static auto generate_porosity_StepProperty(
                 const Container_t& dual_stencils)
             {
-                auto size{dual_stencils.size()};
+                auto size{dual_stencils.size()-1};
                 std::vector<RealType> vals(size);
 
-                for(auto id{size-size}; id < dual_stencils.size(); ++id)
+                for(auto id{size-size}; id < size; ++id)
                     vals[id] = (id % 2 == 1) ? 0.2 : 0.5;
                 return vals;
             }
             
             template<typename Container_t>
+            static auto generate_is_permeable_StepProperty(
+                const Container_t& dual_stencils)
+            {
+                auto size{dual_stencils.size()-1};
+                std::vector<RealType> vals(size);
+
+                for(auto id{size-size}; id < size; ++id)
+                    vals[id] = (id % 2 == 1) ? 0.0 : 1.0;
+                return vals;
+            }
+
+            
+            template<typename Container_t>
             static auto generate_conductivity_StepProperty(
                 const Container_t& dual_stencils)
             {
-                auto size{dual_stencils.size()};
+                auto size{dual_stencils.size()-1};
                 std::vector<RealType> vals(size);
 
-                for(auto id{size-size}; id < dual_stencils.size(); ++id)
+                for(auto id{size-size}; id < size; ++id)
                     vals[id] = (id % 2 == 1) ? 200 : 1000;
                 return vals;
             }
 
             static auto generate_rates_StepProperty(const Grids::GridDualStencils& dual_stencils)
             {
-                auto size{dual_stencils.size()};
+                auto size{dual_stencils.size()-1};
                 std::vector<RealType> vals(size);
 
-                for(auto id{size-size}; id < dual_stencils.size(); ++id)
+                for(auto id{size-size}; id < size; ++id)
                     vals[id] = (id % 2 == 1) ? 50.0 : 0.0;
                 return vals;
             }
