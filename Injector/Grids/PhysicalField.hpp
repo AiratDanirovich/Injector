@@ -48,7 +48,7 @@ namespace GPN
             }
 
         protected:
-            const Grid_t &grid;
+            const Grid_t grid;
             GridNodeValues2D values;
         };
 
