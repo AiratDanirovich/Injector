@@ -24,8 +24,10 @@ namespace GPN
         template <typename CoordinateSystem_t>
         struct StructuredGrid2D : public CoordinateSystem_t
         {
-            //    static_assert(std::is_same<CoordinateSystem_t::Axes1, CoordinateTypes::Z>::value);
-            //    static_assert(std::is_same<CoordinateSystem_t::Axes2, CoordinateTypes::R_CylCoord>::value);
+            static_assert(
+                !std::is_same<
+                    typename CoordinateSystem_t::Axes1,
+                    typename CoordinateSystem_t::Axes2>::value);
 
             using typename CoordinateSystem_t::Axes1;
             using typename CoordinateSystem_t::Axes2;
