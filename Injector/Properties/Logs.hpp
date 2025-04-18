@@ -294,6 +294,24 @@ namespace GPN
             }
         };
 
+        struct HeatVolumetricCapacity
+            : public StepPropertyGrid
+        {
+            static_assert(
+                std::is_same<
+                    Porosity::Grid_t,
+                    SolidVolumetricHeatCapacity::Grid_t>::value);
+            HeatVolumetricCapacity(
+                const Porosity &porosity,
+                const SolidVolumetricHeatCapacity &matrix_vol_heat_capacity,
+                const Water &water)
+                : StepPropertyGrid{
+                      porosity.property_vals * water.volumetric_heat_capacity + (1 - porosity.property_vals) * matrix_vol_heat_capacity.property_vals,
+                      porosity.grid}
+            {
+            }
+        };
+
         template <typename CoordinateType_t /* = CoordinateTypes::Z*/>
         struct FaceInterpolator
         {
@@ -319,7 +337,7 @@ namespace GPN
                 InternalFaceValues out(log.grid.dual_size() - 2ll);
 
                 for (auto id{0ll}; id < out.size(); ++id)
-                    out(id) = CoordinateType_t::face_interpolator(
+                    out(id) = Axes::face_interpolator(
                         grid.mesh_nodes(id), grid.mesh_nodes(id + 1ll), grid.dual_nodes(id + 1ll), log(id), log(id + 1ll));
 
                 return out;
@@ -341,24 +359,6 @@ namespace GPN
 
         using ZInterpolator =
             FaceInterpolatedProperty<CoordinateTypes::Z>;
-
-        struct HeatVolumetricCapacity
-            : public StepPropertyGrid
-        {
-            static_assert(
-                std::is_same<
-                    Porosity::Grid_t,
-                    SolidVolumetricHeatCapacity::Grid_t>::value);
-            HeatVolumetricCapacity(
-                const Porosity &porosity,
-                const SolidVolumetricHeatCapacity &matrix_vol_heat_capacity,
-                const Water &water)
-                : StepPropertyGrid{
-                      porosity.property_vals * water.volumetric_heat_capacity + (1 - porosity.property_vals) * matrix_vol_heat_capacity.property_vals,
-                      porosity.grid}
-            {
-            }
-        };
 
         template <typename Property_t, typename Grid_t>
         auto generate_log(

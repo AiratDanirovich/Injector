@@ -112,6 +112,14 @@ namespace GPN
 
                 return std::log(xMid/xL)/valL + std::log(xR/xMid)/valR;
             }
+            static auto const_face_interpolator(
+                RealType xL,
+                RealType xR,
+                const Eigen::ArrayX<RealType>& val)
+            {
+                assert(xL != xR);
+                return std::log(xR/xL)/val;
+            }
         protected:
             static RealType volume(RealType x1, RealType x2)
             {

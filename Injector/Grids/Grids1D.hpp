@@ -212,8 +212,8 @@ namespace GPN
 
             const GridDualStencils dual_stencils;
             const ControlVolumesContainer control_volumes;
+            const DualNodesContainer dual_nodes;
         protected:
-            DualNodesContainer dual_nodes;
             // steps between centers of control volumes
             MeshStepsContainer mesh_steps; 
         };
