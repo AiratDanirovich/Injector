@@ -14,27 +14,6 @@ namespace GPN
     {
         namespace SplittingMethod
         {
-            struct TemporalTerm
-            {
-                using Factor = Properties::Fields::Conductivity_f;
-
-                template <typename Grid_t>
-                TemporalTerm(
-                    std::shared_ptr<Properties::Fields> properties,
-                    const Grid_t &grid)
-                    : factor{properties->capacity_vol_f} // volumes are taken into account
-                {
-                }
-
-                auto DivideByTemporalStep(RealType tau) const
-                {
-                    return (1.0 / tau) * factor;
-                }
-
-            protected:
-                Factor factor;
-            };
-
             // single sparse matrix
             using SpMatrix = Eigen::SparseMatrix<RealType>;
             // container of such sparse matricies
