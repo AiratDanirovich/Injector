@@ -76,7 +76,7 @@ namespace GPN
                             tripletList.emplace_back(
                                 row, row,
                                 (y_face_factor(m_id, row - 1) +
-                                y_face_factor(m_id, row)) *
+                                 y_face_factor(m_id, row)) *
                                     y_face_area(m_id));
                             tripletList.emplace_back(
                                 row, row + 1,

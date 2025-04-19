@@ -31,7 +31,7 @@ namespace GPN
                     const LaplaceFactor_t &laplace_factor,
                     const Grid_t &grid)
                     : BaseSplit<LaplaceFactor_t>{
-                        laplace_factor,
+                          laplace_factor,
                           grid.second_coord.size(), // nmbr of matricies
                           grid.first_coord.size()}  // nmbr of unknowns
                 {
@@ -57,7 +57,6 @@ namespace GPN
 
                         tripletList.emplace_back(
                             0, 0,
-                            // conductivity_y_bounds only contains internal boundaries of control volumes
                             x_face_factor(0, m_id) * x_face_area(m_id));
                         tripletList.emplace_back(
                             0, 1,
