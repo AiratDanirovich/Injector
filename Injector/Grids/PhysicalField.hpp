@@ -77,24 +77,26 @@ namespace GPN
                 const Logs::StepPropertyGrid &property,
                 const Grid_t &grid) noexcept
                 : grid{grid},
-                  values(grid.first_coord.size(), grid.second_coord.size())
+                  its_values(grid.first_coord.size(), grid.second_coord.size())
             {
-                assert(property.log_vals.size() == values.rows());
+                assert(property.log_vals.size() == its_values.rows());
                 // extrapolate as const value in the Axes2 direction,
                 // though, may be avoided. Element access interface through
                 // operator()(i, j) is expected.
-                for (std::ptrdiff_t col{0ll}; col < values.cols(); ++col)
-                    values.col(col) = property.log_vals;
+                for (std::ptrdiff_t col{0ll}; col < its_values.cols(); ++col)
+                    its_values.col(col) = property.log_vals;
 
-                assert(values.cols() > 0ll);
-                for (std::ptrdiff_t row{0ll}; row < values.rows(); ++row)
-                    for (std::ptrdiff_t col{1ll}; col < values.cols(); ++col)
-                        assert(values(row, 0) == values(row, col));
+                assert(its_values.cols() > 0ll);
+                for (std::ptrdiff_t row{0ll}; row < its_values.rows(); ++row)
+                    for (std::ptrdiff_t col{1ll}; col < its_values.cols(); ++col)
+                        assert(its_values(row, 0) == its_values(row, col));
             }
 
+            const auto& values() const{return its_values;}
+            
         protected:
             const Grid_t grid;
-            GridNodeValues2D values;
+            GridNodeValues2D its_values;
         };
 
         struct Porosity
