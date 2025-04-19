@@ -28,6 +28,16 @@ namespace GPN
         {
             return static_cast<std::ptrdiff_t>(std::vector<T>::size());
         }
+
+
+        custom_vector operator*(RealType a) const
+        {
+            custom_vector out(size());
+            for(std::ptrdiff_t id{0}; id < size(); ++id)
+                out(id) = (*this)(id)*a;
+
+            return out;
+        }
     };
 
     using RealType = double;

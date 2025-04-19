@@ -57,7 +57,7 @@ namespace GPN
                     AxesGrid<CoordinateTypes::R_CylCoord>{nodes}};
 
                 return 
-                    StructuredCylinderGrid2D{z_grid,r_grid};
+                    StructuredCylinderGrid2DAxisymmetric{z_grid,r_grid};
             }
         };
     }

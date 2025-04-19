@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cassert>
 #include <type_traits>
+#include <numbers>
 
 #include <Eigen/Core>
 // #include <Eigen/Dense>
@@ -34,6 +35,8 @@ namespace GPN
             using CoordinateSystem = CoordinateSystem_t;
 
         public:
+            using FaceAreaAxes1 = Eigen::ArrayX<RealType>;
+            using FaceAreaAxes2 = Eigen::ArrayX<RealType>;
             struct Point
             {
                 RealType x, y;
@@ -84,9 +87,36 @@ namespace GPN
             CellVolumeContainer2D its_volumes;
         };
 
-        using StructuredCylinderGrid2D =
-            StructuredGrid2D<CoordinateTypes::CylinderCoordinates>;
-            
+        // take the third -- phi -- axes into account and multiply
+        // all face areas by 2PI
+        struct StructuredCylinderGrid2DAxisymmetric
+            : public StructuredGrid2D<CoordinateTypes::CylinderCoordinates>
+        {
+            StructuredCylinderGrid2DAxisymmetric(
+                const AxesGrid<Axes1> &first_coord,
+                const AxesGrid<Axes2> &second_coord)
+                : StructuredGrid2D<CoordinateTypes::CylinderCoordinates>{first_coord, second_coord},
+                  face_area_axes1{set_axes1_area()},
+                  face_area_axes2{set_axes2_area()}
+            {
+            }
+
+            const FaceAreaAxes1 face_area_axes1;
+            const FaceAreaAxes2 face_area_axes2;
+
+        protected:
+            FaceAreaAxes1 set_axes1_area() const
+            {
+                constexpr RealType TwoPI { 2.0*std::numbers::pi };
+                return FaceAreaAxes1{second_coord.volumes() * TwoPI};
+            }
+            FaceAreaAxes1 set_axes2_area() const
+            {
+                constexpr RealType TwoPI { 2.0*std::numbers::pi };
+                return FaceAreaAxes1{first_coord.volumes() * TwoPI};
+            }
+        };
+
         using StructuredXYGrid2D =
             StructuredGrid2D<CoordinateTypes::Cartesian2DCoordinates>;
 

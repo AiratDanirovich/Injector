@@ -15,7 +15,7 @@ TEST_CASE("LogsTest")
 {
 #pragma region GRID_2D
     // generate 1D grids in every direction --- points of property jumps
-    StructuredCylinderGrid2D
+    StructuredCylinderGrid2DAxisymmetric
         grid2D{
             ZGrid{
                 GridDual{

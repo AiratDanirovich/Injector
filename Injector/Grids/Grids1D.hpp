@@ -102,6 +102,12 @@ namespace GPN
 
             auto dual_size() const { return dual_nodes.size(); }
             auto mesh_size() const { return mesh_nodes.size(); }
+            
+            auto dual_coordinate(auto id) const
+            {
+                assert(id < dual_nodes.size());
+                return dual_nodes(id);
+            }
 
             GridDual(GridDual &&) noexcept = default;
             GridDual(const GridDual &) noexcept = default;
@@ -182,11 +188,6 @@ namespace GPN
                 assert(id < mesh_nodes.size());
                 return mesh_nodes(id);
             }
-            auto dual_coordinate(auto id) const
-            {
-                assert(id < dual_nodes.size());
-                return dual_nodes(id);
-            }
             // step between nodes id and id+1
             auto step(auto id) const
             {
@@ -212,7 +213,7 @@ namespace GPN
 
             const GridDualStencils dual_stencils;
             const ControlVolumesContainer control_volumes;
-            const DualNodesContainer dual_nodes;
+    //        const DualNodesContainer dual_nodes;
         protected:
             // steps between centers of control volumes
             MeshStepsContainer mesh_steps; 

@@ -58,8 +58,8 @@ namespace GPN
                 return out;
             }
 
-            /// @brief Interpolate heat conductivity (inverse factor at Laplace term)
-            /// @return Heat resistivity at cell face
+            /// @brief Interpolate heat conductivity (factor at Laplace term)
+            /// @return Heat conductivity at cell face
             static auto face_interpolator(
                 RealType xL, RealType xR, 
                 RealType xMid,
@@ -71,7 +71,7 @@ namespace GPN
                 assert(xMid != xR);
                 assert(xL != xR);
 
-                return (xMid - xL)/valL + (xR - xMid)/valR;
+                return 1.0/((xMid - xL)/valL + (xR - xMid)/valR);
             }
         };
 
@@ -97,8 +97,8 @@ namespace GPN
                 return out;
             }
             
-            /// @brief Interpolate heat conductivity (inverse factor at Laplace term)
-            /// @return Heat resistivity at cell face
+            /// @brief Interpolate heat conductivity (factor at Laplace term)
+            /// @return Heat conductivity at cell face
             static auto face_interpolator(
                 RealType xL, RealType xR, 
                 RealType xMid,
@@ -110,15 +110,17 @@ namespace GPN
                 assert(xMid != xR);
                 assert(xL != xR);
 
-                return std::log(xMid/xL)/valL + std::log(xR/xMid)/valR;
+                return 1.0/(std::log(xMid/xL)/valL + std::log(xR/xMid)/valR);
             }
+            /// @brief Interpolate const heat conductivity (factor at Laplace term)
+            /// @return Heat conductivity at cell face
             static auto const_face_interpolator(
                 RealType xL,
                 RealType xR,
                 const Eigen::ArrayX<RealType>& val)
             {
                 assert(xL != xR);
-                return std::log(xR/xL)/val;
+                return 1.0/(std::log(xR/xL)/val);
             }
         protected:
             static RealType volume(RealType x1, RealType x2)

@@ -36,6 +36,6 @@ TEST_CASE("GridTest", "GeneralCoordinate")
         auto r_grid{
             AxesGrid<CoordinateTypes::R_CylCoord>{nodes}};
 
-        StructuredCylinderGrid2D result{z_grid, r_grid};
+        StructuredCylinderGrid2DAxisymmetric result{z_grid, r_grid};
     }
 }
