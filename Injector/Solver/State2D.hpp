@@ -39,7 +39,7 @@ namespace GPN
                         grid.second_coord.size()};
                     cur_state.fill(val);
 
-                    return State2D{cur_state};
+                    return cur_state;
                 }
 
                 template <
@@ -67,6 +67,7 @@ namespace GPN
 
                 State2D(const State2D &) noexcept = default;
                 State2D(State2D &&) noexcept = default;
+                State2D() = delete;
 
                 RealType operator()(auto i, auto j) const
                 {
