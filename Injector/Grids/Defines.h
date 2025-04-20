@@ -30,12 +30,20 @@ namespace GPN
         }
 
 
-        custom_vector operator*(RealType a) const
+        custom_vector operator*(T a) const
         {
             custom_vector out(size());
             for(std::ptrdiff_t id{0}; id < size(); ++id)
                 out(id) = (*this)(id)*a;
 
+            return out;
+        }
+
+        operator Eigen::ArrayX<T>() const
+        {
+            Eigen::ArrayX<T> out(this->size());
+            for(ptrdiff_t id{0}; id < out.size(); ++id)
+                out(id) = (*this)(id);
             return out;
         }
     };

@@ -118,9 +118,18 @@ namespace GPN
                 return dual_nodes;
             }
 
-            const auto operator[](size_t id) const
+            const auto operator[](auto id) const
             {
                 return dual_nodes(id);
+            }
+
+            auto front() const
+            {
+                return mesh_nodes.front();
+            }
+            auto back() const
+            {
+                return mesh_nodes.back();
             }
 
             // steps between dual nodes
@@ -168,7 +177,7 @@ namespace GPN
             AxesGrid(const GridDual &dual_nodes) noexcept
                 : GridDual{dual_nodes}
                 , dual_stencils{dual_nodes.dual_stencils}
-                , dual_nodes{dual_nodes.dual_nodes}                                 // copy nodes of dual mesh
+            //    , dual_nodes{dual_nodes.dual_nodes}                                 // copy nodes of dual mesh
                 , control_volumes{CoordinateType_t::control_volumes(dual_nodes.dual_nodes)} // make volumes of control cells
                 , mesh_steps{CoordinateType_t::mesh_steps(dual_nodes.dual_nodes)}
             {
