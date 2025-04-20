@@ -23,6 +23,7 @@ include(Catch)
 # Create test executable
 add_catch2_test(water_test)
 add_catch2_test(grid_test)
+add_catch2_test(initialstate_test)
 add_catch2_test(logs_test)
 add_catch2_test(physicalfield_test)
 add_catch2_test(history_test)
