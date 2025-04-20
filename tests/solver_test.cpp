@@ -9,6 +9,9 @@
 #include <Injector/Grids/PhysicalField.hpp>
 
 #include <Injector/Grids/Grids2D.hpp>
+#include <Injector/Solver/State2D.hpp>
+#include <Injector/Solver/InitialCondition.hpp>
+#include <Injector/Solver/BoundaryConditions.hpp>
 #include <Injector/Grids/Factory.hpp>
 #include <Injector/Properties/Factory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
@@ -16,10 +19,21 @@
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
 
 using namespace GPN;
-// using namespace GPN::EqSolver;
 using namespace GPN::Grids;
 using namespace GPN::Logs;
-// using namespace GPN::EqSolver::SplittingMethod;
+using namespace GPN::EqSolver;
+using namespace GPN::EqSolver::State;
+using namespace GPN::EqSolver::Problem;
+using namespace GPN::EqSolver::SplittingMethod;
+
+struct BCFunctor : public GPN::BoundaryConditions::BCFunctorBase
+{
+    RealType operator()(
+        RealType x, RealType y, RealType t) const override
+    {
+        return 1.0;
+    }
+};
 
 TEST_CASE("Solver")
 {
@@ -95,10 +109,20 @@ TEST_CASE("Solver")
 
     Properties::HeatVolumetricCapacity capacity_field{
         capacity,
-        grid2D
-    };
+        grid2D};
+
+    InitialCondition
+        initial_state{
+            State2D::FillWithConst(
+                grid2D, 1.0)};
+
+    GPN::BoundaryConditions::BoundaryConditions bc{grid2D, std::make_shared<BCFunctor>(BCFunctor{})};
 
     const double tol = 1E-8;
 
-    //    Solver solver { conductivity_field, grid2D }
+    Solver solver{
+        conductivity_field, grid2D,
+        capacity_field,
+        initial_state,
+        bc, 0.0};
 }

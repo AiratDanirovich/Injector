@@ -1,4 +1,6 @@
 
+#include <memory>
+
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/CoordinateTypes.h>
 #include <Injector/Solver/BoundaryConditions.hpp>
