@@ -37,7 +37,7 @@ namespace GPN
 
             void set_vals(RealType t)
             {
-                for (size_t i = 0; i < south_vals.size(); ++i)
+                for (std::ptrdiff_t i{0}; i < south_vals.size(); ++i)
                 {
                     south_vals[i] =
                         (*functor)(south.fixed_x, grid[i], t);
@@ -77,7 +77,7 @@ namespace GPN
             // set values u(x,y) at fixed y = y_east and y = y_west
             void set_vals(RealType t)
             {
-                for (size_t i = 0; i < east_vals.size(); ++i)
+                for (std::ptrdiff_t i{0}; i < east_vals.size(); ++i)
                 {
                     east_vals[i] = (*functor)(grid[i], east.fixed_y, t);
                     west_vals[i] = (*functor)(grid[i], west.fixed_y, t);
