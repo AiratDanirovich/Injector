@@ -32,12 +32,12 @@ namespace GPN
             BCNorth north;
             const Grids::GridDual &grid;
 
-            Eigen::ArrayX<RealType> south_vals, north_vals;
+            std::vector<RealType> south_vals, north_vals;
             std::shared_ptr<BCFunctorBase> functor;
 
             void set_vals(RealType t)
             {
-                for (std::ptrdiff_t i{0}; i < south_vals.size(); ++i)
+                for (std::size_t i{0}; i < south_vals.size(); ++i)
                 {
                     south_vals[i] =
                         (*functor)(south.fixed_x, grid[i], t);
@@ -72,12 +72,12 @@ namespace GPN
             // f(x,y) for the first-type boundary condition
             std::shared_ptr<BCFunctorBase> functor;
 
-            Eigen::ArrayX<RealType> east_vals, west_vals;
+            std::vector<RealType> east_vals, west_vals;
 
             // set values u(x,y) at fixed y = y_east and y = y_west
             void set_vals(RealType t)
             {
-                for (std::ptrdiff_t i{0}; i < east_vals.size(); ++i)
+                for (std::size_t i{0}; i < east_vals.size(); ++i)
                 {
                     east_vals[i] = (*functor)(grid[i], east.fixed_y, t);
                     west_vals[i] = (*functor)(grid[i], west.fixed_y, t);
