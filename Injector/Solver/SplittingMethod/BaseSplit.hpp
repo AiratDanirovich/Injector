@@ -6,7 +6,7 @@
 #include <Eigen/SparseCore>
 
 #include <Injector/Grids/Defines.h>
-#include <Injector/Properties/Coefficients.hpp>
+//#include <Injector/Properties/Coefficients.hpp>
 
 namespace GPN
 {
@@ -24,14 +24,14 @@ namespace GPN
             {
                 BaseSplit(
                     const LaplaceFactor_t &laplace_factor,
-                    size_t serial_nodes, // number of matricies
-                    size_t matrix_size)  // nmbr of unknowns
+                    std::ptrdiff_t serial_nodes, // number of matricies
+                    std::ptrdiff_t matrix_size)  // nmbr of unknowns
                     : laplace_factor{laplace_factor},
                       its_LaplaceTerm(
                           serial_nodes,                 // number of matricies
                           Eigen::SparseMatrix<RealType>{// ctor per matrix
-                                                        ptrdiff_t(matrix_size),
-                                                        ptrdiff_t(matrix_size)})
+                                                        matrix_size,
+                                                        matrix_size})
                 {
                     for (auto &m : its_LaplaceTerm)
                         m.reserve(matrix_size * 3ull - 2ull);
