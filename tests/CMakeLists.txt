@@ -29,5 +29,6 @@ add_catch2_test(history_test)
 add_catch2_test(basesplit_test)
 add_catch2_test(splitx_test)
 add_catch2_test(splity_test)
+add_catch2_test(solver_test)
 
 
