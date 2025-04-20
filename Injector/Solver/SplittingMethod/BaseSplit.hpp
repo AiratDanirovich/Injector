@@ -40,6 +40,11 @@ namespace GPN
                 {
                     return its_LaplaceTerm[i];
                 }
+                const auto &LaplaceTerms() const
+                {
+                    return its_LaplaceTerm;
+                }
+
                 SpMatrix &LaplaceTerm(auto i)
                 {
                     return its_LaplaceTerm[i];
