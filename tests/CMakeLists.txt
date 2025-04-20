@@ -27,6 +27,6 @@ add_catch2_test(logs_test)
 add_catch2_test(physicalfield_test)
 add_catch2_test(history_test)
 add_catch2_test(basesplit_test)
-# add_catch2_test(splitx_test)
+add_catch2_test(splitx_test)
 
 

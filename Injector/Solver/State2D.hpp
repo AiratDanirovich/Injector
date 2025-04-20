@@ -26,7 +26,7 @@ namespace GPN
                 static auto FillWithZeros(
                     const StructuredGrid2D_t &grid)
                 {
-                    return FillWithConst(grid, (Real_Type)0.0);
+                    return FillWithConst(grid, (RealType)0.0);
                 }
 
                 template <typename StructuredGrid2D_t>

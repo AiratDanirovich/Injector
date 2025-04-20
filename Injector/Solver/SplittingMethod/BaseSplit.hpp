@@ -42,6 +42,9 @@ namespace GPN
                     return its_LaplaceTerm[i];
                 }
 
+                auto size() const
+                {return its_LaplaceTerm.size();}
+
             protected:
                 VectSpMatrix its_LaplaceTerm;
                 // laplace_factor only contains internal boundaries of control volumes

@@ -10,7 +10,7 @@
 #include <Eigen/SparseCore>
 
 #include <Injector/Grids/Defines.h>
-#include <Injector/Properties/Coefficients.hpp>
+// #include <Injector/Properties/Coefficients.hpp>
 #include <Injector/Solver/State2D.hpp>
 
 #include <Injector/Solver/SplittingMethod/BaseSplit.hpp>
@@ -27,6 +27,10 @@ namespace GPN
             struct SplitX
                 : public BaseSplit<LaplaceFactor_t>
             {
+                using BaseSplit<LaplaceFactor_t>::laplace_factor;
+                using BaseSplit<LaplaceFactor_t>::LaplaceTerm;
+                using BaseSplit<LaplaceFactor_t>::size;
+
                 SplitX(
                     const LaplaceFactor_t &laplace_factor,
                     const Grid_t &grid)
@@ -44,21 +48,19 @@ namespace GPN
                 void FillLaplaceTerm(const Grid_t &grid)
                 {
                     const auto &y_face_factor = laplace_factor.face_vals_axes2;
-                    assert(y_face_factor.rows() == static_cast<std::ptrdiff_t>(its_LaplaceTerm.size()));
+                    assert(y_face_factor.rows() == static_cast<std::ptrdiff_t>(size()));
                     const auto &y_face_area = grid.face_area_axes2;
                     assert(y_face_factor.rows() == y_face_area.size());
 
-                    Eigen::ArrayXX<RealType> laplace_factor;
 #pragma omp parallel for
                     // m_id --- matrix id or stripe id. Problem is solved along every stripe
                     // m_id == fixed row in 2D grid ArrayXX representation
                     for (std::ptrdiff_t m_id = 0;
-                         m_id < static_cast<std::ptrdiff_t>(
-                                    its_LaplaceTerm.size());
+                         m_id < static_cast<std::ptrdiff_t>(size());
                          ++m_id)
                     {
                         // 3-diag matrix, rows() x rows() size
-                        auto &matrix = its_LaplaceTerm[m_id];
+                        auto &matrix = LaplaceTerm(m_id);
                         std::vector<Eigen::Triplet<RealType, ptrdiff_t>> tripletList;
                         tripletList.reserve(matrix.rows() * 3ull - 2ull);
 
