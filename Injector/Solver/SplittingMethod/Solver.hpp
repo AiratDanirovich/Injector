@@ -69,7 +69,7 @@ namespace GPN
                     RealType initial_moment = 0.0)
                     : splitX{laplace_factor, grid},
                       splitY{laplace_factor, grid},
-                      time_factor{time_factor},
+                      time_factor{time_factor, grid},
                       grid{grid},
                       state{initial_state}, // init with initial condition
                       bc{bc},
