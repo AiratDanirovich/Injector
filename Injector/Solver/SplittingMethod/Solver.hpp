@@ -21,20 +21,19 @@ namespace GPN
     {
         namespace SplittingMethod
         {
-            template <typename Capacity_t>
             struct TemporalTerm
             {
-                template <typename Grid_t>
+                template <typename Capacity_t, typename Grid_t>
                 TemporalTerm(
-                    const Capacity_t& factor,
+                    const Capacity_t &factor,
                     const Grid_t &grid)
-                    : factor{grid.volumes()*factor.values()} // volumes are taken into account
+                    : factor{grid.volumes() * factor.values()} // volumes are taken into account
                 {
                 }
 
                 auto Divide(RealType tau) const
                 {
-                    return (static_cast<RealType>(1.0) / tau) * factor;
+                    return  (static_cast<RealType>(1.0) / tau) * factor;
                 }
 
             protected:
@@ -44,8 +43,7 @@ namespace GPN
 
             template <
                 typename Grid_t,
-                typename Capacity_t,
-                typename LaplaceFactor_t>
+                typename Capacity_t>
             struct Solver
             {
                 using Map1D =
@@ -60,15 +58,17 @@ namespace GPN
 
                 using RHS_t = Eigen::VectorX<RealType>;
 
+                template <
+                    typename LaplaceFactor_t>
                 Solver(
+                    const LaplaceFactor_t &laplace_factor,
                     const Grid_t &grid,
                     const Capacity_t &time_factor,
-                    const LaplaceFactor_t &laplace_factor,
-                    const State2D_t &initial_state,
-                    const BC_t &bc,
-                    Realtype initial_moment = 0.0)
-                    : splitX{properties, grid},
-                      splitY{properties, grid},
+                    const State::State2D &initial_state,
+                    const BoundaryConditions::BoundaryConditions &bc,
+                    RealType initial_moment = 0.0)
+                    : splitX{laplace_factor, grid},
+                      splitY{laplace_factor, grid},
                       time_factor{time_factor},
                       grid{grid},
                       state{initial_state}, // init with initial condition
@@ -97,10 +97,10 @@ namespace GPN
                     // tau_factor multiplies Delta_u at different time moments,
                     // i.e., t and t+tau
                     Eigen::ArrayXX<RealType> tau_factor{
-                        factor.Divide(tau)};
+                        time_factor.Divide(tau)};
 
                     // solve a set of 1D problems in y-direction, for various x-coords
-                    bc.set_vals(time_moments.back() + tau/2.0);
+                    bc.set_vals(time_moments.back() + tau / 2.0);
 
                     solve_split_x(tau_factor.data());
 
@@ -194,9 +194,9 @@ namespace GPN
                                 grid.first_coord.size()};
 
                         const auto source = 0.0;
-                            // Map1D{
-                            //     properties->source_vol_f.data() + grid.first_coord.size() * j,
-                            //     (ptrdiff_t)grid.first_coord.size()};
+                        // Map1D{
+                        //     properties->source_vol_f.data() + grid.first_coord.size() * j,
+                        //     (ptrdiff_t)grid.first_coord.size()};
 
                         // right handside of Au = b problem
                         RHS_t rhs = (data * time_factor + source).matrix();
@@ -212,7 +212,7 @@ namespace GPN
                 SplitX splitX;
                 SplitY splitY;
                 BoundaryConditions::BoundaryConditions bc;
-                TemporalTerm<Capacity_t> time_factor;
+                TemporalTerm time_factor;
                 const Grid_t &grid;
                 State::State2D state;
                 std::vector<State::State2D> states;
