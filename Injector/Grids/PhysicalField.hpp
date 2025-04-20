@@ -13,13 +13,6 @@
 
 namespace GPN
 {
-    namespace Properties
-    {
-        using GridNodeValues2D = Eigen::ArrayXX<RealType>;
-        using FaceAxes1VauesContainer = GridNodeValues2D;
-        using FaceAxes2VauesContainer = GridNodeValues2D;
-    } // Properties
-
     namespace Logs
     {
         template <>
@@ -48,7 +41,7 @@ namespace GPN
                 // if dual_size() == 2 --- no internal faces
                 assert(grid.dual_size() >= 2ll);
 
-                Properties::FaceAxes2VauesContainer out(log.grid.mesh_size(), grid.dual_size() - 2ll);
+                FaceValuesContainer out(log.grid.mesh_size(), grid.dual_size() - 2ll);
 
                 for (auto id{0ll}; id < out.cols(); ++id)
                     out.col(id) = Axes::const_face_interpolator(
@@ -146,9 +139,9 @@ namespace GPN
             }
 
             // interpolated values at faces normal to Axes1
-            FaceAxes1VauesContainer face_vals_axes1;
+            FaceValuesContainer face_vals_axes1;
             // interpolated values at faces normal to Axes2
-            FaceAxes2VauesContainer face_vals_axes2;
+            FaceValuesContainer face_vals_axes2;
         };
 
         struct HeatConductivity

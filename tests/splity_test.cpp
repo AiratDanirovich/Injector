@@ -11,14 +11,14 @@
 #include <Injector/Grids/Grids2D.hpp>
 #include <Injector/Grids/Factory.hpp>
 #include <Injector/Properties/Factory.hpp>
-#include <Injector/Solver/SplittingMethod/SplitX.hpp>
+#include <Injector/Solver/SplittingMethod/SplitY.hpp>
 
 using namespace GPN;
 using namespace GPN::EqSolver;
 using namespace GPN::Grids;
 using namespace GPN::EqSolver::SplittingMethod;
 
-TEST_CASE("Solver", "splitX")
+TEST_CASE("Solver", "splitY")
 {
   const double tol = 1E-8;
   #pragma region GRID_2D
@@ -48,5 +48,5 @@ TEST_CASE("Solver", "splitX")
       grid2D};
 #pragma endregion
 
-SplitX splitx{conductivity_field, grid2D};
+SplitY splity{conductivity_field, grid2D};
 }

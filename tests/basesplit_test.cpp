@@ -44,7 +44,7 @@ TEST_CASE("BaseSplitTest")
 #pragma endregion
 #pragma region BASE-SPLIT
     BaseSplit base_split{
-        conductivity_field,
+        conductivity_field.face_vals_axes2,
         grid2D.first_coord.size(),
         grid2D.second_coord.size()};
 #pragma endregion

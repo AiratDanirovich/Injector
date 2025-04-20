@@ -23,31 +23,28 @@ namespace GPN
         {
             /// @brief The split is along second direction (y),
             /// the 1D problems are solved along the first direction (x)
-            template <typename Grid_t, typename LaplaceFactor_t>
             struct SplitY
-                : public BaseSplit<LaplaceFactor_t>
+                : public BaseSplit
             {
-                using BaseSplit<LaplaceFactor_t>::laplace_factor;
-                using BaseSplit<LaplaceFactor_t>::LaplaceTerm;
-                using BaseSplit<LaplaceFactor_t>::size;
-
+                template <typename Grid_t, typename LaplaceFactor_t>
                 SplitY(
                     const LaplaceFactor_t &laplace_factor,
                     const Grid_t &grid)
-                    : BaseSplit<LaplaceFactor_t>{
-                          laplace_factor,
+                    : BaseSplit{
+                          laplace_factor.face_vals_axes1,
                           grid.second_coord.size(), // nmbr of matricies
                           grid.first_coord.size()}  // nmbr of unknowns
                 {
-                    assert(laplace_factor.cols() == grid.second_coord.mesh_size());
-                    assert(laplace_factor.rows() == grid.first_coord.dual_size() - 2ll);
+                    assert(BaseSplit::laplace_factor.cols() == grid.second_coord.mesh_size());
+                    assert(BaseSplit::laplace_factor.rows() == grid.first_coord.dual_size() - 2ll);
                     FillLaplaceTerm(grid);
                 }
 
             protected:
+                template <typename Grid_t>
                 void FillLaplaceTerm(const Grid_t &grid)
                 {
-                    const auto &x_face_factor = laplace_factor.face_vals_axes1;
+                    const auto &x_face_factor = laplace_factor;
                     assert(x_face_factor.cols() == static_cast<std::ptrdiff_t>(size()));
                     const auto &x_face_area = grid.face_area_axes1;
                     assert(x_face_factor.cols() == x_face_area.size());

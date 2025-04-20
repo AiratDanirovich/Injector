@@ -60,6 +60,9 @@ namespace GPN
 
     using CellVolumeContainer2D = Eigen::ArrayXX<RealType>;
     using FluxComponentContainer = Eigen::ArrayXX<RealType>;
+    
+    using GridNodeValues2D = Eigen::ArrayXX<RealType>;
+    using FaceValuesContainer = GridNodeValues2D;
 
     struct Directions{
         enum {x1, x2, size};

@@ -19,11 +19,10 @@ namespace GPN
             // container of such sparse matricies
             using VectSpMatrix = std::vector<SpMatrix>;
 
-            template <typename LaplaceFactor_t>
             struct BaseSplit
             {
                 BaseSplit(
-                    const LaplaceFactor_t &laplace_factor,
+                    const FaceValuesContainer &laplace_factor,
                     std::ptrdiff_t serial_nodes, // number of matricies
                     std::ptrdiff_t matrix_size)  // nmbr of unknowns
                     : laplace_factor{laplace_factor},
@@ -37,7 +36,11 @@ namespace GPN
                         m.reserve(matrix_size * 3ull - 2ull);
                 }
 
-                const SpMatrix &LaplaceTerm(size_t i) const
+                const SpMatrix &LaplaceTerm(auto i) const
+                {
+                    return its_LaplaceTerm[i];
+                }
+                SpMatrix &LaplaceTerm(auto i)
                 {
                     return its_LaplaceTerm[i];
                 }
@@ -48,7 +51,7 @@ namespace GPN
             protected:
                 VectSpMatrix its_LaplaceTerm;
                 // laplace_factor only contains internal boundaries of control volumes
-                const LaplaceFactor_t &laplace_factor;
+                const FaceValuesContainer &laplace_factor;
             };
         } // SplittingMethod
     } // EqSolver
