@@ -331,7 +331,7 @@ namespace GPN
                 const StepPropertyGrid &log)
             {
                 const auto &grid{log.grid};
-                // if dual_size() == 0 --- no internal faces
+                // if dual_size() == 2 --- no internal faces, only single cell
                 assert(grid.dual_size() > 2ll);
 
                 InternalFaceValues out(log.grid.dual_size() - 2ll);
