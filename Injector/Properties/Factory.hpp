@@ -38,6 +38,30 @@ namespace GPN
             }
             
             template<typename Container_t>
+            static auto generate_solid_density_StepProperty(
+                const Container_t& dual_stencils)
+            {
+                auto size{dual_stencils.size()-1};
+                std::vector<RealType> vals(size);
+
+                for(auto id{size-size}; id < size; ++id)
+                    vals[id] = (id % 2 == 1) ? 800.0 : 1000.0;
+                return vals;
+            }
+            
+            template<typename Container_t>
+            static auto generate_solid_specific_heatcapacity_StepProperty(
+                const Container_t& dual_stencils)
+            {
+                auto size{dual_stencils.size()-1};
+                std::vector<RealType> vals(size);
+
+                for(auto id{size-size}; id < size; ++id)
+                    vals[id] = (id % 2 == 1) ? 0.7 : 0.9;
+                return vals;
+            }
+            
+            template<typename Container_t>
             static auto generate_is_permeable_StepProperty(
                 const Container_t& dual_stencils)
             {
