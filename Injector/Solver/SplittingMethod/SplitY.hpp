@@ -61,7 +61,7 @@ namespace GPN
                             x_face_factor(0, m_id) * x_face_area(m_id));
                         tripletList.emplace_back(
                             0, 1,
-                            -x_face_factor(1, m_id) * x_face_area(m_id));
+                            -x_face_factor(0, m_id) * x_face_area(m_id));
                         for (std::ptrdiff_t row{1ll}; row < std::ptrdiff_t(matrix.rows()) - 1ll; ++row)
                         {
                             tripletList.emplace_back(

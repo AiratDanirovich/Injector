@@ -66,7 +66,7 @@ namespace GPN
                             y_face_factor(m_id, 0) * y_face_area(m_id));
                         tripletList.emplace_back(
                             0, 1,
-                            -y_face_factor(m_id, 1) * y_face_area(m_id));
+                            -y_face_factor(m_id, 0) * y_face_area(m_id));
                         for (ptrdiff_t row = 1; row < ptrdiff_t(matrix.rows()) - 1; ++row)
                         {
                             tripletList.emplace_back(
