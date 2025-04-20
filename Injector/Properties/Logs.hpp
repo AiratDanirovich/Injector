@@ -254,12 +254,10 @@ namespace GPN
               private AssertNonNegative
         {
             SolidDensity(
-                const StepPropertyGrid &density,
-                const IsPermeable &is_permeable)
+                const StepPropertyGrid &density)
                 : StepPropertyGrid{density},
                   AssertNonNegative{density}
             {
-                assert(density.size() == is_permeable.size());
             }
         };
         struct SolidSpecificHeatCapacity
@@ -267,12 +265,10 @@ namespace GPN
               private AssertNonNegative
         {
             SolidSpecificHeatCapacity(
-                const StepPropertyGrid &capacity,
-                const IsPermeable &is_permeable)
+                const StepPropertyGrid &capacity)
                 : StepPropertyGrid{capacity},
                   AssertNonNegative{capacity}
             {
-                assert(capacity.size() == is_permeable.size());
             }
         };
 
@@ -391,7 +387,6 @@ namespace GPN
         //     const Grid_t &grid)
         // {
         //     assert(grid.dual_stencils.size() == adata.size());
-
         //     return Property_t{
         //         Logs::StepProperty{
         //             adata},
