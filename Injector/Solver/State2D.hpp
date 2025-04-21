@@ -24,14 +24,14 @@ namespace GPN
 
                 template <typename StructuredGrid2D_t>
                 static auto FillWithZeros(
-                    const StructuredGrid2D_t &grid)
+                    const StructuredGrid2D_t& grid)
                 {
                     return FillWithConst(grid, (RealType)0.0);
                 }
 
                 template <typename StructuredGrid2D_t>
                 static auto FillWithConst(
-                    const StructuredGrid2D_t &grid,
+                    const StructuredGrid2D_t& grid,
                     RealType val)
                 {
                     State_Container cur_state{
@@ -78,6 +78,17 @@ namespace GPN
                 {
                     return cur_state(i, j);
                 }
+
+                auto rows() const 
+                {
+                    return cur_state.rows();
+                }
+                auto cols() const
+                {
+                    return cur_state.cols();
+                }
+
+                operator const State_Container&() const {return cur_state;}
 
             public:
                 State_Container cur_state;
