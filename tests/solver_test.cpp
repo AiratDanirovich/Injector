@@ -37,17 +37,14 @@ struct BCFunctor : public GPN::BoundaryConditions::BCFunctorBase
 
 TEST_CASE("Solver")
 {
-    auto z_grid_stencils{Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 5)};
-    auto z_grid{ZGrid{GridDual{z_grid_stencils}}};
 #pragma region GRID_2D
     // generate 1D grids in every direction --- points of property jumps
-    StructuredCylinderGrid2DAxisymmetric
-        grid2D{z_grid,
-               RGrid{
-                   GridDual{
-                       GridDualStencils{
-                           Grids::Factory::
-                               generate_dual_grid_stencils_uniform(0, 1, 11)}}}};
+    const cptr<StructuredCylinderGrid2DAxisymmetric> grid2D{
+        std::make_shared<StructuredCylinderGrid2DAxisymmetric>(
+            Grids::Factory::create_cylinder_grid_2D(
+                Box{Segment{0, 1}, Segment{0, 1}}, 5, 11))};
+    const auto &z_grid_stencils{grid2D->first_coord.dual_stencils};
+    const auto &z_grid{grid2D->first_coord};
 #pragma endregion
 #pragma region HEAT-CONDUCTIVITY
     // generate heat conductivity field
@@ -56,8 +53,8 @@ TEST_CASE("Solver")
             Logs::StepPropertyGrid{
                 Logs::StepProperty{
                     Logs::Factory::generate_conductivity_StepProperty(
-                        grid2D.first_coord.dual_stencils)},
-                grid2D.first_coord}},
+                        grid2D->first_coord.dual_stencils)},
+                grid2D->first_coord}},
         grid2D};
 #pragma endregion
 
@@ -114,9 +111,12 @@ TEST_CASE("Solver")
     InitialCondition
         initial_state{
             State2D::FillWithConst(
-                grid2D, 1.0)};
+                *grid2D, 1.0)};
 
-    GPN::BoundaryConditions::BoundaryConditions bc{grid2D, std::make_shared<BCFunctor>(BCFunctor{})};
+    GPN::BoundaryConditions::BoundaryConditions
+        bc{
+            *grid2D,
+            std::make_shared<BCFunctor>(BCFunctor{})};
 
     const double tol = 1E-8;
 

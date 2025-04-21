@@ -18,18 +18,10 @@ TEST_CASE("BaseSplitTest")
 {
 #pragma region GRID_2D
     // generate 1D grids in every direction --- points of property jumps
-    StructuredCylinderGrid2DAxisymmetric
-        grid2D{
-            ZGrid{
-                GridDual{
-                    GridDualStencils{
-                        Grids::Factory::
-                            generate_dual_grid_stencils_uniform(0, 1, 5)}}},
-            RGrid{
-                GridDual{
-                    GridDualStencils{
-                        Grids::Factory::
-                            generate_dual_grid_stencils_uniform(0, 1, 11)}}}};
+    const cptr<StructuredCylinderGrid2DAxisymmetric> grid2D{
+        std::make_shared<StructuredCylinderGrid2DAxisymmetric>(
+            Grids::Factory::create_cylinder_grid_2D(
+                Box{Segment{0, 1}, Segment{0, 1}}, 5, 11))};
 #pragma endregion
 #pragma region HEAT-CONDUCTIVITY
     // generate heat conductivity field
@@ -38,14 +30,14 @@ TEST_CASE("BaseSplitTest")
             Logs::StepPropertyGrid{
                 Logs::StepProperty{
                     Logs::Factory::generate_conductivity_StepProperty(
-                        grid2D.first_coord.dual_stencils)},
-                grid2D.first_coord}},
+                        grid2D->first_coord.dual_stencils)},
+                grid2D->first_coord}},
         grid2D};
 #pragma endregion
 #pragma region BASE-SPLIT
     BaseSplit base_split{
         conductivity_field.face_vals_axes2,
-        grid2D.first_coord.size(),
-        grid2D.second_coord.size()};
+        grid2D->first_coord.size(),
+        grid2D->second_coord.size()};
 #pragma endregion
 }

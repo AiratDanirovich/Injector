@@ -14,7 +14,6 @@ using namespace GPN;
 using namespace GPN::Grids;
 using namespace GPN::BoundaryConditions;
 
-
 struct BCFunctor : public GPN::BoundaryConditions::BCFunctorBase
 {
     RealType operator()(

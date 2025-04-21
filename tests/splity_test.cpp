@@ -2,6 +2,7 @@
 #include <memory>
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/CoordinateTypes.h>
@@ -13,6 +14,9 @@
 #include <Injector/Properties/Factory.hpp>
 #include <Injector/Solver/SplittingMethod/SplitY.hpp>
 
+using namespace Catch;
+using namespace Catch::Matchers;
+
 using namespace GPN;
 using namespace GPN::EqSolver;
 using namespace GPN::Grids;
@@ -22,18 +26,10 @@ TEST_CASE("Solver", "splitY")
 {
 #pragma region GRID_2D
     // generate 1D grids in every direction --- points of property jumps
-    StructuredCylinderGrid2DAxisymmetric
-        grid2D{
-            ZGrid{
-                GridDual{
-                    GridDualStencils{
-                        Grids::Factory::
-                            generate_dual_grid_stencils_uniform(0, 1, 5)}}},
-            RGrid{
-                GridDual{
-                    GridDualStencils{
-                        Grids::Factory::
-                            generate_dual_grid_stencils_uniform(0, 1, 11)}}}};
+    const cptr<StructuredCylinderGrid2DAxisymmetric> grid2D{
+        std::make_shared<StructuredCylinderGrid2DAxisymmetric>(
+            Grids::Factory::create_cylinder_grid_2D(
+                Box{Segment{0, 1}, Segment{0, 1}}, 5, 11))};
 #pragma endregion
 #pragma region HEAT-CONDUCTIVITY
     // generate heat conductivity field
@@ -42,8 +38,8 @@ TEST_CASE("Solver", "splitY")
             Logs::StepPropertyGrid{
                 Logs::StepProperty{
                     Logs::Factory::generate_conductivity_StepProperty(
-                        grid2D.first_coord.dual_stencils)},
-                grid2D.first_coord}},
+                        grid2D->first_coord.dual_stencils)},
+                grid2D->first_coord}},
         grid2D};
 #pragma endregion
 
@@ -55,16 +51,20 @@ TEST_CASE("Solver", "splitY")
         REQUIRE(m.rows() == m.cols());
         {
             auto col{0ll};
-            CHECK(m.coeff(col, col) + m.coeff(col, col + 1ll) == 0.0);
+            INFO("" << "col: " << col << ", c: " << m.coeff(col, col) << ", l: " << 0.0 << ", r: " << m.coeff(col, col + 1ll));
+            CHECK_THAT(-m.coeff(col, col), WithinRel(m.coeff(col, col + 1ll), tol));
         }
         for (auto col{1ll}; col < m.cols() - 1; ++col)
         {
-            CHECK(m.coeff(col, col - 1ll) + m.coeff(col, col) + m.coeff(col, col + 1ll) == 0.0);
+            INFO("" << "col: " << col << ", c: " << m.coeff(col, col) << ", l: " << m.coeff(col, col - 1ll) << ", r: " << m.coeff(col, col + 1ll));
+            CHECK_THAT(-m.coeff(col, col), WithinRel(m.coeff(col, col - 1ll) + m.coeff(col, col + 1ll), tol));
+            INFO("" << "col: " << col << ", c: " << m.coeff(col, col));
             CHECK(m.coeff(col, col) > tol);
         }
         {
             auto col{m.cols() - 1ll};
-            CHECK(m.coeff(col, col - 1ll) + m.coeff(col, col) == 0.0);
+            INFO("" << "col: " << col << ", c: " << m.coeff(col, col) << ", l: " << m.coeff(col, col - 1ll) << ", r: " << 0.0);
+            CHECK_THAT(-m.coeff(col, col), WithinRel(m.coeff(col, col - 1ll), tol));
         }
     }
 }

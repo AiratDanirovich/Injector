@@ -24,6 +24,7 @@ include(Catch)
 add_catch2_test(water_test)
 add_catch2_test(grid_test)
 add_catch2_test(initialstate_test)
+add_catch2_test(boundaryconditions_test)
 add_catch2_test(logs_test)
 add_catch2_test(physicalfield_test)
 add_catch2_test(history_test)
@@ -31,5 +32,8 @@ add_catch2_test(basesplit_test)
 add_catch2_test(splitx_test)
 add_catch2_test(splity_test)
 add_catch2_test(solver_test)
+add_catch2_test(splitting_solver_constvalProblem)
+
+
 
 
