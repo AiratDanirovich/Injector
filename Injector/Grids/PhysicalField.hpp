@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <type_traits>
 #include <omp.h>
 
@@ -68,9 +69,9 @@ namespace GPN
             Field(
                 // propery is along the FIRST Axes1 == Z
                 const Logs::StepPropertyGrid &property,
-                const Grid_t &grid) noexcept
+                const cptr<Grid_t> grid) noexcept
                 : grid{grid},
-                  its_values(grid.first_coord.size(), grid.second_coord.size())
+                  its_values(grid->first_coord.size(), grid->second_coord.size())
             {
                 assert(property.log_vals.size() == its_values.rows());
                 // extrapolate as const value in the Axes2 direction,
@@ -88,7 +89,7 @@ namespace GPN
             const auto& values() const{return its_values;}
             
         protected:
-            const Grid_t grid;
+            const cptr<Grid_t> grid;
             GridNodeValues2D its_values;
         };
 
@@ -100,7 +101,11 @@ namespace GPN
         struct Permeability
             : public Field<Grids::StructuredCylinderGrid2DAxisymmetric>
         {
-            using Field<Grids::StructuredCylinderGrid2DAxisymmetric>::Field;
+            Permeability(const Logs::StepPropertyGrid &property,
+                const cptr<Grids::StructuredCylinderGrid2DAxisymmetric> grid) : Field{property, grid}
+                {}
+
+        //    using Field<Grids::StructuredCylinderGrid2DAxisymmetric>::Field;
         };
         struct HeatVolumetricCapacity
             : public Field<Grids::StructuredCylinderGrid2DAxisymmetric>
@@ -113,16 +118,16 @@ namespace GPN
         {
             FaceInterpolatedField(
                 const Logs::FaceInterpolatedProperty<typename Grid_t::Axes1> &property,
-                const Grid_t &grid)
+                const cptr<Grid_t> grid)
                 : Field<Grid_t>{property, grid},
                   face_vals_axes1(
                       property.face_values.size(),
-                      grid.second_coord.size()),
+                      grid->second_coord.size()),
 #pragma region AXES2-FACEVALUES
                   face_vals_axes2{
                       Logs::FaceInterpolator<
                           typename Grid_t::Axes2>::interpolate(property,
-                                                               grid.second_coord)}
+                                                               grid->second_coord)}
 #pragma endregion
             {
 #pragma region AXES1-FACEVALUES

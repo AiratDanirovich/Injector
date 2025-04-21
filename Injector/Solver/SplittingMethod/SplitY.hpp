@@ -29,15 +29,15 @@ namespace GPN
                 template <typename Grid_t, typename LaplaceFactor_t>
                 SplitY(
                     const LaplaceFactor_t &laplace_factor,
-                    const Grid_t &grid)
+                    const cptr<Grid_t> &grid)
                     : BaseSplit{
                           laplace_factor.face_vals_axes1,
-                          grid.second_coord.size(), // nmbr of matricies
-                          grid.first_coord.size()}  // nmbr of unknowns
+                          grid->second_coord.size(), // nmbr of matricies
+                          grid->first_coord.size()}  // nmbr of unknowns
                 {
-                    assert(BaseSplit::laplace_factor.cols() == grid.second_coord.mesh_size());
-                    assert(BaseSplit::laplace_factor.rows() == grid.first_coord.dual_size() - 2ll);
-                    FillLaplaceTerm(grid);
+                    assert(BaseSplit::laplace_factor.cols() == grid->second_coord.mesh_size());
+                    assert(BaseSplit::laplace_factor.rows() == grid->first_coord.dual_size() - 2ll);
+                    FillLaplaceTerm(*grid);
                 }
 
             protected:
