@@ -16,12 +16,12 @@ namespace GPN
                 const BCSouth &south,
                 const BCNorth &north,
                 const Grids::GridDual &grid,
-                std::shared_ptr<BCFunctorBase> functor,
+                std::shared_ptr<const BCFunctorBase> functor,
                 RealType t = 0.0)
                 : south{south}, north{north},
                   grid{grid},
-                  south_vals(grid.mesh_size(), 0.0),
-                  north_vals(grid.mesh_size(), 0.0),
+                  south_vals(grid.mesh_size()),
+                  north_vals(grid.mesh_size()),
                   functor{functor}
             {
                 assert(south_vals.size() == north_vals.size());
@@ -32,17 +32,17 @@ namespace GPN
             BCNorth north;
             const Grids::GridDual &grid;
 
-            std::vector<RealType> south_vals, north_vals;
-            std::shared_ptr<BCFunctorBase> functor;
+            Eigen::ArrayX<RealType> south_vals, north_vals;
+            std::shared_ptr<const BCFunctorBase> functor;
 
             void set_vals(RealType t)
             {
-                for (std::size_t i{0}; i < south_vals.size(); ++i)
+                for (std::ptrdiff_t i{0ull}; i < south_vals.size(); ++i)
                 {
                     south_vals[i] =
-                        (*functor)(south.fixed_x, grid[i], t);
+                        (*functor)(south.fixed_x, grid.coordinate(i), t);
                     north_vals[i] =
-                        (*functor)(north.fixed_x, grid[i], t);
+                        (*functor)(north.fixed_x, grid.coordinate(i), t);
                 }
             }
         };
@@ -52,7 +52,7 @@ namespace GPN
             BCEastWest(const BCEast &east,
                        const BCWest &west,
                        const Grids::GridDual &grid,
-                       std::shared_ptr<BCFunctorBase> functor,
+                       std::shared_ptr<const BCFunctorBase> functor,
                        RealType t = 0.0)
                 : east{east},
                   west{west},
@@ -70,17 +70,17 @@ namespace GPN
             const Grids::GridDual &grid;
 
             // f(x,y) for the first-type boundary condition
-            std::shared_ptr<BCFunctorBase> functor;
+            std::shared_ptr<const BCFunctorBase> functor;
 
-            std::vector<RealType> east_vals, west_vals;
+            Eigen::ArrayX<RealType> east_vals, west_vals;
 
             // set values u(x,y) at fixed y = y_east and y = y_west
             void set_vals(RealType t)
             {
-                for (std::size_t i{0}; i < east_vals.size(); ++i)
+                for (std::ptrdiff_t i{0ull}; i < east_vals.size(); ++i)
                 {
-                    east_vals[i] = (*functor)(grid[i], east.fixed_y, t);
-                    west_vals[i] = (*functor)(grid[i], west.fixed_y, t);
+                    east_vals[i] = (*functor)(grid.coordinate(i), east.fixed_y, t);
+                    west_vals[i] = (*functor)(grid.coordinate(i), west.fixed_y, t);
                 }
             }
         };
@@ -90,7 +90,7 @@ namespace GPN
             template <typename Grid_t>
             BoundaryConditions(
                 const Grid_t &grid,
-                std::shared_ptr<BCFunctorBase> functor)
+                std::shared_ptr<const BCFunctorBase> functor)
                 : south_north{
                       BCSouth{grid.first_coord.front()},
                       BCNorth{grid.first_coord.back()},

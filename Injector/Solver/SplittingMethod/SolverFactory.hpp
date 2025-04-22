@@ -52,69 +52,32 @@ namespace GPN
                         std::make_shared<StructuredCylinderGrid2DAxisymmetric>(
                             Grids::Factory::create_cylinder_grid_2D(
                                 Box{Segment{0, 1}, Segment{0, 1}}, 301, 501))};
-                    const auto& z_grid_stencils{grid2D->first_coord.dual_stencils};
-                    const auto& z_grid{grid2D->first_coord};
+                    const auto &z_grid_stencils{grid2D->first_coord.dual_stencils};
+                    const auto &z_grid{grid2D->first_coord};
 #pragma endregion
 #pragma region HEAT-CONDUCTIVITY
                     // generate heat conductivity field
                     Properties::HeatConductivity conductivity_field{
-                        Logs::HeatConductivity{
-                            Logs::StepPropertyGrid{
-                                Logs::StepProperty{
-                                    Logs::Factory::generate_conductivity_StepProperty(
-                                        grid2D->first_coord.dual_stencils)},
-                                grid2D->first_coord}},
-                        grid2D};
+                        Properties::Factory::generate_heatconductivity_Property(
+                            Logs::Factory::generate_conductivity_StepProperty(
+                                grid2D->first_coord.dual_stencils),
+                            grid2D)};
 #pragma endregion
-                    auto solid_density_stencils{
-                        Logs::Factory::generate_solid_density_StepProperty(
-                            z_grid_stencils)};
-                    auto solid_density{
-                        SolidDensity{
-                            StepPropertyGrid{
-                                StepProperty{
-                                    solid_density_stencils},
-                                z_grid}}};
-
-                    auto solid_specific_heatcapacity_stencils{
-                        Logs::Factory::generate_solid_specific_heatcapacity_StepProperty(
-                            z_grid_stencils)};
-                    auto solid_specific_heatcapacity{
-                        SolidSpecificHeatCapacity{
-                            StepPropertyGrid{
-                                StepProperty{
-                                    solid_specific_heatcapacity_stencils},
-                                z_grid}}};
-
-                    auto solid_volumetric_heatcapacity{
-                        SolidVolumetricHeatCapacity{
-                            solid_density, solid_specific_heatcapacity}};
-
+#pragma region WATER
                     auto water{Phases::FluidFactory::create_water(300, 10)};
-                    auto is_permeable{
-                        IsPermeable{
-                            StepPropertyGrid{
-                                StepProperty{
-                                    Logs::Factory::generate_is_permeable_StepProperty(z_grid_stencils)},
-                                z_grid}}};
-
-                    auto porosity_stencils{Logs::Factory::generate_porosity_StepProperty(z_grid_stencils)};
-                    auto porosity{
-                        Porosity{
-                            StepPropertyGrid{
-                                StepProperty{
-                                    porosity_stencils} * // guarantee that porosity is zero in rocks
-                                    is_permeable,
-                                z_grid},
-                            is_permeable}};
-
-                    auto capacity{
-                        Logs::HeatVolumetricCapacity{
-                            porosity, solid_volumetric_heatcapacity, water}};
-
+#pragma endregion
+#pragma region HEAT-VOLUMETRIC-CAPACITY
                     Properties::HeatVolumetricCapacity capacity_field{
-                        capacity,
-                        grid2D};
+                        Properties::Factory::generate_volumetric_heatcapacity_Property(
+                            Logs::Factory::generate_is_permeable_StepProperty(z_grid_stencils),
+                            Logs::Factory::generate_porosity_StepProperty(z_grid_stencils),
+                            Logs::Factory::generate_solid_density_StepProperty(
+                                z_grid_stencils),
+                            Logs::Factory::generate_solid_specific_heatcapacity_StepProperty(
+                                z_grid_stencils),
+                            water,
+                            grid2D)};
+#pragma endregion
 
                     InitialCondition
                         initial_state{

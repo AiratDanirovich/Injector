@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <Eigen/Core>
 // #include <Eigen/Dense>
 
@@ -24,14 +25,14 @@ namespace GPN
 
                 template <typename StructuredGrid2D_t>
                 static auto FillWithZeros(
-                    const StructuredGrid2D_t& grid)
+                    const StructuredGrid2D_t &grid)
                 {
                     return FillWithConst(grid, (RealType)0.0);
                 }
 
                 template <typename StructuredGrid2D_t>
                 static auto FillWithConst(
-                    const StructuredGrid2D_t& grid,
+                    const StructuredGrid2D_t &grid,
                     RealType val)
                 {
                     State_Container cur_state{
@@ -57,9 +58,16 @@ namespace GPN
                         for (std::ptrdiff_t i = 0; i < cur_state.innerSize(); ++i)
                         {
                             cur_state(i, j) = f(
-                                grid.first_coord[i],
-                                grid.second_coord[j],
+                                grid.first_coord.coordinate(i),
+                                grid.second_coord.coordinate(j),
                                 initial_moment);
+                        }
+
+                    for (std::ptrdiff_t j = 0; j < cur_state.outerSize(); ++j)
+                        for (std::ptrdiff_t i = 0; i < cur_state.innerSize(); ++i)
+                        {
+                            assert(!std::isinf(cur_state(i, j)));
+                            assert(!std::isnan(cur_state(i, j)));
                         }
 
                     return State2D{cur_state};
@@ -79,7 +87,7 @@ namespace GPN
                     return cur_state(i, j);
                 }
 
-                auto rows() const 
+                auto rows() const
                 {
                     return cur_state.rows();
                 }
@@ -88,7 +96,7 @@ namespace GPN
                     return cur_state.cols();
                 }
 
-                operator const State_Container&() const {return cur_state;}
+                operator const State_Container &() const { return cur_state; }
 
             public:
                 State_Container cur_state;

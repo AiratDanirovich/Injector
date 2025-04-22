@@ -27,14 +27,21 @@ namespace GPN
                 template <typename Capacity_t, typename Grid_t>
                 TemporalTerm(
                     const Capacity_t &factor,
-                    const Grid_t& grid)
+                    const Grid_t &grid)
                     : factor{grid.volumes() * factor.values()} // volumes are taken into account
                 {
+                    for (std::ptrdiff_t j = 0; j < this->factor.cols(); ++j)
+                        for (std::ptrdiff_t i = 0; i < this->factor.rows(); ++i)
+                        {
+                            assert(!std::isinf(this->factor(i, j)));
+                            assert(!std::isnan(this->factor(i, j)));
+                        }
                 }
 
                 auto Divide(RealType tau) const
                 {
-                    return  (static_cast<RealType>(1.0) / tau) * factor;
+                    assert(tau != 0.0);
+                    return (static_cast<RealType>(1.0) / tau) * factor;
                 }
 
             protected:
@@ -148,7 +155,7 @@ namespace GPN
                     // to be provided to Eigen::Map
                     Eigen::OuterStride<Eigen::Dynamic> stride{stride_size};
 
-#pragma omp parallel for num_threads(16) schedule(dynamic)
+#pragma omp parallel for // num_threads(16) schedule(dynamic)
                     //  take every line along x-direction. A line per y-node
                     for (std::ptrdiff_t i = 0; i < first_coord_size; ++i)
                     {
@@ -207,6 +214,7 @@ namespace GPN
                         SpMatrix A{splitY.LaplaceTerm(j)};
                         A.diagonal() = A.diagonal() + time_factor.matrix();
                         applyBC_split_y(A, rhs, j);
+
                         // update current state
                         data = solve_linear_problem(A, rhs);
                     }
@@ -253,13 +261,17 @@ namespace GPN
 
                 void applyBC_split_y(SpMatrix &A, RHS_t &b, ptrdiff_t j)
                 {
-                    A.coeffRef(0, 0) = 1;
-                    A.coeffRef(0, 1) = 0;
+                    A.coeffRef(0, 0) = 1.0;
+                    A.coeffRef(0, 1) = 0.0;
+                    assert(!std::isinf(bc.south_vals(j)));
+                    assert(!std::isnan(bc.south_vals(j)));
                     b(0) = bc.south_vals(j);
 
-                    ptrdiff_t n = A.outerSize() - 1;
+                    ptrdiff_t n = A.outerSize() - 1ll;
                     A.coeffRef(n, n) = 1.0;
                     A.coeffRef(n, n - 1) = 0.0;
+                    assert(!std::isinf(bc.north_vals(j)));
+                    assert(!std::isnan(bc.north_vals(j)));
                     b(n) = bc.north_vals(j);
                 }
             };

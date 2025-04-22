@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vector>
+#include <algorithm>
+#include <numeric>
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/CoordinateTypes.h>
@@ -27,7 +29,17 @@ namespace GPN
 
                 return result;
             }
-            static auto generate_dual_grid_stencils_uniform(const Segment& axes, ptrdiff_t n)
+
+            static auto generate_dual_grid_stencils_from_steps(RealType zTop, std::vector<RealType> thickness)
+            {
+                thickness.insert(thickness.begin(), zTop);
+                std::vector<RealType> z_stencils(thickness.size(), 0.0);
+                std::partial_sum(thickness.begin(), thickness.end(), z_stencils.begin(), std::plus<RealType>());
+
+                return z_stencils;
+            }
+
+            static auto generate_dual_grid_stencils_uniform(const Segment &axes, ptrdiff_t n)
             {
                 return generate_dual_grid_stencils_uniform(axes.start, axes.end, n);
             }
@@ -60,6 +72,19 @@ namespace GPN
                     AxesGrid<CoordinateTypes::R_CylCoord>{r_nodes}};
 
                 return StructuredCylinderGrid2DAxisymmetric{z_grid, r_grid};
+            }
+
+            static auto create_cylinder_grid_2D_ptr(const auto &z_stencils, const auto &r_stencils)
+            {
+                auto z_nodes{GridDual{z_stencils}};
+                auto z_grid{
+                    AxesGrid<CoordinateTypes::Z>{z_nodes}};
+
+                auto r_nodes{GridDual{r_stencils}};
+                auto r_grid{
+                    AxesGrid<CoordinateTypes::R_CylCoord>{r_nodes}};
+
+                return std::make_shared<StructuredCylinderGrid2DAxisymmetric>(z_grid, r_grid);
             }
         };
     }

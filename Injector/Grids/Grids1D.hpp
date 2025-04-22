@@ -118,11 +118,17 @@ namespace GPN
                 return dual_nodes;
             }
 
-            const auto operator[](auto id) const
-            {
-                return dual_nodes(id);
-            }
+            // const auto operator[](auto id) const
+            // {
+            //     return dual_nodes(id);
+            // }
 
+            auto coordinate(auto id) const
+            {
+                assert(id < mesh_nodes.size());
+                return mesh_nodes(id);
+            }
+            
             auto front() const
             {
                 return mesh_nodes.front();
@@ -192,11 +198,6 @@ namespace GPN
             AxesGrid(const AxesGrid &) noexcept = default;
             AxesGrid() = delete;
 
-            auto coordinate(auto id) const
-            {
-                assert(id < mesh_nodes.size());
-                return mesh_nodes(id);
-            }
             // step between nodes id and id+1
             auto step(auto id) const
             {

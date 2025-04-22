@@ -21,18 +21,6 @@ namespace GPN
         {
             using Axes = CoordinateTypes::R_CylCoord;
 
-            // const Properties::FaceAxes2VauesContainer face_values;
-
-            // template <typename Grid_t>
-            // FaceInterpolator(
-            //     const StepPropertyGrid &log,
-            //     const Grid_t &grid)
-            //     : face_values{
-            //           interpolate(log, grid)}
-            // {
-            //     static_assert(std::is_same<Axes, typename Grid_t::Axes>::value);
-            // }
-
         public:
             template <typename Grid_t>
             static auto interpolate(
@@ -66,31 +54,57 @@ namespace GPN
                     typename Grid_t::Axes1,
                     CoordinateTypes::Z>::value);
 
+            Field(const Field &) noexcept = default;
             Field(
-                // propery is along the FIRST Axes1 == Z
+                // property is along the FIRST Axes1 == Z
                 const Logs::StepPropertyGrid &property,
                 const cptr<Grid_t> grid) noexcept
-                : grid{grid},
-                  its_values(grid->first_coord.size(), grid->second_coord.size())
+                : Field{interpolate_r(property, grid), grid}
             {
-                assert(property.log_vals.size() == its_values.rows());
-                // extrapolate as const value in the Axes2 direction,
-                // though, may be avoided. Element access interface through
-                // operator()(i, j) is expected.
-                for (std::ptrdiff_t col{0ll}; col < its_values.cols(); ++col)
-                    its_values.col(col) = property.log_vals;
-
-                assert(its_values.cols() > 0ll);
+                // check that interpolation was correct
                 for (std::ptrdiff_t row{0ll}; row < its_values.rows(); ++row)
                     for (std::ptrdiff_t col{1ll}; col < its_values.cols(); ++col)
                         assert(its_values(row, 0) == its_values(row, col));
             }
 
-            const auto& values() const{return its_values;}
-            
-        protected:
+            Field(const GridNodeValues2D &vals,
+                  const cptr<Grid_t> grid)
+                : its_values{vals},
+                  grid{grid}
+            {
+                assert(its_values.rows() == grid->first_coord.size());
+                assert(its_values.cols() == grid->second_coord.size());
+                assert(grid->second_coord.size() > 0ll);
+            }
+
+            const auto &values() const { return its_values; }
+            RealType value(auto first, auto second) const { return values()(first, second); }
+
+            auto operator/(const Field &rhs) const
+            {
+                const auto &lhs{*this};
+                return Field{lhs.values() / rhs.values(), lhs.grid};
+            }
+
+            using Grid_type = Grid_t;
+
             const cptr<Grid_t> grid;
-            GridNodeValues2D its_values;
+            const GridNodeValues2D its_values;
+        protected:
+
+        private:
+            // extrapolate as const value in the Axes2 direction,
+            // though, may be avoided. Element access interface through
+            // operator()(i, j) is expected.
+            static auto interpolate_r(const Logs::StepPropertyGrid &property, const cptr<Grid_t> grid)
+            {
+                assert(property.log_vals.size() == grid->first_coord.size());
+                assert(grid->second_coord.size() > 0ll);
+
+                GridNodeValues2D out(grid->first_coord.size(), grid->second_coord.size());
+                out.colwise() = property.log_vals;
+                return out;
+            }
         };
 
         struct Porosity
@@ -102,10 +116,9 @@ namespace GPN
             : public Field<Grids::StructuredCylinderGrid2DAxisymmetric>
         {
             Permeability(const Logs::StepPropertyGrid &property,
-                const cptr<Grids::StructuredCylinderGrid2DAxisymmetric> grid) : Field{property, grid}
-                {}
-
-        //    using Field<Grids::StructuredCylinderGrid2DAxisymmetric>::Field;
+                         const cptr<Grids::StructuredCylinderGrid2DAxisymmetric> grid) : Field{property, grid}
+            {
+            }
         };
         struct HeatVolumetricCapacity
             : public Field<Grids::StructuredCylinderGrid2DAxisymmetric>
@@ -142,6 +155,8 @@ namespace GPN
                         assert(face_vals_axes1(row, 0) == face_vals_axes1(row, col));
 #pragma endregion
             }
+            
+            using typename Field<Grid_t>::Grid_type;
 
             // interpolated values at faces normal to Axes1
             FaceValuesContainer face_vals_axes1;
@@ -155,6 +170,18 @@ namespace GPN
         {
             using FaceInterpolatedField<
                 Grids::StructuredCylinderGrid2DAxisymmetric>::FaceInterpolatedField;
+        };
+
+        struct ThermalDiffusivity
+            : public Field<
+                  Grids::StructuredCylinderGrid2DAxisymmetric>
+        {
+            ThermalDiffusivity(const Properties::HeatVolumetricCapacity &capacity,
+                               const Properties::HeatConductivity &conductivity)
+                : Field{
+                      conductivity / capacity}
+            {
+            }
         };
 
     } // Properties
