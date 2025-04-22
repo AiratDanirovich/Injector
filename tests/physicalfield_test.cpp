@@ -42,14 +42,16 @@ TEST_CASE("LogsTest")
 
 #pragma region PERMEABILITY
     // generate permeability log
-    Logs::Permeability permeability{
-        Logs::StepPropertyGrid{
-            Logs::StepProperty{
-                Logs::Factory::generate_permeability_StepProperty(
-                    grid2D->first_coord.dual_stencils)} *
+
+    const auto permeability{
+        Logs::Permeability{
+            Logs::StepPropertyGrid{
+                Logs::StepProperty{
+                    Logs::Factory::generate_permeability_StepProperty(
+                        grid2D->first_coord.dual_stencils)},
+                        grid2D->first_coord} * // guarantee that porosity is zero in rocks
                 is_permeable,
-            grid2D->first_coord},
-        is_permeable};
+            is_permeable}};
 
     // generate permeability 2D field
     Properties::Permeability permeability_field{
@@ -58,14 +60,16 @@ TEST_CASE("LogsTest")
 #pragma endregion
 #pragma region POROSITY
     // generate porosity log
-    Logs::Porosity porosity{
-        Logs::StepPropertyGrid{
-            Logs::StepProperty{
-                Logs::Factory::generate_porosity_StepProperty(
-                    grid2D->first_coord.dual_stencils)} *
+
+    const auto porosity{
+        Logs::Porosity{
+            Logs::StepPropertyGrid{
+                Logs::StepProperty{
+                    Logs::Factory::generate_porosity_StepProperty(
+                        grid2D->first_coord.dual_stencils)},
+                grid2D->first_coord} * // guarantee that porosity is zero in rocks
                 is_permeable,
-            grid2D->first_coord},
-        is_permeable};
+            is_permeable}};
 
     // generate porosity 2D field
     Properties::Porosity porosity_field{

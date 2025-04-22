@@ -33,5 +33,4 @@ TEST_CASE("HistoryTest")
     const auto& grid{history.grid};
     for(auto id{0ll}; id < grid.dual_nodes.size(); ++id)
         CHECK(grid.dual_nodes(id) == grid.dual_stencils(id));
-
 }

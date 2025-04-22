@@ -91,17 +91,18 @@ TEST_CASE("Solver")
                 z_grid}}};
 
     auto porosity_stencils{Logs::Factory::generate_porosity_StepProperty(z_grid_stencils)};
-    auto porosity{
-        Porosity{
-            StepPropertyGrid{
-                StepProperty{
-                    porosity_stencils} * // guarantee that porosity is zero in rocks
-                    is_permeable,
-                z_grid},
+
+    const auto porosity{
+        Logs::Porosity{
+            Logs::StepPropertyGrid{
+                Logs::StepProperty{
+                    porosity_stencils},
+                z_grid} * // guarantee that porosity is zero in rocks
+                is_permeable,
             is_permeable}};
 
     auto capacity{
-        HeatVolumetricCapacity{
+        Logs::HeatVolumetricCapacity{
             porosity, solid_volumetric_heatcapacity, water}};
 
     Properties::HeatVolumetricCapacity capacity_field{
