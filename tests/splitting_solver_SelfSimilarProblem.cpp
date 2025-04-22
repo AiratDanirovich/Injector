@@ -174,6 +174,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     solver.advance(time_intervals[t_step]);
   }
 
+  
+
   const auto &[time, state] = solver.solution().back();
   for (std::ptrdiff_t col{0ll}; col < state.cols(); ++col)
   {
