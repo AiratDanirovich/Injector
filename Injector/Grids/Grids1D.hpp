@@ -100,7 +100,14 @@ namespace GPN
                 assert(false);
             }
 
-            auto size() const { return dual_nodes.size(); }
+            auto dual_size() const { return dual_nodes.size(); }
+            auto mesh_size() const { return mesh_nodes.size(); }
+            
+            auto dual_coordinate(auto id) const
+            {
+                assert(id < dual_nodes.size());
+                return dual_nodes(id);
+            }
 
             GridDual(GridDual &&) noexcept = default;
             GridDual(const GridDual &) noexcept = default;
@@ -111,9 +118,24 @@ namespace GPN
                 return dual_nodes;
             }
 
-            const auto operator[](size_t id) const
+            // const auto operator[](auto id) const
+            // {
+            //     return dual_nodes(id);
+            // }
+
+            auto coordinate(auto id) const
             {
-                return dual_nodes(id);
+                assert(id < mesh_nodes.size());
+                return mesh_nodes(id);
+            }
+            
+            auto front() const
+            {
+                return mesh_nodes.front();
+            }
+            auto back() const
+            {
+                return mesh_nodes.back();
             }
 
             // steps between dual nodes
@@ -154,37 +176,28 @@ namespace GPN
         /// its associated properties, i.e.,
         /// volume per node, heat resistivity etc.
         template <typename CoordinateType_t>
-        struct Grid1D : public GridDual
+        struct AxesGrid : public GridDual
         {
+            using Axes = CoordinateType_t;
         public:
-            Grid1D(const GridDual &dual_nodes) noexcept
+            AxesGrid(const GridDual &dual_nodes) noexcept
                 : GridDual{dual_nodes}
                 , dual_stencils{dual_nodes.dual_stencils}
-                , dual_nodes{dual_nodes.dual_nodes}                                 // copy nodes of dual mesh
+            //    , dual_nodes{dual_nodes.dual_nodes}                                 // copy nodes of dual mesh
                 , control_volumes{CoordinateType_t::control_volumes(dual_nodes.dual_nodes)} // make volumes of control cells
                 , mesh_steps{CoordinateType_t::mesh_steps(dual_nodes.dual_nodes)}
             {
-                assert(dual_nodes.size() > 1ull);
-                assert(dual_nodes.size() == dual_steps.size() + 1ull);
-                assert(dual_nodes.size() == control_volumes.size() + 1ull);
-                assert(dual_nodes.size() == mesh_nodes.size() + 1ull);
+                assert(dual_nodes.dual_size() > 1ull);
+                assert(dual_nodes.dual_size() == dual_steps.size() + 1ull);
+                assert(dual_nodes.dual_size() == control_volumes.size() + 1ull);
+                assert(dual_nodes.dual_size() == mesh_nodes.size() + 1ull);
                 assert(mesh_nodes.size() == mesh_steps.size() + 1ull);
             }
 
-            Grid1D(Grid1D &&) noexcept = default;
-            Grid1D(const Grid1D &) noexcept = default;
-            Grid1D() = delete;
+            AxesGrid(AxesGrid &&) noexcept = default;
+            AxesGrid(const AxesGrid &) noexcept = default;
+            AxesGrid() = delete;
 
-            auto coordinate(auto id) const
-            {
-                assert(id < mesh_nodes.size());
-                return mesh_nodes(id);
-            }
-            auto dual_coordinate(auto id) const
-            {
-                assert(id < dual_nodes.size());
-                return dual_nodes(id);
-            }
             // step between nodes id and id+1
             auto step(auto id) const
             {
@@ -205,20 +218,22 @@ namespace GPN
 
             auto size() const
             {
-                return mesh_nodes.size();
-            }
-
-            auto dual_size() const
-            {
-                return dual_nodes.size();
+                return mesh_size();
             }
 
             const GridDualStencils dual_stencils;
             const ControlVolumesContainer control_volumes;
+    //        const DualNodesContainer dual_nodes;
         protected:
-            DualNodesContainer dual_nodes;
             // steps between centers of control volumes
             MeshStepsContainer mesh_steps; 
         };
+
+        
+        using RGrid = AxesGrid<CoordinateTypes::R_CylCoord>;
+        using ZGrid = AxesGrid<CoordinateTypes::Z>;
+
+        using XGrid = AxesGrid<CoordinateTypes::X>;
+        using YGrid = AxesGrid<CoordinateTypes::Y>;
     } // Grids
 } // GPN

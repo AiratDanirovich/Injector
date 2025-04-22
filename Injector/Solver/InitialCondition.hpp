@@ -2,17 +2,21 @@
 
 #include <Injector/Solver/State2D.hpp>
 
-namespace EqSolver
+namespace GPN
 {
-    namespace Problem
+    namespace EqSolver
     {
-        struct InitialCondition : public State::State2D
+        namespace Problem
         {
-            InitialCondition(
-                const State::State2D &state) noexcept
-                : State::State2D{state}
+            struct InitialCondition : public State::State2D
             {
-            }
-        };
-    } // Problem
-} // EqSolver
+                using State::State2D::State2D;
+                InitialCondition(
+                    const State::State2D &state) noexcept
+                    : State::State2D{state}
+                {
+                }
+            };
+        } // Problem
+    } // EqSolver
+} // GPN
