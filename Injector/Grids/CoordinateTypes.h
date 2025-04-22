@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include <Injector/Grids/Defines.h>
+#include <Injector/Grids/CoordinateSystem.hpp>
 
 namespace GPN
 {
@@ -56,13 +57,34 @@ namespace GPN
                     out(idx) = nodes(idx+1) - nodes(idx);
                 return out;
             }
+
+            /// @brief Interpolate heat conductivity (factor at Laplace term)
+            /// @return Heat conductivity at cell face
+            static auto face_interpolator(
+                RealType xL, RealType xR, 
+                RealType xMid,
+                RealType valL, RealType valR)
+            {
+                // coordinates must be monotonous
+                assert((xMid-xL)*(xR-xMid) > 0.0);
+                assert(xMid != xL);
+                assert(xMid != xR);
+                assert(xL != xR);
+
+                return 1.0/((xMid - xL)/valL + (xR - xMid)/valR);
+            }
         };
 
         struct X : public CartesianCoordinate{};
         struct Y : public CartesianCoordinate{};
         struct Z : public CartesianCoordinate{};
+        
+        using Cartesian2DCoordinates =
+            CoordinateSystem2D<
+                CoordinateTypes::X,
+                CoordinateTypes::Y>;
 
-        struct RadialCylinderCoordinate  : public GeneralCoordinate
+        struct R_CylCoord  : public GeneralCoordinate
         {
             static auto control_volumes(const DualNodesContainer& nodes)
             {
@@ -74,6 +96,32 @@ namespace GPN
 
                 return out;
             }
+            
+            /// @brief Interpolate heat conductivity (factor at Laplace term)
+            /// @return Heat conductivity at cell face
+            static auto face_interpolator(
+                RealType xL, RealType xR, 
+                RealType xMid,
+                RealType valL, RealType valR)
+            {
+                // coordinates must be monotonous
+                assert((xMid-xL)*(xR-xMid) > 0.0);
+                assert(xMid != xL);
+                assert(xMid != xR);
+                assert(xL != xR);
+
+                return 1.0/(std::log(xMid/xL)/valL + std::log(xR/xMid)/valR);
+            }
+            /// @brief Interpolate const heat conductivity (factor at Laplace term)
+            /// @return Heat conductivity at cell face
+            static auto const_face_interpolator(
+                RealType xL,
+                RealType xR,
+                const Eigen::ArrayX<RealType>& val)
+            {
+                assert(xL != xR);
+                return 1.0/(std::log(xR/xL)/val);
+            }
         protected:
             static RealType volume(RealType x1, RealType x2)
             {
@@ -81,5 +129,10 @@ namespace GPN
                 return (x2 * x2 - x1 * x1) / 2.0;
             }
         };
+
+        using CylinderCoordinates =
+            CoordinateSystem2D<
+                CoordinateTypes::Z,
+                CoordinateTypes::R_CylCoord>;
     } // CoordinateTypes
 } // GPN

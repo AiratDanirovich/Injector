@@ -11,29 +11,53 @@ namespace GPN
     /// custom_vector type is introduced to overload operator() for element access via [].
     /// While release mode should be compiled with Eigen__Array as container.
     /// @tparam T value_type for std::vector<T>
-    template<typename T>
+    template <typename T>
     struct custom_vector : public std::vector<T>
-    {        
+    {
         custom_vector(size_t size)
             : std::vector<T>(size)
-        {}
+        {
+        }
 
-        T& operator()(ptrdiff_t idx)
-        { return (*this)[static_cast<size_t>(idx)];}
-        
-        const T& operator()(ptrdiff_t idx) const
-        { return (*this)[static_cast<size_t>(idx)];}
+        T &operator()(ptrdiff_t idx)
+        {
+            return (*this)[static_cast<size_t>(idx)];
+        }
+
+        const T &operator()(ptrdiff_t idx) const
+        {
+            return (*this)[static_cast<size_t>(idx)];
+        }
 
         std::ptrdiff_t size() const
         {
             return static_cast<std::ptrdiff_t>(std::vector<T>::size());
+        }
+
+        custom_vector operator*(T a) const
+        {
+            custom_vector out(size());
+            for (std::ptrdiff_t id{0}; id < size(); ++id)
+                out(id) = (*this)(id)*a;
+
+            return out;
+        }
+
+        operator Eigen::ArrayX<T>() const
+        {
+            Eigen::ArrayX<T> out(this->size());
+            for (ptrdiff_t id{0}; id < out.size(); ++id)
+                out(id) = (*this)(id);
+            return out;
         }
     };
 
     using RealType = double;
     using MeshNodesContainer = custom_vector<RealType>; // use Eigen::ArrayX<RealType>; in Release
     using LogValuesContainer = MeshNodesContainer;
-    struct DualNodesContainer : public MeshNodesContainer{};
+    struct DualNodesContainer : public MeshNodesContainer
+    {
+    };
     using MeshStepsContainer = MeshNodesContainer;
 
     /// @brief Normal distance between two faces of control volume
@@ -43,19 +67,29 @@ namespace GPN
     using CellVolumeContainer2D = Eigen::ArrayXX<RealType>;
     using FluxComponentContainer = Eigen::ArrayXX<RealType>;
 
-    struct Directions{
-        enum {x1, x2, size};
+    using GridNodeValues2D = Eigen::ArrayXX<RealType>;
+    using FaceValuesContainer = GridNodeValues2D;
+
+    template <typename T>
+    using cptr = std::shared_ptr<T>;
+
+    struct Directions
+    {
+        enum
+        {
+            x1,
+            x2,
+            size
+        };
     };
 
-
-    
     struct ScalarParameter
     {
         RealType operator()(std::ptrdiff_t idx)
         {
             return value;
         }
-        
+
         RealType operator()(RealType coord)
         {
             return value;
@@ -68,16 +102,17 @@ namespace GPN
 
     struct LogParameter
     {
-        LogParameter(const MeshNodesContainer& values) noexcept
+        LogParameter(const MeshNodesContainer &values) noexcept
             : values{values}
-        {}
-        
+        {
+        }
+
         RealType operator()(std::ptrdiff_t idx)
         {
             assert(idx < values.size());
             return values(idx);
         }
-        
+
         // RealType operator()(RealType coord)
         // {
         //     return values(idx);
@@ -92,33 +127,39 @@ namespace GPN
     /// @brief Reservoir Flow Profile (RFP)
     struct RFP
     {
+    };
 
+    struct Segment
+    {
+        RealType start, end;
+        Segment(RealType start, RealType end)
+            : start{start},
+              end{end}
+        {
+            assert(start < end);
+        }
     };
 
     struct Box
     {
-        struct Left {RealType value;};
-        struct Right {RealType value;};
-        struct Top {RealType value;};
-        struct Bottom {RealType value;};
+        Segment axes1, axes2;
 
-        Box(Left x_a, Right x_b, Top y_a, Bottom y_b)
-            : x_a{x_a}, x_b{x_b}, y_a{y_a}, y_b{y_b}
+        Box(const Segment &axes1, const Segment &axes2)
+            : axes1{axes1}, axes2{axes2}
         {
-            assert(x_a.value < x_b.value);
-            assert(y_a.value < y_b.value);
-        };
-
-        Left x_a; 
-        Right x_b; 
-        Top y_a; 
-        Bottom y_b;
+        }
     };
 
     struct Steps
     {
-        struct Step_R {RealType step;};
-        struct Step_Z {RealType step;};
+        struct Step_R
+        {
+            RealType step;
+        };
+        struct Step_Z
+        {
+            RealType step;
+        };
 
         Steps(Step_R step_r, Step_Z step_z)
             : step_r{step_r}, step_z{step_z}

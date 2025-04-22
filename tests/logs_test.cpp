@@ -19,8 +19,29 @@ TEST_CASE("LogsTest")
 
     auto porosity_stencils{Logs::Factory::generate_porosity_StepProperty(grid_stencils)};
 
-    auto grid{Grid1D<Z>{GridDual{grid_stencils}}};
-    auto permeability{Permeability{StepProperty{permeability_stencils}, grid}};
-    auto porosity{Porosity{StepProperty{porosity_stencils}, grid}};
-    
+    auto grid{ZGrid{GridDual{grid_stencils}}};
+    auto is_permeable{
+        IsPermeable{
+            StepPropertyGrid{
+                StepProperty{
+                    Logs::Factory::generate_is_permeable_StepProperty(grid_stencils)},
+                grid}}};
+
+    const auto permeability{
+        Logs::Permeability{
+            Logs::StepPropertyGrid{
+                Logs::StepProperty{
+                    permeability_stencils},
+                grid} * // guarantee that porosity is zero in rocks
+                is_permeable,
+            is_permeable}};
+
+    const auto porosity{
+        Logs::Porosity{
+            Logs::StepPropertyGrid{
+                Logs::StepProperty{
+                    porosity_stencils},
+                grid} * // guarantee that porosity is zero in rocks
+                is_permeable,
+            is_permeable}};
 }

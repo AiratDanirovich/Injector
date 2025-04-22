@@ -9,6 +9,8 @@
 #include <Eigen/SparseLU>
 
 #include <Injector/Grids/Defines.h>
+#include <Injector/Grids/Grids1D.hpp>
+#include <Injector/Grids/PhysicalField.hpp>
 #include <Injector/Solver/BoundaryConditions.hpp>
 
 #include <Injector/Solver/SplittingMethod/SplitX.hpp>
@@ -20,7 +22,36 @@ namespace GPN
     {
         namespace SplittingMethod
         {
-            template <typename Grid_t>
+            struct TemporalTerm
+            {
+                template <typename Capacity_t, typename Grid_t>
+                TemporalTerm(
+                    const Capacity_t &factor,
+                    const Grid_t &grid)
+                    : factor{grid.volumes() * factor.values()} // volumes are taken into account
+                {
+                    for (std::ptrdiff_t j = 0; j < this->factor.cols(); ++j)
+                        for (std::ptrdiff_t i = 0; i < this->factor.rows(); ++i)
+                        {
+                            assert(!std::isinf(this->factor(i, j)));
+                            assert(!std::isnan(this->factor(i, j)));
+                        }
+                }
+
+                auto Divide(RealType tau) const
+                {
+                    assert(tau != 0.0);
+                    return (static_cast<RealType>(1.0) / tau) * factor;
+                }
+
+            protected:
+                // multiplied by cell volume
+                Eigen::ArrayXX<RealType> factor;
+            };
+
+            template <
+                typename Grid_t,
+                typename Capacity_t>
             struct Solver
             {
                 using Map1D =
@@ -35,25 +66,40 @@ namespace GPN
 
                 using RHS_t = Eigen::VectorX<RealType>;
 
-                template <typename ProblemFactory_t>
+                template <
+                    typename LaplaceFactor_t>
                 Solver(
-                    const Grid_t &grid,
-                    std::shared_ptr<Properties::Fields>
-                        properties,
-                    const ProblemFactory_t &factory,
+                    const LaplaceFactor_t &laplace_factor,
+                    const cptr<Grid_t> grid,
+                    const Capacity_t &time_factor,
+                    const State::State2D &initial_state,
+                    const BoundaryConditions::BoundaryConditions &bc,
                     RealType initial_moment = 0.0)
-                    : splitX{properties, grid},
-                      splitY{properties, grid},
-                      factor{properties, grid},
+                    : splitX{laplace_factor, grid},
+                      splitY{laplace_factor, grid},
+                      time_factor{time_factor, *grid},
                       grid{grid},
-                      properties{properties},
-                      state{factory.zero_state}, // init with initial condition
-                      bc{factory.bc},
+                      first_coord_size{grid->first_coord.size()},
+                      second_coord_size{grid->second_coord.size()},
+                      state{initial_state}, // init with initial condition
+                      bc{bc},
                       states(),
                       time_moments()
                 {
+                    time_moments.reserve(10ull);
+                    states.reserve(10ull);
                     time_moments.push_back(initial_moment);
                     states.emplace_back(state);
+                }
+
+                template <typename Factory_t>
+                static auto set_from_factory(const Factory_t &factory)
+                {
+                    return Solver{
+                        factory.grid, factory.capacity,
+                        factory.laplace_factor,
+                        factory.initial_state,
+                        factory.bc, factory.initial_moment};
                 }
 
                 void advance(RealType tau)
@@ -61,16 +107,16 @@ namespace GPN
                     // tau_factor multiplies Delta_u at different time moments,
                     // i.e., t and t+tau
                     Eigen::ArrayXX<RealType> tau_factor{
-                        factor.DivideByTemporalStep(tau)};
+                        time_factor.Divide(tau)};
 
                     // solve a set of 1D problems in y-direction, for various x-coords
-                    bc.set_vals(time_moments.back() + tau);
+                    bc.set_vals(time_moments.back() + tau / 2.0);
 
-                    solve_split_x(tau, tau_factor.data());
+                    solve_split_x(tau_factor.data());
 
                     // solve a set of 1D problems in x-direction, for various y-coords
                     bc.set_vals(time_moments.back() + tau);
-                    solve_split_y(tau, tau_factor.data());
+                    solve_split_y(tau_factor.data());
 
                     time_moments.push_back(time_moments.back() + tau);
                     states.emplace_back(state);
@@ -100,18 +146,18 @@ namespace GPN
                 }
 
             protected:
-                void solve_split_x(RealType tau, RealType *tau_factor)
+                void solve_split_x(RealType *tau_factor)
                 {
                     // nmbr of nodes in the 1D problem
-                    ptrdiff_t chunk_size = grid.second_coord.size();
+                    ptrdiff_t chunk_size = second_coord_size;
                     // stride in a 1D layout of 2D unknown temperature values
-                    ptrdiff_t stride_size = grid.first_coord.size();
+                    ptrdiff_t stride_size = first_coord_size;
                     // to be provided to Eigen::Map
                     Eigen::OuterStride<Eigen::Dynamic> stride{stride_size};
 
-#pragma omp parallel for num_threads(16) schedule(dynamic)
+#pragma omp parallel for // num_threads(16) schedule(dynamic)
                     //  take every line along x-direction. A line per y-node
-                    for (ptrdiff_t i = 0; i < (ptrdiff_t)grid.first_coord.size(); ++i)
+                    for (std::ptrdiff_t i = 0; i < first_coord_size; ++i)
                     {
                         // memory chunk in capacity-container, corresponding to x-line
                         const auto time_factor =
@@ -126,39 +172,41 @@ namespace GPN
                                 chunk_size, stride};
 
                         // right handside of Au = b problem
+                        // source is only assumed in the last split step
                         RHS_t rhs =
                             (data.array() * time_factor.array()).matrix();
 
                         SpMatrix A{splitX.LaplaceTerm(i)};
                         A.diagonal() = A.diagonal() + time_factor;
                         applyBC_split_x(A, rhs, i);
-
+                        // update current state
                         data = solve_linear_problem(A, rhs);
                     }
                 }
 
-                void solve_split_y(RealType tau, RealType *tau_factor)
+                void solve_split_y(RealType *tau_factor)
                 {
 #pragma omp parallel for
-                    // take every line along x-direction. A line per y-node
-                    for (ptrdiff_t j = 0; j < (ptrdiff_t)grid.second_coord.size(); ++j)
+                    // take every line along x-direction. A line per y-node.
+                    // It is a col of 2D grid representation
+                    for (std::ptrdiff_t j = 0; j < second_coord_size; ++j)
                     {
                         // memory chunk in capacity-container, corresponding to x-line
                         const auto time_factor =
                             Map1D{
-                                tau_factor + grid.first_coord.size() * j,
-                                (ptrdiff_t)grid.first_coord.size()};
+                                tau_factor + first_coord_size * j,
+                                first_coord_size};
 
                         // memory chunk in temperature, corresponding to x-line
                         auto data =
                             Map1D{
-                                state.cur_state.data() + grid.first_coord.size() * j,
-                                (ptrdiff_t)grid.first_coord.size()};
+                                state.cur_state.data() + first_coord_size * j,
+                                first_coord_size};
 
-                        const auto source =
-                            Map1D{
-                                properties->source_vol_f.data() + grid.first_coord.size() * j,
-                                (ptrdiff_t)grid.first_coord.size()};
+                        const auto source = 0.0;
+                        // Map1D{
+                        //     properties->source_vol_f.data() + first_coord_size * j,
+                        //     first_coord_size};
 
                         // right handside of Au = b problem
                         RHS_t rhs = (data * time_factor + source).matrix();
@@ -166,16 +214,21 @@ namespace GPN
                         SpMatrix A{splitY.LaplaceTerm(j)};
                         A.diagonal() = A.diagonal() + time_factor.matrix();
                         applyBC_split_y(A, rhs, j);
+
+                        // update current state
                         data = solve_linear_problem(A, rhs);
                     }
                 }
 
-                SplitX splitX;
-                SplitY splitY;
+                const SplitX splitX;
+                const SplitY splitY;
                 BoundaryConditions::BoundaryConditions bc;
-                std::shared_ptr<Properties::Fields> properties;
-                TemporalTerm factor;
-                const Grid_t &grid;
+                const TemporalTerm time_factor;
+                // required to keep grid in memory ////
+                const cptr<Grid_t> grid; //////////////
+                ///////////////////////////////////////
+                const std::ptrdiff_t first_coord_size;
+                const std::ptrdiff_t second_coord_size;
                 State::State2D state;
                 std::vector<State::State2D> states;
                 std::vector<RealType> time_moments;
@@ -208,13 +261,17 @@ namespace GPN
 
                 void applyBC_split_y(SpMatrix &A, RHS_t &b, ptrdiff_t j)
                 {
-                    A.coeffRef(0, 0) = 1;
-                    A.coeffRef(0, 1) = 0;
+                    A.coeffRef(0, 0) = 1.0;
+                    A.coeffRef(0, 1) = 0.0;
+                    assert(!std::isinf(bc.south_vals(j)));
+                    assert(!std::isnan(bc.south_vals(j)));
                     b(0) = bc.south_vals(j);
 
-                    ptrdiff_t n = A.outerSize() - 1;
+                    ptrdiff_t n = A.outerSize() - 1ll;
                     A.coeffRef(n, n) = 1.0;
                     A.coeffRef(n, n - 1) = 0.0;
+                    assert(!std::isinf(bc.north_vals(j)));
+                    assert(!std::isnan(bc.north_vals(j)));
                     b(n) = bc.north_vals(j);
                 }
             };
