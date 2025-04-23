@@ -14,7 +14,8 @@
 using VR = std::vector<RealType>;
 
 class CustomVector;
-
+#pragma warning( push )
+#pragma warning( disable : 4251 )
 class LIBRARY_API Wrapper
 {
 public:
@@ -52,3 +53,4 @@ private:
     std::vector<std::vector<RealType>> t_radial_distribution;
     std::vector<RealType> time;
 };
+#pragma warning( pop )
