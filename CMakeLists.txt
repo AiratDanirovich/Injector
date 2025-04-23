@@ -41,6 +41,22 @@ enable_testing()
 # process tests/CMakeLists.txt
 add_subdirectory(tests)
 
+add_subdirectory(InjectorDLL)
+add_subdirectory(InjectorUser)
+
+
+install(TARGETS InjectorUser
+    # copy *.exe file
+    DESTINATION ${PROJECT_BINARY_DIR}/bin
+    )
+install(TARGETS InjectorGPNDLL
+    # copy *.dll file
+    RUNTIME DESTINATION ${PROJECT_BINARY_DIR}/bin
+    # copy public header(s)
+    PUBLIC_HEADER DESTINATION ${PROJECT_BINARY_DIR}/bin
+    )
+    message(PROJECT_BINARY_DIR=${PROJECT_BINARY_DIR})
+
 
 # install section
 # to copy generated binaries
