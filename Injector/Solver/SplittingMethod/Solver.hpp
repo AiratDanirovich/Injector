@@ -30,8 +30,8 @@ namespace GPN
                     const Grid_t &grid)
                     : factor{grid.volumes() * factor.values()} // volumes are taken into account
                 {
-                    for (std::ptrdiff_t j = 0; j < this->factor.cols(); ++j)
-                        for (std::ptrdiff_t i = 0; i < this->factor.rows(); ++i)
+                    for (auto j{0ll}; j < this->factor.cols(); ++j)
+                        for (auto i{0ll}; i < this->factor.rows(); ++i)
                         {
                             assert(!std::isinf(this->factor(i, j)));
                             assert(!std::isnan(this->factor(i, j)));
@@ -56,11 +56,11 @@ namespace GPN
             {
                 using Map1D =
                     Eigen::Map<
-                        Eigen::ArrayX<RealType>>;
+                        const Eigen::ArrayX<RealType>>;
 
                 using Map1D_Stride =
                     Eigen::Map<
-                        Eigen::VectorX<RealType>,
+                        const Eigen::VectorX<RealType>,
                         0,
                         Eigen::OuterStride<Eigen::Dynamic>>;
 
@@ -249,8 +249,8 @@ namespace GPN
 
                 void applyBC_split_x(SpMatrix &A, RHS_t &b, ptrdiff_t i)
                 {
-                    A.coeffRef(0, 0) = 1;
-                    A.coeffRef(0, 1) = 0;
+                    A.coeffRef(0, 0) = 1.0;
+                    A.coeffRef(0, 1) = 0.0;
                     b(0) = bc.west_vals(i);
 
                     ptrdiff_t n = A.outerSize() - 1;
