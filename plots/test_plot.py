@@ -1,0 +1,37 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import pathlib
+
+rel_path = pathlib.Path(__file__).parents[0] # relative_path
+
+'''параметры настройки'''
+CSV_FILE_R = rel_path / '..\\build-vscode\\tests\\Debug\data_r.csv'           # Путь к CSV файлу
+# CSV_FILE_Z = rel_path / '..\\build-vscode\\tests\\Debug\data_z.csv'           # Путь к CSV файлу
+DELIMETER = ';'                 # Разделитель
+PLOT_TITLE = 'График'           # Название графика
+X_LABEL = 'X'                   # Подпись оси X
+Y_LABEL = 'Y'                   # Подпись оси Y
+SHOW_LEGEND = True              # Показывать легенду
+LEGEND_LABEL = 'Значения Y'     # Подпись в легенде
+LINE_STYLE = '-'                # Стиль линии (например '-', '--', '-.', ':')
+MARKER = 'o'                    # Маркер на точках (например 'o', 's', '^', '')
+COLOR = 'blue'                  # Цвет линии
+
+# импорт csv
+df_r = pd.read_csv(CSV_FILE_R, delimiter=DELIMETER, header=0)
+
+# нарисовать график
+plt.figure(figsize=(10, 6))
+plt.plot(list(df_r['r']), list(df_r['Tref']), linestyle=LINE_STYLE, color='blue', label='reference')
+plt.plot(list(df_r['r']), list(df_r['Tcalc']), linestyle=LINE_STYLE, color='red', label='calculated')
+
+plt.title(PLOT_TITLE)
+plt.xlabel(X_LABEL)
+plt.ylabel(Y_LABEL)
+
+if SHOW_LEGEND:
+    plt.legend()
+
+plt.grid(True)
+plt.tight_layout()
+plt.show()
