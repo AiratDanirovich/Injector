@@ -202,7 +202,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
       assert(val == val2);
       
-      f << r << ';' << val << ';' << state(row, col) << '\n';
+      fr << r << ';' << val << ';' << state(row, col) << '\n';
 
       INFO("" << "col: " << col << ", row: " << row << ", calc: " << state(row, col) << ", ref: " << val);
       CHECK_THAT(state(row, col), WithinRel(val, tol));
