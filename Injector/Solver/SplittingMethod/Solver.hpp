@@ -56,13 +56,24 @@ namespace GPN
             {
                 using Map1D =
                     Eigen::Map<
+                        Eigen::ArrayX<RealType>>;
+                using cMap1D =
+                    Eigen::Map<
                         const Eigen::ArrayX<RealType>>;
+
+                using Stride_t = Eigen::InnerStride<Eigen::Dynamic>;
+
+                using cMap1D_Stride =
+                    Eigen::Map<
+                        const Eigen::VectorX<RealType>,
+                        Eigen::Unaligned,
+                        Stride_t>;
 
                 using Map1D_Stride =
                     Eigen::Map<
-                        const Eigen::VectorX<RealType>,
-                        0,
-                        Eigen::OuterStride<Eigen::Dynamic>>;
+                        Eigen::VectorX<RealType>,
+                        Eigen::Unaligned,
+                        Stride_t>;
 
                 using RHS_t = Eigen::VectorX<RealType>;
 
@@ -146,14 +157,14 @@ namespace GPN
                 }
 
             protected:
-                void solve_split_x(RealType *tau_factor)
+                void solve_split_x(const RealType *const tau_factor)
                 {
                     // nmbr of nodes in the 1D problem
                     ptrdiff_t chunk_size = second_coord_size;
                     // stride in a 1D layout of 2D unknown temperature values
                     ptrdiff_t stride_size = first_coord_size;
                     // to be provided to Eigen::Map
-                    Eigen::OuterStride<Eigen::Dynamic> stride{stride_size};
+                    Stride_t stride{stride_size};
 
 #pragma omp parallel for // num_threads(16) schedule(dynamic)
                     //  take every line along x-direction. A line per y-node
@@ -161,7 +172,7 @@ namespace GPN
                     {
                         // memory chunk in capacity-container, corresponding to x-line
                         const auto time_factor =
-                            Map1D_Stride{
+                            cMap1D_Stride{
                                 tau_factor + i,
                                 chunk_size, stride};
 
@@ -184,7 +195,7 @@ namespace GPN
                     }
                 }
 
-                void solve_split_y(RealType *tau_factor)
+                void solve_split_y(const RealType * const tau_factor)
                 {
 #pragma omp parallel for
                     // take every line along x-direction. A line per y-node.
@@ -193,7 +204,7 @@ namespace GPN
                     {
                         // memory chunk in capacity-container, corresponding to x-line
                         const auto time_factor =
-                            Map1D{
+                            cMap1D{
                                 tau_factor + first_coord_size * j,
                                 first_coord_size};
 
@@ -204,7 +215,7 @@ namespace GPN
                                 first_coord_size};
 
                         const auto source = 0.0;
-                        // Map1D{
+                        // cMap1D{
                         //     properties->source_vol_f.data() + first_coord_size * j,
                         //     first_coord_size};
 
