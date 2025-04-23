@@ -99,7 +99,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   RealType viscosity{6e-4}, density{1000}, capacity{4200};
   /*collector*/
   const RealType rMin{1.0}, rMax{2.0}, zTop{0.0};
-  const std::ptrdiff_t rNodes{301ull};
+  const std::ptrdiff_t r_nodes_nmbr{301ull};
   const std::ptrdiff_t nLayers{11ull};
   const VR thickness(nLayers, 0.01); // each layer is 1m thick
 
@@ -123,7 +123,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const RealType zBottom{z_stencils.back()};
   const VR r_stencils{
       Grids::Factory::generate_dual_grid_stencils_uniform(
-          Segment{rMin, rMax}, rNodes)};
+          Segment{rMin, rMax}, r_nodes_nmbr)};
   // make grid2D
   const auto grid2D{
       Grids::Factory::create_cylinder_grid_2D_ptr(
