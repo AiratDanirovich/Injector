@@ -2,6 +2,17 @@
 # https://cgold.readthedocs.io/en/latest/tutorials/libraries/static-shared.html
 # https://cgold.readthedocs.io/en/latest/overview/cmake-can.html
 # https://stackoverflow.com/questions/17511496/how-to-create-a-shared-library-with-cmake
+# https://vector-of-bool.github.io/docs/vscode-cmake-tools/configuring.html
+# https://coderefinery.github.io/cmake-workshop/flags-definitions-debugging/
+# https://cmake.org/cmake/help/latest/guide/tutorial/Packaging%20Debug%20and%20Release.html
+# https://coderefinery.github.io/cmake-workshop/fetch-content/
+
+# https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html
+# https://stackoverflow.com/questions/7724569/debug-vs-release-in-cmake
+# https://stackoverflow.com/questions/7724569/debug-vs-release-in-cmake
+
+# https://github.com/esufaev/Parallel-Operations-Toolkit
+# https://github.com/Data-Analysis-Department/temp_calc/blob/py/build.cmd
 
 # https://ps-group.github.io/cxx/cmake_cheatsheet
 # https://batuhankoc.medium.com/use-cmake-to-create-and-use-dynamic-libraries-5f6498417b3c
