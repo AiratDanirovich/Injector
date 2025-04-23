@@ -1,8 +1,11 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import pathlib
+
+rel_path = pathlib.Path(__file__).parents[0] # relative_path
 
 '''параметры настройки'''
-CSV_FILE = 'D:\Lessons\Grants\\2025\GPN\Injector\plots\data.csv'           # Путь к CSV файлу
+CSV_FILE = rel_path / '..\\build-vscode\\tests\\Debug\data.csv'           # Путь к CSV файлу
 DELIMETER = ';'                 # Разделитель
 PLOT_TITLE = 'График'           # Название графика
 X_LABEL = 'X'                   # Подпись оси X
@@ -18,7 +21,8 @@ df = pd.read_csv(CSV_FILE, delimiter=DELIMETER, header=0)
 
 # нарисовать график
 plt.figure(figsize=(10, 6))
-plt.plot(list(df['x']), list(df['y']), linestyle=LINE_STYLE, marker=MARKER, color=COLOR, label=LEGEND_LABEL)
+plt.plot(list(df['r']), list(df['Tref']), linestyle=LINE_STYLE, color='blue', label='reference')
+plt.plot(list(df['r']), list(df['Tcalc']), linestyle=LINE_STYLE, color='red', marker=MARKER, label='calculated')
 
 plt.title(PLOT_TITLE)
 plt.xlabel(X_LABEL)
