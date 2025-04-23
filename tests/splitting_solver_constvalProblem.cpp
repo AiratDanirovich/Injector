@@ -1,3 +1,4 @@
+#include <iostream>
 
 #include <Injector/Solver/SplittingMethod/SolverFactory.hpp>
 
@@ -13,22 +14,27 @@ using namespace GPN::EqSolver::SplittingMethod;
 
 TEST_CASE("Solver")
 {
-  const double tol = 1E-8;
+  const double tol = 4E-11;
 
   RealType val{1.0};
 
   Solver solver{Factory::make_solver(val)};
 
-  RealType step{0.0001};
-  solver.advance(step);
+  RealType step{1.0};
+  ptrdiff_t nT{3};
+  for (ptrdiff_t t{0ll}; t < nT; ++t)
+  {
+    solver.advance(step);
+    std::cout << "time: " << t*step << std::endl;
+  }
 
   auto [time, solution] = solver.solution().back();
 
-  CHECK(time == step);
+  CHECK(time == nT*step);
   for (std::ptrdiff_t col{0ll}; col < solution.cols(); ++col)
     for (std::ptrdiff_t row{0ll}; row < solution.rows(); ++row)
     {
       INFO("" << "row: " << row << ", col: " << col << ", solution: " << solution(row, col));
-      CHECK_THAT( solution(row, col), WithinRel(val, 1e-11) );
+      CHECK_THAT(solution(row, col), WithinRel(val, tol));
     }
 }

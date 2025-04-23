@@ -43,7 +43,7 @@ TEST_CASE("Solver", "splitY")
         grid2D};
 #pragma endregion
 
-    const double tol = 1E-8;
+    const double tol = 1E-14;
     SplitY splity{conductivity_field, grid2D};
 
     for (const auto &m : splity.LaplaceTerms())
