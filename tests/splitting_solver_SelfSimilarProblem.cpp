@@ -98,9 +98,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   /*fluid*/
   RealType viscosity{6e-4}, density{1000}, capacity{4200};
   /*collector*/
-  const RealType rMin{2.0}, rMax{3.0}, zTop{0.0};
-  std::size_t rNodes{101ull};
-  const std::size_t nLayers{21ull};
+  const RealType rMin{1.0}, rMax{2.0}, zTop{0.0};
+  const std::ptrdiff_t rNodes{11ull};
+  const std::ptrdiff_t nLayers{3ull};
   const VR thickness(nLayers, 0.01); // each layer is 1m thick
 
   const VR conductivity(nLayers, 3.9);
@@ -109,7 +109,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const VR solid_density(nLayers, 3.9 /*should be 2600 in SI*/);
   const VR solid_specific_heatcapacity(nLayers, 1.0 /*should be 770 in SI*/);
   /*temporal grid*/
-  const std::size_t time_steps_nmbr{11ull};
+  const std::ptrdiff_t time_steps_nmbr{10ull};
   const RealType t0{1.0}; // initial time moment
   const RealType t1{t0 + 1.0};
   const RealType time_step{(t1 - t0) / time_steps_nmbr};
@@ -177,11 +177,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   //   }
   // }
 
-  std::string path{"data.csv"};
+  std::string pathr{"data_r.csv"};
+  std::string pathz{"data_z.csv"};
 
-  std::ofstream f{path};
-  assert(f.is_open());
-  f << "r;Tref;Tcalc\n";
+
 
   // assert solution
   for (size_t t_step{0ll}; t_step < time_intervals.size(); ++t_step)
@@ -189,6 +188,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     solver.advance(time_intervals[t_step]);
   }
 
+  std::ofstream fr{pathr};
+  assert(fr.is_open());
+  fr << "r;Tref;Tcalc\n";
   const auto &[time, state] = solver.solution().back();
   for (std::ptrdiff_t col{0ll}; col < state.cols(); ++col)
   {
@@ -206,4 +208,32 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       CHECK_THAT(state(row, col), WithinRel(val, tol));
     }
   }
+  fr.close();
+
+  // std::ofstream fz{pathz};
+  // assert(fz.is_open());
+  // fz << "z;TcalcL;TcalcM;TcalcR;Tref\n";
+  // for (std::ptrdiff_t row{0}; row < state.rows(); ++row)
+  // {
+  //   for (std::ptrdiff_t col{rNodes/2}; col < rNodes/2+1ll /*state.cols()*/; ++col)
+  //   {
+  //     const auto [z, r] = grid2D->coordinates(row, col);
+  //     const auto val{es(z, r, time)};
+  //     const auto val2{es(row, col, time, *grid2D)};
+
+  //     assert(val == val2);
+
+  //     fz 
+  //     << z << ';' 
+  //     << val << ';' 
+  //     << state(row, 0)<< ';' 
+  //     << state(row, col)<< ';' 
+  //     << state(row, state.cols()-1ll) 
+  //     << '\n';
+
+  //     INFO("" << "col: " << col << ", row: " << row << ", calc: " << state(row, col) << ", ref: " << val);
+  //     CHECK_THAT(state(row, col), WithinRel(val, tol));
+  //   }
+  // }
+  // fz.close();
 }

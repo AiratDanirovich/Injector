@@ -22,6 +22,7 @@ include(Catch)
 
 # Create test executable
 add_catch2_test(water_test)
+add_catch2_test(stride_test)
 add_catch2_test(grid_test)
 add_catch2_test(initialstate_test)
 add_catch2_test(boundaryconditions_test)
