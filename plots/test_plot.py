@@ -5,7 +5,8 @@ import pathlib
 rel_path = pathlib.Path(__file__).parents[0] # relative_path
 
 '''параметры настройки'''
-CSV_FILE = rel_path / '..\\build-vscode\\tests\\Debug\data.csv'           # Путь к CSV файлу
+CSV_FILE_R = rel_path / '..\\build-vscode\\tests\\Debug\data_r.csv'           # Путь к CSV файлу
+# CSV_FILE_Z = rel_path / '..\\build-vscode\\tests\\Debug\data_z.csv'           # Путь к CSV файлу
 DELIMETER = ';'                 # Разделитель
 PLOT_TITLE = 'График'           # Название графика
 X_LABEL = 'X'                   # Подпись оси X
@@ -17,12 +18,12 @@ MARKER = 'o'                    # Маркер на точках (наприме
 COLOR = 'blue'                  # Цвет линии
 
 # импорт csv
-df = pd.read_csv(CSV_FILE, delimiter=DELIMETER, header=0)
+df_r = pd.read_csv(CSV_FILE_R, delimiter=DELIMETER, header=0)
 
 # нарисовать график
 plt.figure(figsize=(10, 6))
-plt.plot(list(df['r']), list(df['Tref']), linestyle=LINE_STYLE, color='blue', label='reference')
-plt.plot(list(df['r']), list(df['Tcalc']), linestyle=LINE_STYLE, color='red', marker=MARKER, label='calculated')
+plt.plot(list(df_r['r']), list(df_r['Tref']), linestyle=LINE_STYLE, color='blue', label='reference')
+plt.plot(list(df_r['r']), list(df_r['Tcalc']), linestyle=LINE_STYLE, color='red', label='calculated')
 
 plt.title(PLOT_TITLE)
 plt.xlabel(X_LABEL)

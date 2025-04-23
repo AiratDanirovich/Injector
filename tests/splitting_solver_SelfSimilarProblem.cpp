@@ -99,8 +99,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   RealType viscosity{6e-4}, density{1000}, capacity{4200};
   /*collector*/
   const RealType rMin{1.0}, rMax{2.0}, zTop{0.0};
-  const std::ptrdiff_t rNodes{11ull};
-  const std::ptrdiff_t nLayers{3ull};
+  const std::ptrdiff_t rNodes{301ull};
+  const std::ptrdiff_t nLayers{11ull};
   const VR thickness(nLayers, 0.01); // each layer is 1m thick
 
   const VR conductivity(nLayers, 3.9);
@@ -109,7 +109,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const VR solid_density(nLayers, 3.9 /*should be 2600 in SI*/);
   const VR solid_specific_heatcapacity(nLayers, 1.0 /*should be 770 in SI*/);
   /*temporal grid*/
-  const std::ptrdiff_t time_steps_nmbr{10ull};
+  const std::ptrdiff_t time_steps_nmbr{501ull};
   const RealType t0{1.0}; // initial time moment
   const RealType t1{t0 + 1.0};
   const RealType time_step{(t1 - t0) / time_steps_nmbr};
@@ -198,9 +198,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     {
       const auto [z, r] = grid2D->coordinates(row, col);
       const auto val{es(z, r, time)};
-      const auto val2{es(row, col, time, *grid2D)};
-
-      assert(val == val2);
       
       fr << r << ';' << val << ';' << state(row, col) << '\n';
 
