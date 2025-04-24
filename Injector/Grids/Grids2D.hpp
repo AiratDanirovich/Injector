@@ -7,7 +7,6 @@
 #include <numbers>
 
 #include <Eigen/Core>
-// #include <Eigen/Dense>
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/CoordinateSystem.hpp>
