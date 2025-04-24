@@ -42,7 +42,7 @@ public:
         // temporal grid
         const RealType t_start,  // start time in seconds
                                  //    const size_t nt, // = time_intervals.size()
-        const VR &time_intervals // intervals of const rates
+        const VR &time_intervals // time intervals (in seconds) of const rates
     );
     ~Wrapper();
 

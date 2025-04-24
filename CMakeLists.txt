@@ -66,7 +66,7 @@ install(TARGETS InjectorGPNDLL
     # copy public header(s)
     PUBLIC_HEADER DESTINATION ${PROJECT_BINARY_DIR}/bin
     )
-    message(PROJECT_BINARY_DIR=${PROJECT_BINARY_DIR})
+    # message(PROJECT_BINARY_DIR=${PROJECT_BINARY_DIR})
 
 
 # install section
