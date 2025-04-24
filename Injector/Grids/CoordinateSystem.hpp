@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Injector/Declarations.h>
+
 namespace GPN
 {
     template<typename Axes1_t, typename Axes2_t>
