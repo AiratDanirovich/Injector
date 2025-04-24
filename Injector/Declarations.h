@@ -50,4 +50,19 @@ namespace GPN
         CoordinateSystem2D<
             CoordinateTypes::Z,
             CoordinateTypes::R_CylCoord>;
+
+    namespace Grids
+    {
+        struct GridDualStencils;
+        struct GridDual;
+
+        template <typename CoordinateType_t>
+            requires CoordinateTypes::ICoordinate<CoordinateType_t>
+        struct AxesGrid;
+
+        struct RGrid;
+        struct ZGrid;
+        struct XGrid;
+        struct YGrid;
+    } // Grids
 } // GPN

@@ -12,7 +12,7 @@
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/CoordinateSystem.hpp>
 #include <Injector/Grids/CoordinateTypes.h>
-#include <Injector/Grids/Grids1D.hpp>
+#include <Injector/Grids/ConcreteGrids.hpp>
 
 namespace GPN
 {
