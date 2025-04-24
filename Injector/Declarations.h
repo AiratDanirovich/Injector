@@ -39,6 +39,8 @@ namespace GPN
         struct Y;
         struct Z;
         struct R_CylCoord;
+
+        struct Time;
     } // CoordinateTypes
 
     using Cartesian2DCoordinates =
@@ -54,7 +56,9 @@ namespace GPN
     namespace Grids
     {
         struct GridDualStencils;
+        struct TemporalGridDualStencils;
         struct GridDual;
+        struct TemporalGridDual;
 
         template <typename CoordinateType_t>
             requires CoordinateTypes::ICoordinate<CoordinateType_t>

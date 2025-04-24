@@ -26,7 +26,7 @@ TEST_CASE("HistoryTest")
     auto history{
         History{
             StepProperty{rates}, 
-            TemporalGrid{time_moments}
+            TemporalGridDual{time_moments}
         }
     };
 
