@@ -4,7 +4,7 @@
 
 #include <Injector/Grids/Grids2D.hpp>
 #include <Injector/Properties/Logs.hpp>
-#include <Injector/Grids/PhysicalField.hpp>
+#include <Injector/Properties/PhysicalField.hpp>
 
 namespace GPN
 {

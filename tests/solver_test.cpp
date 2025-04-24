@@ -6,7 +6,7 @@
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/CoordinateTypes.h>
 #include <Injector/Properties/Logs.hpp>
-#include <Injector/Grids/PhysicalField.hpp>
+#include <Injector/Properties/PhysicalField.hpp>
 
 #include <Injector/Grids/Grids2D.hpp>
 #include <Injector/Solver/State2D.hpp>

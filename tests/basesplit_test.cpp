@@ -1,7 +1,7 @@
 
 #include <Injector/Grids/CoordinateTypes.h>
 #include <Injector/Properties/Logs.hpp>
-#include <Injector/Grids/PhysicalField.hpp>
+#include <Injector/Properties/PhysicalField.hpp>
 #include <Injector/Grids/Factory.hpp>
 #include <Injector/Properties/Factory.hpp>
 
