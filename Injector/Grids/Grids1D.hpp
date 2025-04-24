@@ -4,8 +4,6 @@
 #include <algorithm>
 #include <cassert>
 
-#include <Eigen/Core>
-
 #include <Injector/Declarations.h>
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/CoordinateTypes.h>

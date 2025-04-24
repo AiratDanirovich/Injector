@@ -43,17 +43,13 @@ namespace GPN
         struct Time;
     } // CoordinateTypes
 
-    using Cartesian2DCoordinates =
-        CoordinateSystem2D<
-            CoordinateTypes::X,
-            CoordinateTypes::Y>;
+    struct Cartesian2DCoordinates;
 
-    using CylinderCoordinates =
-        CoordinateSystem2D<
-            CoordinateTypes::Z,
-            CoordinateTypes::R_CylCoord>;
+    struct CylinderCoordinates;
 
-    namespace Grids
+    struct Cartesian3DCoordinates;
+
+    namespace Grids // 1D space
     {
         struct GridDualStencils;
         struct TemporalGridDualStencils;
@@ -68,5 +64,22 @@ namespace GPN
         struct ZGrid;
         struct XGrid;
         struct YGrid;
+    } // Grids
+
+    namespace Grids // 2D space
+    {
+        template <typename CoordinateSystem_t>
+        concept IStructuredGrid2D = requires {
+            typename CoordinateSystem_t::Axes1;
+            typename CoordinateSystem_t::Axes2;
+            CoordinateSystem_t::Dim();
+        };
+
+        template <typename CoordinateSystem_t>
+            requires IStructuredGrid2D<CoordinateSystem_t>
+        struct StructuredGrid2D;
+
+        struct StructuredCylinderGrid2DAxisymmetric;
+        struct StructuredXYGrid2D;
     } // Grids
 } // GPN

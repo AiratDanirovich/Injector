@@ -97,15 +97,19 @@ namespace GPN
             }
         };
 
+        /// @brief X coordinate
         struct X : public CartesianCoordinate{};
+        /// @brief Y coordinate
         struct Y : public CartesianCoordinate{};
+        /// @brief Z coordinate
         struct Z : public CartesianCoordinate{};
         
+        /// @brief R coordinate of cylinder (polar) system of coordinates
         struct R_CylCoord  : public GeneralCoordinate
         {
-            /// @brief 
+            /// @brief Calculates volumes of grid cells for radial coordinate
             /// @param nodes Nodes of dual mesh
-            /// @return 
+            /// @return Volumes of control volume cells
             static auto control_volumes(const DualNodesContainer& nodes)
             {
                 auto size{nodes.size()-1ull};

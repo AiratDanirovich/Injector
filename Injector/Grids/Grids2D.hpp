@@ -8,9 +8,9 @@
 
 #include <Eigen/Core>
 
+#include <Injector/Declarations.h>
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/CoordinateSystem.hpp>
-#include <Injector/Grids/CoordinateTypes.h>
 #include <Injector/Grids/ConcreteGrids.hpp>
 
 namespace GPN
@@ -20,8 +20,8 @@ namespace GPN
         /// @brief Two-dimensional grid
         /// @tparam Axes1 Type for grid in first [r] direction
         /// @tparam Axes2 Type for grid in second [z] direction
-
         template <typename CoordinateSystem_t>
+            requires IStructuredGrid2D<CoordinateSystem_t>
         struct StructuredGrid2D : public CoordinateSystem_t
         {
             static_assert(
@@ -121,8 +121,10 @@ namespace GPN
             }
         };
 
-        using StructuredXYGrid2D =
-            StructuredGrid2D<Cartesian2DCoordinates>;
+        struct StructuredXYGrid2D : public
+            StructuredGrid2D<Cartesian2DCoordinates>{
+                using StructuredGrid2D<Cartesian2DCoordinates>::StructuredGrid2D;
+            };
 
     } // Grids
 } // GPN
