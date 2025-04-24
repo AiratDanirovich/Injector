@@ -6,7 +6,6 @@
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/CoordinateTypes.h>
-#include <Injector/Grids/SpacialGrids.hpp>
 #include <Injector/Grids/Grids2D.hpp>
 
 namespace GPN
@@ -48,7 +47,7 @@ namespace GPN
             {
                 auto stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, n)};
 
-                auto nodes{SpacialGrid{stencils}};
+                auto nodes{GridDual{stencils}};
 
                 auto x_grid{
                     AxesGrid<CoordinateTypes::X>{nodes}};
