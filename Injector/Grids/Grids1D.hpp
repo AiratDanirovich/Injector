@@ -176,7 +176,9 @@ namespace GPN
         /// @brief Aggregates grid nodes and
         /// its associated properties, i.e.,
         /// volume per node, heat resistivity etc.
+        /// @tparam CoordinateType_t Type of coordinate
         template <typename CoordinateType_t>
+        requires CoordinateTypes::ICoordinate<CoordinateType_t>
         struct AxesGrid : public GridDual
         {
             using Axes = CoordinateType_t;

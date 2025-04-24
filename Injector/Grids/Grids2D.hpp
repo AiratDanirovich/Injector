@@ -90,7 +90,7 @@ namespace GPN
         // take the third -- phi -- axes into account and multiply
         // all face areas by 2PI
         struct StructuredCylinderGrid2DAxisymmetric
-            : public StructuredGrid2D<CoordinateTypes::CylinderCoordinates>
+            : public StructuredGrid2D<CylinderCoordinates>
         {
             constexpr static auto TwoPI()
             {
@@ -99,7 +99,7 @@ namespace GPN
             StructuredCylinderGrid2DAxisymmetric(
                 const AxesGrid<Axes1> &first_coord,
                 const AxesGrid<Axes2> &second_coord)
-                : StructuredGrid2D<CoordinateTypes::CylinderCoordinates>{first_coord, second_coord},
+                : StructuredGrid2D<CylinderCoordinates>{first_coord, second_coord},
                   face_area_axes1{set_axes1_area()},
                   face_area_axes2{set_axes2_area()}
             {
@@ -123,7 +123,7 @@ namespace GPN
         };
 
         using StructuredXYGrid2D =
-            StructuredGrid2D<CoordinateTypes::Cartesian2DCoordinates>;
+            StructuredGrid2D<Cartesian2DCoordinates>;
 
     } // Grids
 } // GPN
