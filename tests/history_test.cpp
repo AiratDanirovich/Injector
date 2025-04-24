@@ -1,6 +1,6 @@
 
-#include <Injector/Grids/TemporalGrid.hpp>
-#include <Injector/Grids/History.hpp>
+#include <Injector/History/TemporalGrid.hpp>
+#include <Injector/History/History.hpp>
 #include <Injector/Grids/Factory.hpp>
 #include <Injector/Properties/Factory.hpp>
 
