@@ -9,6 +9,9 @@ namespace GPN
 {
     namespace CoordinateTypes
     {   
+        /// @brief Calculations associated with any coordinate axes,
+        /// i.e., steps between (dual and regular) adjacent nodes, 
+        /// center coordinates between two nodes
         struct GeneralCoordinate
         {
             /// @brief Normal distance between two faces of control volume
@@ -22,6 +25,9 @@ namespace GPN
                 return out;
             }
 
+            /// @brief 
+            /// @param nodes Nodes of dual mesh
+            /// @return 
             static auto cell_centers(const DualNodesContainer& nodes)
             {
                 auto size{nodes.size()-1ull};
@@ -31,6 +37,9 @@ namespace GPN
                 return out;
             }
 
+            /// @brief 
+            /// @param nodes Nodes of dual mesh
+            /// @return 
             static auto mesh_steps(const DualNodesContainer& nodes)
             {
                 auto mesh_nodes{cell_centers(nodes)};
@@ -44,11 +53,12 @@ namespace GPN
             }
         };
 
+        /// @brief Calculations associated with Cartesian
         struct CartesianCoordinate : public GeneralCoordinate
         {
             /// @brief Generate control volumes from dual mesh
-            /// @param nodes 
-            /// @return 
+            /// @param nodes Nodes of dual mesh
+            /// @return Volumes of control cells
             static auto control_volumes(const DualNodesContainer& nodes)
             {
                 auto size{nodes.size()-1ull};
@@ -73,19 +83,29 @@ namespace GPN
 
                 return 1.0/((xMid - xL)/valL + (xR - xMid)/valR);
             }
+
+            
+            /// @brief Interpolate const heat conductivity (factor at Laplace term)
+            /// @return Heat conductivity at cell face
+            static auto const_face_interpolator(
+                RealType xL,
+                RealType xR,
+                const Eigen::ArrayX<RealType>& val)
+            {
+                assert(xL != xR);
+                return 1.0/((xR-xL)/val);
+            }
         };
 
         struct X : public CartesianCoordinate{};
         struct Y : public CartesianCoordinate{};
         struct Z : public CartesianCoordinate{};
         
-        using Cartesian2DCoordinates =
-            CoordinateSystem2D<
-                CoordinateTypes::X,
-                CoordinateTypes::Y>;
-
         struct R_CylCoord  : public GeneralCoordinate
         {
+            /// @brief 
+            /// @param nodes Nodes of dual mesh
+            /// @return 
             static auto control_volumes(const DualNodesContainer& nodes)
             {
                 auto size{nodes.size()-1ull};
@@ -129,10 +149,5 @@ namespace GPN
                 return (x2 * x2 - x1 * x1) / 2.0;
             }
         };
-
-        using CylinderCoordinates =
-            CoordinateSystem2D<
-                CoordinateTypes::Z,
-                CoordinateTypes::R_CylCoord>;
     } // CoordinateTypes
 } // GPN
