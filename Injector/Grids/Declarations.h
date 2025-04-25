@@ -4,7 +4,7 @@
 
 #include <concepts>
 
-// using RealType = double;
+using RealType = double;
 
 namespace GPN
 {

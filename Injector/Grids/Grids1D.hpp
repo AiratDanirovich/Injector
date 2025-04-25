@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <cassert>
 
+#include <Eigen/Core>
+#include <Eigen/Dense>
+
 #include <Injector/Declarations.h>
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/CoordinateTypes.h>
@@ -43,8 +46,8 @@ namespace GPN
 #pragma endregion
 
                 // copy dual mesh stencils to local container
-                for (size_t idx{0ull}; idx < nodes.size(); ++idx)
-                    dual_nodes(idx) = nodes[idx];
+                 for (size_t idx{0ull}; idx < nodes.size(); ++idx)
+                     dual_nodes(idx) = nodes[idx];
             }
 
             GridDualStencils(GridDualStencils &&) noexcept = default;
@@ -134,11 +137,11 @@ namespace GPN
 
             auto front() const
             {
-                return mesh_nodes.front();
+                return mesh_nodes(0);
             }
             auto back() const
             {
-                return mesh_nodes.back();
+                return mesh_nodes(mesh_nodes.size()-1ll);
             }
 
             // steps between dual nodes

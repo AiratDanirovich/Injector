@@ -53,10 +53,12 @@ namespace GPN
     };
 
     using RealType = double;
-    using MeshNodesContainer = custom_vector<RealType>; // use Eigen::ArrayX<RealType>; in Release
+    using MeshNodesContainer =   // custom_vector<RealType>; // use
+        Eigen::ArrayX<RealType>; // in Release
     using LogValuesContainer = MeshNodesContainer;
     struct DualNodesContainer : public MeshNodesContainer
     {
+        using MeshNodesContainer::MeshNodesContainer;
     };
     using MeshStepsContainer = MeshNodesContainer;
 

@@ -47,16 +47,12 @@ namespace GPN
             StructuredGrid2D(
                 const AxesGrid<Axes1> &first_coord,
                 const AxesGrid<Axes2> &second_coord)
-                : first_coord{first_coord}, second_coord{second_coord}, its_volumes(
-                                                                            first_coord.size(),
-                                                                            second_coord.size())
+                : first_coord{first_coord},
+                  second_coord{second_coord},
+                  its_volumes(
+                      first_coord.volumes().matrix() *
+                      second_coord.volumes().transpose().matrix())
             {
-                // set volumes
-                for (std::ptrdiff_t j = 0; j < its_volumes.cols(); ++j)
-                    for (std::ptrdiff_t i = 0; i < its_volumes.rows(); ++i)
-                        its_volumes(i, j) =
-                            first_coord.volume(i) *
-                            second_coord.volume(j);
             }
 
             auto coordinates(auto id1, auto id2) const
@@ -121,10 +117,10 @@ namespace GPN
             }
         };
 
-        struct StructuredXYGrid2D : public
-            StructuredGrid2D<Cartesian2DCoordinates>{
-                using StructuredGrid2D<Cartesian2DCoordinates>::StructuredGrid2D;
-            };
+        struct StructuredXYGrid2D : public StructuredGrid2D<Cartesian2DCoordinates>
+        {
+            using StructuredGrid2D<Cartesian2DCoordinates>::StructuredGrid2D;
+        };
 
     } // Grids
 } // GPN
