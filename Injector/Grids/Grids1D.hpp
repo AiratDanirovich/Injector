@@ -5,8 +5,9 @@
 #include <cassert>
 
 #include <Eigen/Core>
-// #include <Eigen/Dense>
+#include <Eigen/Dense>
 
+#include <Injector/Declarations.h>
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/CoordinateTypes.h>
 
@@ -21,7 +22,17 @@ namespace GPN
         /// Further refinement is possible.
         struct GridDualStencils
         {
-            GridDualStencils(const std::vector<RealType> &nodes) noexcept
+            GridDualStencils(
+                const DualNodesContainer &adata) noexcept
+                : GridDualStencils{
+                      std::vector<RealType>(
+                          adata.begin(),
+                          adata.end())}
+            {
+            }
+
+            GridDualStencils(
+                const std::vector<RealType> &nodes) noexcept
                 : dual_nodes(nodes.size())
             {
 #pragma region ASSERTIONS
@@ -35,8 +46,8 @@ namespace GPN
 #pragma endregion
 
                 // copy dual mesh stencils to local container
-                for (size_t idx{0ull}; idx < nodes.size(); ++idx)
-                    dual_nodes(idx) = nodes[idx];
+                 for (size_t idx{0ull}; idx < nodes.size(); ++idx)
+                     dual_nodes(idx) = nodes[idx];
             }
 
             GridDualStencils(GridDualStencils &&) noexcept = default;
@@ -65,7 +76,7 @@ namespace GPN
         };
 
         /// @brief Container for dual grid nodes (refined as well as stencils).
-        /// The nodes are somehow distributed, 
+        /// The nodes are somehow distributed,
         /// uniformly or non-uniformly, between adjuscent stencils.
         struct GridDual
         {
@@ -89,11 +100,11 @@ namespace GPN
             /// @param policy
             template <typename RefinementPolicy>
             GridDual(
-                const GridDualStencils &nodes,
+                const GridDualStencils &dual_nodes_stencils,
                 RefinementPolicy &&policy) noexcept
                 : GridDual{
-                      nodes,               // nodes of dual mesh
-                      policy.refine(nodes) // nodes of dual mesh --- refined from stencils
+                      dual_nodes_stencils,               // nodes of dual mesh
+                      policy.refine(dual_nodes_stencils) // nodes of dual mesh --- refined from stencils
                   }
             {
                 // define refinement policy
@@ -118,31 +129,26 @@ namespace GPN
                 return dual_nodes;
             }
 
-            // const auto operator[](auto id) const
-            // {
-            //     return dual_nodes(id);
-            // }
-
             auto coordinate(auto id) const
             {
                 assert(id < mesh_nodes.size());
                 return mesh_nodes(id);
             }
-            
+
             auto front() const
             {
-                return mesh_nodes.front();
+                return mesh_nodes(0);
             }
             auto back() const
             {
-                return mesh_nodes.back();
+                return mesh_nodes(mesh_nodes.size()-1ll);
             }
 
             // steps between dual nodes
             const DualStepsContainer dual_steps;
-            
+
             // centers of control volumes
-            const MeshNodesContainer mesh_nodes; 
+            const MeshNodesContainer mesh_nodes;
 
         public:
             // dual mesh to be used in simulation
@@ -157,11 +163,11 @@ namespace GPN
             GridDual(
                 const GridDualStencils &nodes,
                 const DualNodesContainer &refined_mesh) noexcept
-                : dual_stencils{nodes}
-                , dual_nodes{refined_mesh}
+                : dual_stencils{nodes},
+                dual_nodes{refined_mesh},
                 // make mesh nodes -- centers of control volumes
-                , mesh_nodes{CoordinateType::cell_centers(refined_mesh)} 
-                , dual_steps{CoordinateType::dual_steps(refined_mesh)
+                mesh_nodes{CoordinateType::cell_centers(refined_mesh)},
+                dual_steps{CoordinateType::dual_steps(refined_mesh)
                 }
             {
                 assert(dual_stencils.size() <= dual_nodes.size());
@@ -175,17 +181,18 @@ namespace GPN
         /// @brief Aggregates grid nodes and
         /// its associated properties, i.e.,
         /// volume per node, heat resistivity etc.
+        /// @tparam CoordinateType_t Type of coordinate
         template <typename CoordinateType_t>
+            requires CoordinateTypes::ICoordinate<CoordinateType_t>
         struct AxesGrid : public GridDual
         {
             using Axes = CoordinateType_t;
         public:
             AxesGrid(const GridDual &dual_nodes) noexcept
-                : GridDual{dual_nodes}
-                , dual_stencils{dual_nodes.dual_stencils}
-            //    , dual_nodes{dual_nodes.dual_nodes}                                 // copy nodes of dual mesh
-                , control_volumes{CoordinateType_t::control_volumes(dual_nodes.dual_nodes)} // make volumes of control cells
-                , mesh_steps{CoordinateType_t::mesh_steps(dual_nodes.dual_nodes)}
+                : GridDual{dual_nodes},
+                dual_stencils{dual_nodes.dual_stencils},                                // copy nodes of dual mesh
+                control_volumes{CoordinateType_t::control_volumes(dual_nodes.dual_nodes)}, // make volumes of control cells
+                mesh_steps{CoordinateType_t::mesh_steps(dual_nodes.dual_nodes)}
             {
                 assert(dual_nodes.dual_size() > 1ull);
                 assert(dual_nodes.dual_size() == dual_steps.size() + 1ull);
@@ -223,17 +230,9 @@ namespace GPN
 
             const GridDualStencils dual_stencils;
             const ControlVolumesContainer control_volumes;
-    //        const DualNodesContainer dual_nodes;
         protected:
             // steps between centers of control volumes
-            MeshStepsContainer mesh_steps; 
+            MeshStepsContainer mesh_steps;
         };
-
-        
-        using RGrid = AxesGrid<CoordinateTypes::R_CylCoord>;
-        using ZGrid = AxesGrid<CoordinateTypes::Z>;
-
-        using XGrid = AxesGrid<CoordinateTypes::X>;
-        using YGrid = AxesGrid<CoordinateTypes::Y>;
     } // Grids
 } // GPN

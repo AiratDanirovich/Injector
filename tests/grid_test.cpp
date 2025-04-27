@@ -12,7 +12,7 @@ TEST_CASE("GridTest", "GeneralCoordinate")
         //    Factory::create_cartesian_grid_2D(2);
         auto stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, 2)};
 
-        auto nodes{SpacialGrid{stencils}};
+        auto nodes{GridDual{stencils}};
 
         auto x_grid{
             AxesGrid<CoordinateTypes::X>{nodes}};
