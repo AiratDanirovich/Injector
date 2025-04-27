@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Injector/Grids/TemporalGrid.hpp>
 #include <Injector/Properties/Logs.hpp>
 
 namespace GPN

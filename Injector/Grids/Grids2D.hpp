@@ -7,12 +7,11 @@
 #include <numbers>
 
 #include <Eigen/Core>
-// #include <Eigen/Dense>
 
+#include <Injector/Declarations.h>
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/CoordinateSystem.hpp>
-#include <Injector/Grids/CoordinateTypes.h>
-#include <Injector/Grids/Grids1D.hpp>
+#include <Injector/Grids/ConcreteGrids.hpp>
 
 namespace GPN
 {
@@ -21,8 +20,8 @@ namespace GPN
         /// @brief Two-dimensional grid
         /// @tparam Axes1 Type for grid in first [r] direction
         /// @tparam Axes2 Type for grid in second [z] direction
-
         template <typename CoordinateSystem_t>
+            requires IStructuredGrid2D<CoordinateSystem_t>
         struct StructuredGrid2D : public CoordinateSystem_t
         {
             static_assert(
@@ -48,16 +47,12 @@ namespace GPN
             StructuredGrid2D(
                 const AxesGrid<Axes1> &first_coord,
                 const AxesGrid<Axes2> &second_coord)
-                : first_coord{first_coord}, second_coord{second_coord}, its_volumes(
-                                                                            first_coord.size(),
-                                                                            second_coord.size())
+                : first_coord{first_coord},
+                  second_coord{second_coord},
+                  its_volumes(
+                      first_coord.volumes().matrix() *
+                      second_coord.volumes().transpose().matrix())
             {
-                // set volumes
-                for (std::ptrdiff_t j = 0; j < its_volumes.cols(); ++j)
-                    for (std::ptrdiff_t i = 0; i < its_volumes.rows(); ++i)
-                        its_volumes(i, j) =
-                            first_coord.volume(i) *
-                            second_coord.volume(j);
             }
 
             auto coordinates(auto id1, auto id2) const
@@ -90,7 +85,7 @@ namespace GPN
         // take the third -- phi -- axes into account and multiply
         // all face areas by 2PI
         struct StructuredCylinderGrid2DAxisymmetric
-            : public StructuredGrid2D<CoordinateTypes::CylinderCoordinates>
+            : public StructuredGrid2D<CylinderCoordinates>
         {
             constexpr static auto TwoPI()
             {
@@ -99,7 +94,7 @@ namespace GPN
             StructuredCylinderGrid2DAxisymmetric(
                 const AxesGrid<Axes1> &first_coord,
                 const AxesGrid<Axes2> &second_coord)
-                : StructuredGrid2D<CoordinateTypes::CylinderCoordinates>{first_coord, second_coord},
+                : StructuredGrid2D<CylinderCoordinates>{first_coord, second_coord},
                   face_area_axes1{set_axes1_area()},
                   face_area_axes2{set_axes2_area()}
             {
@@ -122,8 +117,10 @@ namespace GPN
             }
         };
 
-        using StructuredXYGrid2D =
-            StructuredGrid2D<CoordinateTypes::Cartesian2DCoordinates>;
+        struct StructuredXYGrid2D : public StructuredGrid2D<Cartesian2DCoordinates>
+        {
+            using StructuredGrid2D<Cartesian2DCoordinates>::StructuredGrid2D;
+        };
 
     } // Grids
 } // GPN

@@ -1,7 +1,5 @@
 #pragma once
 
-// #include <iostream>
-
 #include <algorithm>
 
 #include <Eigen/Core>
@@ -30,6 +28,8 @@ namespace GPN
         };
 
         /// @brief Container for values of step properties.
+        /// Copies from standard continer (Eigen or STL) 
+        /// to local filed variable.
         struct StepProperty
         {
             StepPropertyContainer data;

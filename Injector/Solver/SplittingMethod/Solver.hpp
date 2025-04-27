@@ -10,7 +10,7 @@
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/Grids1D.hpp>
-#include <Injector/Grids/PhysicalField.hpp>
+#include <Injector/Properties/PhysicalField.hpp>
 #include <Injector/Solver/BoundaryConditions.hpp>
 
 #include <Injector/Solver/SplittingMethod/SplitX.hpp>
