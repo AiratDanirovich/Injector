@@ -47,10 +47,13 @@ find_package(OpenMP)
         endif()
     endif()
 
-# enable testing
-enable_testing()
-# process tests/CMakeLists.txt
-add_subdirectory(tests)
+option(BUILD_TESTING "Enable testing" ON)
+if(BUILD_TESTING)
+	# enable testing
+	enable_testing()
+	# process tests/CMakeLists.txt
+	add_subdirectory(tests)
+endif()
 
 add_subdirectory(InjectorDLL)
 add_subdirectory(InjectorUser)
