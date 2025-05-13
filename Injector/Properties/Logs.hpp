@@ -29,7 +29,7 @@ namespace GPN
 
         /// @brief Container for values of step properties.
         /// Copies from standard continer (Eigen or STL) 
-        /// to local filed variable.
+        /// to local field variable.
         struct StepProperty
         {
             StepPropertyContainer data;

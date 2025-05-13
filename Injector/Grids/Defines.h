@@ -56,14 +56,20 @@ namespace GPN
     using MeshNodesContainer =   // custom_vector<RealType>; // use
         Eigen::ArrayX<RealType>; // in Release
     using LogValuesContainer = MeshNodesContainer;
+
+    /// @brief Container for the dual nodes coordinates 
     struct DualNodesContainer : public MeshNodesContainer
     {
         using MeshNodesContainer::MeshNodesContainer;
     };
     using MeshStepsContainer = MeshNodesContainer;
 
-    /// @brief Normal distance between two faces of control volume
-    using DualStepsContainer = MeshNodesContainer;
+    /// @brief Container for the normal distance 
+    /// between two faces of control volume
+    struct DualStepsContainer : public MeshNodesContainer
+    {
+        using MeshNodesContainer::MeshNodesContainer;
+    };
     using ControlVolumesContainer = MeshNodesContainer;
 
     using CellVolumeContainer2D = Eigen::ArrayXX<RealType>;
