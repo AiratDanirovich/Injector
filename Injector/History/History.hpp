@@ -1,12 +1,49 @@
 #pragma once
 
 #include <Injector/Properties/Logs.hpp>
+#include <Injector/History/TemporalGrid.hpp>
 
 namespace GPN
 {
-    struct History : public Logs::StepPropertyGrid
+    namespace Logs
     {
-        using StepPropertyGrid::StepPropertyGrid;
+        struct InjectorRate
+            : public StepPropertyGrid,
+              // so far it is assumed that the rates are positive.
+              // Injector
+              private AssertNonNegative
+        {
+            InjectorRate(
+                const StepPropertyGrid &rates)
+                : StepPropertyGrid{rates},
+                  AssertNonNegative{rates}
+            {
+            }
+        };
+
+        struct BottomholePressure
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            BottomholePressure(
+                const StepPropertyGrid &pressure)
+                : StepPropertyGrid{pressure},
+                  AssertNonNegative{pressure}
+            {
+            }
+        };
+    } // Logs
+
+    struct History
+    {
+        History(const Logs::InjectorRate &rates)
+            : rates{rates},
+              time_steps{rates.grid.dual_steps}
+        {
+        }
+
+        Logs::InjectorRate rates;
+        const DualStepsContainer &time_steps;
     };
 } // GPN
 
