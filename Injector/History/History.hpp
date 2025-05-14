@@ -42,7 +42,7 @@ namespace GPN
         {
         }
 
-        Logs::InjectorRate rates;
+        const Logs::InjectorRate rates;
         const DualStepsContainer &time_steps;
     };
 } // GPN
