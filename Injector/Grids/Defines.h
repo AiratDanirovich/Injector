@@ -57,18 +57,24 @@ namespace GPN
         Eigen::ArrayX<RealType>; // in Release
     using LogValuesContainer = MeshNodesContainer;
 
-    /// @brief Container for the dual nodes coordinates 
+    /// @brief Container for the dual nodes coordinates
     struct DualNodesContainer : public MeshNodesContainer
     {
         using MeshNodesContainer::MeshNodesContainer;
     };
     using MeshStepsContainer = MeshNodesContainer;
 
-    /// @brief Container for the normal distance 
+    /// @brief Container for the normal distance
     /// between two faces of control volume
     struct DualStepsContainer : public MeshNodesContainer
     {
         using MeshNodesContainer::MeshNodesContainer;
+        DualStepsContainer(const std::vector<RealType> &data)
+            : MeshNodesContainer(data.size())
+        {
+            for (std::ptrdiff_t i{0}; i < static_cast<ptrdiff_t>(data.size()); ++i)
+                (*this)[i] = data[i];
+        }
     };
     using ControlVolumesContainer = MeshNodesContainer;
 
