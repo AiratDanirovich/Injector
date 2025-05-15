@@ -51,7 +51,8 @@ namespace GPN
 
             template <
                 typename Grid_t,
-                typename Capacity_t>
+                typename Capacity_t,
+                typename FlowField_t>
             struct Solver
             {
                 using Map1D =
@@ -81,6 +82,7 @@ namespace GPN
                     typename LaplaceFactor_t>
                 Solver(
                     const LaplaceFactor_t &laplace_factor,
+                    const FlowField_t& flow_field,
                     const cptr<Grid_t> grid,
                     const Capacity_t &time_factor,
                     const State::State2D &initial_state,
@@ -90,6 +92,7 @@ namespace GPN
                       splitY{laplace_factor, grid},
                       time_factor{time_factor, *grid},
                       grid{grid},
+                      flow_field{flow_field},
                       first_coord_size{grid->first_coord.size()},
                       second_coord_size{grid->second_coord.size()},
                       state{initial_state}, // init with initial condition
@@ -241,6 +244,7 @@ namespace GPN
                 // required to keep grid in memory ////
                 const cptr<Grid_t> grid; //////////////
                 ///////////////////////////////////////
+                FlowField_t flow_field;
                 const std::ptrdiff_t first_coord_size;
                 const std::ptrdiff_t second_coord_size;
                 State::State2D state;

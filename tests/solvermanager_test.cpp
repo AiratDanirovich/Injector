@@ -4,6 +4,7 @@
 #include <cassert>
 
 #include <Injector/Model/Phases/FluidFactory.hpp>
+#include <Injector/Model/HydrodynamicSolver.hpp>
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
 #include <Injector/Solver/SplittingMethod/SolverFactory.hpp>
 #include <Injector/Solver/SolverManager.hpp>
@@ -18,6 +19,7 @@ using namespace GPN;
 using namespace GPN::Logs;
 using namespace GPN::Grids;
 using namespace GPN::Phases;
+using namespace GPN::Model::Injector;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
@@ -177,9 +179,14 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
   // solver
   using Solver_t = Solver<
       Grids::StructuredCylinderGrid2DAxisymmetric,
-      Properties::HeatVolumetricCapacity>;
+      Properties::HeatVolumetricCapacity,
+      FlowField>;
+
+  FlowField flow_field{};
+
   const cptr<Solver_t> solver{std::make_shared<Solver_t>(
-      conductivity_field, grid2D,
+      conductivity_field,
+      flow_field, grid2D,
       capacity_field,
       initial_state,
       bc, t0)};

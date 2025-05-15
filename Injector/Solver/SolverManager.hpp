@@ -11,12 +11,14 @@ namespace GPN
     {
         template <
             typename Grid_t,
-            typename Capacity_t>
+            typename Capacity_t,
+            typename FlowField_t>
         struct SolverManager
         {
             using Solver_t = SplittingMethod::Solver<
                 Grid_t,
-                Capacity_t>;
+                Capacity_t,
+                FlowField_t>;
 
             SolverManager(
                 const History &history,

@@ -15,12 +15,14 @@
 #include <Injector/Grids/Factory.hpp>
 #include <Injector/Properties/Factory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
+#include <Injector/Model/HydrodynamicSolver.hpp>
 
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
 
 using namespace GPN;
 using namespace GPN::Grids;
 using namespace GPN::Logs;
+using namespace GPN::Model::Injector;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::State;
 using namespace GPN::EqSolver::Problem;
@@ -121,8 +123,11 @@ TEST_CASE("Solver")
 
     const double tol = 1E-8;
 
+    FlowField flow_field{};
+
     Solver solver{
-        conductivity_field, grid2D,
+        conductivity_field,
+        flow_field, grid2D,
         capacity_field,
         initial_state,
         bc, 0.0};

@@ -13,6 +13,8 @@
 #include <Injector/Properties/Factory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 
+#include <Injector/Model/HydrodynamicSolver.hpp>
+
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
 
 namespace GPN
@@ -87,10 +89,13 @@ namespace GPN
                     GPN::BoundaryConditions::BoundaryConditions bc{
                         *grid2D, std::make_shared<BCFunctor>(BCFunctor{val})};
 
+                    GPN::Model::Injector::FlowField flow_field{};
+
                     const double tol = 1E-8;
 
                     return Solver{
-                        conductivity_field, grid2D,
+                        conductivity_field, 
+                        flow_field, grid2D,
                         capacity_field,
                         initial_state,
                         bc, 0.0};

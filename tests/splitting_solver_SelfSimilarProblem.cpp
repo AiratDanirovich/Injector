@@ -4,6 +4,7 @@
 #include <cassert>
 
 #include <Injector/Model/Phases/FluidFactory.hpp>
+#include <Injector/Model/HydrodynamicSolver.hpp>
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
 #include <Injector/Solver/SplittingMethod/SolverFactory.hpp>
 
@@ -15,6 +16,7 @@ using namespace Catch::Matchers;
 
 using namespace GPN;
 using namespace GPN::Phases;
+using namespace GPN::Model::Injector;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
@@ -157,8 +159,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       Grids::Factory::generate_dual_grid_stencils_from_steps(
           t0, time_intervals));
   // solver
+  FlowField flow_field{};
+
   Solver solver{
-      conductivity_field, grid2D,
+      conductivity_field, 
+      flow_field, grid2D,
       capacity_field,
       initial_state,
       bc, t0};
