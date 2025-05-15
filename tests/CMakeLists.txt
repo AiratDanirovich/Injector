@@ -37,4 +37,6 @@ add_catch2_test(solvermanager_test)
 add_catch2_test(splitting_solver_constvalProblem)
 add_catch2_test(splitting_solver_SelfSimilarProblem)
 
+add_catch2_test(well_test)
+
 

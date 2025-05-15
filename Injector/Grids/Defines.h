@@ -88,6 +88,16 @@ namespace GPN
     template <typename T>
     using cptr = std::shared_ptr<T>;
 
+    struct Gravity
+    {
+        constexpr static RealType value() noexcept
+        {
+            return (RealType)9.81;
+        }
+    };
+
+
+
     struct Directions
     {
         enum

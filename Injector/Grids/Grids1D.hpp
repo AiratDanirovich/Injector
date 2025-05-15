@@ -149,6 +149,14 @@ namespace GPN
             {
                 return dual_nodes;
             }
+            const auto &get_dual_steps() const
+            {
+                return dual_steps;
+            }
+            const auto &get_mesh_nodes() const
+            {
+                return mesh_nodes;
+            }
 
             auto coordinate(auto id) const
             {
