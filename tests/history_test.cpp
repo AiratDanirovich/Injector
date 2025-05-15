@@ -17,7 +17,7 @@ TEST_CASE("HistoryTest")
 #pragma region MAKE-TIME-GRID
     const auto time_moments{
         Grids::Factory::generate_dual_grid_stencils_uniform(
-            0, 31536000, 12 // seconds in 12 months
+            0, 31536000, 13 // seconds in 12 months
             )};
 
     const auto time_steps{
