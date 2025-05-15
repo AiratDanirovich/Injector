@@ -169,7 +169,7 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
       InjectorRate{
           StepPropertyGrid{
               rates,
-              TemporalGridDual{GridDualStencils{time_intervals}}}}};
+              TemporalGridDual{GridDualStencils{DualStepsContainer{time_intervals}}}}}};
   // const VR t_stencils(
   //     Grids::Factory::generate_dual_grid_stencils_from_steps(
   //         t0, time_intervals));
