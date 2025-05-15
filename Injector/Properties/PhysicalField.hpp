@@ -88,8 +88,8 @@ namespace GPN
 
             using Grid_type = Grid_t;
 
-            const cptr<Grid_t> grid;
             const GridNodeValues2D its_values;
+            const cptr<Grid_t> grid;
         protected:
 
         private:
@@ -136,12 +136,12 @@ namespace GPN
                   face_vals_axes1(
                       property.face_values.size(),
                       grid->second_coord.size()),
-#pragma region AXES2-FACEVALUES
+//#pragma region AXES2-FACEVALUES
                   face_vals_axes2{
                       Logs::FaceInterpolator<
                           typename Grid_t::Axes2>::interpolate(property,
                                                                grid->second_coord)}
-#pragma endregion
+//#pragma endregion
             {
 #pragma region AXES1-FACEVALUES
                 assert(property.face_values.size() >= 0ll);

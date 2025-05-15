@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <vector>
+#include <memory>
 
 #include <Eigen/Core>
 
@@ -99,12 +100,12 @@ namespace GPN
 
     struct ScalarParameter
     {
-        RealType operator()(std::ptrdiff_t idx)
+        RealType operator()(std::ptrdiff_t)
         {
             return value;
         }
 
-        RealType operator()(RealType coord)
+        RealType operator()(RealType)
         {
             return value;
         }

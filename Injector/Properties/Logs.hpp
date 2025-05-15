@@ -48,7 +48,7 @@ namespace GPN
                 : data(adata.size())
             {
 #pragma region ASSERTIONS
-                assert(data.size() > 0ull);
+                assert(data.size() > (decltype(data.size()))0);
                 for (auto idx{adata.cbegin()}; idx != adata.cend(); ++idx)
                     // all properties are non-negative
                     assert(*idx >= 0.0);

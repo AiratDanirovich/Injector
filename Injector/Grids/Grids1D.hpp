@@ -165,21 +165,19 @@ namespace GPN
                 return mesh_nodes(mesh_nodes.size() - 1ll);
             }
 
-            // steps between dual nodes
-            const DualStepsContainer dual_steps;
-
-            // centers of control volumes
-            const MeshNodesContainer mesh_nodes;
-
         public:
-            // Dual mesh to be used in simulation
-            DualNodesContainer dual_nodes;
-
             // Stencils of the dual mesh.
             // Here, jumps of physical properties occur.
             // These nodes must be included in the dual_mesh_nodes
             // container. So, that operator==() returns true.
             GridDualStencils dual_stencils;
+            // Dual mesh to be used in simulation
+            DualNodesContainer dual_nodes;
+            // centers of control volumes
+            const MeshNodesContainer mesh_nodes;
+            // steps between dual nodes
+            const DualStepsContainer dual_steps;
+
 
         protected:
             GridDual(
@@ -216,11 +214,11 @@ namespace GPN
                   control_volumes{CoordinateType_t::control_volumes(dual_nodes.dual_nodes)}, // make volumes of control cells
                   mesh_steps{CoordinateType_t::mesh_steps(dual_nodes.dual_nodes)}
             {
-                assert(dual_nodes.dual_size() > 1ull);
-                assert(dual_nodes.dual_size() == dual_steps.size() + 1ull);
-                assert(dual_nodes.dual_size() == control_volumes.size() + 1ull);
-                assert(dual_nodes.dual_size() == mesh_nodes.size() + 1ull);
-                assert(mesh_nodes.size() == mesh_steps.size() + 1ull);
+                assert(dual_nodes.dual_size() > (decltype(dual_nodes.dual_size()))1ull);
+                assert(dual_nodes.dual_size() == (decltype(dual_nodes.dual_size()))(dual_steps.size() + 1ull));
+                assert(dual_nodes.dual_size() == (decltype(dual_nodes.dual_size()))(control_volumes.size() + 1ull));
+                assert(dual_nodes.dual_size() == (decltype(dual_nodes.dual_size()))(mesh_nodes.size() + 1ull));
+                assert(mesh_nodes.size() == (decltype(mesh_nodes.size()))(mesh_steps.size() + 1ull));
             }
 
             AxesGrid(AxesGrid &&) noexcept = default;
