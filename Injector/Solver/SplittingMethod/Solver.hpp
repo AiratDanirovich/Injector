@@ -103,6 +103,9 @@ namespace GPN
                     states.emplace_back(state);
                 }
 
+                Solver(const Solver&) = default;
+                Solver(Solver&&) noexcept = default;
+
                 template <typename Factory_t>
                 static auto set_from_factory(const Factory_t &factory)
                 {
