@@ -29,6 +29,15 @@ namespace GPN
                 return result;
             }
 
+            static auto generate_dual_grid_steps(const std::vector<RealType> &data)
+            {
+                assert(data.size() > 1ull);
+                std::vector<RealType> out(data.size() - 1ull);
+                for (auto i{1ull}; i < data.size(); ++i)
+                    out[i - 1] = data[i] - data[i - 1];
+                return out;
+            }
+
             static auto generate_dual_grid_stencils_from_steps(RealType zTop, std::vector<RealType> thickness)
             {
                 thickness.insert(thickness.begin(), zTop);
