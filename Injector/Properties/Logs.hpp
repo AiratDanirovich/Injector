@@ -28,7 +28,7 @@ namespace GPN
         };
 
         /// @brief Container for values of step properties.
-        /// Copies from standard continer (Eigen or STL) 
+        /// Copies from standard continer (Eigen or STL)
         /// to local field variable.
         struct StepProperty
         {
@@ -183,8 +183,8 @@ namespace GPN
             {
                 const auto &data{vals.log_vals};
                 std::for_each(data.cbegin(), data.cend(),
-                               [](RealType x)
-                               { assert(x >= 0.0); });
+                              [](RealType x)
+                              { assert(x >= 0.0); });
             }
         };
 
@@ -200,8 +200,8 @@ namespace GPN
             {
                 const auto &data{vals.log_vals};
                 std::for_each(data.cbegin(), data.cend(),
-                               [](RealType x)
-                               { assert(x == 0.0 || x == 1.0); });
+                              [](RealType x)
+                              { assert(x == 0.0 || x == 1.0); });
             }
         };
 
@@ -225,6 +225,23 @@ namespace GPN
                     assert(
                         ((is_permeable(id) == 1.0) && (pressure(id) > 0.0)) ||
                         ((is_permeable(id) == 0.0) && (pressure(id) == 0.0)));
+            }
+        };
+
+        struct RFP
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            RFP(const StepPropertyGrid &rfp,
+                const IsPermeable &is_permeable)
+                : StepPropertyGrid{rfp},
+                  AssertNonNegative{rfp}
+            {
+                assert(rfp.size() == is_permeable.size());
+                for (std::ptrdiff_t id{0ll}; id < rfp.size(); ++id)
+                    assert(
+                        ((is_permeable(id) == 1.0) && (rfp(id) > 0.0)) ||
+                        ((is_permeable(id) == 0.0) && (rfp(id) == 0.0)));
             }
         };
 
@@ -333,7 +350,7 @@ namespace GPN
                 const SolidVolumetricHeatCapacity &matrix_vol_heat_capacity,
                 const Water &water)
                 : StepPropertyGrid{
-                      porosity * water.volumetric_heat_capacity + (porosity-1.0)*(-1.0) * matrix_vol_heat_capacity}
+                      porosity * water.volumetric_heat_capacity + (porosity - 1.0) * (-1.0) * matrix_vol_heat_capacity}
             {
             }
         };
