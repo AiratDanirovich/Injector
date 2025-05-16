@@ -24,7 +24,12 @@ namespace GPN
         RealType f_factor;
     };
 
-    struct Well_KH
+    struct IWell
+    {
+        virtual Logs::RFP get_RFP(RealType rate) const = 0;
+    };
+
+    struct Well_KH : public IWell
     {
         using Grid_t = Logs::StepPropertyGrid::Grid_t;
 
@@ -49,11 +54,11 @@ namespace GPN
         //                      ((permeability * cell_volumes * is_permeable.log_vals).sum() / std::log(R_ext / r_col));
         // }
 
-        auto get_RFP(RealType rate) const
+        Logs::RFP get_RFP(RealType rate) const override
         {
             const auto temp{(permeability * cell_volumes * is_permeable.log_vals).eval()};
 
-            return Logs::RFP{
+            return {
                 Logs::StepPropertyGrid{
                     Logs::StepProperty{(temp * (rate / temp.sum())).eval()},
                     grid},
@@ -77,7 +82,7 @@ namespace GPN
 
 
 
-    struct Well
+    struct Well : public IWell
     {
         using Grid_t = Logs::StepPropertyGrid::Grid_t;
 
@@ -112,11 +117,11 @@ namespace GPN
                              ((permeability * cell_volumes * is_permeable.log_vals).sum() / std::log(R_ext / r_col));
         }
 
-        auto get_RFP(RealType rate) const
+        Logs::RFP get_RFP(RealType rate) const override
         {
             const auto temp{(permeability * cell_volumes * is_permeable.log_vals).eval()};
 
-            return Logs::RFP{
+            return {
                 Logs::StepPropertyGrid{
                     Logs::StepProperty{(temp * (rate / temp.sum())).eval()},
                     grid},
