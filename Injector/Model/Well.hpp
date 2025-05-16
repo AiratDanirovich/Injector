@@ -24,8 +24,63 @@ namespace GPN
         RealType f_factor;
     };
 
+    struct Well_KH
+    {
+        using Grid_t = Logs::StepPropertyGrid::Grid_t;
+
+        template <typename IsPermeable_t, typename Permeability_t>
+        Well_KH(
+            const PhaseProperties &fluid,
+            const IsPermeable_t &is_permeable,
+            const Permeability_t &permeability)
+            : 
+              fluid{fluid},
+              is_permeable{is_permeable},
+              permeability{permeability.log_vals},
+              cell_volumes{is_permeable.grid.get_dual_steps()},
+              grid{is_permeable.grid}
+        {
+        }
+
+        // void set_P_top(RealType rate)
+        // {
+        //     RealType factor{TwoPi / fluid.viscosity};
+        //     RealType P_top = (rate / factor - (permeability * cell_volumes * (fluid.density * Gravity::value() * mesh_nodes - ext_pressure) * is_permeable.log_vals).sum() / std::log(R_ext / r_col)) /
+        //                      ((permeability * cell_volumes * is_permeable.log_vals).sum() / std::log(R_ext / r_col));
+        // }
+
+        auto get_RFP(RealType rate) const
+        {
+            const auto temp{(permeability * cell_volumes * is_permeable.log_vals).eval()};
+
+            return Logs::RFP{
+                Logs::StepPropertyGrid{
+                    Logs::StepProperty{(temp * (rate / temp.sum())).eval()},
+                    grid},
+                is_permeable};
+        }
+
+    protected:
+        const PhaseProperties fluid;
+        const Logs::StepPropertyContainer
+            //    is_permeable,
+            permeability,
+            cell_volumes;
+        const Logs::IsPermeable is_permeable;
+        const Grid_t &grid;
+
+    private:
+        RealType TwoPi{2.0 * std::numbers::pi};
+        //     RealType P_top;
+
+    };
+
+
+
     struct Well
     {
+        using Grid_t = Logs::StepPropertyGrid::Grid_t;
+
         template <typename IsPermeable_t, typename Permeability_t, typename ExternalPressure_t>
         Well(
             RealType R_ext,
@@ -41,36 +96,48 @@ namespace GPN
               r_tube{r_tube},
               fluid{fluid},
               friction{friction},
-              is_permeable{is_permeable.log_vals},
+              is_permeable{is_permeable},
               permeability{permeability.log_vals},
               ext_pressure{ext_pressure.log_vals},
               mesh_nodes{is_permeable.grid.get_mesh_nodes()},
-              cell_volumes{is_permeable.grid.get_dual_steps()}
+              cell_volumes{is_permeable.grid.get_dual_steps()},
+              grid{is_permeable.grid}
         {
         }
 
         void set_P_top(RealType rate)
         {
             RealType factor{TwoPi / fluid.viscosity};
-            RealType P_top = (rate / factor - (permeability * cell_volumes * (fluid.density * Gravity::value() * mesh_nodes - ext_pressure) * is_permeable).sum() / std::log(R_ext / r_col)) /
-                             ((permeability * cell_volumes * is_permeable).sum() / std::log(R_ext / r_col));
+            RealType P_top = (rate / factor - (permeability * cell_volumes * (fluid.density * Gravity::value() * mesh_nodes - ext_pressure) * is_permeable.log_vals).sum() / std::log(R_ext / r_col)) /
+                             ((permeability * cell_volumes * is_permeable.log_vals).sum() / std::log(R_ext / r_col));
+        }
 
-                             
+        auto get_RFP(RealType rate) const
+        {
+            const auto temp{(permeability * cell_volumes * is_permeable.log_vals).eval()};
+
+            return Logs::RFP{
+                Logs::StepPropertyGrid{
+                    Logs::StepProperty{(temp * (rate / temp.sum())).eval()},
+                    grid},
+                is_permeable};
         }
 
     protected:
         const RealType R_ext, r_col, r_tube;
         const PhaseProperties fluid;
         const Logs::StepPropertyContainer
-            is_permeable,
+            //    is_permeable,
             permeability,
             ext_pressure,
             mesh_nodes,
             cell_volumes;
+        const Logs::IsPermeable is_permeable;
+        const Grid_t &grid;
         const Friction friction;
 
     private:
-        RealType TwoPi{2.0*std::numbers::pi};
+        RealType TwoPi{2.0 * std::numbers::pi};
         //     RealType P_top;
     };
 
