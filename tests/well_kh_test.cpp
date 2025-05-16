@@ -53,4 +53,6 @@ TEST_CASE("Well_KH_Test")
             rate / (grid_stencils.back() - grid_stencils.front()) *
                 grid.dual_steps(i));
     }
+
+    CHECK(rfp.log_vals.sum() == rate);
 }
