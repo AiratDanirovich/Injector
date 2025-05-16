@@ -55,7 +55,7 @@ TEST_CASE("RFP_reservoir")
         is_permeable, permeability};
 
     const RealType rate{1.0};
-    auto rfp = well.get_RFP(rate);
+    auto rfp = well.get_RFP(rate, z_grid);
 
     for (auto i{0ll}; i < rfp.size(); ++i)
     {

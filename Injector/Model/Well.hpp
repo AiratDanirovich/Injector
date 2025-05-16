@@ -11,10 +11,8 @@
 
 namespace GPN
 {
-
     struct Friction
     {
-
     public:
         RealType friction_factor(RealType rate) const noexcept
         {
@@ -26,13 +24,12 @@ namespace GPN
 
     struct IWell
     {
-        virtual Logs::RFP get_RFP(RealType rate) const = 0;
+        using Grid_t = Logs::StepPropertyGrid::Grid_t;
+        virtual Logs::RFP get_RFP(RealType rate, const Grid_t& grid) const = 0;
     };
 
     struct Well_KH : public IWell
     {
-        using Grid_t = Logs::StepPropertyGrid::Grid_t;
-
         template <typename IsPermeable_t, typename Permeability_t>
         Well_KH(
             const PhaseProperties &fluid,
@@ -41,9 +38,10 @@ namespace GPN
             : 
               fluid{fluid},
               is_permeable{is_permeable},
-              permeability{permeability.log_vals},
-              cell_volumes{is_permeable.grid.get_dual_steps()},
-              grid{is_permeable.grid}
+            //   permeability{permeability.log_vals},
+            //   cell_volumes{is_permeable.grid.get_dual_steps()},
+            //   grid{is_permeable.grid},
+              temp{permeability.log_vals * is_permeable.grid.get_dual_steps() * is_permeable.log_vals}
         {
         }
 
@@ -54,9 +52,8 @@ namespace GPN
         //                      ((permeability * cell_volumes * is_permeable.log_vals).sum() / std::log(R_ext / r_col));
         // }
 
-        Logs::RFP get_RFP(RealType rate) const override
+        Logs::RFP get_RFP(RealType rate, const Grid_t& grid) const override
         {
-            const auto temp{(permeability * cell_volumes * is_permeable.log_vals).eval()};
 
             return {
                 Logs::StepPropertyGrid{
@@ -67,15 +64,16 @@ namespace GPN
 
     protected:
         const PhaseProperties fluid;
-        const Logs::StepPropertyContainer
-            //    is_permeable,
-            permeability,
-            cell_volumes;
-        const Logs::IsPermeable is_permeable;
-        const Grid_t &grid;
+        const Logs::StepPropertyContainer temp;
+        // const Logs::StepPropertyContainer
+        //     //    is_permeable,
+        //     permeability,
+        //     cell_volumes;
+         const Logs::IsPermeable is_permeable;
+        // const Grid_t &grid;
 
     private:
-        RealType TwoPi{2.0 * std::numbers::pi};
+        // RealType TwoPi{2.0 * std::numbers::pi};
         //     RealType P_top;
 
     };
@@ -84,7 +82,6 @@ namespace GPN
 
     struct Well : public IWell
     {
-        using Grid_t = Logs::StepPropertyGrid::Grid_t;
 
         template <typename IsPermeable_t, typename Permeability_t, typename ExternalPressure_t>
         Well(
@@ -105,8 +102,9 @@ namespace GPN
               permeability{permeability.log_vals},
               ext_pressure{ext_pressure.log_vals},
               mesh_nodes{is_permeable.grid.get_mesh_nodes()},
-              cell_volumes{is_permeable.grid.get_dual_steps()},
-              grid{is_permeable.grid}
+              cell_volumes{is_permeable.grid.get_dual_steps()}
+        //      ,
+        //      grid{is_permeable.grid}
         {
         }
 
@@ -117,7 +115,7 @@ namespace GPN
                              ((permeability * cell_volumes * is_permeable.log_vals).sum() / std::log(R_ext / r_col));
         }
 
-        Logs::RFP get_RFP(RealType rate) const override
+        Logs::RFP get_RFP(RealType rate, const Grid_t& grid) const override
         {
             const auto temp{(permeability * cell_volumes * is_permeable.log_vals).eval()};
 
@@ -138,7 +136,7 @@ namespace GPN
             mesh_nodes,
             cell_volumes;
         const Logs::IsPermeable is_permeable;
-        const Grid_t &grid;
+   //     const Grid_t &grid;
         const Friction friction;
 
     private:
