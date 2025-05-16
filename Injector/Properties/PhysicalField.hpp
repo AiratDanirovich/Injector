@@ -90,8 +90,8 @@ namespace GPN
 
             const GridNodeValues2D its_values;
             const cptr<Grid_t> grid;
-        protected:
 
+        protected:
         private:
             // extrapolate as const value in the Axes2 direction,
             // though, may be avoided. Element access interface through
@@ -120,6 +120,16 @@ namespace GPN
             {
             }
         };
+
+        struct RFP
+            : public Field<Grids::StructuredCylinderGrid2DAxisymmetric>
+        {
+            RFP(const Logs::StepPropertyGrid &property,
+                const cptr<Grids::StructuredCylinderGrid2DAxisymmetric> grid) : Field{property, grid}
+            {
+            }
+        };
+
         struct HeatVolumetricCapacity
             : public Field<Grids::StructuredCylinderGrid2DAxisymmetric>
         {
@@ -136,12 +146,12 @@ namespace GPN
                   face_vals_axes1(
                       property.face_values.size(),
                       grid->second_coord.size()),
-//#pragma region AXES2-FACEVALUES
+                  // #pragma region AXES2-FACEVALUES
                   face_vals_axes2{
                       Logs::FaceInterpolator<
                           typename Grid_t::Axes2>::interpolate(property,
                                                                grid->second_coord)}
-//#pragma endregion
+            // #pragma endregion
             {
 #pragma region AXES1-FACEVALUES
                 assert(property.face_values.size() >= 0ll);
@@ -155,7 +165,7 @@ namespace GPN
                         assert(face_vals_axes1(row, 0) == face_vals_axes1(row, col));
 #pragma endregion
             }
-            
+
             using typename Field<Grid_t>::Grid_type;
 
             // interpolated values at faces normal to Axes1
