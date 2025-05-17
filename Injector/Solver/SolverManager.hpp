@@ -10,16 +10,9 @@ namespace GPN
     namespace EqSolver
     {
         template <
-            typename Grid_t,
-            typename Capacity_t,
-            typename FlowField_t>
+            typename Solver_t>
         struct SolverManager
         {
-            using Solver_t = SplittingMethod::Solver<
-                Grid_t,
-                Capacity_t,
-                FlowField_t>;
-
             SolverManager(
                 const History &history,
                 cptr<Solver_t> solver)

@@ -7,13 +7,8 @@ namespace GPN
 {
     namespace Model
     {
-        struct Layers
-        {
-        };
-
         namespace Injector
         {
-
             struct FlowField
             {};
 
