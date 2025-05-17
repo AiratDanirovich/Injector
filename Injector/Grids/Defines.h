@@ -98,15 +98,15 @@ namespace GPN
 
 
 
-    struct Directions
-    {
-        enum
+//    struct Directions
+//    {
+        enum struct Directions
         {
             x1,
             x2,
             size
         };
-    };
+//    };
 
     struct ScalarParameter
     {

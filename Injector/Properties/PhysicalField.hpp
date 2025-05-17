@@ -3,6 +3,7 @@
 #include <memory>
 #include <type_traits>
 #include <omp.h>
+#include <cassert>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -117,15 +118,6 @@ namespace GPN
         {
             Permeability(const Logs::StepPropertyGrid &property,
                          const cptr<Grids::StructuredCylinderGrid2DAxisymmetric> grid) : Field{property, grid}
-            {
-            }
-        };
-
-        struct RFP
-            : public Field<Grids::StructuredCylinderGrid2DAxisymmetric>
-        {
-            RFP(const Logs::StepPropertyGrid &property,
-                const cptr<Grids::StructuredCylinderGrid2DAxisymmetric> grid) : Field{property, grid}
             {
             }
         };
