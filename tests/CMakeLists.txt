@@ -38,6 +38,6 @@ add_catch2_test(splitting_solver_constvalProblem)
 add_catch2_test(splitting_solver_SelfSimilarProblem)
 
 add_catch2_test(well_kh_test)
-add_catch2_test(RFP_reservoir_test)
+add_catch2_test(flowfield_test)
 
 
