@@ -4,6 +4,7 @@
 #include <Injector/Properties/Logs.hpp>
 #include <Injector/Properties/PhysicalField.hpp>
 #include <Injector/Model/Well.hpp>
+#include <Injector/Properties/FlowField.hpp>
 
 #include <Injector/Grids/Factory.hpp>
 #include <Injector/Properties/Factory.hpp>
@@ -54,20 +55,41 @@ TEST_CASE("RFP_reservoir")
         FluidFactory::create_water(1.0, 1.0),
         is_permeable, permeability};
 
-    const RealType rate{1.0};
-    auto rfp = well.get_RFP(rate, z_grid);
+    const RealType well_rate{1.0};
+    auto rfp = well.get_RFP(well_rate, z_grid);
 
     for (auto i{0ll}; i < rfp.size(); ++i)
     {
         CHECK(
             rfp(i) ==
-            rate / (z_grid_stencils.back() - z_grid_stencils.front()) *
+            well_rate / (z_grid_stencils.back() - z_grid_stencils.front()) *
                 z_grid.dual_steps(i));
     }
 
-    CHECK(rfp.log_vals.sum() == rate);
+    CHECK(rfp.log_vals.sum() == well_rate);
 
-    Properties::RFP rfp_field{
-        rfp,
-        grid2D};
+    Properties::ReservoirFlowField flow_field{
+        rfp, well_rate,
+        *grid2D};
+
+    // check the first column of verticle flow
+    for (auto row{0ll}, col{0ll}; row < flow_field.axes1_as_face_normal.rows(); ++row)
+    {
+        CHECK(flow_field.axes1_as_face_normal(row, col) == flow_field.axes1_as_face_normal(0, col));
+        CHECK(flow_field.axes1_as_face_normal(row, col) == well_rate);
+    }
+
+    // check other columns of verticle flow
+    for (auto row{0ll}; row < flow_field.axes1_as_face_normal.rows(); ++row)
+        for (auto col{1ll}; col < flow_field.axes1_as_face_normal.cols(); ++col)
+        {
+            CHECK(flow_field.axes1_as_face_normal(row, col) == (RealType)0.0);
+        }
+
+    // check columns of horizontal flow
+    for (auto row{0ll}; row < flow_field.axes2_as_face_normal.rows(); ++row)
+        for (auto col{1ll}; col < flow_field.axes2_as_face_normal.cols(); ++col)
+        {
+            CHECK(flow_field.axes2_as_face_normal(row, col) == flow_field.axes2_as_face_normal(row, 0ll));
+        }
 }
