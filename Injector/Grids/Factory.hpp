@@ -95,5 +95,22 @@ namespace GPN
                 return std::make_shared<StructuredCylinderGrid2DAxisymmetric>(z_grid, r_grid);
             }
         };
+
+        struct CylinderGridFactory
+        {
+            CylinderGridFactory(const Box &box, ptrdiff_t n1, ptrdiff_t n2)
+                : grid2D{std::make_shared<Grids::StructuredCylinderGrid2DAxisymmetric>(
+                      Grids::Factory::create_cylinder_grid_2D(
+                          box, n1, n2))}
+            {
+            }
+
+            const auto grid() const
+            {
+                return grid2D;
+            }
+protected:
+            cptr<Grids::StructuredCylinderGrid2DAxisymmetric> grid2D;
+        };
     }
 }
