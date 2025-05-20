@@ -2,7 +2,6 @@
 
 #include <cmath>
 #include <Eigen/Core>
-// #include <Eigen/Dense>
 
 #include <Injector/Grids/Defines.h>
 

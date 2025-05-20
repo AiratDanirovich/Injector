@@ -143,6 +143,11 @@ namespace GPN
                 return StepPropertyGrid{(lhs.log_vals + rhs.log_vals), lhs.grid};
             }
 
+            operator const StepPropertyContainer&() const
+            {
+                return log_vals;
+            }
+
             const StepPropertyContainer log_vals;
             const Grid_t grid;
 
@@ -232,6 +237,15 @@ namespace GPN
             : public StepPropertyGrid,
               private AssertNonNegative
         {
+            template <typename Well_t, typename Grid_t>
+            RFP(
+                RealType well_rate,
+                const Well_t &well,
+                const Grid_t &grid)
+                : RFP{well.get_RFP(well_rate, grid)}
+            {
+            }
+
             RFP(const StepPropertyGrid &rfp,
                 const IsPermeable &is_permeable)
                 : StepPropertyGrid{rfp},
