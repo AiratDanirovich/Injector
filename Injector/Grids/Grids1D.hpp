@@ -8,9 +8,10 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-#include <Injector/Declarations.h>
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/CoordinateTypes.h>
+
+#include <Injector/Declarations.h>
 
 namespace GPN
 {
@@ -210,7 +211,7 @@ namespace GPN
         /// volume per node, heat resistivity etc.
         /// @tparam CoordinateType_t Type of coordinate
         template <typename CoordinateType_t>
-            requires CoordinateTypes::ICoordinate<CoordinateType_t>
+//            requires CoordinateTypes::ICoordinate<CoordinateType_t>
         struct AxesGrid : public GridDual
         {
             using Axes = CoordinateType_t;

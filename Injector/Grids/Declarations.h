@@ -3,6 +3,7 @@
 // https://blog.andreiavram.ro/object-has-method-cpp20-concepts/
 
 #include <concepts>
+#include <Eigen/Core>
 
 using RealType = double;
 
@@ -16,21 +17,21 @@ namespace GPN
 
     namespace CoordinateTypes
     {
-        template <typename Axes_t>
-        concept ICoordinate = requires(
-            Axes_t, const DualNodesContainer &nodes,
-            RealType xL, RealType xR, RealType xMid,
-            RealType valL, RealType valR,
-            const Eigen::ArrayX<RealType> &val) {
-            { Axes_t::control_volumes(nodes) } -> std::convertible_to<ControlVolumesContainer>;
-            { Axes_t::face_interpolator(
-                xL, xR, xMid, valL, valR) } -> std::same_as<RealType>;
-            { Axes_t::const_face_interpolator(
-                xL, xR, val) } -> std::convertible_to<Eigen::ArrayX<RealType>>;
-            { Axes_t::dual_steps(nodes) } -> std::convertible_to<DualStepsContainer>;
-            { Axes_t::cell_centers(nodes) } -> std::convertible_to<MeshNodesContainer>;
-            { Axes_t::mesh_steps(nodes) } -> std::convertible_to<MeshStepsContainer>;
-        };
+        // template <typename Axes_t>
+        // concept ICoordinate = requires(
+        //     Axes_t, const DualNodesContainer &nodes,
+        //     RealType xL, RealType xR, RealType xMid,
+        //     RealType valL, RealType valR,
+        //     const Eigen::ArrayX<RealType> &val) {
+        //     { Axes_t::control_volumes(nodes) } -> std::convertible_to<ControlVolumesContainer>;
+        //     { Axes_t::face_interpolator(
+        //         xL, xR, xMid, valL, valR) } -> std::same_as<RealType>;
+        //     { Axes_t::const_face_interpolator(
+        //         xL, xR, val) } -> std::convertible_to<Eigen::ArrayX<RealType>>;
+        //     { Axes_t::dual_steps(nodes) } -> std::convertible_to<DualStepsContainer>;
+        //     { Axes_t::cell_centers(nodes) } -> std::convertible_to<MeshNodesContainer>;
+        //     { Axes_t::mesh_steps(nodes) } -> std::convertible_to<MeshStepsContainer>;
+        // };
 
         struct GeneralCoordinate;
 
@@ -57,7 +58,7 @@ namespace GPN
         struct TemporalGridDual;
 
         template <typename CoordinateType_t>
-            requires CoordinateTypes::ICoordinate<CoordinateType_t>
+//            requires CoordinateTypes::ICoordinate<CoordinateType_t>
         struct AxesGrid;
 
         struct RGrid;
