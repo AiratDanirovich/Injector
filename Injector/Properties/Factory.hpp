@@ -15,27 +15,35 @@ namespace GPN
         {
             using Grid_t = Grids::AxesGrid<CoordinateTypes::Z>;
 
-            template <typename Container_t>
+            template <typename Container1_t, typename Container2_t>
             static auto generate_permeability_StepProperty(
-                const Container_t &dual_stencils)
+                const Container1_t &dual_stencils,
+                const Container2_t &is_permeable)
             {
                 auto size{dual_stencils.size() - 1};
                 std::vector<RealType> vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
+                {
                     vals[id] = (id % 2 == 1) ? 500 : 300;
+                    vals[id] *= is_permeable[id];
+                }
                 return vals;
             }
 
-            template <typename Container_t>
+            template <typename Container1_t, typename Container2_t>
             static auto generate_porosity_StepProperty(
-                const Container_t &dual_stencils)
+                const Container1_t &dual_stencils,
+                const Container2_t &is_permeable)
             {
                 auto size{dual_stencils.size() - 1};
                 std::vector<RealType> vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
+                {
                     vals[id] = (id % 2 == 1) ? 0.2 : 0.5;
+                    vals[id] *= is_permeable[id];
+                }
                 return vals;
             }
 

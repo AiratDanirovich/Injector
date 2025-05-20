@@ -11,7 +11,7 @@ using namespace GPN;
 using namespace GPN::Grids;
 using namespace GPN::CoordinateTypes;
 
-TEST_CASE("LogsTest")
+TEST_CASE("HydrodynamicsSolverTest")
 {
 #pragma region GRID_2D
     // generate 1D grids in every direction --- points of property jumps
@@ -32,7 +32,8 @@ TEST_CASE("LogsTest")
             z_grid, r_grid)};
 #pragma endregion
 #pragma region IS_PERMEABLE
-    const auto is_permeable_stencils{Logs::Factory::generate_is_permeable_StepProperty(grid2D->first_coord.dual_stencils)};
+    const auto is_permeable_stencils{
+        Logs::Factory::generate_is_permeable_StepProperty(grid2D->first_coord.dual_stencils)};
     auto is_permeable{
         Logs::IsPermeable{
             Logs::StepPropertyGrid{
@@ -48,7 +49,7 @@ TEST_CASE("LogsTest")
                 Logs::StepProperty{
                     Logs::Factory::generate_permeability_StepProperty(
                         grid2D->first_coord.dual_stencils, is_permeable_stencils)},
-                        grid2D->first_coord},
+                grid2D->first_coord},
             is_permeable}};
 
     // generate permeability 2D field
