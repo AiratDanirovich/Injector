@@ -3,6 +3,7 @@
 #include <Injector/Properties/Logs.hpp>
 #include <Injector/Grids/Factory.hpp>
 #include <Injector/Properties/Factory.hpp>
+#include <Injector/Properties/LogsFactory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
