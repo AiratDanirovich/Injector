@@ -3,10 +3,11 @@
 #include <fstream>
 #include <cassert>
 
+#include <Injector/Properties/Logs.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/HydrodynamicSolver.hpp>
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
-#include <Injector/Solver/SplittingMethod/SolverFactory.hpp>
+#include <Injector/Solver/SolverFactory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
@@ -15,6 +16,7 @@ using namespace Catch;
 using namespace Catch::Matchers;
 
 using namespace GPN;
+using namespace GPN::Logs;
 using namespace GPN::Phases;
 using namespace GPN::Model::Injector;
 using namespace GPN::EqSolver;
@@ -38,11 +40,11 @@ struct ExactSolution
     return -q * heat_conductivity.value(0ull, 0ull) *
            std::expint(-r * r / (4.0 * kappa.value(0ull, 0ull) * t));
   }
-  
-  template<typename Grid_t>
-  RealType operator()(ptrdiff_t z, ptrdiff_t r, RealType t, const Grid_t& grid) const
+
+  template <typename Grid_t>
+  RealType operator()(ptrdiff_t z, ptrdiff_t r, RealType t, const Grid_t &grid) const
   {
-    const auto[zv, rv]{grid.coordinates(z,r)};
+    const auto [zv, rv]{grid.coordinates(z, r)};
     return (*this)(zv, rv, t);
   }
 
@@ -159,10 +161,26 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       Grids::Factory::generate_dual_grid_stencils_from_steps(
           t0, time_intervals));
   // solver
-  FlowField flow_field{};
+  const RealType well_rate{0.0};
+  const Logs::IsPermeable is_permeable_log{Logs::IsPermeable{
+      StepPropertyGrid{
+          StepProperty{
+              is_permeable},
+          grid2D->first_coord}}};
+  const Well_KH well{
+      Phases::FluidFactory::create_water(0.0, 0.0),
+      is_permeable_log,
+      Logs::Permeability{
+          StepPropertyGrid{
+              StepProperty{
+                  is_permeable},
+              grid2D->first_coord},
+          is_permeable_log}};
+  Properties::ReservoirFlowField flow_field{
+      well_rate, well, *grid2D};
 
   Solver solver{
-      conductivity_field, 
+      conductivity_field,
       flow_field, grid2D,
       capacity_field,
       initial_state,
@@ -185,8 +203,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   std::string pathr{"data_r.csv"};
   std::string pathz{"data_z.csv"};
 
-
-
   // assert solution
   for (size_t t_step{0ll}; t_step < time_intervals.size(); ++t_step)
   {
@@ -199,11 +215,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto &[time, state] = solver.solution().back();
   for (std::ptrdiff_t col{0ll}; col < state.cols(); ++col)
   {
-    for (std::ptrdiff_t row{nLayers/2}; row < nLayers/2+1ll /*state.rows()*/; ++row)
+    for (std::ptrdiff_t row{nLayers / 2}; row < nLayers / 2 + 1ll /*state.rows()*/; ++row)
     {
       const auto [z, r] = grid2D->coordinates(row, col);
       const auto val{es(z, r, time)};
-      
+
       fr << r << ';' << val << ';' << state(row, col) << '\n';
 
       INFO("" << "col: " << col << ", row: " << row << ", calc: " << state(row, col) << ", ref: " << val);
@@ -225,12 +241,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
   //     assert(val == val2);
 
-  //     fz 
-  //     << z << ';' 
-  //     << val << ';' 
-  //     << state(row, 0)<< ';' 
-  //     << state(row, col)<< ';' 
-  //     << state(row, state.cols()-1ll) 
+  //     fz
+  //     << z << ';'
+  //     << val << ';'
+  //     << state(row, 0)<< ';'
+  //     << state(row, col)<< ';'
+  //     << state(row, state.cols()-1ll)
   //     << '\n';
 
   //     INFO("" << "col: " << col << ", row: " << row << ", calc: " << state(row, col) << ", ref: " << val);

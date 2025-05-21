@@ -53,7 +53,6 @@ namespace GPN
 
         Logs::RFP get_RFP(RealType rate, const Grid_t &grid) const override
         {
-
             return {
                 Logs::StepPropertyGrid{
                     Logs::StepProperty{(temp * (rate / temp.sum())).eval()},
