@@ -73,9 +73,9 @@ namespace GPN
                 : its_values{vals},
                   grid{grid}
             {
-                assert(its_values.rows() == grid->first_coord.size());
-                assert(its_values.cols() == grid->second_coord.size());
-                assert(grid->second_coord.size() > 0ll);
+                assert(its_values.rows() == grid->first_coord.mesh_size());
+                assert(its_values.cols() == grid->second_coord.mesh_size());
+                assert(grid->second_coord.mesh_size() > 0ll);
             }
 
             const auto &values() const { return its_values; }
@@ -99,10 +99,10 @@ namespace GPN
             // operator()(i, j) is expected.
             static auto interpolate_r(const Logs::StepPropertyGrid &property, const cptr<Grid_t> grid)
             {
-                assert(property.log_vals.size() == grid->first_coord.size());
-                assert(grid->second_coord.size() > 0ll);
+                assert(property.log_vals.size() == grid->first_coord.mesh_size());
+                assert(grid->second_coord.mesh_size() > 0ll);
 
-                GridNodeValues2D out(grid->first_coord.size(), grid->second_coord.size());
+                GridNodeValues2D out(grid->first_coord.mesh_size(), grid->second_coord.mesh_size());
                 out.colwise() = property.log_vals;
                 return out;
             }
@@ -137,7 +137,7 @@ namespace GPN
                 : Field<Grid_t>{property, grid},
                   face_vals_axes1(
                       property.face_values.size(),
-                      grid->second_coord.size()),
+                      grid->second_coord.mesh_size()),
                   // #pragma region AXES2-FACEVALUES
                   face_vals_axes2{
                       Logs::FaceInterpolator<

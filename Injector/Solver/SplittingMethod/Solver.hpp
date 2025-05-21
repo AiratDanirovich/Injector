@@ -82,7 +82,7 @@ namespace GPN
                     typename LaplaceFactor_t>
                 Solver(
                     const LaplaceFactor_t &laplace_factor,
-                    const FlowField_t& flow_field,
+                    const FlowField_t &flow_field,
                     const cptr<Grid_t> grid,
                     const Capacity_t &time_factor,
                     const State::State2D &initial_state,
@@ -93,8 +93,8 @@ namespace GPN
                       time_factor{time_factor, *grid},
                       grid{grid},
                       flow_field{flow_field},
-                      first_coord_size{grid->first_coord.size()},
-                      second_coord_size{grid->second_coord.size()},
+                      first_coord_size{grid->first_coord.mesh_size()},
+                      second_coord_size{grid->second_coord.mesh_size()},
                       state{initial_state}, // init with initial condition
                       bc{bc},
                       states(),
@@ -106,8 +106,8 @@ namespace GPN
                     states.emplace_back(state);
                 }
 
-                Solver(const Solver&) = default;
-                Solver(Solver&&) noexcept = default;
+                Solver(const Solver &) = default;
+                Solver(Solver &&) noexcept = default;
 
                 template <typename Factory_t>
                 static auto set_from_factory(const Factory_t &factory)
@@ -172,10 +172,11 @@ namespace GPN
                     // to be provided to Eigen::Map
                     Stride_t stride{stride_size};
 
-                    const auto& split_flow_field{flow_field.axes1_as_face_normal};
+                    const auto &split_flow_field{flow_field.axes2_as_face_normal};
 
 #pragma omp parallel for // num_threads(16) schedule(dynamic)
-                    //  take every line along x-direction. A line per y-node
+                    //   take every line along x-direction. A line per y-node
+                    //  It is a row of 2D grid representation
                     for (std::ptrdiff_t i = 0; i < first_coord_size; ++i)
                     {
                         // memory chunk in capacity-container, corresponding to x-line
@@ -192,19 +193,20 @@ namespace GPN
 
                         // right handside of Au = b problem
                         // source is only assumed in the last split step
-                        RHS_t rhs =
-                            (data.array() * time_factor.array()).matrix();
+                        RHS_t rhs{
+                            (data.array() * time_factor.array()).matrix()};
 
                         // Laplace term
                         SpMatrix A{splitX.LaplaceTerm(i)};
                         // cumulative term
                         A.diagonal() = A.diagonal() + time_factor;
                         // convection term
-                        const auto& flow{split_flow_field.row(i)};
-                        A.diagonal().tail(second_coord_size-1ll) = A.diagonal().tail(second_coord_size-1ll).array() + flow;
-                        for(auto idx{1ll}; idx < A.rows(); ++idx)
-                                 A.coeffRef(idx, idx-1ll) -= split_flow_field(i, idx-1ll);
-                    //    A.diagonal(-1ll) = A.diagonal(-1ll) - split_flow_field.row(i);
+                        const auto& flow{split_flow_field.row(i).tail(second_coord_size).matrix().transpose()};
+                        // exclude leftmost edge
+                        A.diagonal() = A.diagonal() + flow;
+                        // exclude leftmost and rightmost edges
+                        for (auto idx{1ll}; idx < A.rows(); ++idx)
+                            A.coeffRef(idx, idx - 1ll) -= flow(idx - 1ll);
 
                         // BC
                         applyBC_split_x(A, rhs, i);
@@ -213,9 +215,9 @@ namespace GPN
                     }
                 }
 
-                void solve_split_y(const RealType * const tau_factor)
+                void solve_split_y(const RealType *const tau_factor)
                 {
-                    const auto& split_flow_field{flow_field.axes2_as_face_normal};
+                    const auto &split_flow_field{flow_field.axes1_as_face_normal};
 
 #pragma omp parallel for
                     // take every line along x-direction. A line per y-node.
@@ -240,17 +242,19 @@ namespace GPN
                         //     first_coord_size};
 
                         // right handside of Au = b problem
-                        RHS_t rhs = (data * time_factor + source).matrix();
+                        RHS_t rhs{(data * time_factor + source).matrix()};
 
                         // Laplace term
                         SpMatrix A{splitY.LaplaceTerm(j)};
                         // cululative term
                         A.diagonal() = A.diagonal() + time_factor.matrix();
                         // convection term
-                        const auto& flow{split_flow_field.col(j)};
-                        A.diagonal().tail(first_coord_size-1ll) = A.diagonal().tail(first_coord_size-1ll).array() + flow;
-                        for(auto idx{1ll}; idx < A.rows(); ++idx)
-                                 A.coeffRef(idx, idx-1ll) -= flow(idx-1ll);
+                        const auto &flow{split_flow_field.col(j).tail(first_coord_size).matrix()};
+                        // exclude leftmost edge
+                        A.diagonal() = A.diagonal() + flow;
+                        // exclude leftmost and rightmost edges
+                        for (auto idx{1ll}; idx < A.rows(); ++idx)
+                            A.coeffRef(idx, idx - 1ll) -= flow(idx - 1ll);
                         // BC
                         applyBC_split_y(A, rhs, j);
 

@@ -1,11 +1,11 @@
 #include <iostream>
 #include <memory>
 
-#include <catch2/catch_test_macros.hpp>
-
 #include <Injector/Grids/Defines.h>
 #include <Injector/Solver/SolverFactory.hpp>
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
+
+#include <catch2/catch_test_macros.hpp>
 
 using namespace GPN;
 using namespace GPN::EqSolver;

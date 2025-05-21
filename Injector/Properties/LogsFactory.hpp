@@ -37,7 +37,7 @@ namespace GPN
                           StepPropertyGrid{
                               StepProperty{
                                   Factory::generate_permeability_StepProperty(
-                                      grid,
+                                      grid.dual_stencils,
                                       is_permeable_stencils())},
                               grid},
                           is_permeable}},
@@ -46,7 +46,7 @@ namespace GPN
                           StepPropertyGrid{
                               StepProperty{
                                   Factory::generate_porosity_StepProperty(
-                                      grid,
+                                      grid.dual_stencils,
                                       is_permeable_stencils())},
                               grid},
                           is_permeable}}

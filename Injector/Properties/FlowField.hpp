@@ -7,12 +7,14 @@ namespace GPN
 {
     namespace Logs
     {
-        struct VerticleFlowRate
+
+        /// @brief Generates the z-component of the flow field as a function of r (i.e., other coordinate)
+        struct ZFlowRateLog
             : public StepPropertyGrid,
               private AssertNonNegative
         {
             template <typename Grid_t>
-            VerticleFlowRate(
+            ZFlowRateLog(
                 RealType well_rate,
                 const Grid_t &grid)
                 : StepPropertyGrid{make_rates(well_rate, grid)},
@@ -45,8 +47,8 @@ namespace GPN
                 const Logs::StepPropertyGrid &log,
                 const Grid2D_t &grid)
             {
-                FaceValuesContainer face_vals(grid.first_coord.dual_size(), log.size());
                 assert(grid.second_coord.mesh_size() == log.size());
+                FaceValuesContainer face_vals(grid.first_coord.dual_size(), log.size());
                 face_vals.rowwise() = log.log_vals.transpose();
                 return face_vals;
             }
@@ -56,8 +58,8 @@ namespace GPN
                 const Logs::StepPropertyGrid &log,
                 const Grid2D_t &grid)
             {
-                FaceValuesContainer face_vals(log.size(), grid.second_coord.dual_size());
                 assert(grid.first_coord.mesh_size() == log.size());
+                FaceValuesContainer face_vals(log.size(), grid.second_coord.dual_size());
                 face_vals.colwise() = log.log_vals;
                 return face_vals;
             }
@@ -65,6 +67,20 @@ namespace GPN
 
         struct ReservoirFlowField
         {
+            template <typename Well_t, typename Grid2D_t>
+            ReservoirFlowField(
+                RealType well_rate,
+                const Well_t &well,
+                const Grid2D_t &grid)
+                : ReservoirFlowField{
+                      Logs::ZFlowRateLog{well_rate, grid.second_coord},
+                      Logs::RFP{well_rate,
+                                well,
+                                grid.first_coord},
+                      grid}
+            {
+            }
+
             template <typename Grid2D_t>
             ReservoirFlowField(
                 const Logs::StepPropertyGrid &axes1_value,
@@ -81,7 +97,7 @@ namespace GPN
                 RealType well_rate,
                 const Grid2D_t &grid)
                 : ReservoirFlowField{
-                      Logs::VerticleFlowRate{well_rate, grid.first_coord},
+                      Logs::ZFlowRateLog{well_rate, grid.first_coord},
                       axes1_value,
                       grid}
             {

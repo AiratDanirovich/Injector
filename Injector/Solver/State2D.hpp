@@ -35,8 +35,8 @@ namespace GPN
                     RealType val)
                 {
                     State_Container cur_state{
-                        grid.first_coord.size(),
-                        grid.second_coord.size()};
+                        grid.first_coord.mesh_size(),
+                        grid.second_coord.mesh_size()};
                     cur_state.fill(val);
 
                     return cur_state;

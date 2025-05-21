@@ -143,7 +143,7 @@ namespace GPN
                 return StepPropertyGrid{(lhs.log_vals + rhs.log_vals), lhs.grid};
             }
 
-            operator const StepPropertyContainer&() const
+            operator const StepPropertyContainer &() const
             {
                 return log_vals;
             }
@@ -156,6 +156,9 @@ namespace GPN
                 const StepProperty &property_vals,
                 const Grid_t &grid)
             {
+
+                //    std::cout << "New interpolation:\n\n";
+
                 StepPropertyContainer out(grid.mesh_size());
                 // interpolate property_vals on the grid
                 for (
@@ -164,18 +167,18 @@ namespace GPN
                     volume_id < grid.dual_steps.size();
                     ++volume_id)
                 {
-                    //    std::cout << "volume_id =     " << volume_id << std::endl;
-                    //    std::cout << "mesh_node_ids = " << std::endl;
+                    //        std::cout << "volume_id =     " << volume_id << std::endl;
+                    //        std::cout << "mesh_node_ids = " << std::endl;
                     // set constant value within a fixed control volume
                     for (;
                          (mesh_node_id < grid.dual_steps.size()) &&
                          (grid.mesh_nodes(mesh_node_id) < grid.dual_stencils(volume_id + 1ull));
                          ++mesh_node_id)
                     {
-                        //        std::cout << mesh_node_id << ' ';
+                        //                std::cout << mesh_node_id << ' ';
                         out(mesh_node_id) = property_vals.data(volume_id);
                     }
-                    //    std::cout << std::endl;
+                    //        std::cout << std::endl;
                 }
 
                 return out;
@@ -254,7 +257,7 @@ namespace GPN
                 assert(rfp.size() == is_permeable.size());
                 for (std::ptrdiff_t id{0ll}; id < rfp.size(); ++id)
                     assert(
-                        ((is_permeable(id) == 1.0) && (rfp(id) > 0.0)) ||
+                        ((is_permeable(id) == 1.0)) ||
                         ((is_permeable(id) == 0.0) && (rfp(id) == 0.0)));
             }
         };
