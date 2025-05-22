@@ -18,10 +18,9 @@ TEST_CASE("BaseSplitTest")
 {
 #pragma region GRID_2D
     // generate 1D grids in every direction --- points of property jumps
-    const cptr<StructuredCylinderGrid2DAxisymmetric> grid2D{
-        std::make_shared<StructuredCylinderGrid2DAxisymmetric>(
-            Grids::Factory::create_cylinder_grid_2D(
-                Box{Segment{0, 1}, Segment{0, 1}}, 5, 11))};
+    const auto grid2D{
+            Grids::Factory::create_cylinder_grid_2D_ptr(
+                Box{Segment{0, 1}, Segment{0, 1}}, 5, 11)};
 #pragma endregion
 #pragma region HEAT-CONDUCTIVITY
     // generate heat conductivity field

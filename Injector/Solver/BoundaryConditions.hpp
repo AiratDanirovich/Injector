@@ -37,7 +37,7 @@ namespace GPN
 
             void set_vals(RealType t)
             {
-                for (std::ptrdiff_t i{0ull}; i < south_vals.size(); ++i)
+                for (std::ptrdiff_t i{0ll}; i < south_vals.size(); ++i)
                 {
                     south_vals[i] =
                         (*functor)(south.fixed_x, grid.coordinate(i), t);
@@ -85,15 +85,29 @@ namespace GPN
             }
         };
 
-        struct BoundaryConditions
+        struct MatrixView
+        {
+            using MatrixRow_t = Eigen::Block<Eigen::SparseMatrix<RealType>, 1, -1, false>;
+            using RHS_t = Eigen::Block<Eigen::VectorXd, 1, 1, false>;
+            MatrixView(MatrixRow_t A,
+                       RHS_t rhs)
+                : matrix{A}, rhs{rhs}
+            {
+            }
+
+            MatrixRow_t matrix;
+            RHS_t rhs;
+        };
+
+        struct BoundaryConditionsNodes
         {
             template <typename Grid_t>
             BoundaryConditions(
                 const Grid_t &grid,
                 std::shared_ptr<const BCFunctorBase> functor)
                 : south_north{
-                      BCSouth{grid.first_coord.front()},
-                      BCNorth{grid.first_coord.back()},
+                      BCSouth{grid.first_coord.front(), bc_type},
+                      BCNorth{grid.first_coord.back(), bc_type},
                       grid.second_coord,
                       functor},
                   east_west{
@@ -111,6 +125,7 @@ namespace GPN
             {
                 return east_west.east_vals[i];
             }
+
             RealType west_vals(auto i) const
             {
                 return east_west.west_vals[i];

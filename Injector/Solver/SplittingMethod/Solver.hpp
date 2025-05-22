@@ -52,7 +52,8 @@ namespace GPN
             template <
                 typename Grid_t,
                 typename Capacity_t,
-                typename FlowField_t>
+                typename FlowField_t,
+                typename BC_t>
             struct Solver
             {
                 using Map1D =
@@ -86,7 +87,7 @@ namespace GPN
                     const cptr<Grid_t> grid,
                     const Capacity_t &time_factor,
                     const State::State2D &initial_state,
-                    const BoundaryConditions::BoundaryConditions &bc,
+                    const BC_t &bc,
                     RealType initial_moment = 0.0)
                     : splitX{laplace_factor, grid},
                       splitY{laplace_factor, grid},
@@ -201,7 +202,7 @@ namespace GPN
                         // cumulative term
                         A.diagonal() = A.diagonal() + time_factor;
                         // convection term
-                        const auto& flow{split_flow_field.row(i).tail(second_coord_size).matrix().transpose()};
+                        const auto &flow{split_flow_field.row(i).tail(second_coord_size).matrix().transpose()};
                         // exclude leftmost edge
                         A.diagonal() = A.diagonal() + flow;
                         // exclude leftmost and rightmost edges
@@ -265,7 +266,7 @@ namespace GPN
 
                 const SplitX splitX;
                 const SplitY splitY;
-                BoundaryConditions::BoundaryConditions bc;
+                BC_t bc;
                 const TemporalTerm time_factor;
                 // required to keep grid in memory ////
                 const cptr<Grid_t> grid; //////////////
@@ -293,11 +294,16 @@ namespace GPN
 
                 void applyBC_split_x(SpMatrix &A, RHS_t &b, ptrdiff_t i)
                 {
+                //    bc.set_west_val(BoundaryConditions::MatrixView{A.row(0ll), b.row(0ll)}, i);
+
                     A.coeffRef(0, 0) = 1.0;
                     A.coeffRef(0, 1) = 0.0;
                     b(0) = bc.west_vals(i);
 
                     ptrdiff_t n = A.outerSize() - 1;
+                    BoundaryConditions::MatrixView
+                        view_east(A.row(n), b.row(n));
+
                     A.coeffRef(n, n) = 1.0;
                     A.coeffRef(n, n - 1) = 0.0;
                     b(n) = bc.east_vals(i);
