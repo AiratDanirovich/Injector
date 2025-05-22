@@ -165,13 +165,21 @@ namespace GPN
                 return mesh_nodes(id);
             }
 
-            auto front() const
+            auto mesh_front() const
             {
                 return mesh_nodes(0);
             }
-            auto back() const
+            auto mesh_back() const
             {
                 return mesh_nodes(mesh_nodes.size() - 1ll);
+            }
+            auto dual_front() const
+            {
+                return dual_nodes(0);
+            }
+            auto dual_back() const
+            {
+                return dual_nodes(dual_nodes.size() - 1ll);
             }
 
         public:

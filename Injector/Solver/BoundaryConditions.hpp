@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <Eigen/Core>
+#include <Eigen/SparseCore>
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/Grids2D.hpp>
@@ -99,20 +100,21 @@ namespace GPN
             RHS_t rhs;
         };
 
-        struct BoundaryConditionsNodes
+        struct BoundaryConditions
         {
             template <typename Grid_t>
             BoundaryConditions(
                 const Grid_t &grid,
-                std::shared_ptr<const BCFunctorBase> functor)
+                std::shared_ptr<const BCFunctorBase> functor,
+            BoundaryCondition::BCType bc_type = BoundaryCondition::first)
                 : south_north{
-                      BCSouth{grid.first_coord.front(), bc_type},
-                      BCNorth{grid.first_coord.back(), bc_type},
+                      BCSouth{grid.first_coord.dual_front(), bc_type},
+                      BCNorth{grid.first_coord.dual_back(), bc_type},
                       grid.second_coord,
                       functor},
                   east_west{
-                        BCEast{grid.second_coord.back()}, 
-                        BCWest{grid.second_coord.front()}, 
+                        BCEast{grid.second_coord.dual_back(), bc_type}, 
+                        BCWest{grid.second_coord.dual_front(), bc_type}, 
                         grid.first_coord, 
                         functor
                     }

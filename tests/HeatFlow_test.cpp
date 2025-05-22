@@ -51,40 +51,55 @@ auto initialcondition_factory(RealType t0, const Grid_t_ptr grid, const RealType
   return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{val}, t0)};
 }
 
-struct FunctorBC : public GPN::BoundaryConditions::BCFunctorNodesBase
+struct FunctorBC : public BoundaryConditions::BCFunctorBase
 {
+  using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
   FunctorBC(
       RealType inlet_temp,
       const PhaseProperties &fluid,
-      const Properties::ReservoirFlowField &flow_field)
+      const Properties::ReservoirFlowField &flow_field,
+      const cptr<Grid2D_t> grid_ptr)
       : inlet_temp{inlet_temp},
         fluid{fluid},
-        flow_field{flow_field}
+        flow_field{flow_field},
+        grid_ptr{grid_ptr}
   {
   }
 
-  RealType south(std::ptrdiff_t r, RealType t) const
+  RealType operator()(RealType z, RealType r, RealType t) const override
   {
+    if (z == grid_ptr->first_coord.dual_front())
+    {
+      if (r == grid_ptr->second_coord.mesh_front())
+        return fluid.volumetric_heat_capacity * flow_field.axes1_as_face_normal(0, 0) * inlet_temp;
+    }
+
     return 0.0;
-  }
-  RealType north(std::ptrdiff_t r, RealType t) const
-  {
-    return r == 0ll ? fluid.volumetric_heat_capacity * flow_field.axes1_as_face_normal(0, 0) * inlet_temp : (RealType)0.0;
   }
 
-  RealType east(std::ptrdiff_t z, RealType t) const
-  {
-    return 0.0;
-  }
-  RealType west(std::ptrdiff_t z, RealType t) const
-  {
-    return 0.0;
-  }
+  // RealType south(std::ptrdiff_t r, RealType t) const
+  // {
+  //   return 0.0;
+  // }
+  // RealType north(std::ptrdiff_t r, RealType t) const
+  // {
+  //   return r == 0ll ? fluid.volumetric_heat_capacity * flow_field.axes1_as_face_normal(0, 0) * inlet_temp : (RealType)0.0;
+  // }
+
+  // RealType east(std::ptrdiff_t z, RealType t) const
+  // {
+  //   return 0.0;
+  // }
+  // RealType west(std::ptrdiff_t z, RealType t) const
+  // {
+  //   return 0.0;
+  // }
 
 protected:
   RealType inlet_temp;
   const PhaseProperties &fluid;
   const Properties::ReservoirFlowField &flow_field;
+  const cptr<Grid2D_t> grid_ptr;
 };
 
 using VR = std::vector<RealType>;
@@ -168,10 +183,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // initial conditions
   const auto initial_state{initialcondition_factory(t0, grid_factory.grid(), initial_temperature)};
   // boundary conditions
-  const GPN::BoundaryConditions::BoundaryConditionsNodes bc{
+  const GPN::BoundaryConditions::BoundaryConditions bc{
       *grid_factory.grid(),
       std::make_shared<FunctorBC>(
-          inlet_temperature, water, flow_field), BoundaryConditions::BoundaryCondition::second};
+          inlet_temperature, water, flow_field, grid_factory.grid()),
+      BoundaryConditions::BoundaryCondition::second};
   // time moments
   const VR t_stencils(
       Grids::Factory::generate_dual_grid_stencils_from_steps(
