@@ -45,6 +45,9 @@ namespace GPN
             {
             }
 
+            /// @brief
+            /// @param val initial condition const-value
+            /// @param grid_factory
             SolverFactory(RealType val, const Grids::CylinderGridFactory &grid_factory)
                 : Grids::CylinderGridFactory{grid_factory},
                   Logs::HydrodynamicLogsFactory{grid_factory.grid()->first_coord},
@@ -55,12 +58,17 @@ namespace GPN
 
             Properties::HeatConductivity conductivity_field() const
             {
+                return {conductivity_field(Logs::Factory::generate_conductivity_StepProperty(
+                    grid2D->first_coord.dual_stencils))};
+            }
+
+            Properties::HeatConductivity conductivity_field(const std::vector<RealType> &vals) const
+            {
                 return {
                     Logs::HeatConductivity{
                         Logs::StepPropertyGrid{
                             Logs::StepProperty{
-                                Logs::Factory::generate_conductivity_StepProperty(
-                                    grid2D->first_coord.dual_stencils)},
+                                vals},
                             grid2D->first_coord}},
                     grid2D};
             }
@@ -129,11 +137,11 @@ namespace GPN
                     std::make_shared<BCFunctor>(BCFunctor{val})};
             }
 
-            const Grids::GridDualStencils& z_grid_stencils() const
+            const Grids::GridDualStencils &z_grid_stencils() const
             {
                 return grid()->first_coord.dual_stencils;
             }
-            const Grids::AxesGrid<CoordinateTypes::Z>& z_grid() const
+            const Grids::AxesGrid<CoordinateTypes::Z> &z_grid() const
             {
                 return grid()->first_coord;
             }
