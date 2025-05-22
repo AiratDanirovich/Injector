@@ -214,7 +214,7 @@ namespace GPN
 
         struct BCSouth : public BoundaryCondition
         {
-            BCSouth(RealType fixed_x, BCType type = BCType::first)
+            BCSouth(RealType fixed_x, BCType type)
                 : BoundaryCondition{type}, fixed_x{fixed_x}
             {
             }
@@ -224,7 +224,7 @@ namespace GPN
 
         struct BCNorth : public BoundaryCondition
         {
-            BCNorth(RealType fixed_x, BCType type = BCType::first)
+            BCNorth(RealType fixed_x, BCType type)
                 : BoundaryCondition{type}, fixed_x{fixed_x}
             {
             }
@@ -234,7 +234,7 @@ namespace GPN
 
         struct BCEast : public BoundaryCondition
         {
-            BCEast(RealType fixed_y, BCType type = BCType::first)
+            BCEast(RealType fixed_y, BCType type)
                 : BoundaryCondition{type}, fixed_y{fixed_y}
             {
             }
@@ -244,7 +244,7 @@ namespace GPN
 
         struct BCWest : public BoundaryCondition
         {
-            BCWest(RealType fixed_y, BCType type = BCType::first)
+            BCWest(RealType fixed_y, BCType type)
                 : BoundaryCondition{type}, fixed_y{fixed_y}
             {
             }
