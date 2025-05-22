@@ -67,19 +67,20 @@ namespace GPN
                 return StructuredXYGrid2D{x_grid, y_grid};
             }
 
-            static auto create_cylinder_grid_2D(const Box &box, ptrdiff_t n1, ptrdiff_t n2)
+            static auto create_cylinder_grid_2D_ptr(const Box &box, ptrdiff_t n1, ptrdiff_t n2)
             {
                 auto z_stencils{Factory::generate_dual_grid_stencils_uniform(box.axes1, n1)};
-                auto z_nodes{GridDual{z_stencils}};
-                auto z_grid{
-                    AxesGrid<CoordinateTypes::Z>{z_nodes}};
+                // auto z_nodes{GridDual{z_stencils}};
+                // auto z_grid{
+                //     AxesGrid<CoordinateTypes::Z>{z_nodes}};
 
                 auto r_stencils{Factory::generate_dual_grid_stencils_uniform(box.axes2, n2)};
-                auto r_nodes{GridDual{r_stencils}};
-                auto r_grid{
-                    AxesGrid<CoordinateTypes::R_CylCoord>{r_nodes}};
+                // auto r_nodes{GridDual{r_stencils}};
+                // auto r_grid{
+                //     AxesGrid<CoordinateTypes::R_CylCoord>{r_nodes}};
 
-                return StructuredCylinderGrid2DAxisymmetric{z_grid, r_grid};
+                return create_cylinder_grid_2D_ptr(z_stencils, r_stencils);
+            //     std::make_shared<StructuredCylinderGrid2DAxisymmetric>(z_grid, r_grid);
             }
 
             static auto create_cylinder_grid_2D_ptr(const auto &z_stencils, const auto &r_stencils)
@@ -99,9 +100,16 @@ namespace GPN
         struct CylinderGridFactory
         {
             CylinderGridFactory(const Box &box, ptrdiff_t n1, ptrdiff_t n2)
-                : grid2D{std::make_shared<Grids::StructuredCylinderGrid2DAxisymmetric>(
-                      Grids::Factory::create_cylinder_grid_2D(
-                          box, n1, n2))}
+                : CylinderGridFactory(
+                    Factory::generate_dual_grid_stencils_uniform(box.axes1, n1), 
+                    Factory::generate_dual_grid_stencils_uniform(box.axes2, n2))
+            {
+            }
+            
+            CylinderGridFactory(const auto &z_stencils, const auto &r_stencils)
+                : grid2D{
+                      Grids::Factory::create_cylinder_grid_2D_ptr(
+                          z_stencils, r_stencils)}
             {
             }
 
@@ -109,7 +117,7 @@ namespace GPN
             {
                 return grid2D;
             }
-protected:
+        protected:
             cptr<Grids::StructuredCylinderGrid2DAxisymmetric> grid2D;
         };
     }
