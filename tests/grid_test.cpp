@@ -9,7 +9,6 @@ using namespace GPN::Grids;
 TEST_CASE("GridTest", "GeneralCoordinate")
 {
     {
-        //    Factory::create_cartesian_grid_2D(2);
         auto stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, 2)};
 
         auto nodes{GridDual{stencils}};
@@ -22,8 +21,6 @@ TEST_CASE("GridTest", "GeneralCoordinate")
 
         StructuredXYGrid2D result{x_grid, y_grid};
     }
-
-    // Factory::create_cylinder_grid_2D(5);
 
     {
         auto stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, 5)};
