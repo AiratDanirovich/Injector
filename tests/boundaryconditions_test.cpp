@@ -1,11 +1,6 @@
-
 #include <memory>
 
-#include <Injector/Grids/Defines.h>
-#include <Injector/Grids/CoordinateTypes.h>
 #include <Injector/Solver/BoundaryConditions.hpp>
-#include <Injector/Grids/Grids2D.hpp>
-
 #include <Injector/Grids/Factory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
