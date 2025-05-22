@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Injector/Properties/Logs.hpp>
+#include <Injector/Properties/Factory.hpp>
 
 namespace GPN
 {
@@ -43,12 +44,13 @@ namespace GPN
                 : HydrodynamicLogsFactory{IsPermeableFactory{grid}, grid}
             {
             }
-            
+
             template <typename Grid_t>
             HydrodynamicLogsFactory(
-                const IsPermeableFactory& is_permeable_factory, 
+                const IsPermeableFactory &is_permeable_factory,
                 const Grid_t &grid)
-                : HydrodynamicLogsFactory{is_permeable_factory,
+                : HydrodynamicLogsFactory{
+                      is_permeable_factory,
                       StencilsFactory::generate_porosity_StepProperty(
                           grid.dual_stencils,
                           is_permeable_factory.is_permeable_stencils()),
@@ -64,7 +66,7 @@ namespace GPN
                       grid}
             {
             }
-            
+
             template <typename Container_t, typename Grid_t>
             HydrodynamicLogsFactory(
                 const IsPermeableFactory &is_permeable_factory,
@@ -106,9 +108,9 @@ namespace GPN
                 const Container_t &skin,
                 const Grid_t &grid)
                 : HydrodynamicLogsFactory{
-                    IsPermeableFactory{is_permeable, grid}, 
-                    porosity, permeability, ext_pressure, skin,
-                    grid}
+                      IsPermeableFactory{is_permeable, grid},
+                      porosity, permeability, ext_pressure, skin,
+                      grid}
             {
             }
 
@@ -120,10 +122,20 @@ namespace GPN
 
         struct HeatLogsFactory
         {
+            template <typename Container_t, typename Grid_t>
+            HeatLogsFactory(
+                const Container_t &conductivity,
+                const Grid_t &grid)
+                : conductivity{
+                      Logs::StepPropertyGrid{
+                          Logs::StepProperty{
+                              conductivity},
+                          grid}}
+            {
+            }
 
+            const HeatConductivity conductivity;
         };
-
-
 
     } // Logs
 

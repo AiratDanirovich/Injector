@@ -1,8 +1,12 @@
 
+#include <Injector/Grids/Factory.hpp>
+#include <Injector/Properties/LogsFactory.hpp>
+
+
+
 #include <Injector/Grids/CoordinateTypes.h>
 #include <Injector/Properties/Logs.hpp>
 #include <Injector/Properties/PhysicalField.hpp>
-#include <Injector/Grids/Factory.hpp>
 #include <Injector/Properties/Factory.hpp>
 
 #include <Injector/Solver/SplittingMethod/BaseSplit.hpp>
@@ -13,31 +17,29 @@ using namespace GPN;
 using namespace GPN::Grids;
 using namespace GPN::EqSolver::SplittingMethod;
 
+using VR = std::vector<RealType>;
+
+// input data
+const VR z_stencils = Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 5);
+const VR r_stencils = Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 11);
+const VR conductivity_stencils = Logs::StencilsFactory::generate_conductivity_StepProperty(z_stencils);
 
 // Tests Cylinder grid, (r; z)
 TEST_CASE("BaseSplitTest")
 {
-#pragma region GRID_2D
-    // generate 1D grids in every direction --- points of property jumps
-    const auto grid2D{
-            Grids::Factory::create_cylinder_grid_2D_ptr(
-                Box{Segment{0, 1}, Segment{0, 1}}, 5, 11)};
-#pragma endregion
+    const Grids::CylinderGridFactory grid_factory{z_stencils, r_stencils};
+    const Logs::HeatLogsFactory heat_factory{conductivity_stencils, grid_factory.grid()->first_coord};
+
 #pragma region HEAT-CONDUCTIVITY
     // generate heat conductivity field
     Properties::HeatConductivity conductivity_field{
-        Logs::HeatConductivity{
-            Logs::StepPropertyGrid{
-                Logs::StepProperty{
-                    Logs::StencilsFactory::generate_conductivity_StepProperty(
-                        grid2D->first_coord.dual_stencils)},
-                grid2D->first_coord}},
-        grid2D};
+        heat_factory.conductivity,
+        grid_factory.grid()};
 #pragma endregion
 #pragma region BASE-SPLIT
     BaseSplit base_split{
         conductivity_field.face_vals_axes2,
-        grid2D->first_coord.mesh_size(),
-        grid2D->second_coord.mesh_size()};
+        grid_factory.grid()->first_coord.mesh_size(),
+        grid_factory.grid()->second_coord.mesh_size()};
 #pragma endregion
 }
