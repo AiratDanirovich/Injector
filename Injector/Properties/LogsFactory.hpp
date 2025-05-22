@@ -40,16 +40,42 @@ namespace GPN
         {
             template <typename Grid_t>
             HydrodynamicLogsFactory(const Grid_t &grid)
-                : HydrodynamicLogsFactory{
-                      Factory::generate_is_permeable_StepProperty(
-                          grid.dual_stencils),
+                : HydrodynamicLogsFactory{IsPermeableFactory{grid}, grid}
+            {
+            }
+            
+            template <typename Grid_t>
+            HydrodynamicLogsFactory(
+                const IsPermeableFactory& is_permeable_factory, 
+                const Grid_t &grid)
+                : HydrodynamicLogsFactory{is_permeable_factory,
                       Factory::generate_porosity_StepProperty(
                           grid.dual_stencils,
-                          is_permeable_stencils()),
+                          is_permeable_factory.is_permeable_stencils()),
                       Factory::generate_permeability_StepProperty(
                           grid.dual_stencils,
-                          is_permeable_stencils()),
+                          is_permeable_factory.is_permeable_stencils()),
                       grid}
+            {
+            }
+            
+            template <typename Container_t, typename Grid_t>
+            HydrodynamicLogsFactory(
+                const IsPermeableFactory &is_permeable_factory,
+                const Container_t &porosity,
+                const Container_t &permeability,
+                const Grid_t &grid)
+                : IsPermeableFactory{is_permeable_factory},
+                  permeability{
+                      StepPropertyGrid{
+                          StepProperty{permeability},
+                          grid},
+                      is_permeable_factory.is_permeable},
+                  porosity{
+                      StepPropertyGrid{
+                          StepProperty{porosity},
+                          grid},
+                      is_permeable_factory.is_permeable}
             {
             }
 
@@ -59,17 +85,10 @@ namespace GPN
                 const Container_t &porosity,
                 const Container_t &permeability,
                 const Grid_t &grid)
-                : IsPermeableFactory{is_permeable, grid},
-                  permeability{
-                      StepPropertyGrid{
-                          StepProperty{permeability},
-                          grid},
-                      this->is_permeable},
-                  porosity{
-                      StepPropertyGrid{
-                          StepProperty{porosity},
-                          grid},
-                      this->is_permeable}
+                : HydrodynamicLogsFactory{
+                    IsPermeableFactory{is_permeable, grid}, 
+                    porosity, permeability, 
+                    grid}
             {
             }
 
