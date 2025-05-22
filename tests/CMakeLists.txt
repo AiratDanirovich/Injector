@@ -39,5 +39,11 @@ add_catch2_test(splitting_solver_SelfSimilarProblem)
 
 add_catch2_test(well_kh_test)
 add_catch2_test(flowfield_test)
+add_catch2_test(hydrodynamicsolver_test)
+
+add_catch2_test(logscontainer_test)
+
+
+add_catch2_test(HeatFlow_test)
 
 
