@@ -23,10 +23,17 @@ struct BCFunctor : public GPN::BoundaryConditions::BCFunctorBase
     }
 };
 
+    auto z_grid_stencils{Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 5)};
+    auto r_grid_stencils{Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 11)};
+
 // Tests Cartesian grid
 TEST_CASE("PhaseProperties", "Water")
 {
-    auto z_grid_stencils{Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 5)};
+    
+
+
+
+
     auto z_grid{ZGrid{GridDual{z_grid_stencils}}};
 #pragma region GRID_2D
     // generate 1D grids in every direction --- points of property jumps

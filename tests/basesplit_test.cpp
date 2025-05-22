@@ -1,14 +1,5 @@
-
 #include <Injector/Grids/Factory.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
-
-
-
-#include <Injector/Grids/CoordinateTypes.h>
-#include <Injector/Properties/Logs.hpp>
-#include <Injector/Properties/PhysicalField.hpp>
-#include <Injector/Properties/Factory.hpp>
-
 #include <Injector/Solver/SplittingMethod/BaseSplit.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -30,16 +21,12 @@ TEST_CASE("BaseSplitTest")
     const Grids::CylinderGridFactory grid_factory{z_stencils, r_stencils};
     const Logs::HeatLogsFactory heat_factory{conductivity_stencils, grid_factory.grid()->first_coord};
 
-#pragma region HEAT-CONDUCTIVITY
-    // generate heat conductivity field
     Properties::HeatConductivity conductivity_field{
         heat_factory.conductivity,
         grid_factory.grid()};
-#pragma endregion
-#pragma region BASE-SPLIT
+
     BaseSplit base_split{
         conductivity_field.face_vals_axes2,
         grid_factory.grid()->first_coord.mesh_size(),
         grid_factory.grid()->second_coord.mesh_size()};
-#pragma endregion
 }
