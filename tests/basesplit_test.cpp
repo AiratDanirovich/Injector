@@ -13,6 +13,7 @@ using namespace GPN;
 using namespace GPN::Grids;
 using namespace GPN::EqSolver::SplittingMethod;
 
+
 // Tests Cylinder grid, (r; z)
 TEST_CASE("BaseSplitTest")
 {
@@ -28,7 +29,7 @@ TEST_CASE("BaseSplitTest")
         Logs::HeatConductivity{
             Logs::StepPropertyGrid{
                 Logs::StepProperty{
-                    Logs::Factory::generate_conductivity_StepProperty(
+                    Logs::StencilsFactory::generate_conductivity_StepProperty(
                         grid2D->first_coord.dual_stencils)},
                 grid2D->first_coord}},
         grid2D};

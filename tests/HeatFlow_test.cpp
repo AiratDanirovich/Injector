@@ -118,10 +118,15 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const std::ptrdiff_t nLayers{11ull};
   const VR thickness(nLayers, 1); // each layer is 1m thick
 
-  const VR conductivity(nLayers, 3.9);
+  // hydrodynamic logs
   const VR is_permeable(nLayers, 1.0);
   const VR porosity(nLayers, 1e-16);
   const VR permeability(nLayers, 0.5);
+  const VR ext_pressure(nLayers, 13E6);
+  const VR skin(nLayers, 0.0);
+
+  // heat logs
+  const VR conductivity(nLayers, 3.9);
   const VR solid_density(nLayers, 3.9 /*should be 2600 in SI*/);
   const VR solid_specific_heatcapacity(nLayers, 1.0 /*should be 770 in SI*/);
   /*temporal grid*/
@@ -148,7 +153,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const CylinderGridFactory grid_factory{
       z_stencils, r_stencils};
   const HydrodynamicLogsFactory hydro_logs_factory{
-      is_permeable, porosity, permeability,
+      is_permeable, porosity, permeability, ext_pressure, skin,
       grid_factory.grid()->first_coord};
 
   // heat conductivity

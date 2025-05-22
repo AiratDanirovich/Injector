@@ -58,7 +58,7 @@ namespace GPN
 
             Properties::HeatConductivity conductivity_field() const
             {
-                return {conductivity_field(Logs::Factory::generate_conductivity_StepProperty(
+                return {conductivity_field(Logs::StencilsFactory::generate_conductivity_StepProperty(
                     grid2D->first_coord.dual_stencils))};
             }
 
@@ -76,7 +76,7 @@ namespace GPN
             Properties::HeatVolumetricCapacity capacity_field() const
             {
                 auto solid_density_stencils{
-                    Logs::Factory::generate_solid_density_StepProperty(
+                    Logs::StencilsFactory::generate_solid_density_StepProperty(
                         z_grid_stencils())};
                 auto solid_density{
                     Logs::SolidDensity{
@@ -86,7 +86,7 @@ namespace GPN
                             z_grid()}}};
 
                 auto solid_specific_heatcapacity_stencils{
-                    Logs::Factory::generate_solid_specific_heatcapacity_StepProperty(
+                    Logs::StencilsFactory::generate_solid_specific_heatcapacity_StepProperty(
                         z_grid_stencils())};
                 auto solid_specific_heatcapacity{
                     Logs::SolidSpecificHeatCapacity{

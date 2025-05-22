@@ -36,7 +36,7 @@ TEST_CASE("Solver", "splitX")
       Logs::HeatConductivity{
           Logs::StepPropertyGrid{
               Logs::StepProperty{
-                  Logs::Factory::generate_conductivity_StepProperty(
+                  Logs::StencilsFactory::generate_conductivity_StepProperty(
                       grid2D->first_coord.dual_stencils)},
               grid2D->first_coord}},
       grid2D};
