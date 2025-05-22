@@ -20,7 +20,7 @@ TEST_CASE("Solver")
 
   RealType val{1.0};
   RealType well_rate{0.0};
-  SolverFactory solver_factory{val, Box{Segment{0, 1}, Segment{0, 1}}, 301, 501};
+  SolverFactory solver_factory{val, Box{Segment{0, 1}, Segment{0, 1}}, 31, 51};
 
   const auto grid2D{solver_factory.grid()};
   const auto conductivity_field{solver_factory.conductivity_field()};

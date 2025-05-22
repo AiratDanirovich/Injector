@@ -294,31 +294,28 @@ namespace GPN
 
                 void applyBC_split_x(SpMatrix &A, RHS_t &b, ptrdiff_t i)
                 {
-                //    bc.set_west_val(BoundaryConditions::MatrixView{A.row(0ll), b.row(0ll)}, i);
-
-                    A.coeffRef(0, 0) = 1.0;
-                    A.coeffRef(0, 1) = 0.0;
-                    b(0) = bc.west_vals(i);
-
-                    ptrdiff_t n = A.outerSize() - 1;
-                    BoundaryConditions::MatrixView
-                        view_east(A.row(n), b.row(n));
-
-                    A.coeffRef(n, n) = 1.0;
-                    A.coeffRef(n, n - 1) = 0.0;
-                    b(n) = bc.east_vals(i);
+                    {
+                        BoundaryConditions::MatrixView view{A.row(0ll), b.row(0ll), 0ll, 1ll};
+                        bc.set_west_val(view, i);
+                    }
+                    {
+                        std::ptrdiff_t n = A.outerSize() - 1;
+                        BoundaryConditions::MatrixView view{A.row(n), b.row(n), n, n - 1};
+                        bc.set_east_val(view, i);
+                    }
                 }
 
                 void applyBC_split_y(SpMatrix &A, RHS_t &b, ptrdiff_t j)
                 {
-                    A.coeffRef(0, 0) = 1.0;
-                    A.coeffRef(0, 1) = 0.0;
-                    b(0) = bc.south_vals(j);
-
-                    ptrdiff_t n = A.outerSize() - 1ll;
-                    A.coeffRef(n, n) = 1.0;
-                    A.coeffRef(n, n - 1) = 0.0;
-                    b(n) = bc.north_vals(j);
+                    {
+                        BoundaryConditions::MatrixView view{A.row(0ll), b.row(0ll), 0ll, 1ll};
+                        bc.set_south_val(view, j);
+                    }
+                    {
+                        std::ptrdiff_t n = A.outerSize() - 1;
+                        BoundaryConditions::MatrixView view{A.row(n), b.row(n), n, n - 1};
+                        bc.set_north_val(view, j);
+                    }
                 }
             };
         } // SplittingMethod
