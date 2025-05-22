@@ -47,7 +47,7 @@ namespace GPN
         /// @brief Interpolate physical property between nodes of 2D grid
         /// @tparam Grid_t 2D grid
         template <typename Grid_t = Grids::StructuredCylinderGrid2DAxisymmetric>
-        struct Field // : public Grid_t //::CoordinateSystem_t
+        struct Field
         {
             static_assert(Grid_t::Dim() == 2ull);
             static_assert(
@@ -90,9 +90,19 @@ namespace GPN
             using Grid_type = Grid_t;
 
             const GridNodeValues2D its_values;
-            const cptr<Grid_t> grid;
+            const cptr<Grid_type> grid;
 
-        protected:
+            template <typename Container_t>
+            static Field set_from_multiple(
+                const Container_t &base_log, const std::vector<Container_t> &logs,
+                const cptr<Grid_t> &grid)
+            {
+                auto temp{interpolate_r(base_log, grid)};
+                for (auto i{0ll}; i < logs.size(); ++i)
+                    temp.col(i) = logs[i];
+                return temp;
+            }
+
         private:
             // extrapolate as const value in the Axes2 direction,
             // though, may be avoided. Element access interface through
