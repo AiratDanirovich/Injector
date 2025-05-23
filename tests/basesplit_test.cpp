@@ -25,8 +25,13 @@ TEST_CASE("BaseSplitTest")
         heat_factory.conductivity,
         grid_factory.grid()};
 
-    BaseSplit base_split{
+    BaseSplit base_split1{
         conductivity_field.face_vals_axes2,
         grid_factory.grid()->first_coord.mesh_size(),
         grid_factory.grid()->second_coord.mesh_size()};
+        
+    BaseSplit base_split2{
+        conductivity_field.face_vals_axes1,
+        grid_factory.grid()->second_coord.mesh_size(),
+        grid_factory.grid()->first_coord.mesh_size()};
 }
