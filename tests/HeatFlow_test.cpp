@@ -1,7 +1,6 @@
 // #include <cmath>
 #include <memory>
 #include <fstream>
-// #include <cassert>
 
 #include <Injector/Grids/Defines.h>
 
@@ -46,7 +45,7 @@ protected:
 };
 
 template <typename Grid_t_ptr>
-auto initialcondition_factory(RealType t0, const Grid_t_ptr grid, const RealType val)
+auto ICFactory(RealType t0, const Grid_t_ptr grid, const RealType val)
 {
   return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{val}, t0)};
 }
@@ -58,7 +57,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
       RealType inlet_temp,
       const PhaseProperties &fluid,
       const Properties::ReservoirFlowField &flow_field,
-      const cptr<Grid2D_t> grid_ptr)
+      const cptr<const Grid2D_t> grid_ptr)
       : inlet_temp{inlet_temp},
         fluid{fluid},
         flow_field{flow_field},
@@ -168,7 +167,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       well_rate, well, *grid_factory.grid()};
 
   // initial conditions
-  const auto initial_state{initialcondition_factory(t0, grid_factory.grid(), initial_temperature)};
+  const auto initial_state{ICFactory(t0, grid_factory.grid(), initial_temperature)};
   // boundary conditions
   const GPN::BoundaryConditions::BoundaryConditions bc{
       *grid_factory.grid(),
