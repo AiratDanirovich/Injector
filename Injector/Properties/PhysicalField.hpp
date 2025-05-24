@@ -126,10 +126,13 @@ namespace GPN
         struct Permeability
             : public Field<Grids::StructuredCylinderGrid2DAxisymmetric>
         {
-            Permeability(const Logs::StepPropertyGrid &property,
-                         const cptr<Grids::StructuredCylinderGrid2DAxisymmetric> grid) : Field{property, grid}
-            {
-            }
+            using Field<Grids::StructuredCylinderGrid2DAxisymmetric>::Field;
+            // Permeability(
+            //     const Logs::StepPropertyGrid &property,
+            //     const cptr<Grids::StructuredCylinderGrid2DAxisymmetric> grid)
+            //     : Field{property, grid}
+            // {
+            // }
         };
 
         struct HeatVolumetricCapacity

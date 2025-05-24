@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Injector/Properties/LogsFactory.hpp>
+#include <Injector/Properties/FieldsFactory.hpp>
 
 namespace GPN
 {
@@ -83,5 +84,26 @@ namespace GPN
             };
 
         } // Hydrodynamics
+    } // Logs
+
+    namespace Properties
+    {
+        namespace Rocks
+        {
+            struct Rocks
+            {
+                Rocks(
+                    const auto &logs,
+                    const auto &grid2D)
+                    : permeability{logs.permeability, grid2D},
+                      porosity{logs.porosity, grid2D}
+                {
+                }
+
+                Permeability permeability;
+                Porosity porosity;
+            };
+        } // Rocks
+
     } // Properties
 } // GPN

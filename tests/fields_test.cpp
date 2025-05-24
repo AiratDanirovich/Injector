@@ -1,4 +1,3 @@
-
 #include <Injector/Grids/CoordinateTypes.h>
 #include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Properties/Factory.hpp>
@@ -35,11 +34,12 @@ const auto solid_specific_heatcapacity_stencils{
 const auto heatconductivity_stencils{
     Logs::RawDataFactory::generate_conductivity_StepProperty(grid_stencils)};
 
-
-
 TEST_CASE("FieldsTest")
 {
-    const auto grid{Grids::Factory::create_axes<CoordinateTypes::Z>(grid_stencils)};
+    const auto grid2D{
+        Grids::CylinderGridFactory::create(grid_stencils, grid_stencils)};
+
+    const auto &grid{grid2D->first_coord};
 
     const Logs::Rocks::CoreSampleLogs core_data{
         is_permeable_stencils,
@@ -47,14 +47,17 @@ TEST_CASE("FieldsTest")
         permeability_stencils,
         grid};
 
-    const Logs::Hydrodynamics::Hydrodynamics hydrodynamics{
+    const Logs::Hydrodynamics::Hydrodynamics hydrodynamics_logs{
         is_permeable_stencils,
         ext_pressure_stencils,
         skin_stencils, grid};
-        
+
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
         solid_specific_heatcapacity_stencils,
         heatconductivity_stencils,
         grid};
+
+    const Properties::Rocks::Rocks colelctor_field{
+        core_data, grid2D};
 }
