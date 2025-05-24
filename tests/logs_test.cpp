@@ -28,8 +28,10 @@ const auto ext_pressure_stencils{
 const auto skin_stencils{
     Logs::RawdataFactory::generate_skin_StepProperty(grid_stencils, is_permeable_stencils)};
 // heat logs
-const auto density_stencils{
+const auto solid_density_stencils{
     Logs::RawdataFactory::generate_solid_density(grid_stencils)};
+const auto solid_specific_heatcapacity_stencils{
+    Logs::RawdataFactory::generate_solid_specific_heatcapacity(grid_stencils)};
 const auto heatconductivity_stencils{
     Logs::RawdataFactory::generate_conductivity_StepProperty(grid_stencils)};
 
@@ -50,8 +52,9 @@ TEST_CASE("LogsTest")
         ext_pressure_stencils,
         skin_stencils, grid};
         
-    // const Logs::Rocks::HeatLogs heat_logs{
-    //     porosity_stencils,
-    //     permeability_stencils,
-    //     grid};
+    const Logs::Rocks::HeatLogs heat_logs{
+        solid_density_stencils,
+        solid_specific_heatcapacity_stencils,
+        heatconductivity_stencils,
+        grid};
 }

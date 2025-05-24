@@ -33,25 +33,14 @@ namespace GPN
                     const auto &solid_specific_heatcapacity,
                     const auto &heat_conductivity,
                     const auto &grid)
-                    : HeatLogs{
-                          solid_density,
-                          solid_specific_heatcapacity,
-                          heat_conductivity,
-                          multiply(solid_density, solid_specific_heatcapacity),
-                          grid}
-                {
-                }
-
-                HeatLogs(
-                    const auto &solid_density,
-                    const auto &solid_specific_heatcapacity,
-                    const auto &heat_conductivity,
-                    const auto &solid_vol_heatcapacity,
-                    const auto &grid)
-                    : solid_density{SolidDensityFactory::create(solid_density, grid)},
-                      solid_specific_heatcapacity{PorosityFactory::create(solid_specific_heatcapacity, grid)},
-                      heat_conductivity{HeatConductivityFactory::create(heat_conductivity, grid)},
-                      solid_vol_heatcapacity{PorosityFactory::create(solid_vol_heatcapacity, grid)}
+                    : solid_density{
+                        SolidDensityFactory::create(solid_density, grid)},
+                      solid_specific_heatcapacity{
+                        SolidSpecificHeatCapacityFactory::create(solid_specific_heatcapacity, grid)},
+                      heat_conductivity{
+                        HeatConductivityFactory::create(heat_conductivity, grid)},
+                      solid_vol_heatcapacity{
+                        SolidVolumetricHeatCapacityFactory::create(solid_density, solid_specific_heatcapacity, grid)}
                 {
                 }
 
@@ -68,7 +57,7 @@ namespace GPN
                 {
                     T out(lhs.size(), 0.0);
                     for (auto i{0ll}; i < lhs.size(); ++i)
-                        out = lhs[i] * rhs[i];
+                        out[i] = lhs[i] * rhs[i];
 
                     return out;
                 }

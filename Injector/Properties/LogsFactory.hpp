@@ -156,6 +156,31 @@ namespace GPN
                         grid}};
             }
         };
+        
+        struct SolidVolumetricHeatCapacityFactory
+        {
+            static SolidVolumetricHeatCapacity create(
+                const auto &solid_volumetric_heatcapacity,
+                const auto &grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            solid_volumetric_heatcapacity},
+                        grid}};
+            }
+            
+            static SolidVolumetricHeatCapacity create(
+                const auto &density,
+                const auto &heat_capacity,
+                const auto& grid)
+            {
+                return {
+                    SolidDensityFactory::create(density, grid),
+                    SolidSpecificHeatCapacityFactory::create(heat_capacity, grid)
+                };
+            }
+        };
 
         struct RFPFactory
         {
