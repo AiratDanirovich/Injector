@@ -32,10 +32,8 @@ namespace GPN
         using ZInterpolator =
             FaceInterpolatedProperty<CoordinateTypes::Z>;
 
-            struct HeatConductivity;
-            struct ThermalDiffusivity;
-
+        struct HeatConductivity;
+        struct ThermalDiffusivity;
 
     } // Logs
 } // GPN
-
