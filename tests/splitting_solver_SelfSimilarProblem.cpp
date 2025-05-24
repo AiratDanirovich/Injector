@@ -136,7 +136,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       Grids::Factory::create_cylinder_grid_2D_ptr(
           z_stencils, r_stencils)};
   const VR permeability_stencils{
-      Logs::RawdataFactory::generate_permeability(
+      Logs::RawDataFactory::generate_permeability(
           grid2D->first_coord.dual_nodes, is_permeable_stencils)}; //(nLayers, 1.0);
   // heat conductivity
   const Properties::HeatConductivity conductivity_field{

@@ -33,7 +33,7 @@ TEST_CASE("HydrodynamicsSolverTest")
 #pragma endregion
 #pragma region IS_PERMEABLE
     const auto is_permeable_stencils{
-        Logs::RawdataFactory::generate_is_permeable(grid2D->first_coord.dual_stencils)};
+        Logs::RawDataFactory::generate_is_permeable(grid2D->first_coord.dual_stencils)};
     auto is_permeable{
         Logs::IsPermeable{
             Logs::StepPropertyGrid{
@@ -47,7 +47,7 @@ TEST_CASE("HydrodynamicsSolverTest")
         Logs::Permeability{
             Logs::StepPropertyGrid{
                 Logs::StepProperty{
-                    Logs::RawdataFactory::generate_permeability(
+                    Logs::RawDataFactory::generate_permeability(
                         grid2D->first_coord.dual_stencils, is_permeable_stencils)},
                 grid2D->first_coord},
             is_permeable}};
@@ -64,7 +64,7 @@ TEST_CASE("HydrodynamicsSolverTest")
         Logs::Porosity{
             Logs::StepPropertyGrid{
                 Logs::StepProperty{
-                    Logs::RawdataFactory::generate_porosity(
+                    Logs::RawDataFactory::generate_porosity(
                         grid2D->first_coord.dual_stencils, is_permeable_stencils)},
                 grid2D->first_coord},
             is_permeable}};
@@ -79,7 +79,7 @@ TEST_CASE("HydrodynamicsSolverTest")
     Logs::HeatConductivity conductivity{
         Logs::StepPropertyGrid{
             Logs::StepProperty{
-                Logs::RawdataFactory::generate_conductivity_StepProperty(
+                Logs::RawDataFactory::generate_conductivity_StepProperty(
                     grid2D->first_coord.dual_stencils)},
             grid2D->first_coord}};
     // another way to generate logs

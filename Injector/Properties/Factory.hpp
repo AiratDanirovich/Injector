@@ -6,7 +6,7 @@ namespace GPN
 {
     namespace Logs
     {
-        struct RawdataFactory
+        struct RawDataFactory
         {
     //        using Grid_t = Grids::AxesGrid<CoordinateTypes::Z>;
 #pragma region HYDRODYNAMIC-LOGS
