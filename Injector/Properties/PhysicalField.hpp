@@ -129,7 +129,7 @@ namespace GPN
             using Field<Grids::StructuredCylinderGrid2DAxisymmetric>::Field;
         };
 
-        struct FluidSolidHeatVolumetricCapacity
+        struct MediumHeatVolumetricCapacity
             : public Field<Grids::StructuredCylinderGrid2DAxisymmetric>
         {
             using Field<Grids::StructuredCylinderGrid2DAxisymmetric>::Field;
@@ -185,7 +185,7 @@ namespace GPN
             : public Field<
                   Grids::StructuredCylinderGrid2DAxisymmetric>
         {
-            ThermalDiffusivity(const Properties::FluidSolidHeatVolumetricCapacity &capacity,
+            ThermalDiffusivity(const Properties::MediumHeatVolumetricCapacity &capacity,
                                const Properties::HeatConductivity &conductivity)
                 : Field{
                       conductivity / capacity}

@@ -71,10 +71,10 @@ namespace GPN
                         grid)};
 
                 const auto capacity{
-                    Logs::HeatVolumetricCapacity{
-                        porosity, solid_volumetric_heatcapacity, fluid}};
+                    Logs::MediumHeatVolumetricCapacityFactory::create(
+                        porosity, solid_volumetric_heatcapacity, fluid, grid->first_coord)};
 
-                return Properties::FluidSolidHeatVolumetricCapacity{
+                return Properties::MediumHeatVolumetricCapacity{
                     capacity, grid};
             }
         };

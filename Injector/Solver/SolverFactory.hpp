@@ -36,10 +36,9 @@ namespace GPN
             RealType val;
         };
 
-        template<typename Grid2D_t>
+        template <typename Grid2D_t>
         struct SolverFactory
-            : 
-              public Logs::HydrodynamicLogsFactory
+            : public Logs::HydrodynamicLogsFactory
         {
             SolverFactory(RealType val, const Box &box, ptrdiff_t n1, ptrdiff_t n2)
                 : SolverFactory{val, Grids::CylinderGridFactory::create(box, n1, n2)}
@@ -50,8 +49,8 @@ namespace GPN
             /// @param val initial condition const-value
             /// @param grid_factory
             SolverFactory(RealType val, const Grid2D_t &grid2D)
-                : grid2D{grid2D},
-                  Logs::HydrodynamicLogsFactory{grid2D->first_coord},
+                : Logs::HydrodynamicLogsFactory{grid2D->first_coord},
+                  grid2D{grid2D},
                   val{val},
                   well{water(), is_permeable, permeability}
             {
@@ -74,7 +73,7 @@ namespace GPN
                     grid2D};
             }
 
-            Properties::FluidSolidHeatVolumetricCapacity capacity_field() const
+            Properties::MediumHeatVolumetricCapacity capacity_field() const
             {
                 auto solid_density_stencils{
                     Logs::RawDataFactory::generate_solid_density(
@@ -101,8 +100,8 @@ namespace GPN
                         solid_density, solid_specific_heatcapacity}};
 
                 auto capacity{
-                    Logs::HeatVolumetricCapacity{
-                        porosity, solid_volumetric_heatcapacity, water()}};
+                    Logs::MediumHeatVolumetricCapacityFactory::create(
+                        porosity, solid_volumetric_heatcapacity, water(), z_grid())};
                 return {
                     capacity,
                     grid2D};

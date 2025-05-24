@@ -247,14 +247,13 @@ namespace GPN
             {
             }
 
-            template <typename Container_t, typename Grid_t>
             HydrodynamicLogsFactory(
                 const IsPermeableFactory &is_permeable_factory,
-                const Container_t &porosity,
-                const Container_t &permeability,
-                const Container_t &ext_pressure,
-                const Container_t &skin,
-                const Grid_t &grid)
+                const auto &porosity,
+                const auto &permeability,
+                const auto &ext_pressure,
+                const auto &skin,
+                const auto &grid)
                 : IsPermeableFactory{is_permeable_factory},
                   permeability{
                       StepPropertyGrid{

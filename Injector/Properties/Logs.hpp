@@ -14,7 +14,6 @@ namespace GPN
 {
     namespace Logs
     {
-
         struct InterpolatedDataContainer : private StepPropertyContainer
         {
             using StepPropertyContainer::StepPropertyContainer;
@@ -183,6 +182,11 @@ namespace GPN
                 return out;
             }
         };
+
+        auto operator-(RealType c, const StepPropertyGrid &rhs)
+        {
+            return StepPropertyGrid{c - rhs.log_vals, rhs.grid};
+        }
 
         struct AssertNonNegative
         {

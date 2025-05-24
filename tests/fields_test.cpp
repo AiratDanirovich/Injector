@@ -63,4 +63,7 @@ TEST_CASE("FieldsTest")
 
     const Properties::Rocks::Rocks collector_field{
         core_data, grid2D};
+        
+    const Properties::Rocks::HeatProps heat_props{
+        heat_logs, grid2D};
 }

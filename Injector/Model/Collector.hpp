@@ -33,19 +33,12 @@ namespace GPN
                     const auto &solid_density,
                     const auto &solid_specific_heatcapacity,
                     const auto &heat_conductivity,
-                    const auto& porosity,
+                    const auto &porosity,
                     const auto &fluid,
                     const auto &grid)
                     : solid_density{
-                        SolidDensityFactory::create(solid_density, grid)},
-                      solid_specific_heatcapacity{
-                        SolidSpecificHeatCapacityFactory::create(solid_specific_heatcapacity, grid)},
-                      heat_conductivity{
-                        HeatConductivityFactory::create(heat_conductivity, grid)},
-                      solid_vol_heatcapacity{
-                        SolidVolumetricHeatCapacityFactory::create(solid_density, solid_specific_heatcapacity, grid)},
-                      medium_vol_heatcapacity{
-                        MediumHeatVolumetricCapacityFactory::create(porosity, solid_density, solid_specific_heatcapacity, fluid, grid)}
+                          SolidDensityFactory::create(solid_density, grid)},
+                      solid_specific_heatcapacity{SolidSpecificHeatCapacityFactory::create(solid_specific_heatcapacity, grid)}, heat_conductivity{HeatConductivityFactory::create(heat_conductivity, grid)}, solid_vol_heatcapacity{SolidVolumetricHeatCapacityFactory::create(solid_density, solid_specific_heatcapacity, grid)}, medium_vol_heatcapacity{MediumHeatVolumetricCapacityFactory::create(porosity, solid_density, solid_specific_heatcapacity, fluid, grid)}
                 {
                 }
 
@@ -108,20 +101,21 @@ namespace GPN
                 Permeability permeability;
                 Porosity porosity;
             };
-            
-            struct HeatLogs
-            {
-                // HeatLogs(
-                //     const auto& logs,
-                //     const auto& fluid,
-                // const auto& grid2D)
-                // :heat_vol_capacity{logs.}
-                // {}
 
-                // FluidSolidHeatVolumetricCapacity heat_vol_capacity;
+            struct HeatProps
+            {
+                HeatProps(
+                    const auto &logs,
+                    const auto &grid2D)
+                    : medium_vol_heatcapacity{logs.medium_vol_heatcapacity, grid2D},
+                      heat_conductivity{logs.heat_conductivity, grid2D}
+                {
+                }
+
+                const HeatConductivity heat_conductivity;
+                const MediumHeatVolumetricCapacity medium_vol_heatcapacity;
             };
-        
-        
+
         } // Rocks
 
     } // Properties
