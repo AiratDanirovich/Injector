@@ -29,19 +29,49 @@ namespace GPN
             struct HeatLogs
             {
                 HeatLogs(
-                    const auto &porosity_stencils,
-                    const auto &permeability_stencils,
+                    const auto &solid_density,
+                    const auto &solid_specific_heatcapacity,
+                    const auto &heat_conductivity,
                     const auto &grid)
-                    : solid_density{},
-                      solid_specific_heatcapacity{},
-                      solid_vol_heatcapacity{}
+                    : HeatLogs{
+                          solid_density,
+                          solid_specific_heatcapacity,
+                          heat_conductivity,
+                          multiply(solid_density, solid_specific_heatcapacity),
+                          grid}
+                {
+                }
+
+                HeatLogs(
+                    const auto &solid_density,
+                    const auto &solid_specific_heatcapacity,
+                    const auto &heat_conductivity,
+                    const auto &solid_vol_heatcapacity,
+                    const auto &grid)
+                    : solid_density{SolidDensityFactory::create(solid_density, grid)},
+                      solid_specific_heatcapacity{PorosityFactory::create(solid_specific_heatcapacity, grid)},
+                      heat_conductivity{HeatConductivityFactory::create(heat_conductivity, grid)},
+                      solid_vol_heatcapacity{PorosityFactory::create(solid_vol_heatcapacity, grid)}
                 {
                 }
 
                 const SolidDensity solid_density;
                 const SolidSpecificHeatCapacity solid_specific_heatcapacity;
-                const SolidVolumetricHeatCapacity solid_vol_heatcapacity;
                 const HeatConductivity heat_conductivity;
+                const SolidVolumetricHeatCapacity solid_vol_heatcapacity;
+
+            private:
+                template <typename T>
+                static T multiply(
+                    const T &lhs,
+                    const T &rhs)
+                {
+                    T out(lhs.size(), 0.0);
+                    for (auto i{0ll}; i < lhs.size(); ++i)
+                        out = lhs[i] * rhs[i];
+
+                    return out;
+                }
             };
         } // Rocks
 

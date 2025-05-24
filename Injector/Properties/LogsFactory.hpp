@@ -118,13 +118,13 @@ namespace GPN
         struct HeatConductivityFactory
         {
             static HeatConductivity create(
-                const auto &pressure,
+                const auto &heat_conductivity,
                 const auto &grid)
             {
                 return {
                     StepPropertyGrid{
                         StepProperty{
-                            pressure},
+                            heat_conductivity},
                         grid}};
             }
         };
@@ -132,13 +132,13 @@ namespace GPN
         struct SolidDensityFactory
         {
             static SolidDensity create(
-                const auto &pressure,
+                const auto &solid_density,
                 const auto &grid)
             {
                 return {
                     StepPropertyGrid{
                         StepProperty{
-                            pressure},
+                            solid_density},
                         grid}};
             }
         };
@@ -146,13 +146,13 @@ namespace GPN
         struct SolidSpecificHeatCapacityFactory
         {
             static SolidSpecificHeatCapacity create(
-                const auto &pressure,
+                const auto &solid_specific_heatcapacity,
                 const auto &grid)
             {
                 return {
                     StepPropertyGrid{
                         StepProperty{
-                            pressure},
+                            solid_specific_heatcapacity},
                         grid}};
             }
         };
