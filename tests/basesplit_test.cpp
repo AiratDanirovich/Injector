@@ -1,4 +1,4 @@
-#include <Injector/Grids/Factory.hpp>
+#include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
 #include <Injector/Properties/PhysicalField.hpp>
 #include <Injector/Solver/SplittingMethod/BaseSplit.hpp>

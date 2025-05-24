@@ -10,7 +10,7 @@
 #include <Injector/Properties/PhysicalField.hpp>
 
 #include <Injector/Grids/Grids2D.hpp>
-#include <Injector/Grids/Factory.hpp>
+#include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Properties/Factory.hpp>
 #include <Injector/Solver/SplittingMethod/SplitX.hpp>
 

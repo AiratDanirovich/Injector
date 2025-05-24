@@ -2,7 +2,7 @@
 #include <Injector/Grids/CoordinateTypes.h>
 #include <Injector/Properties/Logs.hpp>
 #include <Injector/Properties/PhysicalField.hpp>
-#include <Injector/Grids/Factory.hpp>
+#include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Properties/Factory.hpp>
 
 #include <catch2/catch_test_macros.hpp>

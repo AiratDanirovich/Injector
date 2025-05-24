@@ -1,6 +1,6 @@
 
 #include <Injector/Grids/CoordinateTypes.h>
-#include <Injector/Grids/Factory.hpp>
+#include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Properties/Factory.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
 

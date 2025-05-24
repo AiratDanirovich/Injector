@@ -1,4 +1,4 @@
-#include <Injector/Grids/Factory.hpp>
+#include <Injector/Grids/GridsFactory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 

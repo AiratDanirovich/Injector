@@ -7,7 +7,7 @@
 
 #include <Injector/Solver/State2D.hpp>
 
-#include <Injector/Grids/Factory.hpp>
+#include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Solver/SolverFactory.hpp>
 
 // #include <Injector/Properties/Logs.hpp>
