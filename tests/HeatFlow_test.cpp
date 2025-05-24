@@ -29,7 +29,7 @@ using namespace GPN::Phases;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
-/// @brief Initial emperature is assumed to be constant
+/// @brief Initial temperature is assumed to be constant
 struct FunctorIC
 {
   FunctorIC(const RealType val)
