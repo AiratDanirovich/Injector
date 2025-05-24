@@ -269,7 +269,5 @@ namespace GPN
 
             const HeatConductivity conductivity;
         };
-
     } // Logs
-
 } // GPN

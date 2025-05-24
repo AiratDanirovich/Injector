@@ -130,28 +130,6 @@ namespace GPN
                     vals[id] = (id % 2 == 1) ? 50.0 : 0.0;
                 return vals;
             }
-
-            static auto generate_soliddensity_Log(
-                const auto &dual_stencils,
-                const auto grid)
-            {
-                return Logs::SolidDensity{
-                    Logs::StepPropertyGrid{
-                        Logs::StepProperty{
-                            dual_stencils},
-                        grid->first_coord}};
-            }
-
-            static auto generate_solid_specific_heatcapacity_Log(
-                const auto &solid_specific_heatcapacity_stencils,
-                const auto grid)
-            {
-                return Logs::SolidSpecificHeatCapacity{
-                    StepPropertyGrid{
-                        StepProperty{
-                            solid_specific_heatcapacity_stencils},
-                        grid->first_coord}};
-            }
         };
     }
 }
