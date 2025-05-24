@@ -11,9 +11,10 @@ using namespace GPN;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
+RealType val{1.0};
+
 TEST_CASE("Solver")
 {
-    RealType val{1.0};
     SolverFactory solver_factory{val, Box{Segment{0, 1}, Segment{0, 1}}, 5, 11};
     const auto grid2D{solver_factory.grid()};
     const auto conductivity_field{solver_factory.conductivity_field()};

@@ -74,9 +74,7 @@ namespace GPN
                 const Grid2D_t &grid)
                 : ReservoirFlowField{
                       Logs::ZFlowRateLog{well_rate, grid.second_coord},
-                      Logs::RFP{well_rate,
-                                well,
-                                grid.first_coord},
+                      Logs::RFP{well_rate, well},
                       grid}
             {
             }

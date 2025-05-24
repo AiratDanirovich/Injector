@@ -29,12 +29,76 @@ namespace GPN
             {
             }
 
+            template <typename Container_t, typename Grid_t>
+            static IsPermeable create(const Container_t &is_permeable, const Grid_t &grid)
+            {
+                return IsPermeable{
+                    StepPropertyGrid{
+                        StepProperty{
+                            is_permeable},
+                        grid}};
+            }
+
             const auto &is_permeable_stencils() const
             {
                 return is_permeable.log_vals;
             }
 
             IsPermeable is_permeable;
+        };
+
+        struct PermeabilityFactory
+        {
+            template <typename Container_t, typename Grid_t>
+            static Permeability create(
+                const Container_t &permeability,
+                const Container_t &is_permeable,
+                const Grid_t &grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            permeability},
+                        grid},
+                    IsPermeableFactory::create(is_permeable, grid)};
+            }
+
+            //     template <typename Grid_t>
+            //     PermeabilityFactory(const Grid_t &grid)
+            //         : IsPermeableFactory{
+            //               Logs::StencilsFactory::generate_is_permeable_StepProperty(
+            //                   grid.dual_stencils),
+            //               grid}
+            //     {
+            //     }
+            //     template <typename Container_t, typename Grid_t>
+            //     PermeabilityFactory(const Container_t &is_permeable, const Grid_t &grid)
+            //         : is_permeable{
+            //               IsPermeable{
+            //                   StepPropertyGrid{
+            //                       StepProperty{
+            //                           is_permeable},
+            //                       grid}}}
+            //     {
+            //     }
+            // const auto &permeability_stencils() const
+            // {
+            //     return permeability.log_vals;
+            // }
+            // Permeability permeability;
+        };
+
+        struct RFPFactory
+        {
+            template <typename Container_t, typename IsPermeable_t>
+            static RFP create(
+                const Container_t &rfp,
+                const IsPermeable_t &is_permeable)
+            {
+                return RFP{
+                    StepPropertyGrid{rfp, is_permeable.grid},
+                    is_permeable};
+            }
         };
 
         struct HydrodynamicLogsFactory : public IsPermeableFactory

@@ -261,9 +261,6 @@ namespace GPN
             }
 
             auto size() const = delete;
-            // {
-            //     return mesh_size();
-            // }
 
             const GridDualStencils dual_stencils;
             const ControlVolumesContainer control_volumes;

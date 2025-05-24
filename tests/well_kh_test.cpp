@@ -1,9 +1,7 @@
-
-#include <Injector/Grids/CoordinateTypes.h>
-#include <Injector/Grids/ConcreteGrids.hpp>
-#include <Injector/Properties/Logs.hpp>
+#include <Injector/Grids/Defines.h>
+#include <Injector/Grids/Factory.hpp>
+#include <Injector/Properties/LogsFactory.hpp>
 #include <Injector/Model/Well.hpp>
-
 #include <Injector/Model/Phases/FluidFactory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -14,37 +12,34 @@ using namespace GPN::Logs;
 using namespace GPN::Phases;
 using namespace GPN::CoordinateTypes;
 
+std::vector<RealType> grid_stencils{0.0, 1.0, 3.0, 7.0, 10.0};
+std::vector<RealType> permeability_stencils(grid_stencils.size() - 1ull, 1.0);
+std::vector<RealType> is_permeable_stencils(grid_stencils.size() - 1ull, 1.0);
+
 TEST_CASE("Well_KH_Test")
 {
-    std::vector<RealType> grid_stencils{0.0, 1.0, 3.0, 7.0, 10.0};
+    const auto z_grid{
+        Grids::Factory::create_axes<CoordinateTypes::Z>(
+            grid_stencils)};
 
-    std::vector<RealType> permeability_stencils(grid_stencils.size() - 1ull, 1.0);
-
-    std::vector<RealType> is_permeable_stencils(grid_stencils.size() - 1ull, 1.0);
-
-    auto z_grid{ZGrid{GridDual{grid_stencils}}};
-    auto is_permeable{
-        IsPermeable{
-            StepPropertyGrid{
-                StepProperty{
-                    is_permeable_stencils},
-                z_grid}}};
+    const auto is_permeable{
+        Logs::IsPermeableFactory::create(
+            is_permeable_stencils,
+            z_grid)};
 
     const auto permeability{
-        Logs::Permeability{
-            Logs::StepPropertyGrid{
-                Logs::StepProperty{
-                    permeability_stencils},
-                z_grid} * // guarantee that porosity is zero in rocks
-                is_permeable,
-            is_permeable}};
+        Logs::PermeabilityFactory::create(
+            permeability_stencils,
+            is_permeable_stencils,
+            z_grid)};
+
+    const auto water{FluidFactory::create_water(1.0, 1.0)};
 
     const Well_KH well{
-        FluidFactory::create_water(1.0, 1.0),
-        is_permeable, permeability};
+        water, is_permeable, permeability};
 
     const RealType rate{1.0};
-    auto rfp = well.get_RFP(rate, z_grid);
+    auto rfp = RFPFactory::create(well.get_RFP(rate), is_permeable);
 
     for (auto i{0ll}; i < rfp.size(); ++i)
     {

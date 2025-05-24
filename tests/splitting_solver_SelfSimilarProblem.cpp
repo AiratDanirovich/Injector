@@ -93,33 +93,35 @@ protected:
 
 using VR = std::vector<RealType>;
 
+/*START*/
+// input parameters
+/*heat rate*/
+RealType q{1.0};
+/*fluid*/
+RealType viscosity{6e-4}, density{1000}, capacity{4200};
+/*collector*/
+const RealType rMin{1.0}, rMax{2.0}, zTop{0.0};
+const std::ptrdiff_t rNodes{301ull};
+const std::ptrdiff_t nLayers{11ull};
+const VR thickness(nLayers, 0.01); // each layer is 1m thick
+
+const VR conductivity(nLayers, 3.9);
+const VR porosity_stencils(nLayers, 1e-16);
+const VR is_permeable_stencils(nLayers, 1.0);
+const VR solid_density(nLayers, 3.9 /*should be 2600 in SI*/);
+const VR solid_specific_heatcapacity(nLayers, 1.0 /*should be 770 in SI*/);
+/*temporal grid*/
+const std::ptrdiff_t time_steps_nmbr{501ull};
+const RealType t0{1.0}; // initial time moment
+const RealType t1{t0 + 1.0};
+const RealType time_step{(t1 - t0) / time_steps_nmbr};
+const VR time_intervals(time_steps_nmbr, time_step);
+/*flow*/
+const RealType well_rate{0.0};
+/*END*/
+
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
-  /*START*/
-  // input parameters
-  /*heat rate*/
-  RealType q{1.0};
-  /*fluid*/
-  RealType viscosity{6e-4}, density{1000}, capacity{4200};
-  /*collector*/
-  const RealType rMin{1.0}, rMax{2.0}, zTop{0.0};
-  const std::ptrdiff_t rNodes{301ull};
-  const std::ptrdiff_t nLayers{11ull};
-  const VR thickness(nLayers, 0.01); // each layer is 1m thick
-
-  const VR conductivity(nLayers, 3.9);
-  const VR porosity(nLayers, 1e-16);
-  const VR is_permeable(nLayers, 1.0);
-  const VR solid_density(nLayers, 3.9 /*should be 2600 in SI*/);
-  const VR solid_specific_heatcapacity(nLayers, 1.0 /*should be 770 in SI*/);
-  /*temporal grid*/
-  const std::ptrdiff_t time_steps_nmbr{501ull};
-  const RealType t0{1.0}; // initial time moment
-  const RealType t1{t0 + 1.0};
-  const RealType time_step{(t1 - t0) / time_steps_nmbr};
-  const VR time_intervals(time_steps_nmbr, time_step);
-  /*END*/
-
   // make grid1D
   const VR z_stencils(
       Grids::Factory::generate_dual_grid_stencils_from_steps(
@@ -132,6 +134,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto grid2D{
       Grids::Factory::create_cylinder_grid_2D_ptr(
           z_stencils, r_stencils)};
+  const VR permeability_stencils{
+      Logs::StencilsFactory::generate_permeability_StepProperty(
+          grid2D->first_coord.dual_nodes, is_permeable_stencils)}; //(nLayers, 1.0);
   // heat conductivity
   const Properties::HeatConductivity conductivity_field{
       Properties::Factory::generate_heatconductivity_Property(
@@ -145,7 +150,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // volumetric heat capacity of multiphaase system
   const Properties::HeatVolumetricCapacity capacity_field{
       Properties::Factory::generate_volumetric_heatcapacity_Property(
-          is_permeable, porosity,
+          is_permeable_stencils, porosity_stencils,
           solid_density, solid_specific_heatcapacity,
           water, grid2D)};
   // exact solution
@@ -161,21 +166,15 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       Grids::Factory::generate_dual_grid_stencils_from_steps(
           t0, time_intervals));
   // solver
-  const RealType well_rate{0.0};
-  const Logs::IsPermeable is_permeable_log{Logs::IsPermeable{
-      StepPropertyGrid{
-          StepProperty{
-              is_permeable},
-          grid2D->first_coord}}};
+  const Logs::IsPermeable is_permeable{
+      IsPermeableFactory::create(is_permeable_stencils, grid2D->first_coord)};
+  const Logs::Permeability permeability{
+      PermeabilityFactory::create(permeability_stencils, is_permeable_stencils, grid2D->first_coord)};
+
   const Well_KH well{
       Phases::FluidFactory::create_water(0.0, 0.0),
-      is_permeable_log,
-      Logs::Permeability{
-          StepPropertyGrid{
-              StepProperty{
-                  is_permeable},
-              grid2D->first_coord},
-          is_permeable_log}};
+      is_permeable,
+      permeability};
   Properties::ReservoirFlowField flow_field{
       well_rate, well, *grid2D};
 

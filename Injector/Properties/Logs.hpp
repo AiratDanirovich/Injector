@@ -14,8 +14,6 @@ namespace GPN
 {
     namespace Logs
     {
-        using StepPropertyContainer = Eigen::ArrayX<RealType>;
-        using InternalFaceValues = Eigen::ArrayX<RealType>;
 
         struct InterpolatedDataContainer : private StepPropertyContainer
         {
@@ -86,6 +84,7 @@ namespace GPN
                   grid{grid}
             {
                 assert(log_vals.size() == grid.dual_size() - 1ll);
+                assert(log_vals.size() == grid.mesh_size());
             }
 
             StepPropertyGrid(
@@ -240,12 +239,13 @@ namespace GPN
             : public StepPropertyGrid,
               private AssertNonNegative
         {
-            template <typename Well_t, typename Grid_t>
+            template <typename Well_t>
             RFP(
                 RealType well_rate,
-                const Well_t &well,
-                const Grid_t &grid)
-                : RFP{well.get_RFP(well_rate, grid)}
+                const Well_t &well)
+                : RFP{
+                      StepPropertyGrid{well.get_RFP(well_rate), well.is_permeable.grid},
+                      well.is_permeable}
             {
             }
 

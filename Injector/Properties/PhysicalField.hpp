@@ -36,7 +36,7 @@ namespace GPN
                 for (auto id{0ll}; id < out.cols(); ++id)
                     out.col(id) = Axes::const_face_interpolator(
                         grid.mesh_nodes(id), grid.mesh_nodes(id + 1ll),
-                        static_cast<Logs::StepPropertyContainer>(log.log_vals));
+                        static_cast<StepPropertyContainer>(log.log_vals));
                 return out;
             }
         };

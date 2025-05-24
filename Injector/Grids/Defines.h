@@ -58,6 +58,9 @@ namespace GPN
         Eigen::ArrayX<RealType>; // in Release
     using LogValuesContainer = MeshNodesContainer;
 
+    using StepPropertyContainer = Eigen::ArrayX<RealType>;
+    using InternalFaceValues = Eigen::ArrayX<RealType>;
+
     /// @brief Container for the dual nodes coordinates
     struct DualNodesContainer : public MeshNodesContainer
     {
@@ -96,17 +99,15 @@ namespace GPN
         }
     };
 
-
-
-//    struct Directions
-//    {
-        enum struct Directions
-        {
-            x1,
-            x2,
-            size
-        };
-//    };
+    //    struct Directions
+    //    {
+    enum struct Directions
+    {
+        x1,
+        x2,
+        size
+    };
+    //    };
 
     struct ScalarParameter
     {
