@@ -8,7 +8,7 @@
 #include <Injector/Model/HydrodynamicSolver.hpp>
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
 #include <Injector/Solver/SolverFactory.hpp>
-#include <Injector/Properties/FieldFactory.hpp>
+#include <Injector/Properties/FieldsFactory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
