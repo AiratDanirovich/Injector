@@ -44,6 +44,7 @@ add_catch2_test(hydrodynamicsolver_test)
 # add_catch2_test(logscontainer_test)
 
 
-add_catch2_test(HeatFlow_test)
+add_catch2_test(horizontalflow_test)
+# add_catch2_test(HeatFlow_test)
 
 

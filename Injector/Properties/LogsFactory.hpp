@@ -62,30 +62,23 @@ namespace GPN
                         grid},
                     IsPermeableFactory::create(is_permeable, grid)};
             }
-
-            //     template <typename Grid_t>
-            //     PermeabilityFactory(const Grid_t &grid)
-            //         : IsPermeableFactory{
-            //               Logs::StencilsFactory::generate_is_permeable_StepProperty(
-            //                   grid.dual_stencils),
-            //               grid}
-            //     {
-            //     }
-            //     template <typename Container_t, typename Grid_t>
-            //     PermeabilityFactory(const Container_t &is_permeable, const Grid_t &grid)
-            //         : is_permeable{
-            //               IsPermeable{
-            //                   StepPropertyGrid{
-            //                       StepProperty{
-            //                           is_permeable},
-            //                       grid}}}
-            //     {
-            //     }
-            // const auto &permeability_stencils() const
-            // {
-            //     return permeability.log_vals;
-            // }
-            // Permeability permeability;
+        };
+        
+        struct PorosityFactory
+        {
+            template <typename Container_t, typename Grid_t>
+            static Porosity create(
+                const Container_t &porosity,
+                const Container_t &is_permeable,
+                const Grid_t &grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            porosity},
+                        grid},
+                    IsPermeableFactory::create(is_permeable, grid)};
+            }
         };
 
         struct RFPFactory

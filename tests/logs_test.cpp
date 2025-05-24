@@ -1,47 +1,30 @@
 
 #include <Injector/Grids/CoordinateTypes.h>
-#include <Injector/Properties/Logs.hpp>
 #include <Injector/Grids/Factory.hpp>
 #include <Injector/Properties/Factory.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
 
+#include <Injector/Model/Collector.hpp>
+
 #include <catch2/catch_test_macros.hpp>
 
 using namespace GPN;
-using namespace GPN::Grids;
-using namespace GPN::Logs;
-using namespace GPN::CoordinateTypes;
+
+/*input data*/
+// z-grid data
+const auto nLayers{5ull};
+const auto grid_stencils{Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, nLayers)};
+// hydrodynamic logs
+const auto is_permeable_stencils{Logs::StencilsFactory::generate_is_permeable_StepProperty(grid_stencils)};
+const auto porosity_stencils{Logs::StencilsFactory::generate_porosity_StepProperty(grid_stencils, is_permeable_stencils)};
+const auto permeability_stencils{Logs::StencilsFactory::generate_permeability_StepProperty(grid_stencils, is_permeable_stencils)};
 
 TEST_CASE("LogsTest")
 {
-    auto grid_stencils{Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 5)};
-    const auto is_permeable_stencils{Logs::StencilsFactory::generate_is_permeable_StepProperty(grid_stencils)};
-
-    auto permeability_stencils{Logs::StencilsFactory::generate_permeability_StepProperty(grid_stencils, is_permeable_stencils)};
-
-    auto porosity_stencils{Logs::StencilsFactory::generate_porosity_StepProperty(grid_stencils, is_permeable_stencils)};
-
-    auto grid{ZGrid{GridDual{grid_stencils}}};
-    auto is_permeable{
-        IsPermeable{
-            StepPropertyGrid{
-                StepProperty{
-                    Logs::StencilsFactory::generate_is_permeable_StepProperty(grid_stencils)},
-                grid}}};
-
-    const auto permeability{
-        Logs::Permeability{
-            Logs::StepPropertyGrid{
-                Logs::StepProperty{
-                    permeability_stencils},
-                grid},
-            is_permeable}};
-
-    const auto porosity{
-        Logs::Porosity{
-            Logs::StepPropertyGrid{
-                Logs::StepProperty{
-                    porosity_stencils},
-                grid},
-            is_permeable}};
+    const auto grid{Grids::Factory::create_axes<CoordinateTypes::Z>(grid_stencils)};
+    const Logs::Rocks::CoreSampleData core_data{
+        is_permeable_stencils,
+        porosity_stencils,
+        permeability_stencils,
+        grid};
 }
