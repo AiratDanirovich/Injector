@@ -4,6 +4,7 @@
 #include <Injector/Properties/LogsFactory.hpp>
 
 #include <Injector/Model/Collector.hpp>
+#include <Injector/Model/Phases/FluidFactory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -56,6 +57,8 @@ TEST_CASE("FieldsTest")
         solid_density_stencils,
         solid_specific_heatcapacity_stencils,
         heatconductivity_stencils,
+        porosity_stencils,
+        Phases::FluidFactory::create_water(1.0, 1.0),
         grid};
 
     const Properties::Rocks::Rocks colelctor_field{
