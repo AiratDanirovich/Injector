@@ -36,21 +36,22 @@ namespace GPN
             RealType val;
         };
 
+        template<typename Grid2D_t>
         struct SolverFactory
-            : public Grids::CylinderGridFactory,
+            : 
               public Logs::HydrodynamicLogsFactory
         {
             SolverFactory(RealType val, const Box &box, ptrdiff_t n1, ptrdiff_t n2)
-                : SolverFactory{val, Grids::CylinderGridFactory{box, n1, n2}}
+                : SolverFactory{val, Grids::CylinderGridFactory::create(box, n1, n2)}
             {
             }
 
             /// @brief
             /// @param val initial condition const-value
             /// @param grid_factory
-            SolverFactory(RealType val, const Grids::CylinderGridFactory &grid_factory)
-                : Grids::CylinderGridFactory{grid_factory},
-                  Logs::HydrodynamicLogsFactory{grid_factory.grid()->first_coord},
+            SolverFactory(RealType val, const Grid2D_t &grid2D)
+                : grid2D{grid2D},
+                  Logs::HydrodynamicLogsFactory{grid2D->first_coord},
                   val{val},
                   well{water(), is_permeable, permeability}
             {
@@ -120,7 +121,7 @@ namespace GPN
             Properties::ReservoirFlowField flow_field(RealType well_rate) const
             {
                 return {
-                    well_rate, well_kh(), *grid()};
+                    well_rate, well_kh(), *grid2D};
             }
 
             Problem::InitialCondition initial_state() const
@@ -139,16 +140,18 @@ namespace GPN
 
             const Grids::GridDualStencils &z_grid_stencils() const
             {
-                return grid()->first_coord.dual_stencils;
+                return grid2D->first_coord.dual_stencils;
             }
             const Grids::AxesGrid<CoordinateTypes::Z> &z_grid() const
             {
-                return grid()->first_coord;
+                return grid2D->first_coord;
             }
 
             Well_KH well;
 
             RealType val;
+
+            const Grid2D_t grid2D;
         };
 
     } // EqSolver

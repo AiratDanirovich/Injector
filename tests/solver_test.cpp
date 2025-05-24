@@ -12,11 +12,13 @@ using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
 RealType val{1.0};
+const auto box{Box{Segment{0, 1}, Segment{0, 1}}};
+const auto nZ{5}, nR{11};
 
 TEST_CASE("Solver")
 {
-    SolverFactory solver_factory{val, Box{Segment{0, 1}, Segment{0, 1}}, 5, 11};
-    const auto grid2D{solver_factory.grid()};
+    const auto grid2D{Grids::CylinderGridFactory::create(box, nZ, nR)};
+    SolverFactory solver_factory{val, grid2D};
     const auto conductivity_field{solver_factory.conductivity_field()};
     const auto capacity_field{solver_factory.capacity_field()};
     const auto initial_state{solver_factory.initial_state()};

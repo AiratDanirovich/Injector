@@ -92,20 +92,6 @@ namespace GPN
 
         struct CylinderGridFactory
         {
-            CylinderGridFactory(const Box &box, ptrdiff_t n1, ptrdiff_t n2)
-                : CylinderGridFactory(
-                      Factory::generate_dual_grid_stencils_uniform(box.axes1, n1),
-                      Factory::generate_dual_grid_stencils_uniform(box.axes2, n2))
-            {
-            }
-
-            CylinderGridFactory(const auto &z_stencils, const auto &r_stencils)
-                : grid2D{
-                      Grids::Factory::create_cylinder_grid_2D_ptr(
-                          z_stencils, r_stencils)}
-            {
-            }
-
             static auto create(const Box &box, ptrdiff_t n1, ptrdiff_t n2)
             {
                 return create(Factory::generate_dual_grid_stencils_uniform(box.axes1, n1),
@@ -117,13 +103,6 @@ namespace GPN
                 return Grids::Factory::create_cylinder_grid_2D_ptr(
                     z_stencils, r_stencils);
             }
-            const auto grid() const
-            {
-                return grid2D;
-            }
-
-        protected:
-            cptr<Grids::StructuredCylinderGrid2DAxisymmetric> grid2D;
         };
     }
 }
