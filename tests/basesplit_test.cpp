@@ -1,10 +1,5 @@
-
-#include <Injector/Grids/CoordinateTypes.h>
-#include <Injector/Properties/Logs.hpp>
-#include <Injector/Properties/PhysicalField.hpp>
 #include <Injector/Grids/Factory.hpp>
-#include <Injector/Properties/Factory.hpp>
-
+#include <Injector/Properties/LogsFactory.hpp>
 #include <Injector/Solver/SplittingMethod/BaseSplit.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -13,31 +8,30 @@ using namespace GPN;
 using namespace GPN::Grids;
 using namespace GPN::EqSolver::SplittingMethod;
 
+using VR = std::vector<RealType>;
+
+// input data
+const VR z_stencils = Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 5);
+const VR r_stencils = Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 11);
+const VR conductivity_stencils = Logs::StencilsFactory::generate_conductivity_StepProperty(z_stencils);
+
 // Tests Cylinder grid, (r; z)
 TEST_CASE("BaseSplitTest")
 {
-#pragma region GRID_2D
-    // generate 1D grids in every direction --- points of property jumps
-    const cptr<StructuredCylinderGrid2DAxisymmetric> grid2D{
-        std::make_shared<StructuredCylinderGrid2DAxisymmetric>(
-            Grids::Factory::create_cylinder_grid_2D(
-                Box{Segment{0, 1}, Segment{0, 1}}, 5, 11))};
-#pragma endregion
-#pragma region HEAT-CONDUCTIVITY
-    // generate heat conductivity field
+    const Grids::CylinderGridFactory grid_factory{z_stencils, r_stencils};
+    const Logs::HeatLogsFactory heat_factory{conductivity_stencils, grid_factory.grid()->first_coord};
+
     Properties::HeatConductivity conductivity_field{
-        Logs::HeatConductivity{
-            Logs::StepPropertyGrid{
-                Logs::StepProperty{
-                    Logs::Factory::generate_conductivity_StepProperty(
-                        grid2D->first_coord.dual_stencils)},
-                grid2D->first_coord}},
-        grid2D};
-#pragma endregion
-#pragma region BASE-SPLIT
-    BaseSplit base_split{
+        heat_factory.conductivity,
+        grid_factory.grid()};
+
+    BaseSplit base_split1{
         conductivity_field.face_vals_axes2,
-        grid2D->first_coord.size(),
-        grid2D->second_coord.size()};
-#pragma endregion
+        grid_factory.grid()->first_coord.mesh_size(),
+        grid_factory.grid()->second_coord.mesh_size()};
+        
+    BaseSplit base_split2{
+        conductivity_field.face_vals_axes1,
+        grid_factory.grid()->second_coord.mesh_size(),
+        grid_factory.grid()->first_coord.mesh_size()};
 }

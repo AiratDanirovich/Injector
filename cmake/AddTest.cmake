@@ -49,7 +49,7 @@ macro(add_catch2_test name)
   if(MSVC AND MSVC_VERSION GREATER 1400)
     target_compile_options(
       ${TEST_NAME} PRIVATE 
-      /MP)
+      /MP /DEBUG)
   else()
     target_compile_options(
       ${TEST_NAME} PRIVATE

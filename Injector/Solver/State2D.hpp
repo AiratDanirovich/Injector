@@ -2,7 +2,6 @@
 
 #include <cmath>
 #include <Eigen/Core>
-// #include <Eigen/Dense>
 
 #include <Injector/Grids/Defines.h>
 
@@ -36,8 +35,8 @@ namespace GPN
                     RealType val)
                 {
                     State_Container cur_state{
-                        grid.first_coord.size(),
-                        grid.second_coord.size()};
+                        grid.first_coord.mesh_size(),
+                        grid.second_coord.mesh_size()};
                     cur_state.fill(val);
 
                     return cur_state;
@@ -51,8 +50,8 @@ namespace GPN
                     const Functor &f, RealType initial_moment = 0.0)
                 {
                     State_Container cur_state{
-                        grid.first_coord.size(),
-                        grid.second_coord.size()};
+                        grid.first_coord.mesh_size(),
+                        grid.second_coord.mesh_size()};
 
                     for (std::ptrdiff_t j = 0; j < cur_state.outerSize(); ++j)
                         for (std::ptrdiff_t i = 0; i < cur_state.innerSize(); ++i)

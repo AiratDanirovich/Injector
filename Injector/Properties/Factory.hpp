@@ -11,34 +11,88 @@ namespace GPN
 {
     namespace Logs
     {
-        struct Factory
+        struct StencilsFactory
         {
             using Grid_t = Grids::AxesGrid<CoordinateTypes::Z>;
-
+#pragma region HYDRODYNAMIC-LOGS
             template <typename Container_t>
-            static auto generate_permeability_StepProperty(
+            static auto generate_is_permeable_StepProperty(
                 const Container_t &dual_stencils)
             {
                 auto size{dual_stencils.size() - 1};
                 std::vector<RealType> vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
-                    vals[id] = (id % 2 == 1) ? 500 : 300;
+                    vals[id] = (id % 2 == 1) ? 0.0 : 1.0;
                 return vals;
             }
 
-            template <typename Container_t>
+            template <typename Container1_t, typename Container2_t>
             static auto generate_porosity_StepProperty(
-                const Container_t &dual_stencils)
+                const Container1_t &dual_stencils,
+                const Container2_t &is_permeable)
             {
                 auto size{dual_stencils.size() - 1};
                 std::vector<RealType> vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
+                {
                     vals[id] = (id % 2 == 1) ? 0.2 : 0.5;
+                    vals[id] *= is_permeable[id];
+                }
                 return vals;
             }
 
+            template <typename Container1_t, typename Container2_t>
+            static auto generate_permeability_StepProperty(
+                const Container1_t &dual_stencils,
+                const Container2_t &is_permeable)
+            {
+                auto size{dual_stencils.size() - 1};
+                std::vector<RealType> vals(size);
+
+                for (auto id{size - size}; id < size; ++id)
+                {
+                    vals[id] = (id % 2 == 1) ? 500 : 300;
+                    vals[id] *= is_permeable[id];
+                }
+                return vals;
+            }
+
+            template <typename Container1_t, typename Container2_t>
+            static auto generate_ext_pressure_StepProperty(
+                const Container1_t &dual_stencils,
+                const Container2_t &is_permeable)
+            {
+                constexpr RealType BarToPa = 1e5;
+                auto size{dual_stencils.size() - 1};
+                std::vector<RealType> vals(size);
+
+                for (auto id{size - size}; id < size; ++id)
+                {
+                    vals[id] = (id % 2 == 1) ? 130 : 150;
+                    vals[id] *= is_permeable[id] * BarToPa;
+                }
+                return vals;
+            }
+
+            template <typename Container1_t, typename Container2_t>
+            static auto generate_skin_StepProperty(
+                const Container1_t &dual_stencils,
+                const Container2_t &is_permeable)
+            {
+                auto size{dual_stencils.size() - 1};
+                std::vector<RealType> vals(size);
+
+                for (auto id{size - size}; id < size; ++id)
+                {
+                    vals[id] = 0.0;
+                    vals[id] *= is_permeable[id];
+                }
+                return vals;
+            }
+#pragma endregion
+#pragma region HEAT-LOGS
             template <typename Container_t>
             static auto generate_solid_density_StepProperty(
                 const Container_t &dual_stencils)
@@ -64,18 +118,6 @@ namespace GPN
             }
 
             template <typename Container_t>
-            static auto generate_is_permeable_StepProperty(
-                const Container_t &dual_stencils)
-            {
-                auto size{dual_stencils.size() - 1};
-                std::vector<RealType> vals(size);
-
-                for (auto id{size - size}; id < size; ++id)
-                    vals[id] = (id % 2 == 1) ? 0.0 : 1.0;
-                return vals;
-            }
-
-            template <typename Container_t>
             static auto generate_conductivity_StepProperty(
                 const Container_t &dual_stencils)
             {
@@ -86,6 +128,7 @@ namespace GPN
                     vals[id] = (id % 2 == 1) ? 200 : 1000;
                 return vals;
             }
+#pragma endregion
 
             static auto generate_rates_StepProperty(const Grids::GridDualStencils &dual_stencils)
             {
@@ -149,11 +192,11 @@ namespace GPN
                 const auto grid)
             {
                 const auto solid_density{
-                    Logs::Factory::generate_soliddensity_Log(
+                    Logs::StencilsFactory::generate_soliddensity_Log(
                         soliddensity_stencils, grid)};
 
                 const auto solid_specific_heatcapacity{
-                    Logs::Factory::generate_solid_specific_heatcapacity_Log(
+                    Logs::StencilsFactory::generate_solid_specific_heatcapacity_Log(
                         solid_specific_heatcapacity_stencils, grid)};
 
                 return Logs::SolidVolumetricHeatCapacity{

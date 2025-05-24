@@ -3,6 +3,7 @@
 #include <memory>
 #include <type_traits>
 #include <omp.h>
+#include <cassert>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -35,7 +36,7 @@ namespace GPN
                 for (auto id{0ll}; id < out.cols(); ++id)
                     out.col(id) = Axes::const_face_interpolator(
                         grid.mesh_nodes(id), grid.mesh_nodes(id + 1ll),
-                        static_cast<Logs::StepPropertyContainer>(log.log_vals));
+                        static_cast<StepPropertyContainer>(log.log_vals));
                 return out;
             }
         };
@@ -46,7 +47,7 @@ namespace GPN
         /// @brief Interpolate physical property between nodes of 2D grid
         /// @tparam Grid_t 2D grid
         template <typename Grid_t = Grids::StructuredCylinderGrid2DAxisymmetric>
-        struct Field // : public Grid_t //::CoordinateSystem_t
+        struct Field
         {
             static_assert(Grid_t::Dim() == 2ull);
             static_assert(
@@ -72,9 +73,9 @@ namespace GPN
                 : its_values{vals},
                   grid{grid}
             {
-                assert(its_values.rows() == grid->first_coord.size());
-                assert(its_values.cols() == grid->second_coord.size());
-                assert(grid->second_coord.size() > 0ll);
+                assert(its_values.rows() == grid->first_coord.mesh_size());
+                assert(its_values.cols() == grid->second_coord.mesh_size());
+                assert(grid->second_coord.mesh_size() > 0ll);
             }
 
             const auto &values() const { return its_values; }
@@ -88,9 +89,19 @@ namespace GPN
 
             using Grid_type = Grid_t;
 
-            const cptr<Grid_t> grid;
             const GridNodeValues2D its_values;
-        protected:
+            const cptr<Grid_type> grid;
+
+            template <typename Container_t>
+            static Field set_from_multiple(
+                const Container_t &base_log, const std::vector<Container_t> &logs,
+                const cptr<Grid_t> &grid)
+            {
+                auto temp{interpolate_r(base_log, grid)};
+                for (auto i{0ll}; i < logs.size(); ++i)
+                    temp.col(i) = logs[i];
+                return temp;
+            }
 
         private:
             // extrapolate as const value in the Axes2 direction,
@@ -98,10 +109,10 @@ namespace GPN
             // operator()(i, j) is expected.
             static auto interpolate_r(const Logs::StepPropertyGrid &property, const cptr<Grid_t> grid)
             {
-                assert(property.log_vals.size() == grid->first_coord.size());
-                assert(grid->second_coord.size() > 0ll);
+                assert(property.log_vals.size() == grid->first_coord.mesh_size());
+                assert(grid->second_coord.mesh_size() > 0ll);
 
-                GridNodeValues2D out(grid->first_coord.size(), grid->second_coord.size());
+                GridNodeValues2D out(grid->first_coord.mesh_size(), grid->second_coord.mesh_size());
                 out.colwise() = property.log_vals;
                 return out;
             }
@@ -120,6 +131,7 @@ namespace GPN
             {
             }
         };
+
         struct HeatVolumetricCapacity
             : public Field<Grids::StructuredCylinderGrid2DAxisymmetric>
         {
@@ -135,13 +147,13 @@ namespace GPN
                 : Field<Grid_t>{property, grid},
                   face_vals_axes1(
                       property.face_values.size(),
-                      grid->second_coord.size()),
-#pragma region AXES2-FACEVALUES
+                      grid->second_coord.mesh_size()),
+                  // #pragma region AXES2-FACEVALUES
                   face_vals_axes2{
                       Logs::FaceInterpolator<
                           typename Grid_t::Axes2>::interpolate(property,
                                                                grid->second_coord)}
-#pragma endregion
+            // #pragma endregion
             {
 #pragma region AXES1-FACEVALUES
                 assert(property.face_values.size() >= 0ll);
@@ -155,7 +167,7 @@ namespace GPN
                         assert(face_vals_axes1(row, 0) == face_vals_axes1(row, col));
 #pragma endregion
             }
-            
+
             using typename Field<Grid_t>::Grid_type;
 
             // interpolated values at faces normal to Axes1
