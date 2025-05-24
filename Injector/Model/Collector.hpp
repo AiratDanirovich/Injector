@@ -8,9 +8,9 @@ namespace GPN
     {
         namespace Rocks
         {
-            struct CoreSampleData
+            struct CoreSampleLogs
             {
-                CoreSampleData(
+                CoreSampleLogs(
                     const auto &is_permeable_stencils,
                     const auto &porosity_stencils,
                     const auto &permeability_stencils,

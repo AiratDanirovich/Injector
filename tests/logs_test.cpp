@@ -22,7 +22,7 @@ const auto permeability_stencils{Logs::RawdataFactory::generate_permeability_Ste
 TEST_CASE("LogsTest")
 {
     const auto grid{Grids::Factory::create_axes<CoordinateTypes::Z>(grid_stencils)};
-    const Logs::Rocks::CoreSampleData core_data{
+    const Logs::Rocks::CoreSampleLogs core_data{
         is_permeable_stencils,
         porosity_stencils,
         permeability_stencils,
