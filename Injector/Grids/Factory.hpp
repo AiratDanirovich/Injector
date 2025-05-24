@@ -78,20 +78,13 @@ namespace GPN
             static auto create_axes(const auto &stencils)
             {
                 auto nodes{GridDual{stencils}};
-                return 
-                    AxesGrid<CoordinateType_t>{nodes};
+                return AxesGrid<CoordinateType_t>{nodes};
             }
 
             static auto create_cylinder_grid_2D_ptr(const auto &z_stencils, const auto &r_stencils)
             {
-                //    auto z_nodes{GridDual{z_stencils}};
                 auto z_grid{create_axes<CoordinateTypes::Z>(z_stencils)};
-                //        AxesGrid<CoordinateTypes::Z>{z_nodes}};
-
                 auto r_grid{create_axes<CoordinateTypes::R_CylCoord>(r_stencils)};
-                // auto r_nodes{GridDual{r_stencils}};
-                // auto r_grid{
-                //     AxesGrid<CoordinateTypes::R_CylCoord>{r_nodes}};
 
                 return std::make_shared<StructuredCylinderGrid2DAxisymmetric>(z_grid, r_grid);
             }
@@ -113,6 +106,17 @@ namespace GPN
             {
             }
 
+            static auto create(const Box &box, ptrdiff_t n1, ptrdiff_t n2)
+            {
+                return create(Factory::generate_dual_grid_stencils_uniform(box.axes1, n1),
+                              Factory::generate_dual_grid_stencils_uniform(box.axes2, n2));
+            }
+
+            static auto create(const auto &z_stencils, const auto &r_stencils)
+            {
+                return Grids::Factory::create_cylinder_grid_2D_ptr(
+                    z_stencils, r_stencils);
+            }
             const auto grid() const
             {
                 return grid2D;
