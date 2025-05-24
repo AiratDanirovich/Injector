@@ -77,29 +77,11 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
     return 0.0;
   }
 
-  // RealType south(std::ptrdiff_t r, RealType t) const
-  // {
-  //   return 0.0;
-  // }
-  // RealType north(std::ptrdiff_t r, RealType t) const
-  // {
-  //   return r == 0ll ? fluid.volumetric_heat_capacity * flow_field.axes1_as_face_normal(0, 0) * inlet_temp : (RealType)0.0;
-  // }
-
-  // RealType east(std::ptrdiff_t z, RealType t) const
-  // {
-  //   return 0.0;
-  // }
-  // RealType west(std::ptrdiff_t z, RealType t) const
-  // {
-  //   return 0.0;
-  // }
-
 protected:
   RealType inlet_temp;
   const PhaseProperties &fluid;
   const Properties::ReservoirFlowField &flow_field;
-  const cptr<Grid2D_t> grid_ptr;
+  const cptr<const Grid2D_t> grid_ptr;
 };
 
 using VR = std::vector<RealType>;
