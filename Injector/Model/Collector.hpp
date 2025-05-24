@@ -75,11 +75,11 @@ namespace GPN
             };
         } // Rocks
 
-        namespace Hyrodynamics
+        namespace Hydrodynamics
         {
-            struct Hyrodynamics
+            struct Hydrodynamics
             {
-                Hyrodynamics(
+                Hydrodynamics(
                     const auto &is_permeable_stencils,
                     const auto &ext_pressure,
                     const auto &skin,
