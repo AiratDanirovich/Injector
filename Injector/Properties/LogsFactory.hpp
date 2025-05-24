@@ -80,6 +80,82 @@ namespace GPN
                     IsPermeableFactory::create(is_permeable, grid)};
             }
         };
+        
+        struct SkinFactory
+        {
+            static SkinFactor create(
+                const auto &skin,
+                const auto &is_permeable,
+                const auto &grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            skin},
+                        grid},
+                    IsPermeableFactory::create(is_permeable, grid)};
+            }
+        };
+
+        struct ExtPressureFactory
+        {
+            static ExternalPressure create(
+                const auto &pressure,
+                const auto &is_permeable,
+                const auto &grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            pressure},
+                        grid},
+                    IsPermeableFactory::create(is_permeable, grid)};
+            }
+        };
+
+
+        
+        struct HeatConductivityFactory
+        {
+            static HeatConductivity create(
+                const auto &pressure,
+                const auto &grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            pressure},
+                        grid}};
+            }
+        };
+        
+        struct SolidDensityFactory
+        {
+            static SolidDensity create(
+                const auto &pressure,
+                const auto &grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            pressure},
+                        grid}};
+            }
+        };
+        
+        struct SolidSpecificHeatCapacityFactory
+        {
+            static SolidSpecificHeatCapacity create(
+                const auto &pressure,
+                const auto &grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            pressure},
+                        grid}};
+            }
+        };
 
         struct RFPFactory
         {
