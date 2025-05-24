@@ -61,6 +61,6 @@ TEST_CASE("FieldsTest")
         Phases::FluidFactory::create_water(1.0, 1.0),
         grid};
 
-    const Properties::Rocks::Rocks colelctor_field{
+    const Properties::Rocks::Rocks collector_field{
         core_data, grid2D};
 }
