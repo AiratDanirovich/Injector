@@ -20,14 +20,14 @@ namespace GPN
                 auto size{nodes.size()-1ull};
                 assert(size > 0);
                 DualStepsContainer out(size);
-                for(auto idx{size-size}; idx < size-1; ++idx)
+                for(auto idx{size-size}; idx < size; ++idx)
                     out(idx) = nodes(idx+1) - nodes(idx);
                 return out;
             }
 
             /// @brief 
             /// @param nodes Nodes of dual mesh
-            /// @return 
+            /// @return Centers of control volumes
             static auto cell_centers(const DualNodesContainer& nodes)
             {
                 auto size{nodes.size()-1ull};
@@ -39,7 +39,7 @@ namespace GPN
 
             /// @brief 
             /// @param nodes Nodes of dual mesh
-            /// @return 
+            /// @return Steps between centers of control volumes
             static auto mesh_steps(const DualNodesContainer& nodes)
             {
                 auto mesh_nodes{cell_centers(nodes)};

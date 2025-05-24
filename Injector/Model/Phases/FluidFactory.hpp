@@ -9,19 +9,33 @@ namespace GPN
     {
         struct FluidFactory
         {
-            static auto create_water(RealType temperature, RealType pressure)
+            FluidFactory(RealType temperature, RealType pressure)
+                : water{create_water(temperature, pressure)}
             {
-                return Water{
+            }
+            FluidFactory(Viscosity viscosity,
+                         Density density,
+                         SpecificHeatCapacity mass_heat_capacity)
+                : water{create_water(viscosity,
+                                     density,
+                                     mass_heat_capacity)}
+            {
+            }
+
+            PhaseProperties water;
+            static Water create_water(RealType temperature, RealType pressure)
+            {
+                return {
                     PhaseProperties{
                         Viscosity{6e-4},
                         Density{1000},
                         SpecificHeatCapacity{4180}}};
             }
-            static auto create_water(Viscosity viscosity,
+            static Water create_water(Viscosity viscosity,
                                      Density density,
                                      SpecificHeatCapacity mass_heat_capacity)
             {
-                return Water{
+                return {
                     PhaseProperties{
                         viscosity,
                         density,

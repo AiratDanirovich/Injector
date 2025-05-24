@@ -14,8 +14,6 @@ namespace GPN
 {
     namespace Logs
     {
-        using StepPropertyContainer = Eigen::ArrayX<RealType>;
-        using InternalFaceValues = Eigen::ArrayX<RealType>;
 
         struct InterpolatedDataContainer : private StepPropertyContainer
         {
@@ -28,8 +26,8 @@ namespace GPN
         };
 
         /// @brief Container for values of step properties.
-        /// Copies from standard continer (Eigen or STL) 
-        /// to local filed variable.
+        /// Copies from standard continer (Eigen or STL)
+        /// to local field variable.
         struct StepProperty
         {
             StepPropertyContainer data;
@@ -48,7 +46,7 @@ namespace GPN
                 : data(adata.size())
             {
 #pragma region ASSERTIONS
-                assert(data.size() > 0ull);
+                assert(data.size() > (decltype(data.size()))0);
                 for (auto idx{adata.cbegin()}; idx != adata.cend(); ++idx)
                     // all properties are non-negative
                     assert(*idx >= 0.0);
@@ -86,6 +84,7 @@ namespace GPN
                   grid{grid}
             {
                 assert(log_vals.size() == grid.dual_size() - 1ll);
+                assert(log_vals.size() == grid.mesh_size());
             }
 
             StepPropertyGrid(
@@ -143,6 +142,11 @@ namespace GPN
                 return StepPropertyGrid{(lhs.log_vals + rhs.log_vals), lhs.grid};
             }
 
+            operator const StepPropertyContainer &() const
+            {
+                return log_vals;
+            }
+
             const StepPropertyContainer log_vals;
             const Grid_t grid;
 
@@ -151,6 +155,9 @@ namespace GPN
                 const StepProperty &property_vals,
                 const Grid_t &grid)
             {
+
+                //    std::cout << "New interpolation:\n\n";
+
                 StepPropertyContainer out(grid.mesh_size());
                 // interpolate property_vals on the grid
                 for (
@@ -159,18 +166,18 @@ namespace GPN
                     volume_id < grid.dual_steps.size();
                     ++volume_id)
                 {
-                    //    std::cout << "volume_id =     " << volume_id << std::endl;
-                    //    std::cout << "mesh_node_ids = " << std::endl;
+                    //        std::cout << "volume_id =     " << volume_id << std::endl;
+                    //        std::cout << "mesh_node_ids = " << std::endl;
                     // set constant value within a fixed control volume
                     for (;
                          (mesh_node_id < grid.dual_steps.size()) &&
                          (grid.mesh_nodes(mesh_node_id) < grid.dual_stencils(volume_id + 1ull));
                          ++mesh_node_id)
                     {
-                        //        std::cout << mesh_node_id << ' ';
+                        //                std::cout << mesh_node_id << ' ';
                         out(mesh_node_id) = property_vals.data(volume_id);
                     }
-                    //    std::cout << std::endl;
+                    //        std::cout << std::endl;
                 }
 
                 return out;
@@ -183,8 +190,8 @@ namespace GPN
             {
                 const auto &data{vals.log_vals};
                 std::for_each(data.cbegin(), data.cend(),
-                               [](RealType x)
-                               { assert(x >= 0.0); });
+                              [](RealType x)
+                              { assert(x >= 0.0); });
             }
         };
 
@@ -200,14 +207,59 @@ namespace GPN
             {
                 const auto &data{vals.log_vals};
                 std::for_each(data.cbegin(), data.cend(),
-                               [](RealType x)
-                               { assert(x == 0.0 || x == 1.0); });
+                              [](RealType x)
+                              { assert(x == 0.0 || x == 1.0); });
             }
         };
 
         struct IsPermeable : public IndicatorProperty
         {
             using IndicatorProperty::IndicatorProperty;
+        };
+
+        struct ExternalPressure
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            ExternalPressure(
+                const StepPropertyGrid &pressure,
+                const IsPermeable &is_permeable)
+                : StepPropertyGrid{pressure},
+                  AssertNonNegative{pressure}
+            {
+                assert(pressure.size() == is_permeable.size());
+                for (std::ptrdiff_t id{0ll}; id < pressure.size(); ++id)
+                    assert(
+                        ((is_permeable(id) == 1.0) && (pressure(id) > 0.0)) ||
+                        ((is_permeable(id) == 0.0) && (pressure(id) == 0.0)));
+            }
+        };
+
+        struct RFP
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            template <typename Well_t>
+            RFP(
+                RealType well_rate,
+                const Well_t &well)
+                : RFP{
+                      StepPropertyGrid{well.get_RFP(well_rate), well.is_permeable.grid},
+                      well.is_permeable}
+            {
+            }
+
+            RFP(const StepPropertyGrid &rfp,
+                const IsPermeable &is_permeable)
+                : StepPropertyGrid{rfp},
+                  AssertNonNegative{rfp}
+            {
+                assert(rfp.size() == is_permeable.size());
+                for (std::ptrdiff_t id{0ll}; id < rfp.size(); ++id)
+                    assert(
+                        ((is_permeable(id) == 1.0)) ||
+                        ((is_permeable(id) == 0.0) && (rfp(id) == 0.0)));
+            }
         };
 
         struct Permeability
@@ -315,7 +367,7 @@ namespace GPN
                 const SolidVolumetricHeatCapacity &matrix_vol_heat_capacity,
                 const Water &water)
                 : StepPropertyGrid{
-                      porosity * water.volumetric_heat_capacity + (porosity-1.0)*(-1.0) * matrix_vol_heat_capacity}
+                      porosity * water.volumetric_heat_capacity + (porosity - 1.0) * (-1.0) * matrix_vol_heat_capacity}
             {
             }
         };

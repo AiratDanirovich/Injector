@@ -33,7 +33,17 @@ add_catch2_test(basesplit_test)
 add_catch2_test(splitx_test)
 add_catch2_test(splity_test)
 add_catch2_test(solver_test)
+# add_catch2_test(solvermanager_test)
 add_catch2_test(splitting_solver_constvalProblem)
 add_catch2_test(splitting_solver_SelfSimilarProblem)
+
+add_catch2_test(well_kh_test)
+add_catch2_test(flowfield_test)
+add_catch2_test(hydrodynamicsolver_test)
+
+# add_catch2_test(logscontainer_test)
+
+
+add_catch2_test(HeatFlow_test)
 
 

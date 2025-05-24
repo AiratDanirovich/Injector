@@ -3,9 +3,11 @@
 #include <fstream>
 #include <cassert>
 
+#include <Injector/Properties/Logs.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
+#include <Injector/Model/HydrodynamicSolver.hpp>
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
-#include <Injector/Solver/SplittingMethod/SolverFactory.hpp>
+#include <Injector/Solver/SolverFactory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
@@ -14,7 +16,9 @@ using namespace Catch;
 using namespace Catch::Matchers;
 
 using namespace GPN;
+using namespace GPN::Logs;
 using namespace GPN::Phases;
+using namespace GPN::Model::Injector;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
@@ -36,11 +40,11 @@ struct ExactSolution
     return -q * heat_conductivity.value(0ull, 0ull) *
            std::expint(-r * r / (4.0 * kappa.value(0ull, 0ull) * t));
   }
-  
-  template<typename Grid_t>
-  RealType operator()(ptrdiff_t z, ptrdiff_t r, RealType t, const Grid_t& grid) const
+
+  template <typename Grid_t>
+  RealType operator()(ptrdiff_t z, ptrdiff_t r, RealType t, const Grid_t &grid) const
   {
-    const auto[zv, rv]{grid.coordinates(z,r)};
+    const auto [zv, rv]{grid.coordinates(z, r)};
     return (*this)(zv, rv, t);
   }
 
@@ -89,33 +93,35 @@ protected:
 
 using VR = std::vector<RealType>;
 
+/*START*/
+// input parameters
+/*heat rate*/
+RealType q{1.0};
+/*fluid*/
+RealType viscosity{6e-4}, density{1000}, capacity{4200};
+/*collector*/
+const RealType rMin{1.0}, rMax{2.0}, zTop{0.0};
+const std::ptrdiff_t rNodes{301ull};
+const std::ptrdiff_t nLayers{11ull};
+const VR thickness(nLayers, 0.01); // each layer is 1m thick
+
+const VR conductivity(nLayers, 3.9);
+const VR porosity_stencils(nLayers, 1e-16);
+const VR is_permeable_stencils(nLayers, 1.0);
+const VR solid_density(nLayers, 3.9 /*should be 2600 in SI*/);
+const VR solid_specific_heatcapacity(nLayers, 1.0 /*should be 770 in SI*/);
+/*temporal grid*/
+const std::ptrdiff_t time_steps_nmbr{501ull};
+const RealType t0{1.0}; // initial time moment
+const RealType t1{t0 + 1.0};
+const RealType time_step{(t1 - t0) / time_steps_nmbr};
+const VR time_intervals(time_steps_nmbr, time_step);
+/*flow*/
+const RealType well_rate{0.0};
+/*END*/
+
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
-  /*START*/
-  // input parameters
-  /*heat rate*/
-  RealType q{1.0};
-  /*fluid*/
-  RealType viscosity{6e-4}, density{1000}, capacity{4200};
-  /*collector*/
-  const RealType rMin{1.0}, rMax{2.0}, zTop{0.0};
-  const std::ptrdiff_t rNodes{301ull};
-  const std::ptrdiff_t nLayers{11ull};
-  const VR thickness(nLayers, 0.01); // each layer is 1m thick
-
-  const VR conductivity(nLayers, 3.9);
-  const VR porosity(nLayers, 1e-16);
-  const VR is_permeable(nLayers, 1.0);
-  const VR solid_density(nLayers, 3.9 /*should be 2600 in SI*/);
-  const VR solid_specific_heatcapacity(nLayers, 1.0 /*should be 770 in SI*/);
-  /*temporal grid*/
-  const std::ptrdiff_t time_steps_nmbr{501ull};
-  const RealType t0{1.0}; // initial time moment
-  const RealType t1{t0 + 1.0};
-  const RealType time_step{(t1 - t0) / time_steps_nmbr};
-  const VR time_intervals(time_steps_nmbr, time_step);
-  /*END*/
-
   // make grid1D
   const VR z_stencils(
       Grids::Factory::generate_dual_grid_stencils_from_steps(
@@ -128,6 +134,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto grid2D{
       Grids::Factory::create_cylinder_grid_2D_ptr(
           z_stencils, r_stencils)};
+  const VR permeability_stencils{
+      Logs::StencilsFactory::generate_permeability_StepProperty(
+          grid2D->first_coord.dual_nodes, is_permeable_stencils)}; //(nLayers, 1.0);
   // heat conductivity
   const Properties::HeatConductivity conductivity_field{
       Properties::Factory::generate_heatconductivity_Property(
@@ -141,7 +150,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // volumetric heat capacity of multiphaase system
   const Properties::HeatVolumetricCapacity capacity_field{
       Properties::Factory::generate_volumetric_heatcapacity_Property(
-          is_permeable, porosity,
+          is_permeable_stencils, porosity_stencils,
           solid_density, solid_specific_heatcapacity,
           water, grid2D)};
   // exact solution
@@ -157,8 +166,21 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       Grids::Factory::generate_dual_grid_stencils_from_steps(
           t0, time_intervals));
   // solver
+  const Logs::IsPermeable is_permeable{
+      IsPermeableFactory::create(is_permeable_stencils, grid2D->first_coord)};
+  const Logs::Permeability permeability{
+      PermeabilityFactory::create(permeability_stencils, is_permeable_stencils, grid2D->first_coord)};
+
+  const Well_KH well{
+      Phases::FluidFactory::create_water(0.0, 0.0),
+      is_permeable,
+      permeability};
+  Properties::ReservoirFlowField flow_field{
+      well_rate, well, *grid2D};
+
   Solver solver{
-      conductivity_field, grid2D,
+      conductivity_field,
+      flow_field, grid2D,
       capacity_field,
       initial_state,
       bc, t0};
@@ -180,8 +202,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   std::string pathr{"data_r.csv"};
   std::string pathz{"data_z.csv"};
 
-
-
   // assert solution
   for (size_t t_step{0ll}; t_step < time_intervals.size(); ++t_step)
   {
@@ -194,11 +214,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto &[time, state] = solver.solution().back();
   for (std::ptrdiff_t col{0ll}; col < state.cols(); ++col)
   {
-    for (std::ptrdiff_t row{nLayers/2}; row < nLayers/2+1ll /*state.rows()*/; ++row)
+    for (std::ptrdiff_t row{nLayers / 2}; row < nLayers / 2 + 1ll /*state.rows()*/; ++row)
     {
       const auto [z, r] = grid2D->coordinates(row, col);
       const auto val{es(z, r, time)};
-      
+
       fr << r << ';' << val << ';' << state(row, col) << '\n';
 
       INFO("" << "col: " << col << ", row: " << row << ", calc: " << state(row, col) << ", ref: " << val);
@@ -220,12 +240,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
   //     assert(val == val2);
 
-  //     fz 
-  //     << z << ';' 
-  //     << val << ';' 
-  //     << state(row, 0)<< ';' 
-  //     << state(row, col)<< ';' 
-  //     << state(row, state.cols()-1ll) 
+  //     fz
+  //     << z << ';'
+  //     << val << ';'
+  //     << state(row, 0)<< ';'
+  //     << state(row, col)<< ';'
+  //     << state(row, state.cols()-1ll)
   //     << '\n';
 
   //     INFO("" << "col: " << col << ", row: " << row << ", calc: " << state(row, col) << ", ref: " << val);

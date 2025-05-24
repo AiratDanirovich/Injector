@@ -29,6 +29,15 @@ namespace GPN
                 return result;
             }
 
+            static auto generate_dual_grid_steps(const std::vector<RealType> &data)
+            {
+                assert(data.size() > 1ull);
+                std::vector<RealType> out(data.size() - 1ull);
+                for (auto i{1ull}; i < data.size(); ++i)
+                    out[i - 1] = data[i] - data[i - 1];
+                return out;
+            }
+
             static auto generate_dual_grid_stencils_from_steps(RealType zTop, std::vector<RealType> thickness)
             {
                 thickness.insert(thickness.begin(), zTop);
@@ -43,7 +52,7 @@ namespace GPN
                 return generate_dual_grid_stencils_uniform(axes.start, axes.end, n);
             }
 
-            static auto create_cartesian_grid_2D(ptrdiff_t n)
+            static auto create_cartesian_grid_2D_ptr(ptrdiff_t n)
             {
                 auto stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, n)};
 
@@ -55,36 +64,62 @@ namespace GPN
                 auto y_grid{
                     AxesGrid<CoordinateTypes::Y>{nodes}};
 
-                return StructuredXYGrid2D{x_grid, y_grid};
+                return std::make_shared<StructuredXYGrid2D>(x_grid, y_grid);
             }
 
-            static auto create_cylinder_grid_2D(const Box &box, ptrdiff_t n1, ptrdiff_t n2)
+            static auto create_cylinder_grid_2D_ptr(const Box &box, ptrdiff_t n1, ptrdiff_t n2)
             {
                 auto z_stencils{Factory::generate_dual_grid_stencils_uniform(box.axes1, n1)};
-                auto z_nodes{GridDual{z_stencils}};
-                auto z_grid{
-                    AxesGrid<CoordinateTypes::Z>{z_nodes}};
-
                 auto r_stencils{Factory::generate_dual_grid_stencils_uniform(box.axes2, n2)};
-                auto r_nodes{GridDual{r_stencils}};
-                auto r_grid{
-                    AxesGrid<CoordinateTypes::R_CylCoord>{r_nodes}};
+                return create_cylinder_grid_2D_ptr(z_stencils, r_stencils);
+            }
 
-                return StructuredCylinderGrid2DAxisymmetric{z_grid, r_grid};
+            template <typename CoordinateType_t>
+            static auto create_axes(const auto &stencils)
+            {
+                auto nodes{GridDual{stencils}};
+                return 
+                    AxesGrid<CoordinateType_t>{nodes};
             }
 
             static auto create_cylinder_grid_2D_ptr(const auto &z_stencils, const auto &r_stencils)
             {
-                auto z_nodes{GridDual{z_stencils}};
-                auto z_grid{
-                    AxesGrid<CoordinateTypes::Z>{z_nodes}};
+                //    auto z_nodes{GridDual{z_stencils}};
+                auto z_grid{create_axes<CoordinateTypes::Z>(z_stencils)};
+                //        AxesGrid<CoordinateTypes::Z>{z_nodes}};
 
-                auto r_nodes{GridDual{r_stencils}};
-                auto r_grid{
-                    AxesGrid<CoordinateTypes::R_CylCoord>{r_nodes}};
+                auto r_grid{create_axes<CoordinateTypes::R_CylCoord>(r_stencils)};
+                // auto r_nodes{GridDual{r_stencils}};
+                // auto r_grid{
+                //     AxesGrid<CoordinateTypes::R_CylCoord>{r_nodes}};
 
                 return std::make_shared<StructuredCylinderGrid2DAxisymmetric>(z_grid, r_grid);
             }
+        };
+
+        struct CylinderGridFactory
+        {
+            CylinderGridFactory(const Box &box, ptrdiff_t n1, ptrdiff_t n2)
+                : CylinderGridFactory(
+                      Factory::generate_dual_grid_stencils_uniform(box.axes1, n1),
+                      Factory::generate_dual_grid_stencils_uniform(box.axes2, n2))
+            {
+            }
+
+            CylinderGridFactory(const auto &z_stencils, const auto &r_stencils)
+                : grid2D{
+                      Grids::Factory::create_cylinder_grid_2D_ptr(
+                          z_stencils, r_stencils)}
+            {
+            }
+
+            const auto grid() const
+            {
+                return grid2D;
+            }
+
+        protected:
+            cptr<Grids::StructuredCylinderGrid2DAxisymmetric> grid2D;
         };
     }
 }

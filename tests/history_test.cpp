@@ -5,6 +5,7 @@
 #include <Injector/Properties/Factory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
+#include <iostream>
 
 using namespace GPN;
 using namespace GPN::Grids;
@@ -13,26 +14,31 @@ using namespace GPN::Logs;
 // Tests Cylinder grid, (r; z)
 TEST_CASE("HistoryTest")
 {
-    auto time_moments{ 
+#pragma region MAKE-TIME-GRID
+    const auto time_moments{
         Grids::Factory::generate_dual_grid_stencils_uniform(
-            0, 90, 91 // linspace operator
-        )
-    };
+            0, 31536000, 13 // seconds in 12 months
+            )};
 
-    auto rates{
-        Logs::Factory::generate_rates_StepProperty(
-            time_moments
-        )
-    };
+    const auto time_steps{
+        DualStepsContainer{Grids::Factory::generate_dual_grid_steps(
+            time_moments)}};
 
-    auto history{
-        History{
-            StepProperty{rates}, 
-            TemporalGridDual{time_moments}
-        }
-    };
+    const auto time_grid{
+        TemporalGridDual{GridDualStencils{time_steps}}};
+#pragma endregion
 
-    const auto& grid{history.grid};
-    for(auto id{0ll}; id < grid.dual_nodes.size(); ++id)
+    const auto rates{
+        InjectorRate{
+            StepPropertyGrid{
+                Logs::StencilsFactory::generate_rates_StepProperty(
+                    time_moments),
+                time_grid}}};
+
+    const auto history{
+        History{rates}};
+
+    const auto &grid{history.rates.grid};
+    for (auto id{0ll}; id < grid.dual_nodes.size(); ++id)
         CHECK(grid.dual_nodes(id) == grid.dual_stencils(id));
 }
