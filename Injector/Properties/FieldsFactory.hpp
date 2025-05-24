@@ -74,7 +74,7 @@ namespace GPN
                     Logs::HeatVolumetricCapacity{
                         porosity, solid_volumetric_heatcapacity, fluid}};
 
-                return Properties::HeatVolumetricCapacity{
+                return Properties::FluidSolidHeatVolumetricCapacity{
                     capacity, grid};
             }
         };

@@ -127,15 +127,9 @@ namespace GPN
             : public Field<Grids::StructuredCylinderGrid2DAxisymmetric>
         {
             using Field<Grids::StructuredCylinderGrid2DAxisymmetric>::Field;
-            // Permeability(
-            //     const Logs::StepPropertyGrid &property,
-            //     const cptr<Grids::StructuredCylinderGrid2DAxisymmetric> grid)
-            //     : Field{property, grid}
-            // {
-            // }
         };
 
-        struct HeatVolumetricCapacity
+        struct FluidSolidHeatVolumetricCapacity
             : public Field<Grids::StructuredCylinderGrid2DAxisymmetric>
         {
             using Field<Grids::StructuredCylinderGrid2DAxisymmetric>::Field;
@@ -191,7 +185,7 @@ namespace GPN
             : public Field<
                   Grids::StructuredCylinderGrid2DAxisymmetric>
         {
-            ThermalDiffusivity(const Properties::HeatVolumetricCapacity &capacity,
+            ThermalDiffusivity(const Properties::FluidSolidHeatVolumetricCapacity &capacity,
                                const Properties::HeatConductivity &conductivity)
                 : Field{
                       conductivity / capacity}

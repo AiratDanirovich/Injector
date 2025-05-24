@@ -26,7 +26,7 @@ using namespace GPN::EqSolver::SplittingMethod;
 struct ExactSolution
 {
   ExactSolution(
-      const Properties::HeatVolumetricCapacity &volumetric_capacity,
+      const Properties::FluidSolidHeatVolumetricCapacity &volumetric_capacity,
       const Properties::HeatConductivity &heat_conductivity,
       RealType q)
       : kappa{volumetric_capacity, heat_conductivity},
@@ -149,7 +149,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           Density{density},
           SpecificHeatCapacity{capacity})};
   // volumetric heat capacity of multiphaase system
-  const Properties::HeatVolumetricCapacity capacity_field{
+  const Properties::FluidSolidHeatVolumetricCapacity capacity_field{
       Properties::Factory::generate_volumetric_heatcapacity_Property(
           is_permeable_stencils, porosity_stencils,
           solid_density, solid_specific_heatcapacity,

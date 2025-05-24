@@ -74,7 +74,7 @@ namespace GPN
                     grid2D};
             }
 
-            Properties::HeatVolumetricCapacity capacity_field() const
+            Properties::FluidSolidHeatVolumetricCapacity capacity_field() const
             {
                 auto solid_density_stencils{
                     Logs::RawDataFactory::generate_solid_density(

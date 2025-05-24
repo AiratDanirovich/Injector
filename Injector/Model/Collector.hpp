@@ -103,6 +103,20 @@ namespace GPN
                 Permeability permeability;
                 Porosity porosity;
             };
+            
+            struct HeatLogs
+            {
+                // HeatLogs(
+                //     const auto& logs,
+                //     const auto& fluid,
+                // const auto& grid2D)
+                // :heat_vol_capacity{logs.}
+                // {}
+
+                // FluidSolidHeatVolumetricCapacity heat_vol_capacity;
+            };
+        
+        
         } // Rocks
 
     } // Properties
