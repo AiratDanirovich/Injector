@@ -104,5 +104,22 @@ namespace GPN
             FaceValuesContainer axes1_as_face_normal;
             FaceValuesContainer axes2_as_face_normal;
         };
+
+        struct FlowFactory
+        {
+            template <typename IsPermeable_t, typename Grid2D_t>
+            static auto horizontal_flow(
+                RealType rate,
+                const IsPermeable_t& is_permeable,
+                const Grid2D_t &grid)
+            {
+                return ReservoirFlowField
+                {
+                    Logs::ZFlowRateLog{0.0, grid.second_coord},
+                    Logs::StepPropertyGrid{rate+StepPropertyContainer::Zero(grid.first_coord.mesh_size()), is_permeable.grid},
+                    grid
+                };
+            }
+        };
     } // Properties
 } // GPN
