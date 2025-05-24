@@ -68,8 +68,8 @@ TEST_CASE("RFP_reservoir")
     }
 
     // check other columns of verticle flow
-    for (auto row{0ll}; row < flow_field.axes1_as_face_normal.rows(); ++row)
-        for (auto col{1ll}; col < flow_field.axes1_as_face_normal.cols(); ++col)
+    for (auto col{1ll}; col < flow_field.axes1_as_face_normal.cols(); ++col)
+        for (auto row{0ll}; row < flow_field.axes1_as_face_normal.rows(); ++row)
         {
             CHECK(flow_field.axes1_as_face_normal(row, col) == (RealType)0.0);
         }
@@ -77,8 +77,8 @@ TEST_CASE("RFP_reservoir")
     // check columns of horizontal flow
     REQUIRE(flow_field.axes2_as_face_normal.rows() == grid_factory.grid()->first_coord.mesh_size());
     REQUIRE(flow_field.axes2_as_face_normal.cols() == grid_factory.grid()->second_coord.dual_size());
-    for (auto row{0ll}; row < flow_field.axes2_as_face_normal.rows(); ++row)
-        for (auto col{1ll}; col < flow_field.axes2_as_face_normal.cols(); ++col)
+    for (auto col{1ll}; col < flow_field.axes2_as_face_normal.cols(); ++col)
+        for (auto row{0ll}; row < flow_field.axes2_as_face_normal.rows(); ++row)
         {
             CHECK(flow_field.axes2_as_face_normal(row, col) == flow_field.axes2_as_face_normal(row, 0ll));
         }

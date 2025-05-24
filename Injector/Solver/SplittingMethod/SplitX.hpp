@@ -93,6 +93,15 @@ namespace GPN
                     }
                 }
             };
+
+            struct ConvectionX
+            {
+                template<typename Grid_t>
+                ConvectionX(
+                    const cptr<Grid_t> &grid)
+                {}
+
+            };
         } // SplittingMethod
     } // EqSolver
 } // GPN
