@@ -114,33 +114,6 @@ namespace GPN
                 return log_vals.size();
             }
 
-            auto operator-(RealType c) const
-            {
-                const auto &lhs{*this};
-                return StepPropertyGrid{lhs.log_vals - c, lhs.grid};
-            }
-            auto operator*(RealType c) const
-            {
-                const auto &lhs{*this};
-                return StepPropertyGrid{lhs.log_vals * c, lhs.grid};
-            }
-            auto operator*(const StepPropertyGrid &rhs) const
-            {
-                const auto &lhs{*this};
-                return StepPropertyGrid{lhs.log_vals * rhs.log_vals, lhs.grid};
-            }
-            auto operator/(const StepPropertyGrid &rhs) const
-            {
-                const auto &lhs{*this};
-                return StepPropertyGrid{lhs.log_vals / rhs.log_vals, lhs.grid};
-            }
-
-            auto operator+(const StepPropertyGrid &rhs) const
-            {
-                const auto &lhs{*this};
-                return StepPropertyGrid{(lhs.log_vals + rhs.log_vals), lhs.grid};
-            }
-
             operator const StepPropertyContainer &() const
             {
                 return log_vals;
@@ -182,6 +155,28 @@ namespace GPN
                 return out;
             }
         };
+
+        auto operator-(const StepPropertyGrid &lhs, RealType c)
+        {
+            return StepPropertyGrid{lhs.log_vals - c, lhs.grid};
+        }
+        auto operator*(const StepPropertyGrid &lhs, RealType c)
+        {
+            return StepPropertyGrid{lhs.log_vals * c, lhs.grid};
+        }
+        auto operator*(const StepPropertyGrid &lhs, const StepPropertyGrid &rhs)
+        {
+            return StepPropertyGrid{lhs.log_vals * rhs.log_vals, lhs.grid};
+        }
+        auto operator/(const StepPropertyGrid &lhs, const StepPropertyGrid &rhs)
+        {
+            return StepPropertyGrid{lhs.log_vals / rhs.log_vals, lhs.grid};
+        }
+
+        auto operator+(const StepPropertyGrid &lhs, const StepPropertyGrid &rhs)
+        {
+            return StepPropertyGrid{(lhs.log_vals + rhs.log_vals), lhs.grid};
+        }
 
         auto operator-(RealType c, const StepPropertyGrid &rhs)
         {
