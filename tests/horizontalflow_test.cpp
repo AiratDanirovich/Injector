@@ -157,75 +157,75 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           solid_density, solid_specific_heatcapacity,
           water, grid2D)};
 
-  // // const Well_KH well{
-  // //     Phases::FluidFactory::create_water(0.0, 0.0),
-  // //     hydro_logs_factory.is_permeable,
-  // //     hydro_logs_factory.permeability};
-  // Properties::ReservoirFlowField flow_field{
-  //   Properties::FlowFactory::horizontal_flow(well_rate*capacity_field.value(0,0), hydro_logs_factory.is_permeable, *grid2D)
-  //   //  well_rate, well, *grid2D
-  //   };
+  // const Well_KH well{
+  //     Phases::FluidFactory::create_water(0.0, 0.0),
+  //     hydro_logs_factory.is_permeable,
+  //     hydro_logs_factory.permeability};
+  Properties::ReservoirFlowField flow_field{
+    Properties::FlowFactory::horizontal_flow(well_rate*capacity_field.value(0,0), hydro_logs_factory.is_permeable, *grid2D)
+    //  well_rate, well, *grid2D
+    };
 
-  // // initial condition
-  // const auto initial_state{ICFactory(t0, grid2D, initial_temperature)};
-  // // boundary conditions
-  // const GPN::BoundaryConditions::BoundaryConditions bc{
-  //     *grid2D,
-  //     std::make_shared<FunctorBC>(
-  //         inlet_temperature, water, flow_field, grid2D),
-  //     BoundaryConditions::BoundaryCondition::second};
-  // // time moments
-  // const VR t_stencils(
-  //     Grids::Factory::generate_dual_grid_stencils_from_steps(
-  //         t0, time_intervals));
-  // // solver
+  // initial condition
+  const auto initial_state{ICFactory(t0, grid2D, initial_temperature)};
+  // boundary conditions
+  const GPN::BoundaryConditions::BoundaryConditions bc{
+      *grid2D,
+      std::make_shared<FunctorBC>(
+          inlet_temperature, water, flow_field, grid2D),
+      BoundaryConditions::BoundaryCondition::second};
+  // time moments
+  const VR t_stencils(
+      Grids::Factory::generate_dual_grid_stencils_from_steps(
+          t0, time_intervals));
+  // solver
 
-  // Solver solver{
-  //     conductivity_field,
-  //     flow_field, grid2D,
-  //     solver_factory.capacity_field(),
-  //     initial_state,
-  //     bc, t0};
+  Solver solver{
+      conductivity_field,
+      flow_field, grid2D,
+      solver_factory.capacity_field(),
+      initial_state,
+      bc, t0};
 
-  // std::string pathr{"data_r.csv"};
-  // std::string pathz{"data_z.csv"};
+  std::string pathr{"data_r.csv"};
+  std::string pathz{"data_z.csv"};
 
-  // // assert solution
-  // const double tol = 1E-15;
-  // for (size_t t_step{0ll}; t_step < time_intervals.size(); ++t_step)
-  // {
-  //   // for (auto i{0ull}; i < matricies.mx.size(); ++i)
-  //   // {
-  //   //   const auto &m = matricies.mx[i];
-  //   //   REQUIRE(m.rows() == m.cols());
-  //   //   {
-  //   //     auto col{0ll};
-  //   //     INFO("" << "col: " << col << ", c: " << m.coeff(col, col) << ", l: " << 0.0 << ", r: " << m.coeff(col, col + 1ll));
-  //   //     CHECK_THAT(-m.coeff(col, col), WithinRel(m.coeff(col, col + 1ll), tol));
-  //   //   }
-  //   //   for (auto col{1ll}; col < m.cols() - 1; ++col)
-  //   //   {
-  //   //     INFO("" << "col: " << col << ", c: " << m.coeff(col, col) << ", l: " << m.coeff(col, col - 1ll) << ", r: " << m.coeff(col, col + 1ll));
-  //   //     CHECK_THAT(-m.coeff(col, col), WithinRel(m.coeff(col, col - 1ll) + m.coeff(col, col + 1ll), tol));
-  //   //     INFO("" << "col: " << col << ", c: " << m.coeff(col, col));
-  //   //     CHECK(m.coeff(col, col) > tol);
-  //   //   }
-  //   //   {
-  //   //     auto col{m.cols() - 1ll};
-  //   //     INFO("" << "col: " << col << ", c: " << m.coeff(col, col) << ", l: " << m.coeff(col, col - 1ll) << ", r: " << 0.0);
-  //   //     CHECK_THAT(-m.coeff(col, col), WithinRel(m.coeff(col, col - 1ll), tol));
-  //   //   }
-  //   // }
-  // }
+  // assert solution
+  const double tol = 1E-15;
+  for (size_t t_step{0ll}; t_step < time_intervals.size(); ++t_step)
+  {
+    // for (auto i{0ull}; i < matricies.mx.size(); ++i)
+    // {
+    //   const auto &m = matricies.mx[i];
+    //   REQUIRE(m.rows() == m.cols());
+    //   {
+    //     auto col{0ll};
+    //     INFO("" << "col: " << col << ", c: " << m.coeff(col, col) << ", l: " << 0.0 << ", r: " << m.coeff(col, col + 1ll));
+    //     CHECK_THAT(-m.coeff(col, col), WithinRel(m.coeff(col, col + 1ll), tol));
+    //   }
+    //   for (auto col{1ll}; col < m.cols() - 1; ++col)
+    //   {
+    //     INFO("" << "col: " << col << ", c: " << m.coeff(col, col) << ", l: " << m.coeff(col, col - 1ll) << ", r: " << m.coeff(col, col + 1ll));
+    //     CHECK_THAT(-m.coeff(col, col), WithinRel(m.coeff(col, col - 1ll) + m.coeff(col, col + 1ll), tol));
+    //     INFO("" << "col: " << col << ", c: " << m.coeff(col, col));
+    //     CHECK(m.coeff(col, col) > tol);
+    //   }
+    //   {
+    //     auto col{m.cols() - 1ll};
+    //     INFO("" << "col: " << col << ", c: " << m.coeff(col, col) << ", l: " << m.coeff(col, col - 1ll) << ", r: " << 0.0);
+    //     CHECK_THAT(-m.coeff(col, col), WithinRel(m.coeff(col, col - 1ll), tol));
+    //   }
+    // }
+  }
 
-  // const auto &[times, states] = solver.solution();
+  const auto &[times, states] = solver.solution();
 
-  // for (auto i{0ull}; i < times.size(); ++i)
-  // {
-  //   std::string path{std::string{"T_"} + std::to_string(i) + std::string{".txt"}};
-  //   std::ofstream f{path};
+  for (auto i{0ull}; i < times.size(); ++i)
+  {
+    std::string path{std::string{"T_"} + std::to_string(i) + std::string{".txt"}};
+    std::ofstream f{path};
 
-  //   f << states[i].cur_state;
-  //   f.close();
-  // }
+    f << states[i].cur_state;
+    f.close();
+  }
 }
