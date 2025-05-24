@@ -31,7 +31,7 @@ TEST_CASE("HistoryTest")
     const auto rates{
         InjectorRate{
             StepPropertyGrid{
-                Logs::StencilsFactory::generate_rates_StepProperty(
+                Logs::RawdataFactory::generate_rates_StepProperty(
                     time_moments),
                 time_grid}}};
 

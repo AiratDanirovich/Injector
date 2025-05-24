@@ -1,5 +1,6 @@
 #include <Injector/Grids/Factory.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
+#include <Injector/Properties/PhysicalField.hpp>
 #include <Injector/Solver/SplittingMethod/BaseSplit.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -13,7 +14,7 @@ using VR = std::vector<RealType>;
 // input data
 const VR z_stencils = Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 5);
 const VR r_stencils = Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 11);
-const VR conductivity_stencils = Logs::StencilsFactory::generate_conductivity_StepProperty(z_stencils);
+const VR conductivity_stencils = Logs::RawdataFactory::generate_conductivity_StepProperty(z_stencils);
 
 // Tests Cylinder grid, (r; z)
 TEST_CASE("BaseSplitTest")

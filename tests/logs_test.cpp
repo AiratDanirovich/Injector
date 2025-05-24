@@ -15,9 +15,9 @@ using namespace GPN;
 const auto nLayers{5ull};
 const auto grid_stencils{Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, nLayers)};
 // hydrodynamic logs
-const auto is_permeable_stencils{Logs::StencilsFactory::generate_is_permeable_StepProperty(grid_stencils)};
-const auto porosity_stencils{Logs::StencilsFactory::generate_porosity_StepProperty(grid_stencils, is_permeable_stencils)};
-const auto permeability_stencils{Logs::StencilsFactory::generate_permeability_StepProperty(grid_stencils, is_permeable_stencils)};
+const auto is_permeable_stencils{Logs::RawdataFactory::generate_is_permeable_StepProperty(grid_stencils)};
+const auto porosity_stencils{Logs::RawdataFactory::generate_porosity_StepProperty(grid_stencils, is_permeable_stencils)};
+const auto permeability_stencils{Logs::RawdataFactory::generate_permeability_StepProperty(grid_stencils, is_permeable_stencils)};
 
 TEST_CASE("LogsTest")
 {

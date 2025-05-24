@@ -8,6 +8,7 @@
 #include <Injector/Model/HydrodynamicSolver.hpp>
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
 #include <Injector/Solver/SolverFactory.hpp>
+#include <Injector/Properties/FieldFactory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
@@ -135,7 +136,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       Grids::Factory::create_cylinder_grid_2D_ptr(
           z_stencils, r_stencils)};
   const VR permeability_stencils{
-      Logs::StencilsFactory::generate_permeability_StepProperty(
+      Logs::RawdataFactory::generate_permeability_StepProperty(
           grid2D->first_coord.dual_nodes, is_permeable_stencils)}; //(nLayers, 1.0);
   // heat conductivity
   const Properties::HeatConductivity conductivity_field{

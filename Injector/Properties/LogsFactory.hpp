@@ -12,7 +12,7 @@ namespace GPN
             template <typename Grid_t>
             IsPermeableFactory(const Grid_t &grid)
                 : IsPermeableFactory{
-                      Logs::StencilsFactory::generate_is_permeable_StepProperty(
+                      Logs::RawdataFactory::generate_is_permeable_StepProperty(
                           grid.dual_stencils),
                       grid}
             {
@@ -108,16 +108,16 @@ namespace GPN
                 const Grid_t &grid)
                 : HydrodynamicLogsFactory{
                       is_permeable_factory,
-                      StencilsFactory::generate_porosity_StepProperty(
+                      RawdataFactory::generate_porosity_StepProperty(
                           grid.dual_stencils,
                           is_permeable_factory.is_permeable_stencils()),
-                      StencilsFactory::generate_permeability_StepProperty(
+                      RawdataFactory::generate_permeability_StepProperty(
                           grid.dual_stencils,
                           is_permeable_factory.is_permeable_stencils()),
-                      StencilsFactory::generate_ext_pressure_StepProperty(
+                      RawdataFactory::generate_ext_pressure_StepProperty(
                           grid.dual_stencils,
                           is_permeable_factory.is_permeable_stencils()),
-                      StencilsFactory::generate_skin_StepProperty(
+                      RawdataFactory::generate_skin_StepProperty(
                           grid.dual_stencils,
                           is_permeable_factory.is_permeable_stencils()),
                       grid}
