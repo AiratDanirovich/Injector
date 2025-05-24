@@ -85,9 +85,7 @@ protected:
 
 using VR = std::vector<RealType>;
 
-TEST_CASE("Solver", "SelfSimilarCyl")
-{
-  /*START*/
+/*START*/
   // input parameters
   /*heat rate*/
   RealType q{1.0};
@@ -117,11 +115,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const RealType time_step{(t1 - t0) / time_steps_nmbr};
   const VR time_intervals(time_steps_nmbr, time_step);
   /*temperatures*/
-  const RealType well_rate{0.0};
+  const RealType well_rate{1.0};
   const RealType initial_temperature{0.0};
   const RealType inlet_temperature{1.0};
   /*END*/
 
+TEST_CASE("Solver", "SelfSimilarCyl")
+{
   // make grid1D
   const VR z_stencils(
       Grids::Factory::generate_dual_grid_stencils_from_steps(
@@ -141,6 +141,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const Properties::HeatConductivity conductivity_field{
       Properties::Factory::generate_heatconductivity_Property(
           conductivity, grid_factory.grid())};
+
   // make fluid
   const Water water{
       FluidFactory::create_water(
@@ -152,7 +153,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       initial_temperature,
       grid_factory};
 
-  // volumetric heat capacity of multiphaase system
+  // volumetric heat capacity of multiphase system
   const Properties::HeatVolumetricCapacity capacity_field{
       Properties::Factory::generate_volumetric_heatcapacity_Property(
           is_permeable, porosity,
@@ -166,7 +167,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   Properties::ReservoirFlowField flow_field{
       well_rate, well, *grid_factory.grid()};
 
-  // initial conditions
+  // initial condition
   const auto initial_state{ICFactory(t0, grid_factory.grid(), initial_temperature)};
   // boundary conditions
   const GPN::BoundaryConditions::BoundaryConditions bc{
@@ -187,20 +188,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       initial_state,
       bc, t0};
 
-  const double tol = 1E-3;
-
-  // assert initial condition
-  // for (std::ptrdiff_t col{0ll}; col < initial_state.cols(); ++col)
-  // {
-  //   for (std::ptrdiff_t row{0ll}; row < initial_state.rows(); ++row)
-  //   {
-  //     const auto [z, r] = grid2D->coordinates(row, col);
-  //     const auto val{es(z, r, t0)};
-  //     INFO("" << "col: " << col << ", row: " << row << ", calc: " << initial_state(row, col) << ", ref: " << val);
-  //     CHECK_THAT(initial_state(row, col), WithinRel(val, tol));
-  //   }
-  // }
-
   std::string pathr{"data_r.csv"};
   std::string pathz{"data_z.csv"};
 
@@ -209,46 +196,4 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   {
     solver.advance(time_intervals[t_step]);
   }
-
-  std::ofstream fr{pathr};
-  assert(fr.is_open());
-  fr << "r;Tcalc\n";
-  const auto &[time, state] = solver.solution().back();
-  for (std::ptrdiff_t col{0ll}; col < state.cols(); ++col)
-  {
-    for (std::ptrdiff_t row{nLayers / 2}; row < nLayers / 2 + 1ll /*state.rows()*/; ++row)
-    {
-      const auto [z, r] = grid_factory.grid()->coordinates(row, col);
-
-      fr << r << ';' << state(row, col) << '\n';
-    }
-  }
-  fr.close();
-
-  // std::ofstream fz{pathz};
-  // assert(fz.is_open());
-  // fz << "z;TcalcL;TcalcM;TcalcR;Tref\n";
-  // for (std::ptrdiff_t row{0}; row < state.rows(); ++row)
-  // {
-  //   for (std::ptrdiff_t col{rNodes/2}; col < rNodes/2+1ll /*state.cols()*/; ++col)
-  //   {
-  //     const auto [z, r] = grid2D->coordinates(row, col);
-  //     const auto val{es(z, r, time)};
-  //     const auto val2{es(row, col, time, *grid2D)};
-
-  //     assert(val == val2);
-
-  //     fz
-  //     << z << ';'
-  //     << val << ';'
-  //     << state(row, 0)<< ';'
-  //     << state(row, col)<< ';'
-  //     << state(row, state.cols()-1ll)
-  //     << '\n';
-
-  //     INFO("" << "col: " << col << ", row: " << row << ", calc: " << state(row, col) << ", ref: " << val);
-  //     CHECK_THAT(state(row, col), WithinRel(val, tol));
-  //   }
-  // }
-  // fz.close();
 }

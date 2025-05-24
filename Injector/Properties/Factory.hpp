@@ -175,14 +175,12 @@ namespace GPN
                 const Container_t &dual_stencils,
                 const auto grid)
             {
-                const auto t{Logs::StepProperty{dual_stencils}};
-                const auto v{Logs::StepPropertyGrid{
-                    t,
-                    grid->first_coord}};
-                const auto b{Logs::HeatConductivity{
-                    v}};
-
-                return Properties::HeatConductivity{b, grid};
+                return Properties::HeatConductivity{
+                    Logs::HeatConductivity{
+                        Logs::StepPropertyGrid{
+                            Logs::StepProperty{dual_stencils},
+                            grid->first_coord}},
+                    grid};
             }
 
             template <typename Container_t>
