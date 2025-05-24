@@ -126,7 +126,7 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
       Grids::Factory::generate_dual_grid_steps(
           time_moments)};
   /*rates*/
-  const VR rates{Logs::Factory::generate_rates_StepProperty(
+  const VR rates{Logs::Factory::generate_rates(
       time_moments)};
   /*END*/
 

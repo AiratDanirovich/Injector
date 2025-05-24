@@ -21,15 +21,15 @@ const auto is_permeable_stencils{
 const auto porosity_stencils{
     Logs::RawdataFactory::generate_porosity(grid_stencils, is_permeable_stencils)};
 const auto permeability_stencils{
-    Logs::RawdataFactory::generate_permeability_StepProperty(grid_stencils, is_permeable_stencils)};
+    Logs::RawdataFactory::generate_permeability(grid_stencils, is_permeable_stencils)};
 
 const auto ext_pressure_stencils{
-    Logs::RawdataFactory::generate_ext_pressure_StepProperty(grid_stencils, is_permeable_stencils)};
+    Logs::RawdataFactory::generate_ext_pressure(grid_stencils, is_permeable_stencils)};
 const auto skin_stencils{
     Logs::RawdataFactory::generate_skin_StepProperty(grid_stencils, is_permeable_stencils)};
 // heat logs
 const auto density_stencils{
-    Logs::RawdataFactory::generate_solid_density_StepProperty(grid_stencils)};
+    Logs::RawdataFactory::generate_solid_density(grid_stencils)};
 const auto heatconductivity_stencils{
     Logs::RawdataFactory::generate_conductivity_StepProperty(grid_stencils)};
 

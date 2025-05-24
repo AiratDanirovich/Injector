@@ -187,10 +187,10 @@ namespace GPN
                       RawdataFactory::generate_porosity(
                           grid.dual_stencils,
                           is_permeable_factory.is_permeable_stencils()),
-                      RawdataFactory::generate_permeability_StepProperty(
+                      RawdataFactory::generate_permeability(
                           grid.dual_stencils,
                           is_permeable_factory.is_permeable_stencils()),
-                      RawdataFactory::generate_ext_pressure_StepProperty(
+                      RawdataFactory::generate_ext_pressure(
                           grid.dual_stencils,
                           is_permeable_factory.is_permeable_stencils()),
                       RawdataFactory::generate_skin_StepProperty(

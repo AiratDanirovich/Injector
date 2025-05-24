@@ -19,7 +19,7 @@ TEST_CASE("LogsContainerTest")
     const auto grid_stencils{Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 5)};
     const auto is_permeable_stencils{Logs::Factory::generate_is_permeable_StepProperty(grid_stencils)};
 
-    const auto permeability_stencils{Logs::Factory::generate_permeability_StepProperty(grid_stencils, is_permeable_stencils)};
+    const auto permeability_stencils{Logs::Factory::generate_permeability(grid_stencils, is_permeable_stencils)};
     const auto porosity_stencils{Logs::Factory::generate_porosity_StepProperty(grid_stencils, is_permeable_stencils)};
 
     const auto grid{ZGrid{GridDual{grid_stencils}}};

@@ -77,7 +77,7 @@ namespace GPN
             Properties::HeatVolumetricCapacity capacity_field() const
             {
                 auto solid_density_stencils{
-                    Logs::RawdataFactory::generate_solid_density_StepProperty(
+                    Logs::RawdataFactory::generate_solid_density(
                         z_grid_stencils())};
                 auto solid_density{
                     Logs::SolidDensity{
@@ -87,7 +87,7 @@ namespace GPN
                             z_grid()}}};
 
                 auto solid_specific_heatcapacity_stencils{
-                    Logs::RawdataFactory::generate_solid_specific_heatcapacity_StepProperty(
+                    Logs::RawdataFactory::generate_solid_specific_heatcapacity(
                         z_grid_stencils())};
                 auto solid_specific_heatcapacity{
                     Logs::SolidSpecificHeatCapacity{

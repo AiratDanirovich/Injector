@@ -36,7 +36,7 @@ namespace GPN
                 return vals;
             }
 
-            static auto generate_permeability_StepProperty(
+            static auto generate_permeability(
                 const auto &dual_stencils,
                 const auto &is_permeable)
             {
@@ -51,7 +51,7 @@ namespace GPN
                 return vals;
             }
 
-            static auto generate_ext_pressure_StepProperty(
+            static auto generate_ext_pressure(
                 const auto &dual_stencils,
                 const auto &is_permeable)
             {
@@ -84,7 +84,7 @@ namespace GPN
 #pragma endregion
 #pragma region HEAT-LOGS
             template <typename Container_t>
-            static auto generate_solid_density_StepProperty(
+            static auto generate_solid_density(
                 const Container_t &dual_stencils)
             {
                 auto size{dual_stencils.size() - 1};
@@ -96,7 +96,7 @@ namespace GPN
             }
 
             template <typename Container_t>
-            static auto generate_solid_specific_heatcapacity_StepProperty(
+            static auto generate_solid_specific_heatcapacity(
                 const Container_t &dual_stencils)
             {
                 auto size{dual_stencils.size() - 1};
@@ -120,7 +120,7 @@ namespace GPN
             }
 #pragma endregion
 
-            static auto generate_rates_StepProperty(
+            static auto generate_rates(
                 const auto &dual_stencils)
             {
                 auto size{dual_stencils.size() - 1};

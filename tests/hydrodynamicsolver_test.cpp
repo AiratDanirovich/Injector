@@ -47,7 +47,7 @@ TEST_CASE("HydrodynamicsSolverTest")
         Logs::Permeability{
             Logs::StepPropertyGrid{
                 Logs::StepProperty{
-                    Logs::RawdataFactory::generate_permeability_StepProperty(
+                    Logs::RawdataFactory::generate_permeability(
                         grid2D->first_coord.dual_stencils, is_permeable_stencils)},
                 grid2D->first_coord},
             is_permeable}};
