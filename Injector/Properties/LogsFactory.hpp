@@ -63,7 +63,7 @@ namespace GPN
                     IsPermeableFactory::create(is_permeable, grid)};
             }
         };
-        
+
         struct PorosityFactory
         {
             template <typename Container_t, typename Grid_t>
@@ -80,7 +80,7 @@ namespace GPN
                     IsPermeableFactory::create(is_permeable, grid)};
             }
         };
-        
+
         struct SkinFactory
         {
             static SkinFactor create(
@@ -113,8 +113,6 @@ namespace GPN
             }
         };
 
-
-        
         struct HeatConductivityFactory
         {
             static HeatConductivity create(
@@ -128,7 +126,7 @@ namespace GPN
                         grid}};
             }
         };
-        
+
         struct SolidDensityFactory
         {
             static SolidDensity create(
@@ -142,7 +140,7 @@ namespace GPN
                         grid}};
             }
         };
-        
+
         struct SolidSpecificHeatCapacityFactory
         {
             static SolidSpecificHeatCapacity create(
@@ -156,7 +154,7 @@ namespace GPN
                         grid}};
             }
         };
-        
+
         struct SolidVolumetricHeatCapacityFactory
         {
             static SolidVolumetricHeatCapacity create(
@@ -169,16 +167,40 @@ namespace GPN
                             solid_volumetric_heatcapacity},
                         grid}};
             }
-            
+
             static SolidVolumetricHeatCapacity create(
                 const auto &density,
                 const auto &heat_capacity,
-                const auto& grid)
+                const auto &grid)
             {
                 return {
                     SolidDensityFactory::create(density, grid),
-                    SolidSpecificHeatCapacityFactory::create(heat_capacity, grid)
-                };
+                    SolidSpecificHeatCapacityFactory::create(heat_capacity, grid)};
+            }
+        };
+
+        struct MediumHeatVolumetricCapacityFactory
+        {
+            static MediumHeatVolumetricCapacity create(
+                const auto &porosity,
+                const auto &solid_vol_heatcapacity,
+                const auto &fluid,
+                const auto &grid)
+            {
+                return {StepPropertyGrid{
+                    porosity * fluid.volumetric_heat_capacity +
+                        (1.0 - porosity) * solid_vol_heatcapacity,
+                    grid}};
+            }
+
+            static MediumHeatVolumetricCapacity create(
+                const auto &porosity,
+                const auto &solid_density,
+                const auto &solid_heat_capacity,
+                const auto &fluid,
+                const auto &grid)
+            {
+                return create(porosity, solid_density * solid_heat_capacity, fluid, grid);
             }
         };
 

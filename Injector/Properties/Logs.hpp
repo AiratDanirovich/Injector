@@ -355,19 +355,12 @@ namespace GPN
             }
         };
 
-        struct HeatVolumetricCapacity
+        struct MediumHeatVolumetricCapacity
             : public StepPropertyGrid
         {
-            static_assert(
-                std::is_same<
-                    Porosity::Grid_t,
-                    SolidVolumetricHeatCapacity::Grid_t>::value);
-            HeatVolumetricCapacity(
-                const Porosity &porosity,
-                const SolidVolumetricHeatCapacity &matrix_vol_heat_capacity,
-                const Water &water)
-                : StepPropertyGrid{
-                      porosity * water.volumetric_heat_capacity + (porosity - 1.0) * (-1.0) * matrix_vol_heat_capacity}
+            MediumHeatVolumetricCapacity(
+                const StepPropertyGrid &capacity)
+                : StepPropertyGrid{capacity}
             {
             }
         };
@@ -450,7 +443,7 @@ namespace GPN
               private AssertNonNegative
         {
             ThermalDiffusivity(
-                const HeatVolumetricCapacity &capacity,
+                const MediumHeatVolumetricCapacity &capacity,
                 const HeatConductivity &conductivity)
                 : StepPropertyGrid{
                       conductivity / capacity},

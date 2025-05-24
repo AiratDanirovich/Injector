@@ -26,7 +26,7 @@ namespace GPN
                 const auto &is_permeable)
             {
                 auto size{dual_stencils.size() - 1};
-                std::vector<RealType> vals(size);
+                LogValuesContainer vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
                 {
@@ -88,7 +88,7 @@ namespace GPN
                 const Container_t &dual_stencils)
             {
                 auto size{dual_stencils.size() - 1};
-                std::vector<RealType> vals(size);
+                LogValuesContainer vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
                     vals[id] = (id % 2 == 1) ? 800.0 : 1000.0;
@@ -100,7 +100,7 @@ namespace GPN
                 const Container_t &dual_stencils)
             {
                 auto size{dual_stencils.size() - 1};
-                std::vector<RealType> vals(size);
+                LogValuesContainer vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
                     vals[id] = (id % 2 == 1) ? 0.7 : 0.9;

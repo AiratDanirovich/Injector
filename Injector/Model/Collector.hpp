@@ -33,6 +33,8 @@ namespace GPN
                     const auto &solid_density,
                     const auto &solid_specific_heatcapacity,
                     const auto &heat_conductivity,
+                    const auto& porosity,
+                    const auto &fluid,
                     const auto &grid)
                     : solid_density{
                         SolidDensityFactory::create(solid_density, grid)},
@@ -41,7 +43,9 @@ namespace GPN
                       heat_conductivity{
                         HeatConductivityFactory::create(heat_conductivity, grid)},
                       solid_vol_heatcapacity{
-                        SolidVolumetricHeatCapacityFactory::create(solid_density, solid_specific_heatcapacity, grid)}
+                        SolidVolumetricHeatCapacityFactory::create(solid_density, solid_specific_heatcapacity, grid)},
+                      medium_vol_heatcapacity{
+                        MediumHeatVolumetricCapacityFactory::create(porosity, solid_density, solid_specific_heatcapacity, fluid, grid)}
                 {
                 }
 
@@ -49,6 +53,7 @@ namespace GPN
                 const SolidSpecificHeatCapacity solid_specific_heatcapacity;
                 const HeatConductivity heat_conductivity;
                 const SolidVolumetricHeatCapacity solid_vol_heatcapacity;
+                const MediumHeatVolumetricCapacity medium_vol_heatcapacity;
 
             private:
                 template <typename T>
