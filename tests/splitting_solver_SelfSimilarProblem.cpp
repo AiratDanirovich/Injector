@@ -113,9 +113,9 @@ const std::ptrdiff_t rNodes{301ull};
 const std::ptrdiff_t nLayers{11ull};
 const VR thickness(nLayers, 0.01); // each layer is 1m thick
 const VR is_permeable_stencils(nLayers, 1.0);
+const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 1e-16)};
 
 const VR heatconductivity_stencils(nLayers, 3.9);
-const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 1e-16)};
 const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers,3.9 /*should be 2600 in SI*/)};
 const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
 /*temporal grid*/
