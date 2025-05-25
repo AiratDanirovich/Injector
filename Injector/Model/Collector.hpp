@@ -2,6 +2,7 @@
 
 #include <Injector/Properties/LogsFactory.hpp>
 #include <Injector/Properties/FieldsFactory.hpp>
+#include <Injector/Properties/FaceProperties.hpp>
 
 namespace GPN
 {
@@ -93,7 +94,7 @@ namespace GPN
             {
                 Rocks(
                     const Logs::Rocks::CoreSampleLogs &logs,
-                    const cptr<Grid2D_t> &grid2D)
+                    const cptr<Grid2D_t> grid2D)
                     : permeability{
                           FieldFactory::create(logs.permeability, grid2D)},
                       porosity{FieldFactory::create(logs.porosity, grid2D)}
@@ -109,7 +110,7 @@ namespace GPN
             {
                 HeatProps(
                     const Logs::Rocks::HeatLogs &logs,
-                    const cptr<Grid2D_t> &grid2D)
+                    const cptr<Grid2D_t> grid2D)
                     : medium_vol_heatcapacity{
                           FieldFactory::create(logs.medium_vol_heatcapacity, grid2D)},
                       heat_conductivity{FieldFactory::create(logs.heat_conductivity, grid2D)}
@@ -121,4 +122,27 @@ namespace GPN
             };
         } // Rocks
     } // Properties
+
+    namespace FaceProperties
+    {
+        namespace Rocks
+        {
+            template <typename Grid2D_t>
+            struct HeatFaceProps
+            {
+                HeatFaceProps(
+                    const Properties::Rocks::HeatProps<Grid2D_t> &props,
+                    const cptr<Grid2D_t> grid2D)
+                    : heat_conductivity{
+                          FaceInterpolatedFieldFactory::create(
+                              props.heat_conductivity,
+                              grid2D)}
+                {
+                }
+
+                const HeatConductivity<Grid2D_t> heat_conductivity;
+            };
+        } // Rocks
+
+    } // FaceProperties
 } // GPN

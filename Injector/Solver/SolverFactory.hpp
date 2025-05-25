@@ -36,122 +36,122 @@ namespace GPN
             RealType val;
         };
 
-        template <typename Grid2D_t>
-        struct SolverFactory
-            : public Logs::HydrodynamicLogsFactory
-        {
-            SolverFactory(RealType val, const Box &box, ptrdiff_t n1, ptrdiff_t n2)
-                : SolverFactory{val, Grids::CylinderGridFactory::create(box, n1, n2)}
-            {
-            }
+        // template <typename Grid2D_t>
+        // struct SolverFactory
+        //     : public Logs::HydrodynamicLogsFactory
+        // {
+        //     SolverFactory(RealType val, const Box &box, ptrdiff_t n1, ptrdiff_t n2)
+        //         : SolverFactory{val, Grids::CylinderGridFactory::create(box, n1, n2)}
+        //     {
+        //     }
 
-            /// @brief
-            /// @param val initial condition const-value
-            /// @param grid_factory
-            SolverFactory(RealType val, const Grid2D_t &grid2D)
-                : Logs::HydrodynamicLogsFactory{grid2D->first_coord},
-                  grid2D{grid2D},
-                  val{val},
-                  well{water(), is_permeable, permeability}
-            {
-            }
+        //     /// @brief
+        //     /// @param val initial condition const-value
+        //     /// @param grid_factory
+        //     SolverFactory(RealType val, const Grid2D_t &grid2D)
+        //         : Logs::HydrodynamicLogsFactory{grid2D->first_coord},
+        //           grid2D{grid2D},
+        //           val{val},
+        //           well{water(), is_permeable, permeability}
+        //     {
+        //     }
 
-            Properties::HeatConductivity conductivity_field() const
-            {
-                return {conductivity_field(Logs::RawDataFactory::generate_conductivity_StepProperty(
-                    grid2D->first_coord.dual_stencils))};
-            }
+        //     Properties::HeatConductivity conductivity_field() const
+        //     {
+        //         return {conductivity_field(Logs::RawDataFactory::generate_conductivity_StepProperty(
+        //             grid2D->first_coord.dual_stencils))};
+        //     }
 
-            Properties::HeatConductivity conductivity_field(const std::vector<RealType> &vals) const
-            {
-                return {
-                    Logs::HeatConductivity{
-                        Logs::StepPropertyGrid{
-                            Logs::StepProperty{
-                                vals},
-                            grid2D->first_coord}},
-                    grid2D};
-            }
+        //     Properties::HeatConductivity conductivity_field(const std::vector<RealType> &vals) const
+        //     {
+        //         return {
+        //             Logs::HeatConductivity{
+        //                 Logs::StepPropertyGrid{
+        //                     Logs::StepProperty{
+        //                         vals},
+        //                     grid2D->first_coord}},
+        //             grid2D};
+        //     }
 
-            Properties::MediumHeatVolumetricCapacity capacity_field() const
-            {
-                auto solid_density_stencils{
-                    Logs::RawDataFactory::generate_solid_density(
-                        z_grid_stencils())};
-                auto solid_density{
-                    Logs::SolidDensity{
-                        Logs::StepPropertyGrid{
-                            Logs::StepProperty{
-                                solid_density_stencils},
-                            z_grid()}}};
+        //     Properties::MediumHeatVolumetricCapacity capacity_field() const
+        //     {
+        //         auto solid_density_stencils{
+        //             Logs::RawDataFactory::generate_solid_density(
+        //                 z_grid_stencils())};
+        //         auto solid_density{
+        //             Logs::SolidDensity{
+        //                 Logs::StepPropertyGrid{
+        //                     Logs::StepProperty{
+        //                         solid_density_stencils},
+        //                     z_grid()}}};
 
-                auto solid_specific_heatcapacity_stencils{
-                    Logs::RawDataFactory::generate_solid_specific_heatcapacity(
-                        z_grid_stencils())};
-                auto solid_specific_heatcapacity{
-                    Logs::SolidSpecificHeatCapacity{
-                        Logs::StepPropertyGrid{
-                            Logs::StepProperty{
-                                solid_specific_heatcapacity_stencils},
-                            z_grid()}}};
+        //         auto solid_specific_heatcapacity_stencils{
+        //             Logs::RawDataFactory::generate_solid_specific_heatcapacity(
+        //                 z_grid_stencils())};
+        //         auto solid_specific_heatcapacity{
+        //             Logs::SolidSpecificHeatCapacity{
+        //                 Logs::StepPropertyGrid{
+        //                     Logs::StepProperty{
+        //                         solid_specific_heatcapacity_stencils},
+        //                     z_grid()}}};
 
-                auto solid_volumetric_heatcapacity{
-                    Logs::SolidVolumetricHeatCapacity{
-                        solid_density, solid_specific_heatcapacity}};
+        //         auto solid_volumetric_heatcapacity{
+        //             Logs::SolidVolumetricHeatCapacity{
+        //                 solid_density, solid_specific_heatcapacity}};
 
-                auto capacity{
-                    Logs::MediumHeatVolumetricCapacityFactory::create(
-                        porosity, solid_volumetric_heatcapacity, water(), z_grid())};
-                return {
-                    capacity,
-                    grid2D};
-            }
+        //         auto capacity{
+        //             Logs::MediumHeatVolumetricCapacityFactory::create(
+        //                 porosity, solid_volumetric_heatcapacity, water(), z_grid())};
+        //         return {
+        //             capacity,
+        //             grid2D};
+        //     }
 
-            Water water() const
-            {
-                return Phases::FluidFactory::create_water(300, 10);
-            }
+        //     Water water() const
+        //     {
+        //         return Phases::FluidFactory::create_water(300, 10);
+        //     }
 
-            const Well_KH &well_kh() const
-            {
-                return well;
-            }
+        //     const Well_KH &well_kh() const
+        //     {
+        //         return well;
+        //     }
 
-            Properties::ReservoirFlowField flow_field(RealType well_rate) const
-            {
-                return {
-                    well_rate, well_kh(), *grid2D};
-            }
+        //     Properties::ReservoirFlowField flow_field(RealType well_rate) const
+        //     {
+        //         return {
+        //             well_rate, well_kh(), *grid2D};
+        //     }
 
-            Problem::InitialCondition initial_state() const
-            {
-                return {
-                    State::State2D::FillWithConst(
-                        *grid2D, val)};
-            }
+        //     Problem::InitialCondition initial_state() const
+        //     {
+        //         return {
+        //             State::State2D::FillWithConst(
+        //                 *grid2D, val)};
+        //     }
 
-            BoundaryConditions::BoundaryConditions boundary_conditions()
-            {
-                return {
-                    *grid2D,
-                    std::make_shared<BCFunctor>(BCFunctor{val})};
-            }
+        //     BoundaryConditions::BoundaryConditions boundary_conditions()
+        //     {
+        //         return {
+        //             *grid2D,
+        //             std::make_shared<BCFunctor>(BCFunctor{val})};
+        //     }
 
-            const Grids::GridDualStencils &z_grid_stencils() const
-            {
-                return grid2D->first_coord.dual_stencils;
-            }
-            const Grids::AxesGrid<CoordinateTypes::Z> &z_grid() const
-            {
-                return grid2D->first_coord;
-            }
+        //     const Grids::GridDualStencils &z_grid_stencils() const
+        //     {
+        //         return grid2D->first_coord.dual_stencils;
+        //     }
+        //     const Grids::AxesGrid<CoordinateTypes::Z> &z_grid() const
+        //     {
+        //         return grid2D->first_coord;
+        //     }
 
-            Well_KH well;
+        //     Well_KH well;
 
-            RealType val;
+        //     RealType val;
 
-            const Grid2D_t grid2D;
-        };
+        //     const Grid2D_t grid2D;
+        // };
 
     } // EqSolver
 
