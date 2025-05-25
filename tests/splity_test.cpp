@@ -27,16 +27,8 @@ const auto z_stencils{
     Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, nLayers)};
 const auto r_stencils{
     Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 11)};
-    
-const VR is_permeable_stencils(nLayers, 1.0);
-const auto porosity_stencils{
-    Logs::RawDataFactory::generate_porosity(z_stencils, is_permeable_stencils)};
 
 // heat logs
-const auto solid_density_stencils{
-    Logs::RawDataFactory::generate_solid_density(z_stencils)};
-const auto solid_specific_heatcapacity_stencils{
-    Logs::RawDataFactory::generate_solid_specific_heatcapacity(z_stencils)};
 const auto heatconductivity_stencils{
     Logs::RawDataFactory::generate_conductivity(z_stencils)};
 
@@ -45,22 +37,22 @@ TEST_CASE("Solver", "splitY")
     const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
     const auto &grid{grid2D->first_coord};
 
-    const Logs::Rocks::HeatLogs heat_logs{
-        solid_density_stencils,
-        solid_specific_heatcapacity_stencils,
-        heatconductivity_stencils,
-        porosity_stencils,
-        Phases::FluidFactory::create_water(1.0, 1.0),
-        grid};
-    
-    const Properties::Rocks::HeatProps heat_props{
-        heat_logs, grid2D};
+    const auto conductivity{
+        Logs::HeatConductivityFactory::create(
+            heatconductivity_stencils, grid)};
 
-    const FaceProperties::Rocks::HeatFaceProps heat_face_props{
-        heat_props, grid2D};
+    const Properties::HeatConductivity conductivity_field{
+        Properties::FieldFactory::create(
+            conductivity,
+            grid2D)};
+
+    const FaceProperties::HeatConductivity conductivity_field_face{
+        FaceProperties::FaceInterpolatedFieldFactory::create(
+            conductivity_field,
+            grid2D)};
 
     const double tol = 1E-14;
-    SplitY splity{heat_face_props.heat_conductivity, grid2D};
+    SplitY splity{conductivity_field_face, grid2D};
 
     for (const auto &m : splity.LaplaceTerms())
     {
