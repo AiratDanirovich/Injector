@@ -8,6 +8,8 @@
 #include <Injector/Solver/State2D.hpp>
 
 #include <Injector/Grids/GridsFactory.hpp>
+#include <Injector/Model/Collector.hpp>
+
 #include <Injector/Solver/SolverFactory.hpp>
 
 // #include <Injector/Properties/Logs.hpp>
@@ -58,7 +60,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
   FunctorBC(
       RealType inlet_temp,
-      const PhaseProperties &fluid, // inlet fluid
+      const PhaseProperties &fluid,                     // inlet fluid
       const Properties::ReservoirFlowField &flow_field, // volumetric flow rate
       const cptr<const Grid2D_t> grid_ptr)
       : inlet_temp{inlet_temp},
@@ -96,16 +98,16 @@ const std::ptrdiff_t nLayers{11ull};
 const VR thickness(nLayers, 1); // each layer is 1m thick
 
 // hydrodynamic logs
-const VR is_permeable(nLayers, 1.0);
-const VR porosity(nLayers, 1.0);
-const VR permeability(nLayers, 0.5);
-const VR ext_pressure(nLayers, 13E6);
-const VR skin(nLayers, 0.0);
+const VR is_permeable_stencils(nLayers, 1.0);
+const VR porosity_stencils(nLayers, 1.0);
+const VR permeability_stencils(nLayers, 0.5);
+const VR ext_pressure_stencils(nLayers, 13E6);
+const VR skin_stencils(nLayers, 0.0);
 
 // heat logs
-const VR conductivity(nLayers, 3.9);
-const VR solid_density(nLayers, 3.9 /*should be 2600 in SI*/);
-const VR solid_specific_heatcapacity(nLayers, 1.0 /*should be 770 in SI*/);
+const VR heatconductivity_stencils(nLayers, 3.9);
+const VR solid_density_stencils(nLayers, 3.9 /*should be 2600 in SI*/);
+const VR solid_specific_heatcapacity_stencils(nLayers, 1.0 /*should be 770 in SI*/);
 /*temporal grid*/
 const std::ptrdiff_t time_steps_nmbr{5ull};
 const RealType t0{1.0}; // initial time moment
@@ -120,19 +122,38 @@ const RealType inlet_temperature{1.0};
 
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
-  // make grid1D
-  const VR z_stencils(
-      Grids::Factory::generate_dual_grid_stencils_from_steps(
-          zTop, thickness));
-  const RealType zBottom{z_stencils.back()};
-  const VR r_stencils{
-      Grids::Factory::generate_dual_grid_stencils_uniform(
-          Segment{rMin, rMax}, rNodes)};
   // make grid2D
-  const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
-  const HydrodynamicLogsFactory hydro_logs_factory{
-      is_permeable, porosity, permeability, ext_pressure, skin,
+  const auto grid2D{
+      Grids::CylinderGridFactory::create(
+          Grids::Factory::generate_dual_grid_stencils_from_steps(
+              zTop, thickness),
+          Grids::Factory::generate_dual_grid_stencils_uniform(
+              Segment{rMin, rMax}, rNodes))};
+
+  const Logs::Rocks::CoreSampleLogs core_data{
+      is_permeable_stencils,
+      porosity_stencils,
+      permeability_stencils,
       grid2D->first_coord};
+
+  const auto water{Phases::FluidFactory::create_water(1.0, 1.0)};
+
+  const Logs::Hydrodynamics::Hydrodynamics hydrodynamics_logs{
+      is_permeable_stencils,
+      ext_pressure_stencils,
+      skin_stencils,
+      grid2D->first_coord};
+
+  const Logs::Rocks::HeatLogs heat_logs{
+      solid_density_stencils,
+      solid_specific_heatcapacity_stencils,
+      heatconductivity_stencils,
+      porosity_stencils,
+      water,
+      grid2D->first_coord};
+
+  const Properties::Rocks::HeatProps heat_props{
+      heat_logs, grid2D};
 
   // heat conductivity
   const Properties::HeatConductivity conductivity_field{
@@ -162,9 +183,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   //     hydro_logs_factory.is_permeable,
   //     hydro_logs_factory.permeability};
   Properties::ReservoirFlowField flow_field{
-    Properties::FlowFactory::horizontal_flow(well_rate*capacity_field.value(0,0), hydro_logs_factory.is_permeable, *grid2D)
-    //  well_rate, well, *grid2D
-    };
+      Properties::FlowFactory::horizontal_flow(well_rate * capacity_field.value(0, 0), hydro_logs_factory.is_permeable, *grid2D)
+      //  well_rate, well, *grid2D
+  };
 
   // initial condition
   const auto initial_state{ICFactory(t0, grid2D, initial_temperature)};

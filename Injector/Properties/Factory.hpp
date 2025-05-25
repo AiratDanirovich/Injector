@@ -10,6 +10,16 @@ namespace GPN
         {
     //        using Grid_t = Grids::AxesGrid<CoordinateTypes::Z>;
 #pragma region HYDRODYNAMIC-LOGS
+
+            static auto generate_is_permeable_const(
+                RealType val,
+                const auto &dual_stencils)
+            {
+                auto size{dual_stencils.size() - 1};
+                std::vector<RealType> vals(size, val);
+                return vals;
+            }
+
             static auto generate_is_permeable(
                 const auto &dual_stencils)
             {

@@ -88,35 +88,37 @@ namespace GPN
     {
         namespace Rocks
         {
+            template <typename Grid2D_t>
             struct Rocks
             {
                 Rocks(
-                    const auto &logs,
-                    const auto &grid2D)
-                    : permeability{logs.permeability, grid2D},
-                      porosity{logs.porosity, grid2D}
+                    const Logs::Rocks::CoreSampleLogs &logs,
+                    const cptr<Grid2D_t> &grid2D)
+                    : permeability{
+                          FieldFactory::create(logs.permeability, grid2D)},
+                      porosity{FieldFactory::create(logs.porosity, grid2D)}
                 {
                 }
 
-                Permeability permeability;
-                Porosity porosity;
+                Permeability<Grid2D_t> permeability;
+                Porosity<Grid2D_t> porosity;
             };
 
+            template <typename Grid2D_t>
             struct HeatProps
             {
                 HeatProps(
-                    const auto &logs,
-                    const auto &grid2D)
-                    : medium_vol_heatcapacity{logs.medium_vol_heatcapacity, grid2D},
-                      heat_conductivity{logs.heat_conductivity, grid2D}
+                    const Logs::Rocks::HeatLogs &logs,
+                    const cptr<Grid2D_t> &grid2D)
+                    : medium_vol_heatcapacity{
+                          FieldFactory::create(logs.medium_vol_heatcapacity, grid2D)},
+                      heat_conductivity{FieldFactory::create(logs.heat_conductivity, grid2D)}
                 {
                 }
 
-                const HeatConductivity heat_conductivity;
-                const MediumHeatVolumetricCapacity medium_vol_heatcapacity;
+                HeatConductivity<Grid2D_t> heat_conductivity;
+                MediumHeatVolumetricCapacity<Grid2D_t> medium_vol_heatcapacity;
             };
-
         } // Rocks
-
     } // Properties
 } // GPN

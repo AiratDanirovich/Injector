@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Injector/Grids/Grids2D.hpp>
+// #include <Injector/Grids/Grids2D.hpp>
 #include <Injector/Properties/PhysicalField.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
 
@@ -10,17 +10,17 @@ namespace GPN
     {
         struct Factory
         {
-            static auto generate_heatconductivity_Property(
-                const auto &dual_stencils,
-                const auto grid)
-            {
-                return Properties::HeatConductivity{
-                    Logs::HeatConductivity{
-                        Logs::StepPropertyGrid{
-                            Logs::StepProperty{dual_stencils},
-                            grid->first_coord}},
-                    grid};
-            }
+            // static auto generate_heatconductivity_Property(
+            //     const auto &dual_stencils,
+            //     const auto grid)
+            // {
+            //     return Properties::HeatConductivity{
+            //         Logs::HeatConductivity{
+            //             Logs::StepPropertyGrid{
+            //                 Logs::StepProperty{dual_stencils},
+            //                 grid->first_coord}},
+            //         grid};
+            // }
 
             static auto generate_solid_volumetric_heatcapacity_Property(
                 const auto &soliddensity_stencils,

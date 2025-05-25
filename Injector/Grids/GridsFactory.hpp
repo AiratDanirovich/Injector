@@ -6,7 +6,7 @@
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/CoordinateTypes.h>
-#include <Injector/Grids/Grids2D.hpp>
+#include <Injector/Grids/Grids1D.hpp>
 
 namespace GPN
 {
@@ -52,28 +52,6 @@ namespace GPN
                 return generate_dual_grid_stencils_uniform(axes.start, axes.end, n);
             }
 
-            static auto create_cartesian_grid_2D_ptr(ptrdiff_t n)
-            {
-                auto stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, n)};
-
-                auto nodes{GridDual{stencils}};
-
-                auto x_grid{
-                    AxesGrid<CoordinateTypes::X>{nodes}};
-
-                auto y_grid{
-                    AxesGrid<CoordinateTypes::Y>{nodes}};
-
-                return std::make_shared<StructuredXYGrid2D>(x_grid, y_grid);
-            }
-
-            static auto create_cylinder_grid_2D_ptr(const Box &box, ptrdiff_t n1, ptrdiff_t n2)
-            {
-                auto z_stencils{Factory::generate_dual_grid_stencils_uniform(box.axes1, n1)};
-                auto r_stencils{Factory::generate_dual_grid_stencils_uniform(box.axes2, n2)};
-                return create_cylinder_grid_2D_ptr(z_stencils, r_stencils);
-            }
-
             template <typename CoordinateType_t>
             static auto create_axes(const auto &stencils)
             {
@@ -81,28 +59,6 @@ namespace GPN
                 return AxesGrid<CoordinateType_t>{nodes};
             }
 
-            static auto create_cylinder_grid_2D_ptr(const auto &z_stencils, const auto &r_stencils)
-            {
-                auto z_grid{create_axes<CoordinateTypes::Z>(z_stencils)};
-                auto r_grid{create_axes<CoordinateTypes::R_CylCoord>(r_stencils)};
-
-                return std::make_shared<StructuredCylinderGrid2DAxisymmetric>(z_grid, r_grid);
-            }
-        };
-
-        struct CylinderGridFactory
-        {
-            static auto create(const Box &box, ptrdiff_t n1, ptrdiff_t n2)
-            {
-                return create(Factory::generate_dual_grid_stencils_uniform(box.axes1, n1),
-                              Factory::generate_dual_grid_stencils_uniform(box.axes2, n2));
-            }
-
-            static auto create(const auto &z_stencils, const auto &r_stencils)
-            {
-                return Grids::Factory::create_cylinder_grid_2D_ptr(
-                    z_stencils, r_stencils);
-            }
         };
     }
 }

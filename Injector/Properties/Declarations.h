@@ -23,7 +23,7 @@ namespace GPN
         struct SolidVolumetricHeatCapacity;
         struct HeatVolumetricCapacity;
 
-        template <typename CoordinateType_t /* = CoordinateTypes::Z*/>
+    //    template <typename CoordinateType_t /* = CoordinateTypes::Z*/>
         struct FaceInterpolator;
 
         template <typename CoordinateType_t /* = CoordinateTypes::Z*/>

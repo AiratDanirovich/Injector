@@ -364,55 +364,32 @@ namespace GPN
             }
         };
 
-        template <typename CoordinateType_t /* = CoordinateTypes::Z*/>
-        struct FaceInterpolator
-        {
-            using Axes = CoordinateType_t;
-
-            const InternalFaceValues face_values;
-
-            FaceInterpolator(
-                const StepPropertyGrid &log)
-                : face_values{
-                      interpolate(log)}
-            {
-            }
-
-        protected:
-            static auto interpolate(
-                const StepPropertyGrid &log)
-            {
-                const auto &grid{log.grid};
-                // if dual_size() == 2 --- no internal faces, only single cell
-                assert(grid.dual_size() > 2ll);
-
-                InternalFaceValues out(log.grid.dual_size() - 2ll);
-
-                for (auto id{0ll}; id < out.size(); ++id)
-                    out(id) = Axes::face_interpolator(
-                        grid.mesh_nodes(id), grid.mesh_nodes(id + 1ll), grid.dual_nodes(id + 1ll), log(id), log(id + 1ll));
-
-                return out;
-            }
-        };
-
-        template <typename CoordinateType_t /* = CoordinateTypes::Z*/>
-        struct FaceInterpolatedProperty
+        struct HeatConductivity
             : public StepPropertyGrid,
-              public FaceInterpolator<CoordinateType_t>
+              private AssertNonNegative
         {
-            FaceInterpolatedProperty(
-                const StepPropertyGrid &vals) noexcept
-                : StepPropertyGrid{vals},
-                  FaceInterpolator<CoordinateType_t>{vals}
+            HeatConductivity(
+                const StepPropertyGrid &conductivity)
+                : StepPropertyGrid{conductivity},
+                  AssertNonNegative{conductivity}
             {
             }
         };
 
-        using ZInterpolator =
-            FaceInterpolatedProperty<CoordinateTypes::Z>;
+        struct ThermalDiffusivity
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            ThermalDiffusivity(
+                const StepPropertyGrid &conductivity)
+                : StepPropertyGrid{conductivity},
+                  AssertNonNegative{conductivity}
+            {
+            }
+        };
 
         template <typename Property_t, typename Grid_t>
+        [[deprecated]]
         auto generate_log(
             const std::vector<RealType> &adata,
             const Grid_t &grid)
@@ -424,32 +401,6 @@ namespace GPN
                     adata},
                 grid};
         }
-
-        struct HeatConductivity
-            : public ZInterpolator,
-              private AssertNonNegative
-        {
-            HeatConductivity(
-                const StepPropertyGrid &conductivity)
-                : ZInterpolator{conductivity},
-                  AssertNonNegative{conductivity}
-            {
-            }
-        };
-
-        struct ThermalDiffusivity
-            : public StepPropertyGrid,
-              private AssertNonNegative
-        {
-            ThermalDiffusivity(
-                const MediumHeatVolumetricCapacity &capacity,
-                const HeatConductivity &conductivity)
-                : StepPropertyGrid{
-                      conductivity / capacity},
-                  AssertNonNegative{capacity}
-            {
-            }
-        };
 
     } // Logs
 } // GPN

@@ -141,6 +141,19 @@ namespace GPN
             }
         };
 
+        struct ThermalDiffusivityFactory
+        {
+            static ThermalDiffusivity create(
+                const auto &capacity,
+                const auto &conductivity,
+                const auto &grid)
+            {
+                return {StepPropertyGrid{
+                            StepProperty{conductivity / capacity}},
+                        grid};
+            }
+        };
+
         struct SolidSpecificHeatCapacityFactory
         {
             static SolidSpecificHeatCapacity create(

@@ -1,5 +1,8 @@
 #include <Injector/Grids/CoordinateTypes.h>
 #include <Injector/Grids/GridsFactory.hpp>
+#include <Injector/Model/Collector.hpp>
+
+
 #include <Injector/Properties/Factory.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
 
