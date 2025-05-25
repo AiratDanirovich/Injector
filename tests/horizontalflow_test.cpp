@@ -59,10 +59,12 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
   FunctorBC(
       RealType inlet_temp,
+      const Logs::IsPermeable &is_permeable,
       const FaceProperties::ReservoirFlowField &flow_field, // volumetric flow rate
       const cptr<const Grid2D_t> grid_ptr)
       : inlet_temp{inlet_temp},
         flow_field{flow_field},
+        is_permeable{is_permeable},
         grid_ptr{grid_ptr}
   {
   }
@@ -70,7 +72,10 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   RealType operator()(RealType z, RealType r, RealType t) const override
   {
     if (r == grid_ptr->second_coord.dual_front())
-      return flow_field.axes2_as_face_normal(0, 0) * inlet_temp;
+    {
+      auto idx{0ll};
+      return flow_field.axes2_as_face_normal(0, idx) * inlet_temp;
+    }
 
     return 0.0;
   }
@@ -78,6 +83,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
 protected:
   RealType inlet_temp;
   const FaceProperties::ReservoirFlowField &flow_field;
+  const Logs::IsPermeable &is_permeable;
   const cptr<const Grid2D_t> grid_ptr;
 };
 
@@ -94,8 +100,8 @@ const std::ptrdiff_t nLayers{5ull};
 const VR thickness(nLayers, 1.0); // each layer is 1m thick
 
 // hydrodynamic logs
-const VR is_permeable_stencils(nLayers, 1.0);
-const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 1.0)};
+VR is_permeable_stencils(nLayers, 1.0);
+LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 1.0)};
 const VR permeability_stencils(nLayers, 0.5);
 
 // heat logs
@@ -126,12 +132,15 @@ TEST_CASE("Solver", "SelfSimilarCyl")
               zTop, thickness),
           Grids::Factory::generate_dual_grid_stencils_uniform(
               Segment{rMin, rMax}, rNodes))};
+  const auto &grid{grid2D->first_coord};
 
-  const Logs::Rocks::CoreSampleLogs core_data{
-      is_permeable_stencils,
-      porosity_stencils,
-      permeability_stencils,
-      grid2D->first_coord};
+  is_permeable_stencils[nLayers / 2] = 0.0;
+  porosity_stencils(nLayers / 2) = 0.0;
+
+  const Logs::IsPermeable is_permeable{
+      IsPermeableFactory::create(is_permeable_stencils, grid)};
+  const Logs::Porosity porosity{
+      PorosityFactory::create(porosity_stencils, is_permeable_stencils, grid)};
 
   // make fluid
   const Water water{
@@ -148,7 +157,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       solid_density_stencils,
       solid_specific_heatcapacity_stencils,
       heatconductivity_stencils,
-      porosity_stencils,
+      porosity.log_vals,
       water,
       grid2D->first_coord};
 
@@ -170,7 +179,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const GPN::BoundaryConditions::BoundaryConditions bc{
       *grid2D,
       std::make_shared<FunctorBC>(
-          inlet_temperature, flow_field, grid2D),
+          inlet_temperature, is_permeable, flow_field, grid2D),
       BoundaryConditions::BoundaryCondition::second};
   // solver
 
@@ -181,15 +190,22 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       initial_state,
       bc, t0};
 
-  std::string pathr{"data_r.csv"};
-  std::string pathz{"data_z.csv"};
-
   // assert solution
   const double tol = 1E-15;
   for (size_t t_step{0ll}; t_step < time_intervals.size(); ++t_step)
   {
     solver.advance(time_intervals[t_step]);
   }
+
+  const auto &v1 = flow_field.axes1_as_face_normal;
+  for (auto col{0ll}; col < v1.cols(); ++col)
+    for (auto row{0ll}; row < v1.rows(); ++row)
+      CHECK(v1(row, col) == 0.0);
+
+  const auto &v2 = flow_field.axes2_as_face_normal;
+  for (auto col{0ll}; col < v2.cols(); ++col)
+    for (auto row{0ll}; row < v2.rows(); ++row)
+      CHECK(((v2(row, col) > 0.0) || ((v2(row, col) == 0.0) && (is_permeable.log_vals(row) == 0.0))));
 
   const auto &[times, states] = solver.solution();
   for (size_t i{0ll}; i < times.size(); ++i)
