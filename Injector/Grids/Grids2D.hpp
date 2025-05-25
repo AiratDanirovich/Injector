@@ -66,10 +66,10 @@ namespace GPN
             {
             }
 
-            // auto coordinates(auto id1, auto id2) const
-            // {
-            //     return Point{first_coord.mesh_nodes(id1), second_coord.mesh_nodes(id2)};
-            // }
+            auto coordinates(auto id1, auto id2) const
+            {
+                return Point{first_coord.mesh_nodes(id1), second_coord.mesh_nodes(id2)};
+            }
 
             // steps in two directions,
             // between nodes id1 and id1+1 in first direction

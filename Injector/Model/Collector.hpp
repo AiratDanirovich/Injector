@@ -10,6 +10,16 @@ namespace GPN
     {
         namespace Rocks
         {
+            struct IsPermeableLog
+            {
+                IsPermeableLog(
+                    const auto &is_permeable_stencils,
+                    const auto &grid)
+                    : is_permeable{IsPermeableFactory::create(is_permeable_stencils, grid)}
+                {
+                }
+                IsPermeable is_permeable;
+            };
             struct CoreSampleLogs
             {
                 CoreSampleLogs(
