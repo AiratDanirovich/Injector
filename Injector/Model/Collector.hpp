@@ -119,6 +119,16 @@ namespace GPN
             struct HeatProps
             {
                 HeatProps(
+                    const Logs::MediumHeatVolumetricCapacity &medium_vol_heatcapacity,
+                    const Logs::HeatConductivity &heat_conductivity,
+                    const cptr<Grid2D_t> grid2D)
+                    : medium_vol_heatcapacity{
+                          FieldFactory::create(medium_vol_heatcapacity, grid2D)},
+                      heat_conductivity{FieldFactory::create(heat_conductivity, grid2D)}
+                {
+                }
+
+                HeatProps(
                     const Logs::Rocks::HeatLogs &logs,
                     const cptr<Grid2D_t> grid2D)
                     : medium_vol_heatcapacity{
