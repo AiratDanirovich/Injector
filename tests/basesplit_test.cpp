@@ -1,6 +1,7 @@
 #include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
 #include <Injector/Properties/PhysicalField.hpp>
+#include <Injector/Properties/FaceProperties.hpp>
 #include <Injector/Solver/SplittingMethod/BaseSplit.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -32,9 +33,9 @@ TEST_CASE("BaseSplitTest")
             grid2D)};
 
     FaceProperties::HeatConductivity conductivity_field_face{
-        Properties::FieldFactory::create(
-            heat_factory.conductivity,
-            grid2D)}
+        FaceProperties::FaceInterpolatedFieldFactory::create(
+            conductivity_field,
+            grid2D)};
 
     BaseSplit base_split1{
         conductivity_field_face.face_vals_axes2,
