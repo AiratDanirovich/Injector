@@ -238,16 +238,6 @@ namespace GPN
             : public StepPropertyGrid,
               private AssertNonNegative
         {
-            template <typename Well_t>
-            RFP(
-                RealType well_rate,
-                const Well_t &well)
-                : RFP{
-                      StepPropertyGrid{well.get_RFP(well_rate), well.is_permeable.grid},
-                      well.is_permeable}
-            {
-            }
-
             RFP(const StepPropertyGrid &rfp,
                 const IsPermeable &is_permeable)
                 : StepPropertyGrid{rfp},

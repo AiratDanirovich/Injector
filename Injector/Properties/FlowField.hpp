@@ -7,19 +7,28 @@ namespace GPN
 {
     namespace Logs
     {
-
         /// @brief Generates the z-component of the flow field as a function of r (i.e., other coordinate)
         struct ZFlowRateLog
             : public StepPropertyGrid,
               private AssertNonNegative
         {
-            template <typename Grid_t>
             ZFlowRateLog(
+                const StepPropertyGrid &data)
+                : StepPropertyGrid{data},
+                  AssertNonNegative{data}
+            {
+            }
+        };
+
+        struct ZFlowRateLogFactory
+        {
+            template <typename Grid_t>
+            static auto create(
                 RealType well_rate,
                 const Grid_t &grid)
-                : StepPropertyGrid{make_rates(well_rate, grid)},
-                  AssertNonNegative{make_rates(well_rate, grid)}
             {
+                const auto temp{make_rates(well_rate, grid)};
+                return ZFlowRateLog{temp};
             }
 
         private:
@@ -38,7 +47,7 @@ namespace GPN
         };
     } // Logs
 
-    namespace Properties
+    namespace FaceProperties
     {
         struct FlowFieldFactory // FaceInterpolatedField_1D
         {
@@ -67,6 +76,16 @@ namespace GPN
 
         struct ReservoirFlowField
         {
+            template <typename Grid2D_t>
+            ReservoirFlowField(
+                const FaceValuesContainer &axes1_value,
+                const FaceValuesContainer &axes2_value,
+                const Grid2D_t &grid)
+                : axes1_as_face_normal{axes1_value},
+                  axes2_as_face_normal{axes2_value}
+            {
+            }
+
             template <typename Well_t, typename Grid2D_t>
             ReservoirFlowField(
                 RealType well_rate,
@@ -108,17 +127,29 @@ namespace GPN
         struct FlowFactory
         {
             template <typename IsPermeable_t, typename Grid2D_t>
-            static auto horizontal_flow(
-                RealType rate,
-                const IsPermeable_t& is_permeable,
+            static auto zero_flow(
+                const IsPermeable_t &is_permeable,
                 const Grid2D_t &grid)
             {
-                return ReservoirFlowField
-                {
-                    Logs::ZFlowRateLog{0.0, grid.second_coord},
-                    Logs::StepPropertyGrid{rate+StepPropertyContainer::Zero(grid.first_coord.mesh_size()), is_permeable.grid},
-                    grid
-                };
+                return horizontal_flow(0.0, is_permeable, grid);
+            }
+
+            template <typename IsPermeable_t, typename Grid2D_t>
+            static auto horizontal_flow(
+                RealType rate,
+                const IsPermeable_t &is_permeable,
+                const Grid2D_t &grid)
+            {
+                const auto rfp{StepPropertyContainer::Constant(grid.first_coord.mesh_size(), rate)};
+                return ReservoirFlowField{
+                    FlowFieldFactory::flow_in_dir1(
+                        Logs::ZFlowRateLogFactory::create(0.0, grid.second_coord),
+                        grid),
+                    FlowFieldFactory::flow_in_dir2(
+                        Logs::RFP{Logs::StepPropertyGrid{rfp, is_permeable.grid},
+                                  is_permeable},
+                        grid),
+                    grid};
             }
         };
     } // Properties

@@ -30,7 +30,8 @@ using namespace GPN;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
-RealType val{1.0};
+// const RealType well_rate{1.0};
+const RealType val{1.0};
 const auto z_stencils{
     Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 5)};
 const auto r_stencils{
@@ -67,7 +68,7 @@ TEST_CASE("Solver")
     const Properties::Rocks::HeatProps heat_props{
         heat_logs, grid2D};
 
-    FaceProperties::Rocks::HeatFaceProps heat_face_props{
+    const FaceProperties::Rocks::HeatFaceProps heat_face_props{
         heat_props, grid2D};
 
     const Problem::InitialCondition initial_state{
@@ -78,9 +79,15 @@ TEST_CASE("Solver")
         *grid2D,
         make_shared<ABCFunctor>(val)};
 
-    const RealType well_rate{1.0};
+    const Logs::Rocks::CoreSampleLogs core_data{
+        is_permeable_stencils,
+        porosity_stencils,
+        permeability_stencils,
+        grid};
 
-    const auto flow_field{solver_factory.flow_field(well_rate)};
+    const auto flow_field{
+        FaceProperties::FlowFactory::zero_flow(
+            core_data.is_permeable, *grid2D)};
 
     Solver solver{
         heat_face_props.heat_conductivity,

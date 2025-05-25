@@ -19,7 +19,7 @@ namespace GPN
     {
         /// @brief Interpolate physical property between nodes of 2D grid
         /// @tparam Grid_t 2D grid
-        template <typename Grid_t = Grids::StructuredCylinderGrid2DAxisymmetric>
+        template <typename Grid_t>
         struct Field
         {
             static_assert(Grid_t::Dim() == 2ull);
@@ -95,7 +95,7 @@ namespace GPN
             template <typename Container_t, typename Grid_t>
             static Field<Grid_t> create(
                 const Container_t &base_log, const std::vector<Container_t> &logs,
-                const cptr<Grid_t> &grid)
+                const cptr<Grid_t> grid)
             {
                 Field temp{create(base_log, grid)};
                 apply(temp, logs);

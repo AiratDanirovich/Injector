@@ -220,13 +220,23 @@ namespace GPN
         struct RFPFactory
         {
             template <typename Container_t, typename IsPermeable_t>
-            static RFP create(
+            static auto create(
                 const Container_t &rfp,
                 const IsPermeable_t &is_permeable)
             {
                 return RFP{
                     StepPropertyGrid{rfp, is_permeable.grid},
                     is_permeable};
+            }
+
+            template <typename Well_t>
+            static auto create(
+                RealType well_rate,
+                const Well_t &well)
+            {
+                return RFP{
+                    StepPropertyGrid{well.get_RFP(well_rate), well.is_permeable.grid},
+                    well.is_permeable};
             }
         };
 
