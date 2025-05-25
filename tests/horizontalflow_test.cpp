@@ -8,10 +8,8 @@
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 
-// #include <Injector/Properties/Logs.hpp>
 #include <Injector/Properties/FlowField.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
-// #include <Injector/Model/HydrodynamicSolver.hpp>
 #include <Injector/Solver/BoundaryConditions.hpp>
 #include <Injector/Solver/State2D.hpp>
 #include <Injector/Solver/InitialCondition.hpp>
@@ -29,7 +27,6 @@ using namespace GPN;
 using namespace GPN::Logs;
 using namespace GPN::Grids;
 using namespace GPN::Phases;
-// using namespace GPN::Model::Injector;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
