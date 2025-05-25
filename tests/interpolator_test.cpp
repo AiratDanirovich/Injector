@@ -103,7 +103,7 @@ TEST_CASE("InterpolatorTest")
     }
 
     const auto perm_field_z{
-        Logs::FaceInterpolator::interpolate2D_z(
+        FaceProperties::FaceInterpolator::interpolate2D_z(
             perm_field.values(), *grid2D)};
     cout << "perm_field_z:\n";
     cout << perm_field_z << endl
@@ -120,7 +120,7 @@ TEST_CASE("InterpolatorTest")
     }
 
     const auto perm_field_r{
-        Logs::FaceInterpolator::interpolate2D_r(
+        FaceProperties::FaceInterpolator::interpolate2D_r(
             perm_field.values(), *grid2D)};
     cout << "perm_field_r:\n";
     cout << perm_field_r << endl
