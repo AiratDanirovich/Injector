@@ -140,13 +140,9 @@ namespace GPN
             {
                 const auto rfp{StepPropertyContainer::Constant(grid2D.first_coord.mesh_size(), rate)};
                 return ReservoirFlowField{
-                    FlowFieldFactory::flow_in_dir1(
-                        Logs::ZFlowRateLogFactory::create(0.0, grid2D.second_coord),
-                        grid2D),
-                    FlowFieldFactory::flow_in_dir2(
-                        Logs::RFP{Logs::StepPropertyGrid{rfp, is_permeable.grid2D},
-                                  is_permeable},
-                        grid2D),
+                    Logs::ZFlowRateLogFactory::create(0.0, grid2D.second_coord),
+                    Logs::RFP{Logs::StepPropertyGrid{rfp, is_permeable.grid},
+                              is_permeable},
                     grid2D};
             }
         };
