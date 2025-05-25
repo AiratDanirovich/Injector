@@ -108,17 +108,17 @@ namespace GPN
 
         struct FlowFactory
         {
-            template <typename Well_t, typename Grid2D_t>
-            static auto create(
-                RealType well_rate,
-                const Well_t &well,
-                const Grid2D_t &grid2D)
-            {
-                return ReservoirFlowField{
-                    Logs::ZFlowRateLog{well_rate, grid2D.second_coord},
-                    Logs::RFP{well_rate, well},
-                    grid2D};
-            }
+            // template <typename Well_t, typename Grid2D_t>
+            // static auto create(
+            //     RealType well_rate,
+            //     const Well_t &well,
+            //     const Grid2D_t &grid2D)
+            // {
+            //     return ReservoirFlowField{
+            //         Logs::ZFlowRateLog{well_rate, grid2D.second_coord},
+            //         Logs::RFP{well_rate, well},
+            //         grid2D};
+            // }
 
             template <typename Grid2D_t>
             static auto create(

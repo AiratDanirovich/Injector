@@ -46,7 +46,7 @@ add_catch2_test(splitting_solver_SelfSimilarProblem)
 
 
 add_catch2_test(horizontalflow_test)
-# add_catch2_test(HeatFlow_test)
+add_catch2_test(HeatFlow_test)
 
 
 add_catch2_test(history_test)
