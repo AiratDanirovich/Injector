@@ -99,6 +99,13 @@ namespace GPN
             FaceValuesContainer axes2_as_face_normal;
         };
 
+        void multiply(ReservoirFlowField& flow, RealType fluid_vol_heatcapacity)
+        {
+            flow.axes1_as_face_normal *= fluid_vol_heatcapacity;
+            flow.axes2_as_face_normal *= fluid_vol_heatcapacity;
+        }
+
+
         struct FlowFactory
         {
             template <typename Well_t, typename Grid2D_t>
@@ -146,5 +153,8 @@ namespace GPN
                     grid2D};
             }
         };
+    
+    
+    
     } // Properties
 } // GPN
