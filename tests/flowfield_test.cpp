@@ -1,5 +1,6 @@
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/GridsFactory.hpp>
+#include <Injector/Grids/Grids2D.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
 #include <Injector/Properties/FlowField.hpp>
 #include <Injector/Model/Well.hpp>
