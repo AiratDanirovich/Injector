@@ -69,16 +69,21 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   {
   }
 
-  RealType operator()(RealType z, RealType r, RealType t) const override
+  RealType operator()(ptrdiff_t z, RealType r, RealType t) const override
   {
     if (r == grid_ptr->second_coord.dual_front())
     {
-      auto idx{0ll};
-      return flow_field.axes2_as_face_normal(0, idx) * inlet_temp;
+      return flow_field.axes2_as_face_normal(z, 0) * inlet_temp;
     }
 
     return 0.0;
   }
+
+  RealType operator()(RealType z, ptrdiff_t r, RealType t) const override
+  {
+    return 0.0;
+  }
+
 
 protected:
   RealType inlet_temp;
