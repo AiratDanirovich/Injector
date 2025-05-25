@@ -117,7 +117,8 @@ namespace GPN
             {
 #pragma region AXES2-AS-FACENORMAL
                 const auto rfp{Logs::RFPFactory::create(well_rate, well)};
-                const auto axes2_as_face_normal{FlowFieldFactory::flow_in_dir2(rfp, grid2D)};
+                auto axes2_as_face_normal{FlowFieldFactory::flow_in_dir2(rfp, grid2D)};
+                axes2_as_face_normal.col(0ll) = 0.0;
 #pragma endregion
 #pragma region AXES1-AS-FACENORMAL
                 // ref to log vals as Eigen::ArrayX container

@@ -1,4 +1,5 @@
 #include <memory>
+#include <iostream>
 #include <fstream>
 #include <string>
 #include <numbers>
@@ -72,6 +73,15 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
 
   RealType operator()(ptrdiff_t z_id, RealType r, RealType t) const override
   {
+    if (r == grid_ptr->second_coord.dual_front())
+      return flow_field.axes2_as_face_normal(z_id, 0ll) * inlet_temp;
+
+    if (r == grid_ptr->second_coord.dual_back())
+      return 0.0;
+    //   return -flow_field.axes2_as_face_normal.rightCols(1ll)(z_id, 0ll) * initial_temp;
+
+    assert(false);
+
     return 0.0;
   }
 
@@ -81,8 +91,10 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
       return flow_field.axes1_as_face_normal(0ll, r_id) * inlet_temp;
 
     if (z == grid_ptr->first_coord.dual_back())
-      return flow_field.axes1_as_face_normal.bottomRows(1ll)(0ll, r_id) * inlet_temp;
+      return 0.0;
+    //   return -flow_field.axes1_as_face_normal.bottomRows(1ll)(0ll, r_id) * initial_temp;
 
+    assert(false);
     return 0.0;
   }
 
@@ -101,30 +113,30 @@ using VR = std::vector<RealType>;
 RealType viscosity{6e-4}, density{1}, capacity{1};
 /*collector*/
 const RealType rMin{1 / (2 * numbers::pi)}, rMax{1.0}, zTop{0.0}; // m
-const std::ptrdiff_t rNodes{201ull};
-const std::ptrdiff_t nLayers{5ull};
+const std::ptrdiff_t rNodes{15ull};
+const std::ptrdiff_t nLayers{10ull};
 const VR thickness(nLayers, 1.0); // each layer is 1m thick
 
 // hydrodynamic logs
-VR is_permeable_stencils(nLayers, 1.0);
+LogValuesContainer is_permeable_stencils{LogValuesContainer::Constant(nLayers, 1.0)};
 LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 1.0)};
-const VR permeability_stencils(nLayers, 0.5);
+LogValuesContainer permeability_stencils{LogValuesContainer::Constant(nLayers, 0.5)};
 
 // heat logs
 const VR heatconductivity_stencils(nLayers, 0.0);
-const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 3.9 /*should be 2600 in SI*/)};
+const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 1 /*should be 2600 in SI*/)};
 const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
 /*temporal grid*/
-const std::ptrdiff_t time_steps_nmbr{51ull};
+const std::ptrdiff_t time_steps_nmbr{1451ull};
 const RealType t0{0.0};      // initial time moment
-const RealType t1{t0 + 0.1}; // s
+const RealType t1{t0 + 0.65}; // s
 const RealType time_step{(t1 - t0) / time_steps_nmbr};
 const VR time_intervals(time_steps_nmbr, time_step);
 const VR t_stencils(
     Grids::Factory::generate_dual_grid_stencils_from_steps(
         t0, time_intervals));
 /*temperatures*/
-const RealType well_rate{1}; // m^3/s
+const RealType well_rate{2}; // m^3/s
 const RealType initial_temperature{0.0};
 const RealType inlet_temperature{1.0};
 /*END*/
@@ -140,6 +152,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
               Segment{rMin, rMax}, rNodes))};
   const auto &grid{grid2D->first_coord};
 
+  // for (auto i{1ull}; i < nLayers; ++i)
+  //   is_permeable_stencils[i] = 0.0;
+
+  is_permeable_stencils[nLayers / 4] = 0.0;
+  is_permeable_stencils[nLayers / 2] = 0.0;
+  permeability_stencils *= is_permeable_stencils;
+  porosity_stencils *= is_permeable_stencils;
   const Logs::Rocks::CoreSampleLogs core_data{
       is_permeable_stencils,
       porosity_stencils,
@@ -200,15 +219,40 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     solver.advance(time_intervals[t_step]);
   }
 
+  cout << "flow_field.axes1_as_face_normal:\n";
+  cout << flow_field.axes1_as_face_normal << endl
+       << endl;
+  cout << "flow_field.axes2_as_face_normal:\n";
+  cout << flow_field.axes2_as_face_normal << endl
+       << endl;
+
   const auto &v1 = flow_field.axes1_as_face_normal;
-  for (auto col{0ll}; col < v1.cols(); ++col)
-    for (auto row{0ll}; row < v1.rows(); ++row)
+  for (auto row{0ll}; row < v1.rows(); ++row)
+  {
+    CHECK(v1(row, 0ll) >= 0.0);
+    for (auto col{1ll}; col < v1.cols(); ++col)
       CHECK(v1(row, col) == 0.0);
+  }
 
   const auto &v2 = flow_field.axes2_as_face_normal;
-  for (auto col{0ll}; col < v2.cols(); ++col)
+  for (auto col{2ll}; col < v2.cols(); ++col)
     for (auto row{0ll}; row < v2.rows(); ++row)
-      CHECK(((v2(row, col) > 0.0) || ((v2(row, col) == 0.0) && (core_data.is_permeable.log_vals(row) == 0.0))));
+      CHECK(v2(row, col) == v2(row, 1ll));
+
+  for (auto row{0ll}, col{0ll}; row < v2.rows(); ++row)
+  {
+    CHECK(v2(row, col) == 0.0);
+    //  CHECK(v1(row, col) == v1(row + 1, col) + v2(row, col));
+  }
+
+  for (auto row{0ll}; row < grid2D->first_coord.mesh_size(); ++row)
+  {
+    for (auto col{0ll}; col < grid2D->second_coord.mesh_size(); ++col)
+    {
+      INFO("" << "col: " << col << ", row: " << row << ", bottom: " << -v1(row + 1ll, col) << ", top: " << v1(row, col) << ", right: " << v2(row, col + 1ll) << ", left: " << -v2(row, col));
+      CHECK(-v1(row + 1ll, col) + v1(row, col) == v2(row, col + 1ll) - v2(row, col));
+    }
+  }
 
   const auto &[times, states] = solver.solution();
   for (size_t i{0ll}; i < times.size(); ++i)
@@ -220,17 +264,31 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       for (auto col{1ll}; col < state.cols(); ++col)
       {
         CHECK(state(row, col) <= inlet_temperature);
+        INFO("time: " << i << ", col: " << col << ", row: " << row);
         CHECK(state(row, col) <= state(row, col - 1ll));
       }
     }
   }
 
-  for (auto i{0ull}; i < times.size(); ++i)
+  for (size_t i{1ll}; i < times.size(); ++i)
   {
-    std::string path{std::string{"T_"} + std::to_string(i) + std::string{".txt"}};
+    for (auto row{0ll}; row < states[0].rows(); ++row)
+    {
+      for (auto col{1ll}; col < states[0].cols(); ++col)
+      {
+        CHECK(states[i](row, col) >= states[i - 1ull](row, col));
+      }
+    }
+  }
+
+  const auto precision{1e-5};
+  for (auto i{times.size()-1ll}; i < times.size(); ++i)
+  {
+    const auto &state = states[i];
+    std::string path{std::string{"T_"} + std::to_string(0) + std::string{".txt"}};
     std::ofstream f{path};
 
-    f << states[i].cur_state;
+    f << (state.cur_state / precision).round() * precision;
     f.close();
   }
 }
