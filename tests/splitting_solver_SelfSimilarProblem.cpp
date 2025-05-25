@@ -113,10 +113,10 @@ const std::ptrdiff_t rNodes{301ull};
 const std::ptrdiff_t nLayers{11ull};
 const VR thickness(nLayers, 0.01); // each layer is 1m thick
 const VR is_permeable_stencils(nLayers, 1.0);
-const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 1e-16)};
+const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 0.0)};
 
 const VR heatconductivity_stencils(nLayers, 3.9);
-const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers,3.9 /*should be 2600 in SI*/)};
+const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 3.9 /*should be 2600 in SI*/)};
 const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
 /*temporal grid*/
 const std::ptrdiff_t time_steps_nmbr{501ull};
@@ -190,16 +190,16 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const double tol = 1E-3;
 
   // assert initial condition
-  // for (std::ptrdiff_t col{0ll}; col < initial_state.cols(); ++col)
-  // {
-  //   for (std::ptrdiff_t row{0ll}; row < initial_state.rows(); ++row)
-  //   {
-  //     const auto [z, r] = grid2D->coordinates(row, col);
-  //     const auto val{es(z, r, t0)};
-  //     INFO("" << "col: " << col << ", row: " << row << ", calc: " << initial_state(row, col) << ", ref: " << val);
-  //     CHECK_THAT(initial_state(row, col), WithinRel(val, tol));
-  //   }
-  // }
+  for (std::ptrdiff_t col{0ll}; col < initial_state.cols(); ++col)
+  {
+    for (std::ptrdiff_t row{0ll}; row < initial_state.rows(); ++row)
+    {
+      const auto [z, r] = grid2D->coordinates(row, col);
+      const auto val{es(z, r, t0)};
+      INFO("" << "col: " << col << ", row: " << row << ", calc: " << initial_state(row, col) << ", ref: " << val);
+      CHECK_THAT(initial_state(row, col), WithinRel(val, tol));
+    }
+  }
 
   std::string pathr{"data_r.csv"};
   std::string pathz{"data_z.csv"};
@@ -220,39 +220,37 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     {
       const auto [z, r] = grid2D->coordinates(row, col);
       const auto val{es(z, r, time)};
+      const auto val2{es(row, col, time, *grid2D)};
 
       fr << r << ';' << val << ';' << state(row, col) << '\n';
 
       INFO("" << "col: " << col << ", row: " << row << ", calc: " << state(row, col) << ", ref: " << val);
       CHECK_THAT(state(row, col), WithinRel(val, tol));
+      
+      CHECK(val == val2);
     }
   }
   fr.close();
 
-  // std::ofstream fz{pathz};
-  // assert(fz.is_open());
-  // fz << "z;TcalcL;TcalcM;TcalcR;Tref\n";
-  // for (std::ptrdiff_t row{0}; row < state.rows(); ++row)
-  // {
-  //   for (std::ptrdiff_t col{rNodes/2}; col < rNodes/2+1ll /*state.cols()*/; ++col)
-  //   {
-  //     const auto [z, r] = grid2D->coordinates(row, col);
-  //     const auto val{es(z, r, time)};
-  //     const auto val2{es(row, col, time, *grid2D)};
+  std::ofstream fz{pathz};
+  assert(fz.is_open());
+  fz << "z;TcalcL;TcalcM;TcalcR;Tref\n";
+  for (std::ptrdiff_t row{0}; row < state.rows(); ++row)
+  {
+    for (std::ptrdiff_t col{rNodes / 2}; col < rNodes / 2 + 1ll /*state.cols()*/; ++col)
+    {
+      const auto [z, r] = grid2D->coordinates(row, col);
+      const auto val{es(z, r, time)};
 
-  //     assert(val == val2);
+      fz
+          << z << ';'
+          << val << ';'
+          << state(row, 0) << ';'
+          << state(row, col) << ';'
+          << state(row, state.cols() - 1ll)
+          << '\n';
 
-  //     fz
-  //     << z << ';'
-  //     << val << ';'
-  //     << state(row, 0)<< ';'
-  //     << state(row, col)<< ';'
-  //     << state(row, state.cols()-1ll)
-  //     << '\n';
-
-  //     INFO("" << "col: " << col << ", row: " << row << ", calc: " << state(row, col) << ", ref: " << val);
-  //     CHECK_THAT(state(row, col), WithinRel(val, tol));
-  //   }
-  // }
-  // fz.close();
+    }
+  }
+  fz.close();
 }
