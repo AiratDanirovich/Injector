@@ -1,4 +1,5 @@
-#include <Injector/Grids/Factory.hpp>
+#include <Injector/Grids/GridsFactory.hpp>
+#include <Injector/Grids/Grids2D.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -8,10 +9,11 @@ using namespace GPN::Grids;
 // Tests Cylinder grid, (r; z)
 TEST_CASE("GridTest", "GeneralCoordinate")
 {
+        auto z_stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, 2)};
+        auto r_stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, 5)};
     {
-        auto stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, 2)};
 
-        auto nodes{GridDual{stencils}};
+        auto nodes{GridDual{z_stencils}};
 
         auto x_grid{
             AxesGrid<CoordinateTypes::X>{nodes}};
@@ -23,9 +25,7 @@ TEST_CASE("GridTest", "GeneralCoordinate")
     }
 
     {
-        auto stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, 5)};
-
-        auto nodes{GridDual{stencils}};
+        auto nodes{GridDual{r_stencils}};
 
         auto z_grid{
             AxesGrid<CoordinateTypes::Z>{nodes}};
@@ -35,4 +35,5 @@ TEST_CASE("GridTest", "GeneralCoordinate")
 
         StructuredCylinderGrid2DAxisymmetric result{z_grid, r_grid};
     }
+    const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
 }

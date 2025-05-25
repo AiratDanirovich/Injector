@@ -17,8 +17,8 @@ TEST_CASE("EigenStride")
 
     cout << "Column-major:\n"
          << Map<Matrix<int, 3, 10>>(array) << endl;
-    // cout << "Row-major:\n"
-    //      << Map<Matrix<int, 1, 4, RowMajor>>(array) << endl;
+    cout << "Row-major:\n"
+         << Map<Matrix<int, 1, 4, RowMajor>>(array) << endl;
      cout << "Row-major:\n"
           << Map<Matrix<int, 10, 1>, Unaligned, Stride<1, 3>>(array) << endl;
 
@@ -31,6 +31,6 @@ TEST_CASE("EigenStride")
      cout << "Row-major 2:\n";
           cout << map << endl;
 
-    // cout << "Row-major using stride:\n"
-    //      << Map<Matrix<int, 2, 4>, Unaligned, Stride<1, 4>>(array) << endl;
+    cout << "Row-major using stride:\n"
+         << Map<Matrix<int, 2, 4>, Unaligned, Stride<1, 4>>(array) << endl;
 }

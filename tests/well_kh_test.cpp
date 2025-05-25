@@ -1,5 +1,5 @@
 #include <Injector/Grids/Defines.h>
-#include <Injector/Grids/Factory.hpp>
+#include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
 #include <Injector/Model/Well.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
@@ -39,7 +39,7 @@ TEST_CASE("Well_KH_Test")
         water, is_permeable, permeability};
 
     const RealType rate{1.0};
-    auto rfp = RFPFactory::create(well.get_RFP(rate), is_permeable);
+    const auto rfp = RFPFactory::create(well.get_RFP(rate), is_permeable);
 
     for (auto i{0ll}; i < rfp.size(); ++i)
     {

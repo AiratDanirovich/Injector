@@ -12,7 +12,7 @@ namespace GPN
             template <typename Grid_t>
             IsPermeableFactory(const Grid_t &grid)
                 : IsPermeableFactory{
-                      Logs::StencilsFactory::generate_is_permeable_StepProperty(
+                      Logs::RawDataFactory::generate_is_permeable(
                           grid.dual_stencils),
                       grid}
             {
@@ -62,42 +62,181 @@ namespace GPN
                         grid},
                     IsPermeableFactory::create(is_permeable, grid)};
             }
+        };
 
-            //     template <typename Grid_t>
-            //     PermeabilityFactory(const Grid_t &grid)
-            //         : IsPermeableFactory{
-            //               Logs::StencilsFactory::generate_is_permeable_StepProperty(
-            //                   grid.dual_stencils),
-            //               grid}
-            //     {
-            //     }
-            //     template <typename Container_t, typename Grid_t>
-            //     PermeabilityFactory(const Container_t &is_permeable, const Grid_t &grid)
-            //         : is_permeable{
-            //               IsPermeable{
-            //                   StepPropertyGrid{
-            //                       StepProperty{
-            //                           is_permeable},
-            //                       grid}}}
-            //     {
-            //     }
-            // const auto &permeability_stencils() const
-            // {
-            //     return permeability.log_vals;
-            // }
-            // Permeability permeability;
+        struct PorosityFactory
+        {
+            static Porosity create(
+                const auto &porosity,
+                const auto &is_permeable,
+                const auto &grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            porosity},
+                        grid},
+                    IsPermeableFactory::create(is_permeable, grid)};
+            }
+        };
+
+        struct SkinFactory
+        {
+            static SkinFactor create(
+                const auto &skin,
+                const auto &is_permeable,
+                const auto &grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            skin},
+                        grid},
+                    IsPermeableFactory::create(is_permeable, grid)};
+            }
+        };
+
+        struct ExtPressureFactory
+        {
+            static ExternalPressure create(
+                const auto &pressure,
+                const auto &is_permeable,
+                const auto &grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            pressure},
+                        grid},
+                    IsPermeableFactory::create(is_permeable, grid)};
+            }
+        };
+
+        struct HeatConductivityFactory
+        {
+            static HeatConductivity create(
+                const auto &heat_conductivity,
+                const auto &grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            heat_conductivity},
+                        grid}};
+            }
+        };
+
+        struct SolidDensityFactory
+        {
+            static SolidDensity create(
+                const auto &solid_density,
+                const auto &grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            solid_density},
+                        grid}};
+            }
+        };
+
+        struct ThermalDiffusivityFactory
+        {
+            static ThermalDiffusivity create(
+                const auto &capacity,
+                const auto &conductivity,
+                const auto &grid)
+            {
+                return {StepPropertyGrid{
+                            StepProperty{conductivity / capacity}},
+                        grid};
+            }
+        };
+
+        struct SolidSpecificHeatCapacityFactory
+        {
+            static SolidSpecificHeatCapacity create(
+                const auto &solid_specific_heatcapacity,
+                const auto &grid)
+            {
+                assert(solid_specific_heatcapacity.size() == grid.mesh_size());
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            solid_specific_heatcapacity},
+                        grid}};
+            }
+        };
+
+        struct SolidVolumetricHeatCapacityFactory
+        {
+            static SolidVolumetricHeatCapacity create(
+                const auto &solid_volumetric_heatcapacity,
+                const auto &grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            solid_volumetric_heatcapacity},
+                        grid}};
+            }
+
+            static SolidVolumetricHeatCapacity create(
+                const auto &density,
+                const auto &heat_capacity,
+                const auto &grid)
+            {
+                return {
+                    SolidDensityFactory::create(density, grid),
+                    SolidSpecificHeatCapacityFactory::create(heat_capacity, grid)};
+            }
+        };
+
+        struct MediumHeatVolumetricCapacityFactory
+        {
+            static MediumHeatVolumetricCapacity create(
+                const auto &porosity,
+                const auto &solid_vol_heatcapacity,
+                const auto &fluid,
+                const auto &grid)
+            {
+                return {StepPropertyGrid{
+                    porosity * fluid.volumetric_heat_capacity +
+                        (1.0 - porosity) * solid_vol_heatcapacity,
+                    grid}};
+            }
+
+            static MediumHeatVolumetricCapacity create(
+                const auto &porosity,
+                const auto &solid_density,
+                const auto &solid_heat_capacity,
+                const auto &fluid,
+                const auto &grid)
+            {
+                return create(porosity, solid_density * solid_heat_capacity, fluid, grid);
+            }
         };
 
         struct RFPFactory
         {
             template <typename Container_t, typename IsPermeable_t>
-            static RFP create(
+            static auto create(
                 const Container_t &rfp,
                 const IsPermeable_t &is_permeable)
             {
                 return RFP{
                     StepPropertyGrid{rfp, is_permeable.grid},
                     is_permeable};
+            }
+
+            template <typename Well_t>
+            static auto create(
+                RealType well_rate,
+                const Well_t &well)
+            {
+                return RFP{
+                    StepPropertyGrid{well.get_RFP(well_rate), well.is_permeable.grid},
+                    well.is_permeable};
             }
         };
 
@@ -115,30 +254,29 @@ namespace GPN
                 const Grid_t &grid)
                 : HydrodynamicLogsFactory{
                       is_permeable_factory,
-                      StencilsFactory::generate_porosity_StepProperty(
+                      RawDataFactory::generate_porosity(
                           grid.dual_stencils,
                           is_permeable_factory.is_permeable_stencils()),
-                      StencilsFactory::generate_permeability_StepProperty(
+                      RawDataFactory::generate_permeability(
                           grid.dual_stencils,
                           is_permeable_factory.is_permeable_stencils()),
-                      StencilsFactory::generate_ext_pressure_StepProperty(
+                      RawDataFactory::generate_ext_pressure(
                           grid.dual_stencils,
                           is_permeable_factory.is_permeable_stencils()),
-                      StencilsFactory::generate_skin_StepProperty(
+                      RawDataFactory::generate_skin(
                           grid.dual_stencils,
                           is_permeable_factory.is_permeable_stencils()),
                       grid}
             {
             }
 
-            template <typename Container_t, typename Grid_t>
             HydrodynamicLogsFactory(
                 const IsPermeableFactory &is_permeable_factory,
-                const Container_t &porosity,
-                const Container_t &permeability,
-                const Container_t &ext_pressure,
-                const Container_t &skin,
-                const Grid_t &grid)
+                const auto &porosity,
+                const auto &permeability,
+                const auto &ext_pressure,
+                const auto &skin,
+                const auto &grid)
                 : IsPermeableFactory{is_permeable_factory},
                   permeability{
                       StepPropertyGrid{
@@ -200,7 +338,5 @@ namespace GPN
 
             const HeatConductivity conductivity;
         };
-
     } // Logs
-
 } // GPN

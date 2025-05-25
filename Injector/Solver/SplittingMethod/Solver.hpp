@@ -11,7 +11,7 @@
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/Grids1D.hpp>
 #include <Injector/Properties/PhysicalField.hpp>
-#include <Injector/Solver/BoundaryConditions.hpp>
+// #include <Injector/Solver/BoundaryConditions.hpp>
 
 #include <Injector/Solver/SplittingMethod/SplitX.hpp>
 #include <Injector/Solver/SplittingMethod/SplitY.hpp>
@@ -28,25 +28,25 @@ namespace GPN
                 TemporalTerm(
                     const Capacity_t &factor,
                     const Grid_t &grid)
-                    : factor{grid.volumes() * factor.values()} // volumes are taken into account
+                    : capacity{grid.volumes() * factor.values()} // volumes are taken into account
                 {
-                    for (auto j{0ll}; j < this->factor.cols(); ++j)
-                        for (auto i{0ll}; i < this->factor.rows(); ++i)
+                    for (auto j{0ll}; j < this->capacity.cols(); ++j)
+                        for (auto i{0ll}; i < this->capacity.rows(); ++i)
                         {
-                            assert(!std::isinf(this->factor(i, j)));
-                            assert(!std::isnan(this->factor(i, j)));
+                            assert(!std::isinf(this->capacity(i, j)));
+                            assert(!std::isnan(this->capacity(i, j)));
                         }
                 }
 
                 auto Divide(RealType tau) const
                 {
                     assert(tau != 0.0);
-                    return (static_cast<RealType>(1.0) / tau) * factor;
+                    return (static_cast<RealType>(1.0) / tau) * capacity;
                 }
 
             protected:
                 // multiplied by cell volume
-                Eigen::ArrayXX<RealType> factor;
+                const Eigen::ArrayXX<RealType> capacity;
             };
 
             template <

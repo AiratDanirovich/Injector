@@ -1,7 +1,6 @@
-
 #include <Injector/History/TemporalGrid.hpp>
 #include <Injector/History/History.hpp>
-#include <Injector/Grids/Factory.hpp>
+#include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Properties/Factory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -31,7 +30,7 @@ TEST_CASE("HistoryTest")
     const auto rates{
         InjectorRate{
             StepPropertyGrid{
-                Logs::StencilsFactory::generate_rates_StepProperty(
+                Logs::RawDataFactory::generate_rates(
                     time_moments),
                 time_grid}}};
 

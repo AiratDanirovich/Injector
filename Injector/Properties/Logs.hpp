@@ -14,7 +14,6 @@ namespace GPN
 {
     namespace Logs
     {
-
         struct InterpolatedDataContainer : private StepPropertyContainer
         {
             using StepPropertyContainer::StepPropertyContainer;
@@ -115,33 +114,6 @@ namespace GPN
                 return log_vals.size();
             }
 
-            auto operator-(RealType c) const
-            {
-                const auto &lhs{*this};
-                return StepPropertyGrid{lhs.log_vals - c, lhs.grid};
-            }
-            auto operator*(RealType c) const
-            {
-                const auto &lhs{*this};
-                return StepPropertyGrid{lhs.log_vals * c, lhs.grid};
-            }
-            auto operator*(const StepPropertyGrid &rhs) const
-            {
-                const auto &lhs{*this};
-                return StepPropertyGrid{lhs.log_vals * rhs.log_vals, lhs.grid};
-            }
-            auto operator/(const StepPropertyGrid &rhs) const
-            {
-                const auto &lhs{*this};
-                return StepPropertyGrid{lhs.log_vals / rhs.log_vals, lhs.grid};
-            }
-
-            auto operator+(const StepPropertyGrid &rhs) const
-            {
-                const auto &lhs{*this};
-                return StepPropertyGrid{(lhs.log_vals + rhs.log_vals), lhs.grid};
-            }
-
             operator const StepPropertyContainer &() const
             {
                 return log_vals;
@@ -183,6 +155,33 @@ namespace GPN
                 return out;
             }
         };
+
+        auto operator-(const StepPropertyGrid &lhs, RealType c)
+        {
+            return StepPropertyGrid{lhs.log_vals - c, lhs.grid};
+        }
+        auto operator*(const StepPropertyGrid &lhs, RealType c)
+        {
+            return StepPropertyGrid{lhs.log_vals * c, lhs.grid};
+        }
+        auto operator*(const StepPropertyGrid &lhs, const StepPropertyGrid &rhs)
+        {
+            return StepPropertyGrid{lhs.log_vals * rhs.log_vals, lhs.grid};
+        }
+        auto operator/(const StepPropertyGrid &lhs, const StepPropertyGrid &rhs)
+        {
+            return StepPropertyGrid{lhs.log_vals / rhs.log_vals, lhs.grid};
+        }
+
+        auto operator+(const StepPropertyGrid &lhs, const StepPropertyGrid &rhs)
+        {
+            return StepPropertyGrid{(lhs.log_vals + rhs.log_vals), lhs.grid};
+        }
+
+        auto operator-(RealType c, const StepPropertyGrid &rhs)
+        {
+            return StepPropertyGrid{c - rhs.log_vals, rhs.grid};
+        }
 
         struct AssertNonNegative
         {
@@ -239,16 +238,6 @@ namespace GPN
             : public StepPropertyGrid,
               private AssertNonNegative
         {
-            template <typename Well_t>
-            RFP(
-                RealType well_rate,
-                const Well_t &well)
-                : RFP{
-                      StepPropertyGrid{well.get_RFP(well_rate), well.is_permeable.grid},
-                      well.is_permeable}
-            {
-            }
-
             RFP(const StepPropertyGrid &rfp,
                 const IsPermeable &is_permeable)
                 : StepPropertyGrid{rfp},
@@ -355,72 +344,42 @@ namespace GPN
             }
         };
 
-        struct HeatVolumetricCapacity
+        struct MediumHeatVolumetricCapacity
             : public StepPropertyGrid
         {
-            static_assert(
-                std::is_same<
-                    Porosity::Grid_t,
-                    SolidVolumetricHeatCapacity::Grid_t>::value);
-            HeatVolumetricCapacity(
-                const Porosity &porosity,
-                const SolidVolumetricHeatCapacity &matrix_vol_heat_capacity,
-                const Water &water)
-                : StepPropertyGrid{
-                      porosity * water.volumetric_heat_capacity + (porosity - 1.0) * (-1.0) * matrix_vol_heat_capacity}
+            MediumHeatVolumetricCapacity(
+                const StepPropertyGrid &capacity)
+                : StepPropertyGrid{capacity}
             {
             }
         };
 
-        template <typename CoordinateType_t /* = CoordinateTypes::Z*/>
-        struct FaceInterpolator
-        {
-            using Axes = CoordinateType_t;
-
-            const InternalFaceValues face_values;
-
-            FaceInterpolator(
-                const StepPropertyGrid &log)
-                : face_values{
-                      interpolate(log)}
-            {
-            }
-
-        protected:
-            static auto interpolate(
-                const StepPropertyGrid &log)
-            {
-                const auto &grid{log.grid};
-                // if dual_size() == 2 --- no internal faces, only single cell
-                assert(grid.dual_size() > 2ll);
-
-                InternalFaceValues out(log.grid.dual_size() - 2ll);
-
-                for (auto id{0ll}; id < out.size(); ++id)
-                    out(id) = Axes::face_interpolator(
-                        grid.mesh_nodes(id), grid.mesh_nodes(id + 1ll), grid.dual_nodes(id + 1ll), log(id), log(id + 1ll));
-
-                return out;
-            }
-        };
-
-        template <typename CoordinateType_t /* = CoordinateTypes::Z*/>
-        struct FaceInterpolatedProperty
+        struct HeatConductivity
             : public StepPropertyGrid,
-              public FaceInterpolator<CoordinateType_t>
+              private AssertNonNegative
         {
-            FaceInterpolatedProperty(
-                const StepPropertyGrid &vals) noexcept
-                : StepPropertyGrid{vals},
-                  FaceInterpolator<CoordinateType_t>{vals}
+            HeatConductivity(
+                const StepPropertyGrid &conductivity)
+                : StepPropertyGrid{conductivity},
+                  AssertNonNegative{conductivity}
             {
             }
         };
 
-        using ZInterpolator =
-            FaceInterpolatedProperty<CoordinateTypes::Z>;
+        struct ThermalDiffusivity
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            ThermalDiffusivity(
+                const StepPropertyGrid &conductivity)
+                : StepPropertyGrid{conductivity},
+                  AssertNonNegative{conductivity}
+            {
+            }
+        };
 
         template <typename Property_t, typename Grid_t>
+        [[deprecated]]
         auto generate_log(
             const std::vector<RealType> &adata,
             const Grid_t &grid)
@@ -432,32 +391,6 @@ namespace GPN
                     adata},
                 grid};
         }
-
-        struct HeatConductivity
-            : public ZInterpolator,
-              private AssertNonNegative
-        {
-            HeatConductivity(
-                const StepPropertyGrid &conductivity)
-                : ZInterpolator{conductivity},
-                  AssertNonNegative{conductivity}
-            {
-            }
-        };
-
-        struct ThermalDiffusivity
-            : public StepPropertyGrid,
-              private AssertNonNegative
-        {
-            ThermalDiffusivity(
-                const HeatVolumetricCapacity &capacity,
-                const HeatConductivity &conductivity)
-                : StepPropertyGrid{
-                      conductivity / capacity},
-                  AssertNonNegative{capacity}
-            {
-            }
-        };
 
     } // Logs
 } // GPN
