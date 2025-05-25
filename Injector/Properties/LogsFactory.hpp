@@ -159,6 +159,7 @@ namespace GPN
                 const auto &solid_specific_heatcapacity,
                 const auto &grid)
             {
+                assert(solid_specific_heatcapacity.size() == grid.mesh_size());
                 return {
                     StepPropertyGrid{
                         StepProperty{

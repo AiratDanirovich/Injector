@@ -1,4 +1,5 @@
 #pragma once
+#include <cassert>
 
 #include <Injector/Properties/LogsFactory.hpp>
 #include <Injector/Properties/FieldsFactory.hpp>
@@ -17,6 +18,7 @@ namespace GPN
                     const auto &grid)
                     : is_permeable{IsPermeableFactory::create(is_permeable_stencils, grid)}
                 {
+                    assert(is_permeable_stencils.size() == grid.mesh_size());
                 }
                 IsPermeable is_permeable;
             };
@@ -31,6 +33,9 @@ namespace GPN
                       permeability{PermeabilityFactory::create(permeability_stencils, is_permeable_stencils, grid)},
                       porosity{PorosityFactory::create(porosity_stencils, is_permeable_stencils, grid)}
                 {
+                    assert(is_permeable_stencils.size() == grid.mesh_size());
+                    assert(porosity_stencils.size() == grid.mesh_size());
+                    assert(permeability_stencils.size() == grid.mesh_size());
                 }
 
                 IsPermeable is_permeable;
@@ -51,6 +56,10 @@ namespace GPN
                           SolidDensityFactory::create(solid_density, grid)},
                       solid_specific_heatcapacity{SolidSpecificHeatCapacityFactory::create(solid_specific_heatcapacity, grid)}, heat_conductivity{HeatConductivityFactory::create(heat_conductivity, grid)}, solid_vol_heatcapacity{SolidVolumetricHeatCapacityFactory::create(solid_density, solid_specific_heatcapacity, grid)}, medium_vol_heatcapacity{MediumHeatVolumetricCapacityFactory::create(porosity, solid_density, solid_specific_heatcapacity, fluid, grid)}
                 {
+                    assert(solid_density.size() == grid.mesh_size());
+                    assert(solid_specific_heatcapacity.size() == grid.mesh_size());
+                    assert(heat_conductivity.size() == grid.mesh_size());
+                    assert(porosity.size() == grid.mesh_size());
                 }
 
                 const SolidDensity solid_density;
@@ -59,18 +68,18 @@ namespace GPN
                 const SolidVolumetricHeatCapacity solid_vol_heatcapacity;
                 const MediumHeatVolumetricCapacity medium_vol_heatcapacity;
 
-            private:
-                template <typename T>
-                static T multiply(
-                    const T &lhs,
-                    const T &rhs)
-                {
-                    T out(lhs.size(), 0.0);
-                    for (auto i{0ll}; i < lhs.size(); ++i)
-                        out[i] = lhs[i] * rhs[i];
+            // private:
+            //     template <typename T>
+            //     static T multiply(
+            //         const T &lhs,
+            //         const T &rhs)
+            //     {
+            //         T out(lhs.size(), 0.0);
+            //         for (auto i{0ll}; i < lhs.size(); ++i)
+            //             out[i] = lhs[i] * rhs[i];
 
-                    return out;
-                }
+            //         return out;
+            //     }
             };
         } // Rocks
 
@@ -86,6 +95,9 @@ namespace GPN
                     : skin{SkinFactory::create(skin, is_permeable_stencils, grid)},
                       ext_pressure{ExtPressureFactory::create(ext_pressure, is_permeable_stencils, grid)}
                 {
+                    assert(is_permeable_stencils.size() == grid.mesh_size());
+                    assert(ext_pressure.size() == grid.mesh_size());
+                    assert(skin.size() == grid.mesh_size());
                 }
 
                 const ExternalPressure ext_pressure;

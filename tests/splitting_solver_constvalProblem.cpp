@@ -40,12 +40,12 @@ using VR = std::vector<RealType>;
 const auto box{Box{Segment{0, 1}, Segment{0, 1}}};
 const auto nLayers{31ll}, nR{51ll};
 
-const VR is_permeable_stencils(nLayers, 1.0);
-const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 1e-16)};
+const VR is_permeable_stencils(nLayers-1ll, 1.0);
+const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers-1ll, 1e-16)};
 
-const VR heatconductivity_stencils(nLayers, 3.9);
-const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers,3.9 /*should be 2600 in SI*/)};
-const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
+const VR heatconductivity_stencils(nLayers-1ll, 3.9);
+const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers-1ll,3.9 /*should be 2600 in SI*/)};
+const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers-1ll, 1.0 /*should be 770 in SI*/)};
 
 TEST_CASE("Solver")
 {
