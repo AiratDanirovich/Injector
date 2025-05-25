@@ -6,8 +6,14 @@
 using namespace GPN;
 using namespace GPN::Phases;
 
-// Tests Cartesian grid
+RealType viscosity{6e-4}, density{1000}, capacity{4200};
+
 TEST_CASE("PhaseProperties", "Water")
 {
-    auto water{FluidFactory::create_water(0.0, 0.0)};
+    auto water1{FluidFactory::create_water(0.0, 0.0)};
+    const auto water2{
+        FluidFactory::create_water(
+            Viscosity{viscosity},
+            Density{density},
+            SpecificHeatCapacity{capacity})};
 }
