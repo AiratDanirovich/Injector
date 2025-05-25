@@ -66,11 +66,10 @@ namespace GPN
 
         struct PorosityFactory
         {
-            template <typename Container_t, typename Grid_t>
             static Porosity create(
-                const Container_t &porosity,
-                const Container_t &is_permeable,
-                const Grid_t &grid)
+                const auto &porosity,
+                const auto &is_permeable,
+                const auto &grid)
             {
                 return {
                     StepPropertyGrid{

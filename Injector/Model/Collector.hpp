@@ -29,7 +29,7 @@ namespace GPN
                     const auto &grid)
                     : is_permeable{IsPermeableFactory::create(is_permeable_stencils, grid)},
                       permeability{PermeabilityFactory::create(permeability_stencils, is_permeable_stencils, grid)},
-                      porosity{PorosityFactory::create(permeability_stencils, is_permeable_stencils, grid)}
+                      porosity{PorosityFactory::create(porosity_stencils, is_permeable_stencils, grid)}
                 {
                 }
 
