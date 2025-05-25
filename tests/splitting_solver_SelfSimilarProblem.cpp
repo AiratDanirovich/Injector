@@ -3,11 +3,18 @@
 #include <fstream>
 #include <cassert>
 
+#include <Injector/Grids/Grids2D.hpp>
+
 #include <Injector/Properties/Logs.hpp>
+#include <Injector/Properties/FieldsFactory.hpp>
+#include <Injector/Properties/FlowField.hpp>
+
 #include <Injector/Model/Phases/FluidFactory.hpp>
-#include <Injector/Model/HydrodynamicSolver.hpp>
+#include <Injector/Model/Collector.hpp>
+
+#include <Injector/Solver/BoundaryConditions.hpp>
+#include <Injector/Solver/InitialCondition.hpp>
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
-#include <Injector/Solver/SolverFactory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
@@ -18,15 +25,16 @@ using namespace Catch::Matchers;
 using namespace GPN;
 using namespace GPN::Logs;
 using namespace GPN::Phases;
-using namespace GPN::Model::Injector;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
 struct ExactSolution
 {
+  using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
+
   ExactSolution(
-      const Properties::HeatVolumetricCapacity &volumetric_capacity,
-      const Properties::HeatConductivity &heat_conductivity,
+      const Properties::MediumHeatVolumetricCapacity<Grid2D_t> &volumetric_capacity,
+      const Properties::HeatConductivity<Grid2D_t> &heat_conductivity,
       RealType q)
       : kappa{volumetric_capacity, heat_conductivity},
         heat_conductivity{heat_conductivity},
@@ -49,10 +57,10 @@ struct ExactSolution
   }
 
 protected:
-  const Properties::ThermalDiffusivity kappa;
-  const Properties::HeatConductivity &heat_conductivity;
+  const Properties::ThermalDiffusivity<Grid2D_t> kappa;
+  const Properties::HeatConductivity<Grid2D_t> &heat_conductivity;
   const RealType q;
-  const Properties::HeatConductivity::Grid_type &grid;
+  const Grid2D_t &grid;
 };
 
 struct FunctorIC
@@ -104,12 +112,12 @@ const RealType rMin{1.0}, rMax{2.0}, zTop{0.0};
 const std::ptrdiff_t rNodes{301ull};
 const std::ptrdiff_t nLayers{11ull};
 const VR thickness(nLayers, 0.01); // each layer is 1m thick
-
-const VR conductivity(nLayers, 3.9);
-const VR porosity_stencils(nLayers, 1e-16);
 const VR is_permeable_stencils(nLayers, 1.0);
-const VR solid_density(nLayers, 3.9 /*should be 2600 in SI*/);
-const VR solid_specific_heatcapacity(nLayers, 1.0 /*should be 770 in SI*/);
+const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 0.0)};
+
+const VR heatconductivity_stencils(nLayers, 3.9);
+const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 3.9 /*should be 2600 in SI*/)};
+const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
 /*temporal grid*/
 const std::ptrdiff_t time_steps_nmbr{501ull};
 const RealType t0{1.0}; // initial time moment
@@ -122,82 +130,76 @@ const RealType well_rate{0.0};
 
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
-  // make grid1D
-  const VR z_stencils(
+  const auto z_stencils(
       Grids::Factory::generate_dual_grid_stencils_from_steps(
           zTop, thickness));
-  const RealType zBottom{z_stencils.back()};
-  const VR r_stencils{
+  const auto r_stencils{
       Grids::Factory::generate_dual_grid_stencils_uniform(
           Segment{rMin, rMax}, rNodes)};
-  // make grid2D
-  const auto grid2D{
-      Grids::Factory::create_cylinder_grid_2D_ptr(
-          z_stencils, r_stencils)};
-  const VR permeability_stencils{
-      Logs::StencilsFactory::generate_permeability_StepProperty(
-          grid2D->first_coord.dual_nodes, is_permeable_stencils)}; //(nLayers, 1.0);
-  // heat conductivity
-  const Properties::HeatConductivity conductivity_field{
-      Properties::Factory::generate_heatconductivity_Property(
-          conductivity, grid2D)};
+  const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
+  const auto &grid{grid2D->first_coord};
   // make fluid
   const Water water{
       FluidFactory::create_water(
           Viscosity{viscosity},
           Density{density},
           SpecificHeatCapacity{capacity})};
-  // volumetric heat capacity of multiphaase system
-  const Properties::HeatVolumetricCapacity capacity_field{
-      Properties::Factory::generate_volumetric_heatcapacity_Property(
-          is_permeable_stencils, porosity_stencils,
-          solid_density, solid_specific_heatcapacity,
-          water, grid2D)};
-  // exact solution
-  ExactSolution es{capacity_field,
-                   conductivity_field, q};
-  // initial conditions
-  const auto initial_state{initialcondition_factory(t0, grid2D, es)};
-  // boundary conditions
-  const GPN::BoundaryConditions::BoundaryConditions bc{
-      *grid2D, std::make_shared<FunctorBC>(es)};
   // time moments
   const VR t_stencils(
       Grids::Factory::generate_dual_grid_stencils_from_steps(
           t0, time_intervals));
   // solver
-  const Logs::IsPermeable is_permeable{
-      IsPermeableFactory::create(is_permeable_stencils, grid2D->first_coord)};
-  const Logs::Permeability permeability{
-      PermeabilityFactory::create(permeability_stencils, is_permeable_stencils, grid2D->first_coord)};
+  const Logs::Rocks::IsPermeableLog core_data{
+      is_permeable_stencils,
+      grid};
 
-  const Well_KH well{
-      Phases::FluidFactory::create_water(0.0, 0.0),
-      is_permeable,
-      permeability};
-  Properties::ReservoirFlowField flow_field{
-      well_rate, well, *grid2D};
+  const auto flow_field{
+      FaceProperties::FlowFactory::zero_flow(
+          core_data.is_permeable, *grid2D)};
+
+  const Logs::Rocks::HeatLogs heat_logs{
+      solid_density_stencils,
+      solid_specific_heatcapacity_stencils,
+      heatconductivity_stencils,
+      porosity_stencils,
+      Phases::FluidFactory::create_water(1.0, 1.0),
+      grid};
+
+  const Properties::Rocks::HeatProps heat_props{
+      heat_logs, grid2D};
+
+  const FaceProperties::Rocks::HeatFaceProps heat_face_props{
+      heat_props, grid2D};
+
+  // exact solution
+  ExactSolution es{heat_props.medium_vol_heatcapacity,
+                   heat_props.heat_conductivity, q};
+  // initial conditions
+  const auto initial_state{initialcondition_factory(t0, grid2D, es)};
+  // boundary conditions
+  const GPN::BoundaryConditions::BoundaryConditions bc{
+      *grid2D, std::make_shared<FunctorBC>(es)};
 
   Solver solver{
-      conductivity_field,
+      heat_face_props.heat_conductivity,
       flow_field, grid2D,
-      capacity_field,
+      heat_props.medium_vol_heatcapacity,
       initial_state,
       bc, t0};
 
   const double tol = 1E-3;
 
   // assert initial condition
-  // for (std::ptrdiff_t col{0ll}; col < initial_state.cols(); ++col)
-  // {
-  //   for (std::ptrdiff_t row{0ll}; row < initial_state.rows(); ++row)
-  //   {
-  //     const auto [z, r] = grid2D->coordinates(row, col);
-  //     const auto val{es(z, r, t0)};
-  //     INFO("" << "col: " << col << ", row: " << row << ", calc: " << initial_state(row, col) << ", ref: " << val);
-  //     CHECK_THAT(initial_state(row, col), WithinRel(val, tol));
-  //   }
-  // }
+  for (std::ptrdiff_t col{0ll}; col < initial_state.cols(); ++col)
+  {
+    for (std::ptrdiff_t row{0ll}; row < initial_state.rows(); ++row)
+    {
+      const auto [z, r] = grid2D->coordinates(row, col);
+      const auto val{es(z, r, t0)};
+      INFO("" << "col: " << col << ", row: " << row << ", calc: " << initial_state(row, col) << ", ref: " << val);
+      CHECK_THAT(initial_state(row, col), WithinRel(val, tol));
+    }
+  }
 
   std::string pathr{"data_r.csv"};
   std::string pathz{"data_z.csv"};
@@ -218,39 +220,37 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     {
       const auto [z, r] = grid2D->coordinates(row, col);
       const auto val{es(z, r, time)};
+      const auto val2{es(row, col, time, *grid2D)};
 
       fr << r << ';' << val << ';' << state(row, col) << '\n';
 
       INFO("" << "col: " << col << ", row: " << row << ", calc: " << state(row, col) << ", ref: " << val);
       CHECK_THAT(state(row, col), WithinRel(val, tol));
+      
+      CHECK(val == val2);
     }
   }
   fr.close();
 
-  // std::ofstream fz{pathz};
-  // assert(fz.is_open());
-  // fz << "z;TcalcL;TcalcM;TcalcR;Tref\n";
-  // for (std::ptrdiff_t row{0}; row < state.rows(); ++row)
-  // {
-  //   for (std::ptrdiff_t col{rNodes/2}; col < rNodes/2+1ll /*state.cols()*/; ++col)
-  //   {
-  //     const auto [z, r] = grid2D->coordinates(row, col);
-  //     const auto val{es(z, r, time)};
-  //     const auto val2{es(row, col, time, *grid2D)};
+  std::ofstream fz{pathz};
+  assert(fz.is_open());
+  fz << "z;TcalcL;TcalcM;TcalcR;Tref\n";
+  for (std::ptrdiff_t row{0}; row < state.rows(); ++row)
+  {
+    for (std::ptrdiff_t col{rNodes / 2}; col < rNodes / 2 + 1ll /*state.cols()*/; ++col)
+    {
+      const auto [z, r] = grid2D->coordinates(row, col);
+      const auto val{es(z, r, time)};
 
-  //     assert(val == val2);
+      fz
+          << z << ';'
+          << val << ';'
+          << state(row, 0) << ';'
+          << state(row, col) << ';'
+          << state(row, state.cols() - 1ll)
+          << '\n';
 
-  //     fz
-  //     << z << ';'
-  //     << val << ';'
-  //     << state(row, 0)<< ';'
-  //     << state(row, col)<< ';'
-  //     << state(row, state.cols()-1ll)
-  //     << '\n';
-
-  //     INFO("" << "col: " << col << ", row: " << row << ", calc: " << state(row, col) << ", ref: " << val);
-  //     CHECK_THAT(state(row, col), WithinRel(val, tol));
-  //   }
-  // }
-  // fz.close();
+    }
+  }
+  fz.close();
 }

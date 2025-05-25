@@ -81,6 +81,9 @@ namespace GPN
                 assert(xMid != xR);
                 assert(xL != xR);
 
+                if((valL == 0.0) || (valR == 0.0))
+                    return 0.0;
+
                 return 1.0/((xMid - xL)/valL + (xR - xMid)/valR);
             }
 
@@ -134,6 +137,9 @@ namespace GPN
                 assert(xMid != xR);
                 assert(xL != xR);
 
+                if((valL == 0.0) || (valR == 0.0))
+                    return 0.0;
+                    
                 return 1.0/(std::log(xMid/xL)/valL + std::log(xR/xMid)/valR);
             }
             /// @brief Interpolate const heat conductivity (factor at Laplace term)

@@ -54,12 +54,13 @@ namespace GPN
     };
 
     using RealType = double;
-    using MeshNodesContainer =   // custom_vector<RealType>; // use
-        Eigen::ArrayX<RealType>; // in Release
+    using MeshNodesContainer = Eigen::ArrayX<RealType>; // column array
+    using MeshNodesContainerT = Eigen::Array<RealType, 1, -1>; // row array
     using LogValuesContainer = MeshNodesContainer;
 
     using StepPropertyContainer = Eigen::ArrayX<RealType>;
     using InternalFaceValues = Eigen::ArrayX<RealType>;
+    using InternalFaceValuesT = Eigen::Array<RealType, 1, -1>; // row array
 
     /// @brief Container for the dual nodes coordinates
     struct DualNodesContainer : public MeshNodesContainer
@@ -83,6 +84,7 @@ namespace GPN
     using ControlVolumesContainer = MeshNodesContainer;
 
     using CellVolumeContainer2D = Eigen::ArrayXX<RealType>;
+    using CellNodesContainer2D = CellVolumeContainer2D;
     using FluxComponentContainer = Eigen::ArrayXX<RealType>;
 
     using GridNodeValues2D = Eigen::ArrayXX<RealType>;

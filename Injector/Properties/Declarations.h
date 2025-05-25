@@ -23,7 +23,7 @@ namespace GPN
         struct SolidVolumetricHeatCapacity;
         struct HeatVolumetricCapacity;
 
-        template <typename CoordinateType_t /* = CoordinateTypes::Z*/>
+    //    template <typename CoordinateType_t /* = CoordinateTypes::Z*/>
         struct FaceInterpolator;
 
         template <typename CoordinateType_t /* = CoordinateTypes::Z*/>
@@ -32,10 +32,8 @@ namespace GPN
         using ZInterpolator =
             FaceInterpolatedProperty<CoordinateTypes::Z>;
 
-            struct HeatConductivity;
-            struct ThermalDiffusivity;
-
+        struct HeatConductivity;
+        struct ThermalDiffusivity;
 
     } // Logs
 } // GPN
-
