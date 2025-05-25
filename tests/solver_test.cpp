@@ -4,43 +4,13 @@
 #include <Injector/Grids/Defines.h>
 #include <Injector/Properties/FaceProperties.hpp>
 
-
-
-
-
-
-
-#include <Injector/Grids/ConcreteGrids.hpp>
-#include <Injector/Grids/Grids2D.hpp>
-#include <Injector/Grids/GridsFactory.hpp>
-#include <Injector/Solver/BoundaryConditions.hpp>
-#include <Injector/Solver/InitialCondition.hpp>
-
-#include <Injector/Properties/Factory.hpp>
-#include <Injector/Properties/LogsFactory.hpp>
-#include <Injector/Properties/PhysicalField.hpp>
-
-#include <Injector/Model/Phases/PhaseProperties.hpp>
-#include <Injector/Model/Phases/FluidFactory.hpp>
-#include <Injector/Model/Well.hpp>
-
-
-
-
-
-
-
-
 #include <Injector/Properties/FlowField.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
-#include <Injector/Solver/SplittingMethod/Solver.hpp>
 
 #include <Injector/Solver/BoundaryConditions.hpp>
 #include <Injector/Solver/InitialCondition.hpp>
-
-
-
+#include <Injector/Solver/SplittingMethod/Solver.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
