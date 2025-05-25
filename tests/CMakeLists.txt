@@ -24,22 +24,26 @@ include(Catch)
 add_catch2_test(stride_test)
 
 add_catch2_test(water_test)
+
 add_catch2_test(grid_test)
 add_catch2_test(initialstate_test)
 add_catch2_test(boundaryconditions_test)
 add_catch2_test(interpolator_test)
 add_catch2_test(fields_test)
+
 add_catch2_test(basesplit_test)
 add_catch2_test(splitx_test)
 add_catch2_test(splity_test)
 add_catch2_test(solver_test)
-# add_catch2_test(solvermanager_test)
-add_catch2_test(splitting_solver_constvalProblem)
-add_catch2_test(splitting_solver_SelfSimilarProblem)
 
 add_catch2_test(well_kh_test)
 add_catch2_test(flowfield_test)
 add_catch2_test(hydrodynamicsolver_test)
+
+add_catch2_test(splitting_solver_constvalProblem)
+add_catch2_test(splitting_solver_SelfSimilarProblem)
+# add_catch2_test(solvermanager_test)
+
 
 # add_catch2_test(logscontainer_test)
 
