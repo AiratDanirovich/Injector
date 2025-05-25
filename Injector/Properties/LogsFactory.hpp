@@ -263,7 +263,7 @@ namespace GPN
                       RawDataFactory::generate_ext_pressure(
                           grid.dual_stencils,
                           is_permeable_factory.is_permeable_stencils()),
-                      RawDataFactory::generate_skin_StepProperty(
+                      RawDataFactory::generate_skin(
                           grid.dual_stencils,
                           is_permeable_factory.is_permeable_stencils()),
                       grid}

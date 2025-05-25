@@ -32,14 +32,14 @@ const auto permeability_stencils{
 const auto ext_pressure_stencils{
     Logs::RawDataFactory::generate_ext_pressure(grid_stencils, is_permeable_stencils)};
 const auto skin_stencils{
-    Logs::RawDataFactory::generate_skin_StepProperty(grid_stencils, is_permeable_stencils)};
+    Logs::RawDataFactory::generate_skin(grid_stencils, is_permeable_stencils)};
 // heat logs
 const auto solid_density_stencils{
     Logs::RawDataFactory::generate_solid_density(grid_stencils)};
 const auto solid_specific_heatcapacity_stencils{
     Logs::RawDataFactory::generate_solid_specific_heatcapacity(grid_stencils)};
 const auto heatconductivity_stencils{
-    Logs::RawDataFactory::generate_conductivity_StepProperty(grid_stencils)};
+    Logs::RawDataFactory::generate_conductivity(grid_stencils)};
 
 TEST_CASE("InterpolatorTest")
 {

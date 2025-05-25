@@ -77,7 +77,7 @@ namespace GPN
                 return vals;
             }
 
-            static auto generate_skin_StepProperty(
+            static auto generate_skin(
                 const auto &dual_stencils,
                 const auto &is_permeable)
             {
@@ -118,7 +118,7 @@ namespace GPN
             }
 
             template <typename Container_t>
-            static auto generate_conductivity_StepProperty(
+            static auto generate_conductivity(
                 const Container_t &dual_stencils)
             {
                 auto size{dual_stencils.size() - 1};

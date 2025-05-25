@@ -38,7 +38,7 @@ const auto solid_density_stencils{
 const auto solid_specific_heatcapacity_stencils{
     Logs::RawDataFactory::generate_solid_specific_heatcapacity(z_stencils)};
 const auto heatconductivity_stencils{
-    Logs::RawDataFactory::generate_conductivity_StepProperty(z_stencils)};
+    Logs::RawDataFactory::generate_conductivity(z_stencils)};
 
 TEST_CASE("Solver", "splitX")
 {

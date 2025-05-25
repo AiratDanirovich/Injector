@@ -16,7 +16,7 @@ const auto z_stencils{
 const auto r_stencils{
     Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 11)};
 const auto conductivity_stencils{
-    Logs::RawDataFactory::generate_conductivity_StepProperty(z_stencils)};
+    Logs::RawDataFactory::generate_conductivity(z_stencils)};
 
 // Tests Cylinder grid, (r; z)
 TEST_CASE("BaseSplitTest")

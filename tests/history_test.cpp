@@ -1,4 +1,3 @@
-
 #include <Injector/History/TemporalGrid.hpp>
 #include <Injector/History/History.hpp>
 #include <Injector/Grids/GridsFactory.hpp>

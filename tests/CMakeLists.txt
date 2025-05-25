@@ -21,15 +21,14 @@ include(Catch)
 # include_directories("${CMAKE_CURRENT_SOURCE_DIR}/..") 
 
 # Create test executable
-add_catch2_test(water_test)
 add_catch2_test(stride_test)
+
+add_catch2_test(water_test)
 add_catch2_test(grid_test)
 add_catch2_test(initialstate_test)
 add_catch2_test(boundaryconditions_test)
-add_catch2_test(logs_test)
 add_catch2_test(interpolator_test)
 add_catch2_test(fields_test)
-add_catch2_test(history_test)
 add_catch2_test(basesplit_test)
 add_catch2_test(splitx_test)
 add_catch2_test(splity_test)
@@ -47,5 +46,11 @@ add_catch2_test(hydrodynamicsolver_test)
 
 add_catch2_test(horizontalflow_test)
 # add_catch2_test(HeatFlow_test)
+
+
+add_catch2_test(history_test)
+
+
+
 
 

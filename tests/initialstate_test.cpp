@@ -16,18 +16,8 @@ using namespace GPN::EqSolver::State;
 TEST_CASE("PhaseProperties", "Water")
 {
     auto z_grid_stencils{Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 5)};
-    auto z_grid{ZGrid{GridDual{z_grid_stencils}}};
-    auto r_grid{RGrid{
-        GridDual{
-            GridDualStencils{
-                Grids::Factory::
-                    generate_dual_grid_stencils_uniform(0, 1, 11)}}}};
-#pragma region GRID_2D
-    // generate 1D grids in every direction --- points of property jumps
-    const cptr<StructuredCylinderGrid2DAxisymmetric>
-        grid2D{std::make_shared<StructuredCylinderGrid2DAxisymmetric>(
-            z_grid, r_grid)};
-#pragma endregion
+    auto r_grid_stencils{Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 11)};
+    const auto grid2D{Grids::CylinderGridFactory::create(z_grid_stencils, r_grid_stencils)};
 
     InitialCondition
         init_cond{
