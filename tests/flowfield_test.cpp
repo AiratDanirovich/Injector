@@ -21,7 +21,7 @@ std::vector<RealType> is_permeable_stencils(z_stencils.size() - 1ull, 1.0);
 
 TEST_CASE("RFP_reservoir")
 {
-    const auto grid2D{ Grids::CylinderGridFactory::create(
+    const auto grid2D{Grids::CylinderGridFactory::create(
         z_stencils, r_stencils)};
 
     const auto is_permeable{
@@ -55,9 +55,10 @@ TEST_CASE("RFP_reservoir")
 
     CHECK(rfp.log_vals.sum() == well_rate);
 
-    Properties::ReservoirFlowField flow_field{
-        rfp, well_rate,
-        *grid2D};
+    FaceProperties::ReservoirFlowField flow_field{
+        FaceProperties::FlowFactory::create(
+            rfp, well_rate,
+            *grid2D)};
 
     // check the first column of verticle flow
     REQUIRE(flow_field.axes1_as_face_normal.rows() == grid2D->first_coord.dual_size());

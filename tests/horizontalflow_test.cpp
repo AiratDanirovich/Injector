@@ -5,16 +5,18 @@
 
 #include <Injector/Grids/Defines.h>
 
-#include <Injector/Solver/State2D.hpp>
 
 #include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 
-#include <Injector/Solver/SolverFactory.hpp>
 
 // #include <Injector/Properties/Logs.hpp>
-// #include <Injector/Model/Phases/FluidFactory.hpp>
+#include <Injector/Properties/FlowField.hpp>
+#include <Injector/Model/Phases/FluidFactory.hpp>
 // #include <Injector/Model/HydrodynamicSolver.hpp>
+#include <Injector/Solver/BoundaryConditions.hpp>
+#include <Injector/Solver/State2D.hpp>
+#include <Injector/Solver/InitialCondition.hpp>
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
 
 #include <Injector/Properties/FieldsFactory.hpp>
