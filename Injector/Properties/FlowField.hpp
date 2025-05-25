@@ -120,8 +120,8 @@ namespace GPN
                 const Grid2D_t &grid2D)
             {
                 return ReservoirFlowField{
-                    axes1_value,
                     Logs::ZFlowRateLogFactory::create(well_rate, grid2D.first_coord),
+                    axes1_value,
                     grid2D};
             }
             template <typename IsPermeable_t, typename Grid2D_t>
