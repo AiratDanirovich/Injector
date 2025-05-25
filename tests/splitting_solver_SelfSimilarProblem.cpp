@@ -84,19 +84,46 @@ auto initialcondition_factory(RealType t0, const Grid_t_ptr grid, const ExactSol
   return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{es}, t0)};
 }
 
-struct FunctorBC : public GPN::BoundaryConditions::BCFunctorBase
+struct AFunctorBC : public GPN::BoundaryConditions::BCFunctorBase
 {
-  FunctorBC(const ExactSolution &es)
-      : es{es}
+  using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
+  AFunctorBC(
+      const ExactSolution &es,
+      const cptr<Grid2D_t> grid2D)
+      : es{es},
+        grid2D{grid2D}
   {
   }
-  RealType operator()(RealType z, RealType r, RealType t) const override
+
+  RealType operator()(ptrdiff_t z_id, RealType r, RealType t) const override
   {
+    RealType z{grid2D->first_coord.mesh_nodes(z_id)};
+    if (r == grid2D->second_coord.dual_front())
+      r = grid2D->second_coord.mesh_front();
+    else if (r == grid2D->second_coord.dual_back())
+      r = grid2D->second_coord.mesh_back();
+    else
+      assert(false);
+
+    return es(z, r, t);
+  }
+
+  RealType operator()(RealType z, ptrdiff_t r_id, RealType t) const override
+  {
+    RealType r{grid2D->second_coord.mesh_nodes(r_id)};
+    if (z == grid2D->first_coord.dual_front())
+      z = grid2D->first_coord.mesh_front();
+    else if (z == grid2D->first_coord.dual_back())
+      z = grid2D->first_coord.mesh_back();
+    else
+      assert(false);
+      
     return es(z, r, t);
   }
 
 protected:
   const ExactSolution &es;
+  const cptr<Grid2D_t> grid2D;
 };
 
 using VR = std::vector<RealType>;
@@ -178,7 +205,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto initial_state{initialcondition_factory(t0, grid2D, es)};
   // boundary conditions
   const GPN::BoundaryConditions::BoundaryConditions bc{
-      *grid2D, std::make_shared<FunctorBC>(es)};
+      *grid2D, std::make_shared<AFunctorBC>(es, grid2D)};
 
   Solver solver{
       heat_face_props.heat_conductivity,
@@ -226,7 +253,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
       INFO("" << "col: " << col << ", row: " << row << ", calc: " << state(row, col) << ", ref: " << val);
       CHECK_THAT(state(row, col), WithinRel(val, tol));
-      
+
       CHECK(val == val2);
     }
   }
@@ -249,7 +276,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           << state(row, col) << ';'
           << state(row, state.cols() - 1ll)
           << '\n';
-
     }
   }
   fz.close();
