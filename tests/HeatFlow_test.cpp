@@ -11,6 +11,7 @@
 
 #include <Injector/Properties/FlowField.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
+#include <Injector/Model/Well.hpp>
 #include <Injector/Solver/BoundaryConditions.hpp>
 #include <Injector/Solver/State2D.hpp>
 #include <Injector/Solver/InitialCondition.hpp>
@@ -77,10 +78,10 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   RealType operator()(RealType z, ptrdiff_t r_id, RealType t) const override
   {
     if (z == grid_ptr->first_coord.dual_front())
-      return flow_field.axes1_as_face_normal.topRows(1ll)(1ll, r_id) * inlet_temp;
+      return flow_field.axes1_as_face_normal(0ll, r_id) * inlet_temp;
 
     if (z == grid_ptr->first_coord.dual_back())
-      return flow_field.axes1_as_face_normal.bottomRows(1ll)(1ll, r_id) * inlet_temp;
+      return flow_field.axes1_as_face_normal.bottomRows(1ll)(0ll, r_id) * inlet_temp;
 
     return 0.0;
   }
@@ -139,10 +140,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
               Segment{rMin, rMax}, rNodes))};
   const auto &grid{grid2D->first_coord};
 
-  const Logs::IsPermeable is_permeable{
-      IsPermeableFactory::create(is_permeable_stencils, grid)};
-  const Logs::Porosity porosity{
-      PorosityFactory::create(porosity_stencils, is_permeable_stencils, grid)};
+  const Logs::Rocks::CoreSampleLogs core_data{
+      is_permeable_stencils,
+      porosity_stencils,
+      permeability_stencils,
+      grid};
 
   // make fluid
   const Water water{
@@ -151,15 +153,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           Density{density},
           SpecificHeatCapacity{capacity})};
 
-  const Logs::Rocks::IsPermeableLog hydrodynamics_logs{
-      is_permeable_stencils,
-      grid2D->first_coord};
-
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
       solid_specific_heatcapacity_stencils,
       heatconductivity_stencils,
-      porosity.log_vals,
+      porosity_stencils,
       water,
       grid2D->first_coord};
 
@@ -169,9 +167,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
 
+  const Well_KH well{
+      water, core_data.is_permeable, core_data.permeability};
+
   FaceProperties::ReservoirFlowField flow_field{
-      FaceProperties::FlowFactory::horizontal_flow(
-          well_rate, hydrodynamics_logs.is_permeable, *grid2D)};
+      FaceProperties::FlowFactory::create(
+          well_rate, well, *grid2D)};
 
   FaceProperties::multiply(flow_field, water.volumetric_heat_capacity);
 
@@ -181,7 +182,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const GPN::BoundaryConditions::BoundaryConditions bc{
       *grid2D,
       std::make_shared<FunctorBC>(
-          inlet_temperature, is_permeable, flow_field, grid2D),
+          inlet_temperature, core_data.is_permeable, flow_field, grid2D),
       BoundaryConditions::BoundaryCondition::second};
   // solver
 
@@ -207,7 +208,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto &v2 = flow_field.axes2_as_face_normal;
   for (auto col{0ll}; col < v2.cols(); ++col)
     for (auto row{0ll}; row < v2.rows(); ++row)
-      CHECK(((v2(row, col) > 0.0) || ((v2(row, col) == 0.0) && (is_permeable.log_vals(row) == 0.0))));
+      CHECK(((v2(row, col) > 0.0) || ((v2(row, col) == 0.0) && (core_data.is_permeable.log_vals(row) == 0.0))));
 
   const auto &[times, states] = solver.solution();
   for (size_t i{0ll}; i < times.size(); ++i)

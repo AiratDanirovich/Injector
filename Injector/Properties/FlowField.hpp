@@ -1,7 +1,9 @@
 #pragma once
+#include <numeric>
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Properties/Logs.hpp>
+#include <Injector/Properties/LogsFactory.hpp>
 
 namespace GPN
 {
@@ -99,26 +101,44 @@ namespace GPN
             FaceValuesContainer axes2_as_face_normal;
         };
 
-        void multiply(ReservoirFlowField& flow, RealType fluid_vol_heatcapacity)
+        void multiply(ReservoirFlowField &flow, RealType fluid_vol_heatcapacity)
         {
             flow.axes1_as_face_normal *= fluid_vol_heatcapacity;
             flow.axes2_as_face_normal *= fluid_vol_heatcapacity;
         }
 
-
         struct FlowFactory
         {
-            // template <typename Well_t, typename Grid2D_t>
-            // static auto create(
-            //     RealType well_rate,
-            //     const Well_t &well,
-            //     const Grid2D_t &grid2D)
-            // {
-            //     return ReservoirFlowField{
-            //         Logs::ZFlowRateLog{well_rate, grid2D.second_coord},
-            //         Logs::RFP{well_rate, well},
-            //         grid2D};
-            // }
+            template <typename Well_t, typename Grid2D_t>
+            static auto create(
+                RealType well_rate,
+                const Well_t &well,
+                const Grid2D_t &grid2D)
+            {
+#pragma region AXES2-AS-FACENORMAL
+                const auto rfp{Logs::RFPFactory::create(well_rate, well)};
+                const auto axes2_as_face_normal{FlowFieldFactory::flow_in_dir2(rfp, grid2D)};
+#pragma endregion
+#pragma region AXES1-AS-FACENORMAL
+                // ref to log vals as Eigen::ArrayX container
+                const auto &rfp_vals{rfp.log_vals};
+                // cumsum of rfp flow rates
+                LogValuesContainer cum_sum{LogValuesContainer::Zero(grid2D.first_coord.dual_size())};
+                std::partial_sum(rfp_vals.cbegin(), rfp_vals.cend(), cum_sum.begin() + 1ll, std::plus<RealType>());
+                // leftover flowrate along the well
+                const LogValuesContainer z_flow{well_rate - cum_sum};
+
+                FaceValuesContainer axes1_as_face_normal{
+                    FaceValuesContainer::Zero(
+                        grid2D.first_coord.dual_size(),
+                        grid2D.second_coord.mesh_size())};
+
+                axes1_as_face_normal.col(0ll) = z_flow;
+#pragma endregion
+                return ReservoirFlowField{
+                    axes1_as_face_normal,
+                    axes2_as_face_normal};
+            }
 
             template <typename Grid2D_t>
             static auto create(
@@ -145,7 +165,7 @@ namespace GPN
                 const IsPermeable_t &is_permeable,
                 const Grid2D_t &grid2D)
             {
-                const auto rfp{(is_permeable.log_vals*StepPropertyContainer::Constant(grid2D.first_coord.mesh_size(), rate)).eval()};
+                const auto rfp{(is_permeable.log_vals * StepPropertyContainer::Constant(grid2D.first_coord.mesh_size(), rate)).eval()};
                 return ReservoirFlowField{
                     Logs::ZFlowRateLogFactory::create(0.0, grid2D.second_coord),
                     Logs::RFP{Logs::StepPropertyGrid{rfp, is_permeable.grid},
@@ -153,8 +173,6 @@ namespace GPN
                     grid2D};
             }
         };
-    
-    
-    
+
     } // Properties
 } // GPN
