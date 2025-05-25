@@ -1,7 +1,6 @@
-#include <Injector/Grids/GridsFactory.hpp>
-#include <Injector/Properties/LogsFactory.hpp>
-#include <Injector/Properties/PhysicalField.hpp>
-#include <Injector/Properties/FaceProperties.hpp>
+#include <Injector/Grids/Grids2D.hpp>
+#include <Injector/Model/Collector.hpp>
+
 #include <Injector/Solver/SplittingMethod/BaseSplit.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -24,12 +23,12 @@ TEST_CASE("BaseSplitTest")
     const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
     const auto &grid{grid2D->first_coord};
 
-    const Logs::HeatLogsFactory heat_factory{
-        conductivity_stencils, grid};
+    const auto conductivity{
+        Logs::HeatConductivityFactory::create(conductivity_stencils, grid)};
 
     Properties::HeatConductivity conductivity_field{
         Properties::FieldFactory::create(
-            heat_factory.conductivity,
+            conductivity,
             grid2D)};
 
     FaceProperties::HeatConductivity conductivity_field_face{
