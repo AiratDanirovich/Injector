@@ -20,11 +20,13 @@
 
 #include <Injector/Properties/FieldsFactory.hpp>
 
+#include <nlohmann/json.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 using namespace Catch;
 using namespace Catch::Matchers;
+using json = nlohmann::json;
 
 using namespace std;
 using namespace GPN;
@@ -107,42 +109,57 @@ protected:
 
 using VR = std::vector<RealType>;
 
-/*START*/
-// input parameters
-/*fluid*/
-RealType viscosity{6e-4}, density{1}, capacity{1};
-/*collector*/
-const RealType rMin{1 / (2 * numbers::pi)}, rMax{1.0}, zTop{0.0}; // m
-const std::ptrdiff_t rNodes{15ull};
-const std::ptrdiff_t nLayers{10ull};
-const VR thickness(nLayers, 1.0); // each layer is 1m thick
-
-// hydrodynamic logs
-LogValuesContainer is_permeable_stencils{LogValuesContainer::Constant(nLayers, 1.0)};
-LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 1.0)};
-LogValuesContainer permeability_stencils{LogValuesContainer::Constant(nLayers, 0.5)};
-
-// heat logs
-const VR heatconductivity_stencils(nLayers, 0.0);
-const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 1 /*should be 2600 in SI*/)};
-const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
-/*temporal grid*/
-const std::ptrdiff_t time_steps_nmbr{1451ull};
-const RealType t0{0.0};      // initial time moment
-const RealType t1{t0 + 0.65}; // s
-const RealType time_step{(t1 - t0) / time_steps_nmbr};
-const VR time_intervals(time_steps_nmbr, time_step);
-const VR t_stencils(
-    Grids::Factory::generate_dual_grid_stencils_from_steps(
-        t0, time_intervals));
-/*temperatures*/
-const RealType well_rate{2}; // m^3/s
-const RealType initial_temperature{0.0};
-const RealType inlet_temperature{1.0};
-/*END*/
-
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
+  ifstream f("../../../tests/test_data/heatflow_test_data.json");
+  REQUIRE(f.is_open());
+  json data = json::parse(f);
+
+  /*START*/
+  // input parameters
+  /*fluid*/
+  RealType
+      viscosity{data["fluid"]["viscosity"]},
+      density{data["fluid"]["density"]},
+      capacity{data["fluid"]["capacity"]};
+  /*collector*/
+  const ptrdiff_t nLayers{data["collector"]["nLayers"]};
+  const VR thickness(nLayers, data["collector"]["thickness"]);
+  // hydrodynamic logs
+  auto is_permeable_stencils{
+      LogValuesContainer::Constant(nLayers, 1.0).eval()};
+  auto porosity_stencils{
+      LogValuesContainer::Constant(nLayers, data["collector"]["porosity"]).eval()};
+  auto permeability_stencils{
+      LogValuesContainer::Constant(nLayers, data["collector"]["permeability"]).eval()};
+  // heat logs
+  const VR heatconductivity_stencils(nLayers, data["collector"]["heatConductivity"]);
+  const auto solid_density_stencils{
+      LogValuesContainer::Constant(nLayers, data["collector"]["solidDensity"])};
+  const auto solid_specific_heatcapacity_stencils{
+      LogValuesContainer::Constant(nLayers, data["collector"]["soidSpecificHeatCapacity"])};
+  /*grid*/
+  const RealType
+      rMin{data["grid"]["r_start"]},
+      rMax{data["grid"]["r_end"]},
+      zTop{data["grid"]["soidSpecificHeatCapacity"]}; // m
+  const ptrdiff_t rNodes{data["grid"]["rNodes"]};
+  /*history*/
+  const RealType t0{data["grid"]["t_start"]},
+      t1{data["grid"]["t_end"]};
+  const ptrdiff_t time_steps_nmbr{static_cast<ptrdiff_t>(ceil(
+      (t0 - t1) / data["grid"]["t_step"]))};
+  const RealType time_step{(t0 - t1) / time_steps_nmbr};
+  const VR time_intervals(time_steps_nmbr, time_step);
+  const VR t_stencils(
+      Grids::Factory::generate_dual_grid_stencils_from_steps(
+          t0, time_intervals));
+  /*temperatures*/
+  const RealType well_rate{data["history"]["wellRate"]}; // m^3/s
+  const RealType initial_temperature{data["history"]["initTemperature"]};
+  const RealType inlet_temperature{data["history"]["inletTemperature"]};
+  /*END*/
+
   // make grid2D
   const auto grid2D{
       Grids::CylinderGridFactory::create(
@@ -155,8 +172,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // for (auto i{1ull}; i < nLayers; ++i)
   //   is_permeable_stencils[i] = 0.0;
 
-  is_permeable_stencils[nLayers / 4] = 0.0;
-  is_permeable_stencils[nLayers / 2] = 0.0;
+  is_permeable_stencils(nLayers / 4) = 0.0;
+  is_permeable_stencils(nLayers / 2) = 0.0;
   permeability_stencils *= is_permeable_stencils;
   porosity_stencils *= is_permeable_stencils;
   const Logs::Rocks::CoreSampleLogs core_data{
@@ -282,7 +299,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   }
 
   const auto precision{1e-5};
-  for (auto i{times.size()-1ll}; i < times.size(); ++i)
+  for (auto i{times.size() - 1ll}; i < times.size(); ++i)
   {
     const auto &state = states[i];
     std::string path{std::string{"T_"} + std::to_string(0) + std::string{".txt"}};

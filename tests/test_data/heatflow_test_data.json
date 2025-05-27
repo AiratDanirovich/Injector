@@ -1,7 +1,7 @@
 {
   "fluid": {
     "density": 1.0,
-    "viscosity": 1.0,
+    "viscosity": 6e-4,
     "specificHeatCapacity": 1.0
   },
   "collector": {
@@ -12,20 +12,19 @@
     "heatConductivity": 1.0,
     "solidDensity": 1.0,
     "soidSpecificHeatCapacity": 1.0,
-    "initTemperature":0.0
+    "initTemperature": 0.0
   },
-  "grid":{
+  "grid": {
     "ztop": 0.0,
-    "z_step": 1.0,
     "r_start": 1.0,
     "r_end": 5.0,
-    "rnodes": 15
+    "rNodes": 15
   },
-  "history":{
-  "t_start": 0.0,
-  "t_end": 0.65,
-  "t_step": 0.1,
-  "wellRate": 2.0,
-  "inletTemp": 1.0
+  "history": {
+    "t_start": 0.0,
+    "t_end": 0.65,
+    "t_step": 0.1,
+    "wellRate": 2.0,
+    "inletTemperature": 1.0
   }
 }
