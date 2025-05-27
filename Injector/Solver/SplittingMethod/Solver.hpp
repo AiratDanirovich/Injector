@@ -134,6 +134,14 @@ namespace GPN
                     // solve a set of 1D problems in x-direction, for various y-coords
                     bc.set_vals(time_moments.back() + tau);
                     solve_split_x(tau_factor.data());
+                    
+                    // solve a set of 1D problems in x-direction, for various y-coords
+                    bc.set_vals(time_moments.back() + tau*3.0/2.0);
+                    solve_split_x(tau_factor.data());
+                    
+                    // solve a set of 1D problems in y-direction, for various x-coords
+                    bc.set_vals(time_moments.back() + tau * 2.0);
+                    solve_split_y(tau_factor.data());
 
                     time_moments.push_back(time_moments.back() + tau);
                     states.emplace_back(state);
