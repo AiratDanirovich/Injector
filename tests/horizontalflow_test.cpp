@@ -1,6 +1,7 @@
 #include <memory>
 #include <fstream>
 #include <string>
+#include <numbers>
 
 #include <Injector/Grids/Defines.h>
 
@@ -23,6 +24,7 @@
 using namespace Catch;
 using namespace Catch::Matchers;
 
+using namespace std;
 using namespace GPN;
 using namespace GPN::Logs;
 using namespace GPN::Grids;
@@ -57,28 +59,36 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
   FunctorBC(
       RealType inlet_temp,
-      const PhaseProperties &fluid,                         // inlet fluid
+      const Logs::IsPermeable &is_permeable,
       const FaceProperties::ReservoirFlowField &flow_field, // volumetric flow rate
       const cptr<const Grid2D_t> grid_ptr)
       : inlet_temp{inlet_temp},
-        fluid{fluid},
         flow_field{flow_field},
+        is_permeable{is_permeable},
         grid_ptr{grid_ptr}
   {
   }
 
-  RealType operator()(RealType z, RealType r, RealType t) const override
+  RealType operator()(ptrdiff_t z, RealType r, RealType t) const override
   {
     if (r == grid_ptr->second_coord.dual_front())
-      return fluid.volumetric_heat_capacity * flow_field.axes2_as_face_normal(0, 0) * inlet_temp;
+    {
+      return flow_field.axes2_as_face_normal(z, 0) * inlet_temp;
+    }
 
     return 0.0;
   }
 
+  RealType operator()(RealType z, ptrdiff_t r, RealType t) const override
+  {
+    return 0.0;
+  }
+
+
 protected:
   RealType inlet_temp;
-  const PhaseProperties &fluid;
   const FaceProperties::ReservoirFlowField &flow_field;
+  const Logs::IsPermeable &is_permeable;
   const cptr<const Grid2D_t> grid_ptr;
 };
 
@@ -87,35 +97,33 @@ using VR = std::vector<RealType>;
 /*START*/
 // input parameters
 /*fluid*/
-RealType viscosity{6e-4}, density{1000}, capacity{4200};
+RealType viscosity{6e-4}, density{1}, capacity{1};
 /*collector*/
-const RealType rMin{100.0}, rMax{101.0}, zTop{0.0};
-const std::ptrdiff_t rNodes{31ull};
-const std::ptrdiff_t nLayers{11ull};
-const VR thickness(nLayers, 1); // each layer is 1m thick
+const RealType rMin{1 / (2 * numbers::pi)}, rMax{1.0}, zTop{0.0}; // m
+const std::ptrdiff_t rNodes{201ull};
+const std::ptrdiff_t nLayers{5ull};
+const VR thickness(nLayers, 1.0); // each layer is 1m thick
 
 // hydrodynamic logs
-const VR is_permeable_stencils(nLayers, 1.0);
-const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 1.0)};
+VR is_permeable_stencils(nLayers, 1.0);
+LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 1.0)};
 const VR permeability_stencils(nLayers, 0.5);
-const VR ext_pressure_stencils(nLayers, 13E6);
-const VR skin_stencils(nLayers, 0.0);
 
 // heat logs
-const VR heatconductivity_stencils(nLayers, 3.9);
-const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers,3.9 /*should be 2600 in SI*/)};
+const VR heatconductivity_stencils(nLayers, 0.0);
+const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 3.9 /*should be 2600 in SI*/)};
 const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
 /*temporal grid*/
-const std::ptrdiff_t time_steps_nmbr{5ull};
-const RealType t0{1.0}; // initial time moment
-const RealType t1{t0 + 0.01};
+const std::ptrdiff_t time_steps_nmbr{51ull};
+const RealType t0{0.0};      // initial time moment
+const RealType t1{t0 + 0.1}; // s
 const RealType time_step{(t1 - t0) / time_steps_nmbr};
 const VR time_intervals(time_steps_nmbr, time_step);
 const VR t_stencils(
     Grids::Factory::generate_dual_grid_stencils_from_steps(
         t0, time_intervals));
 /*temperatures*/
-const RealType well_rate{0.01};
+const RealType well_rate{1}; // m^3/s
 const RealType initial_temperature{0.0};
 const RealType inlet_temperature{1.0};
 /*END*/
@@ -129,12 +137,15 @@ TEST_CASE("Solver", "SelfSimilarCyl")
               zTop, thickness),
           Grids::Factory::generate_dual_grid_stencils_uniform(
               Segment{rMin, rMax}, rNodes))};
+  const auto &grid{grid2D->first_coord};
 
-  const Logs::Rocks::CoreSampleLogs core_data{
-      is_permeable_stencils,
-      porosity_stencils,
-      permeability_stencils,
-      grid2D->first_coord};
+  is_permeable_stencils[nLayers / 2] = 0.0;
+  porosity_stencils(nLayers / 2) = 0.0;
+
+  const Logs::IsPermeable is_permeable{
+      IsPermeableFactory::create(is_permeable_stencils, grid)};
+  const Logs::Porosity porosity{
+      PorosityFactory::create(porosity_stencils, is_permeable_stencils, grid)};
 
   // make fluid
   const Water water{
@@ -151,7 +162,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       solid_density_stencils,
       solid_specific_heatcapacity_stencils,
       heatconductivity_stencils,
-      porosity_stencils,
+      porosity.log_vals,
       water,
       grid2D->first_coord};
 
@@ -165,13 +176,15 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       FaceProperties::FlowFactory::horizontal_flow(
           well_rate, hydrodynamics_logs.is_permeable, *grid2D)};
 
+  FaceProperties::multiply(flow_field, water.volumetric_heat_capacity);
+
   // initial condition
   const auto initial_state{ICFactory(t0, grid2D, initial_temperature)};
   // boundary conditions
   const GPN::BoundaryConditions::BoundaryConditions bc{
       *grid2D,
       std::make_shared<FunctorBC>(
-          inlet_temperature, water, flow_field, grid2D),
+          inlet_temperature, is_permeable, flow_field, grid2D),
       BoundaryConditions::BoundaryCondition::second};
   // solver
 
@@ -182,38 +195,37 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       initial_state,
       bc, t0};
 
-  std::string pathr{"data_r.csv"};
-  std::string pathz{"data_z.csv"};
-
   // assert solution
   const double tol = 1E-15;
   for (size_t t_step{0ll}; t_step < time_intervals.size(); ++t_step)
   {
-    // for (auto i{0ull}; i < matricies.mx.size(); ++i)
-    // {
-    //   const auto &m = matricies.mx[i];
-    //   REQUIRE(m.rows() == m.cols());
-    //   {
-    //     auto col{0ll};
-    //     INFO("" << "col: " << col << ", c: " << m.coeff(col, col) << ", l: " << 0.0 << ", r: " << m.coeff(col, col + 1ll));
-    //     CHECK_THAT(-m.coeff(col, col), WithinRel(m.coeff(col, col + 1ll), tol));
-    //   }
-    //   for (auto col{1ll}; col < m.cols() - 1; ++col)
-    //   {
-    //     INFO("" << "col: " << col << ", c: " << m.coeff(col, col) << ", l: " << m.coeff(col, col - 1ll) << ", r: " << m.coeff(col, col + 1ll));
-    //     CHECK_THAT(-m.coeff(col, col), WithinRel(m.coeff(col, col - 1ll) + m.coeff(col, col + 1ll), tol));
-    //     INFO("" << "col: " << col << ", c: " << m.coeff(col, col));
-    //     CHECK(m.coeff(col, col) > tol);
-    //   }
-    //   {
-    //     auto col{m.cols() - 1ll};
-    //     INFO("" << "col: " << col << ", c: " << m.coeff(col, col) << ", l: " << m.coeff(col, col - 1ll) << ", r: " << 0.0);
-    //     CHECK_THAT(-m.coeff(col, col), WithinRel(m.coeff(col, col - 1ll), tol));
-    //   }
-    // }
+    solver.advance(time_intervals[t_step]);
   }
 
+  const auto &v1 = flow_field.axes1_as_face_normal;
+  for (auto col{0ll}; col < v1.cols(); ++col)
+    for (auto row{0ll}; row < v1.rows(); ++row)
+      CHECK(v1(row, col) == 0.0);
+
+  const auto &v2 = flow_field.axes2_as_face_normal;
+  for (auto col{0ll}; col < v2.cols(); ++col)
+    for (auto row{0ll}; row < v2.rows(); ++row)
+      CHECK(((v2(row, col) > 0.0) || ((v2(row, col) == 0.0) && (is_permeable.log_vals(row) == 0.0))));
+
   const auto &[times, states] = solver.solution();
+  for (size_t i{0ll}; i < times.size(); ++i)
+  {
+    const auto &state = states[i];
+    for (auto row{0ll}; row < state.rows(); ++row)
+    {
+      CHECK(state(row, 0ll) <= inlet_temperature);
+      for (auto col{1ll}; col < state.cols(); ++col)
+      {
+        CHECK(state(row, col) <= inlet_temperature);
+        CHECK(state(row, col) <= state(row, col - 1ll));
+      }
+    }
+  }
 
   for (auto i{0ull}; i < times.size(); ++i)
   {

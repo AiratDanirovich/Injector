@@ -10,11 +10,15 @@ using namespace GPN::Grids;
 
 struct BCFunctor : public BoundaryConditions::BCFunctorBase
 {
-    RealType operator()(
-        RealType x, RealType y, RealType t) const override
-    {
-        return 1.0;
-    }
+  RealType operator()(ptrdiff_t z, RealType r, RealType t) const override
+  {
+    return 1.0;
+  }
+
+  RealType operator()(RealType z, ptrdiff_t r, RealType t) const override
+  {
+    return 1.0;
+  }
 };
 
 auto z_stencils{Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 5)};

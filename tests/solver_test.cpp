@@ -18,11 +18,16 @@ struct ABCFunctor : public GPN::BoundaryConditions::BCFunctorBase
 {
     ABCFunctor(RealType val) : val{val} {}
 
-    RealType operator()(
-        RealType x, RealType y, RealType t) const override
-    {
-        return val;
-    }
+
+  RealType operator()(ptrdiff_t, RealType, RealType) const override
+  {
+    return val;
+  }
+
+  RealType operator()(RealType, ptrdiff_t, RealType) const override
+  {
+    return val;
+  }
 
 protected:
     RealType val;

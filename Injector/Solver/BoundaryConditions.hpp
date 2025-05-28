@@ -41,9 +41,9 @@ namespace GPN
                 for (std::ptrdiff_t i{0ll}; i < south_vals.size(); ++i)
                 {
                     south_vals[i] =
-                        (*functor)(south.fixed_x, grid.coordinate(i), t);
+                        (*functor)(south.fixed_x, i, t);
                     north_vals[i] =
-                        (*functor)(north.fixed_x, grid.coordinate(i), t);
+                        (*functor)(north.fixed_x, i, t);
                 }
             }
         };
@@ -80,8 +80,8 @@ namespace GPN
             {
                 for (std::ptrdiff_t i{0ull}; i < east_vals.size(); ++i)
                 {
-                    east_vals[i] = (*functor)(grid.coordinate(i), east.fixed_y, t);
-                    west_vals[i] = (*functor)(grid.coordinate(i), west.fixed_y, t);
+                    east_vals[i] = (*functor)(i, east.fixed_y, t);
+                    west_vals[i] = (*functor)(i, west.fixed_y, t);
                 }
             }
         };
