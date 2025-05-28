@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <numbers>
+#include <cmath>
 
 #include <Injector/Grids/Defines.h>
 
@@ -121,7 +122,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   RealType
       viscosity{data["fluid"]["viscosity"]},
       density{data["fluid"]["density"]},
-      capacity{data["fluid"]["capacity"]};
+      capacity{data["fluid"]["specificHeatCapacity"]};
   /*collector*/
   const ptrdiff_t nLayers{data["collector"]["nLayers"]};
   const VR thickness(nLayers, data["collector"]["thickness"]);
@@ -137,26 +138,26 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto solid_density_stencils{
       LogValuesContainer::Constant(nLayers, data["collector"]["solidDensity"])};
   const auto solid_specific_heatcapacity_stencils{
-      LogValuesContainer::Constant(nLayers, data["collector"]["soidSpecificHeatCapacity"])};
+      LogValuesContainer::Constant(nLayers, data["collector"]["solidSpecificHeatCapacity"])};
   /*grid*/
   const RealType
       rMin{data["grid"]["r_start"]},
       rMax{data["grid"]["r_end"]},
-      zTop{data["grid"]["soidSpecificHeatCapacity"]}; // m
+      zTop{data["grid"]["ztop"]}; // m
   const ptrdiff_t rNodes{data["grid"]["rNodes"]};
   /*history*/
-  const RealType t0{data["grid"]["t_start"]},
-      t1{data["grid"]["t_end"]};
+  const RealType t0{data["history"]["t_start"]},
+      t1{data["history"]["t_end"]};
   const ptrdiff_t time_steps_nmbr{static_cast<ptrdiff_t>(ceil(
-      (t0 - t1) / data["grid"]["t_step"]))};
-  const RealType time_step{(t0 - t1) / time_steps_nmbr};
+      (t1 - t0) / (double)data["history"]["t_step"]))};
+  const RealType time_step{(t1 - t0) / time_steps_nmbr};
   const VR time_intervals(time_steps_nmbr, time_step);
   const VR t_stencils(
       Grids::Factory::generate_dual_grid_stencils_from_steps(
           t0, time_intervals));
   /*temperatures*/
   const RealType well_rate{data["history"]["wellRate"]}; // m^3/s
-  const RealType initial_temperature{data["history"]["initTemperature"]};
+  const RealType initial_temperature{data["collector"]["initTemperature"]};
   const RealType inlet_temperature{data["history"]["inletTemperature"]};
   /*END*/
 
@@ -174,6 +175,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
   is_permeable_stencils(nLayers / 4) = 0.0;
   is_permeable_stencils(nLayers / 2) = 0.0;
+  is_permeable_stencils(6) = 0.0;
   permeability_stencils *= is_permeable_stencils;
   porosity_stencils *= is_permeable_stencils;
   const Logs::Rocks::CoreSampleLogs core_data{

@@ -5,25 +5,25 @@
     "specificHeatCapacity": 1.0
   },
   "collector": {
-    "nLayers": 10,
+    "nLayers": 20,
     "thickness": 1.0,
     "porosity": 1.0,
     "permeability": 1.0,
-    "heatConductivity": 1.0,
+    "heatConductivity": 0.0,
     "solidDensity": 1.0,
-    "soidSpecificHeatCapacity": 1.0,
+    "solidSpecificHeatCapacity": 1.0,
     "initTemperature": 0.0
   },
   "grid": {
     "ztop": 0.0,
     "r_start": 1.0,
     "r_end": 5.0,
-    "rNodes": 15
+    "rNodes": 150
   },
   "history": {
     "t_start": 0.0,
-    "t_end": 0.65,
-    "t_step": 0.1,
+    "t_end": 4.0,
+    "t_step": 0.02,
     "wellRate": 2.0,
     "inletTemperature": 1.0
   }
