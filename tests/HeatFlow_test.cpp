@@ -170,9 +170,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
               Segment{rMin, rMax}, rNodes))};
   const auto &grid{grid2D->first_coord};
 
-  // for (auto i{1ull}; i < nLayers; ++i)
-  //   is_permeable_stencils[i] = 0.0;
-
   is_permeable_stencils(nLayers / 4) = 0.0;
   is_permeable_stencils(nLayers / 2) = 0.0;
   is_permeable_stencils(6) = 0.0;
