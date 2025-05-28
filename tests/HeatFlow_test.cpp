@@ -1,19 +1,24 @@
-// #include <cmath>
 #include <memory>
+#include <iostream>
 #include <fstream>
 #include <string>
+#include <numbers>
 
 #include <Injector/Grids/Defines.h>
 
+#include <Injector/Grids/GridsFactory.hpp>
+#include <Injector/Model/Phases/FluidFactory.hpp>
+#include <Injector/Model/Collector.hpp>
+
+#include <Injector/Properties/FlowField.hpp>
+#include <Injector/Model/Phases/FluidFactory.hpp>
+#include <Injector/Model/Well.hpp>
+#include <Injector/Solver/BoundaryConditions.hpp>
 #include <Injector/Solver/State2D.hpp>
-
-#include <Injector/Grids/Factory.hpp>
-#include <Injector/Solver/SolverFactory.hpp>
-
-// #include <Injector/Properties/Logs.hpp>
-// #include <Injector/Model/Phases/FluidFactory.hpp>
-// #include <Injector/Model/HydrodynamicSolver.hpp>
+#include <Injector/Solver/InitialCondition.hpp>
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
+
+#include <Injector/Properties/FieldsFactory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
@@ -21,11 +26,11 @@
 using namespace Catch;
 using namespace Catch::Matchers;
 
+using namespace std;
 using namespace GPN;
 using namespace GPN::Logs;
 using namespace GPN::Grids;
 using namespace GPN::Phases;
-// using namespace GPN::Model::Injector;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
@@ -56,34 +61,47 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
   FunctorBC(
       RealType inlet_temp,
-      const PhaseProperties &fluid,
-      const Properties::ReservoirFlowField &flow_field,
+      const Logs::IsPermeable &is_permeable,
+      const FaceProperties::ReservoirFlowField &flow_field, // volumetric flow rate
       const cptr<const Grid2D_t> grid_ptr)
       : inlet_temp{inlet_temp},
-        fluid{fluid},
         flow_field{flow_field},
+        is_permeable{is_permeable},
         grid_ptr{grid_ptr}
   {
   }
 
-  RealType operator()(RealType z, RealType r, RealType t) const override
+  RealType operator()(ptrdiff_t z_id, RealType r, RealType t) const override
   {
-    //   if (z == grid_ptr->first_coord.dual_front())
-    //   {
-    //     if (r == grid_ptr->second_coord.mesh_front())
-    //       return fluid.volumetric_heat_capacity * flow_field.axes1_as_face_normal(0, 0) * inlet_temp;
-    //   }
-
     if (r == grid_ptr->second_coord.dual_front())
-      return fluid.volumetric_heat_capacity * flow_field.axes2_as_face_normal(0, 0) * inlet_temp;
+      return flow_field.axes2_as_face_normal(z_id, 0ll) * inlet_temp;
 
+    if (r == grid_ptr->second_coord.dual_back())
+      return 0.0;
+    //   return -flow_field.axes2_as_face_normal.rightCols(1ll)(z_id, 0ll) * initial_temp;
+
+    assert(false);
+
+    return 0.0;
+  }
+
+  RealType operator()(RealType z, ptrdiff_t r_id, RealType t) const override
+  {
+    if (z == grid_ptr->first_coord.dual_front())
+      return flow_field.axes1_as_face_normal(0ll, r_id) * inlet_temp;
+
+    if (z == grid_ptr->first_coord.dual_back())
+      return 0.0;
+    //   return -flow_field.axes1_as_face_normal.bottomRows(1ll)(0ll, r_id) * initial_temp;
+
+    assert(false);
     return 0.0;
   }
 
 protected:
   RealType inlet_temp;
-  const PhaseProperties &fluid;
-  const Properties::ReservoirFlowField &flow_field;
+  const FaceProperties::ReservoirFlowField &flow_field;
+  const Logs::IsPermeable &is_permeable;
   const cptr<const Grid2D_t> grid_ptr;
 };
 
@@ -91,60 +109,61 @@ using VR = std::vector<RealType>;
 
 /*START*/
 // input parameters
-/*heat rate*/
-RealType q{1.0};
 /*fluid*/
-RealType viscosity{6e-4}, density{1000}, capacity{4200};
+RealType viscosity{6e-4}, density{1}, capacity{1};
 /*collector*/
-const RealType rMin{100.0}, rMax{101.0}, zTop{0.0};
-const std::ptrdiff_t rNodes{31ull};
-const std::ptrdiff_t nLayers{11ull};
-const VR thickness(nLayers, 1); // each layer is 1m thick
+const RealType rMin{1 / (2 * numbers::pi)}, rMax{1.0}, zTop{0.0}; // m
+const std::ptrdiff_t rNodes{15ull};
+const std::ptrdiff_t nLayers{10ull};
+const VR thickness(nLayers, 1.0); // each layer is 1m thick
 
 // hydrodynamic logs
-const VR is_permeable(nLayers, 1.0);
-const VR porosity(nLayers, 1.0);
-const VR permeability(nLayers, 0.5);
-const VR ext_pressure(nLayers, 13E6);
-const VR skin(nLayers, 0.0);
+LogValuesContainer is_permeable_stencils{LogValuesContainer::Constant(nLayers, 1.0)};
+LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 1.0)};
+LogValuesContainer permeability_stencils{LogValuesContainer::Constant(nLayers, 0.5)};
 
 // heat logs
-const VR conductivity(nLayers, 3.9);
-const VR solid_density(nLayers, 3.9 /*should be 2600 in SI*/);
-const VR solid_specific_heatcapacity(nLayers, 1.0 /*should be 770 in SI*/);
+const VR heatconductivity_stencils(nLayers, 0.0);
+const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 1 /*should be 2600 in SI*/)};
+const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
 /*temporal grid*/
-const std::ptrdiff_t time_steps_nmbr{5ull};
-const RealType t0{1.0}; // initial time moment
-const RealType t1{t0 + 0.01};
+const std::ptrdiff_t time_steps_nmbr{1451ull};
+const RealType t0{0.0};      // initial time moment
+const RealType t1{t0 + 0.65}; // s
 const RealType time_step{(t1 - t0) / time_steps_nmbr};
 const VR time_intervals(time_steps_nmbr, time_step);
+const VR t_stencils(
+    Grids::Factory::generate_dual_grid_stencils_from_steps(
+        t0, time_intervals));
 /*temperatures*/
-const RealType well_rate{0.01};
+const RealType well_rate{2}; // m^3/s
 const RealType initial_temperature{0.0};
 const RealType inlet_temperature{1.0};
 /*END*/
 
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
-  // make grid1D
-  const VR z_stencils(
-      Grids::Factory::generate_dual_grid_stencils_from_steps(
-          zTop, thickness));
-  const RealType zBottom{z_stencils.back()};
-  const VR r_stencils{
-      Grids::Factory::generate_dual_grid_stencils_uniform(
-          Segment{rMin, rMax}, rNodes)};
   // make grid2D
-  const CylinderGridFactory grid_factory{
-      z_stencils, r_stencils};
-  const HydrodynamicLogsFactory hydro_logs_factory{
-      is_permeable, porosity, permeability, ext_pressure, skin,
-      grid_factory.grid()->first_coord};
+  const auto grid2D{
+      Grids::CylinderGridFactory::create(
+          Grids::Factory::generate_dual_grid_stencils_from_steps(
+              zTop, thickness),
+          Grids::Factory::generate_dual_grid_stencils_uniform(
+              Segment{rMin, rMax}, rNodes))};
+  const auto &grid{grid2D->first_coord};
 
-  // heat conductivity
-  const Properties::HeatConductivity conductivity_field{
-      Properties::Factory::generate_heatconductivity_Property(
-          conductivity, grid_factory.grid())};
+  // for (auto i{1ull}; i < nLayers; ++i)
+  //   is_permeable_stencils[i] = 0.0;
+
+  is_permeable_stencils[nLayers / 4] = 0.0;
+  is_permeable_stencils[nLayers / 2] = 0.0;
+  permeability_stencils *= is_permeable_stencils;
+  porosity_stencils *= is_permeable_stencils;
+  const Logs::Rocks::CoreSampleLogs core_data{
+      is_permeable_stencils,
+      porosity_stencils,
+      permeability_stencils,
+      grid};
 
   // make fluid
   const Water water{
@@ -153,86 +172,123 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           Density{density},
           SpecificHeatCapacity{capacity})};
 
-  SolverFactory solver_factory{
-      initial_temperature,
-      grid_factory};
+  const Logs::Rocks::HeatLogs heat_logs{
+      solid_density_stencils,
+      solid_specific_heatcapacity_stencils,
+      heatconductivity_stencils,
+      porosity_stencils,
+      water,
+      grid2D->first_coord};
 
-  // volumetric heat capacity of multiphase system
-  const Properties::HeatVolumetricCapacity capacity_field{
-      Properties::Factory::generate_volumetric_heatcapacity_Property(
-          is_permeable, porosity,
-          solid_density, solid_specific_heatcapacity,
-          water, grid_factory.grid())};
+  const Properties::Rocks::HeatProps heat_props{
+      heat_logs, grid2D};
 
-  // const Well_KH well{
-  //     Phases::FluidFactory::create_water(0.0, 0.0),
-  //     hydro_logs_factory.is_permeable,
-  //     hydro_logs_factory.permeability};
-  Properties::ReservoirFlowField flow_field{
-    Properties::FlowFactory::horizontal_flow(well_rate*capacity_field.value(0,0), hydro_logs_factory.is_permeable, *grid_factory.grid())
-    //  well_rate, well, *grid_factory.grid()
-    };
+  const FaceProperties::Rocks::HeatFaceProps heat_face_props{
+      heat_props, grid2D};
+
+  const Well_KH well{
+      water, core_data.is_permeable, core_data.permeability};
+
+  FaceProperties::ReservoirFlowField flow_field{
+      FaceProperties::FlowFactory::create(
+          well_rate, well, *grid2D)};
+
+  FaceProperties::multiply(flow_field, water.volumetric_heat_capacity);
 
   // initial condition
-  const auto initial_state{ICFactory(t0, grid_factory.grid(), initial_temperature)};
+  const auto initial_state{ICFactory(t0, grid2D, initial_temperature)};
   // boundary conditions
   const GPN::BoundaryConditions::BoundaryConditions bc{
-      *grid_factory.grid(),
+      *grid2D,
       std::make_shared<FunctorBC>(
-          inlet_temperature, water, flow_field, grid_factory.grid()),
+          inlet_temperature, core_data.is_permeable, flow_field, grid2D),
       BoundaryConditions::BoundaryCondition::second};
-  // time moments
-  const VR t_stencils(
-      Grids::Factory::generate_dual_grid_stencils_from_steps(
-          t0, time_intervals));
   // solver
 
   Solver solver{
-      conductivity_field,
-      flow_field, grid_factory.grid(),
-      solver_factory.capacity_field(),
+      heat_face_props.heat_conductivity,
+      flow_field, grid2D,
+      heat_props.medium_vol_heatcapacity,
       initial_state,
       bc, t0};
-
-  std::string pathr{"data_r.csv"};
-  std::string pathz{"data_z.csv"};
 
   // assert solution
   const double tol = 1E-15;
   for (size_t t_step{0ll}; t_step < time_intervals.size(); ++t_step)
   {
-    // for (auto i{0ull}; i < matricies.mx.size(); ++i)
-    // {
-    //   const auto &m = matricies.mx[i];
-    //   REQUIRE(m.rows() == m.cols());
-    //   {
-    //     auto col{0ll};
-    //     INFO("" << "col: " << col << ", c: " << m.coeff(col, col) << ", l: " << 0.0 << ", r: " << m.coeff(col, col + 1ll));
-    //     CHECK_THAT(-m.coeff(col, col), WithinRel(m.coeff(col, col + 1ll), tol));
-    //   }
-    //   for (auto col{1ll}; col < m.cols() - 1; ++col)
-    //   {
-    //     INFO("" << "col: " << col << ", c: " << m.coeff(col, col) << ", l: " << m.coeff(col, col - 1ll) << ", r: " << m.coeff(col, col + 1ll));
-    //     CHECK_THAT(-m.coeff(col, col), WithinRel(m.coeff(col, col - 1ll) + m.coeff(col, col + 1ll), tol));
-    //     INFO("" << "col: " << col << ", c: " << m.coeff(col, col));
-    //     CHECK(m.coeff(col, col) > tol);
-    //   }
-    //   {
-    //     auto col{m.cols() - 1ll};
-    //     INFO("" << "col: " << col << ", c: " << m.coeff(col, col) << ", l: " << m.coeff(col, col - 1ll) << ", r: " << 0.0);
-    //     CHECK_THAT(-m.coeff(col, col), WithinRel(m.coeff(col, col - 1ll), tol));
-    //   }
-    // }
+    solver.advance(time_intervals[t_step]);
+  }
+
+  cout << "flow_field.axes1_as_face_normal:\n";
+  cout << flow_field.axes1_as_face_normal << endl
+       << endl;
+  cout << "flow_field.axes2_as_face_normal:\n";
+  cout << flow_field.axes2_as_face_normal << endl
+       << endl;
+
+  const auto &v1 = flow_field.axes1_as_face_normal;
+  for (auto row{0ll}; row < v1.rows(); ++row)
+  {
+    CHECK(v1(row, 0ll) >= 0.0);
+    for (auto col{1ll}; col < v1.cols(); ++col)
+      CHECK(v1(row, col) == 0.0);
+  }
+
+  const auto &v2 = flow_field.axes2_as_face_normal;
+  for (auto col{2ll}; col < v2.cols(); ++col)
+    for (auto row{0ll}; row < v2.rows(); ++row)
+      CHECK(v2(row, col) == v2(row, 1ll));
+
+  for (auto row{0ll}, col{0ll}; row < v2.rows(); ++row)
+  {
+    CHECK(v2(row, col) == 0.0);
+    //  CHECK(v1(row, col) == v1(row + 1, col) + v2(row, col));
+  }
+
+  for (auto row{0ll}; row < grid2D->first_coord.mesh_size(); ++row)
+  {
+    for (auto col{0ll}; col < grid2D->second_coord.mesh_size(); ++col)
+    {
+      INFO("" << "col: " << col << ", row: " << row << ", bottom: " << -v1(row + 1ll, col) << ", top: " << v1(row, col) << ", right: " << v2(row, col + 1ll) << ", left: " << -v2(row, col));
+      CHECK(-v1(row + 1ll, col) + v1(row, col) == v2(row, col + 1ll) - v2(row, col));
+    }
   }
 
   const auto &[times, states] = solver.solution();
-
-  for (auto i{0ull}; i < times.size(); ++i)
+  for (size_t i{0ll}; i < times.size(); ++i)
   {
-    std::string path{std::string{"T_"} + std::to_string(i) + std::string{".txt"}};
+    const auto &state = states[i];
+    for (auto row{0ll}; row < state.rows(); ++row)
+    {
+      CHECK(state(row, 0ll) <= inlet_temperature);
+      for (auto col{1ll}; col < state.cols(); ++col)
+      {
+        CHECK(state(row, col) <= inlet_temperature);
+        INFO("time: " << i << ", col: " << col << ", row: " << row);
+        CHECK(state(row, col) <= state(row, col - 1ll));
+      }
+    }
+  }
+
+  for (size_t i{1ll}; i < times.size(); ++i)
+  {
+    for (auto row{0ll}; row < states[0].rows(); ++row)
+    {
+      for (auto col{1ll}; col < states[0].cols(); ++col)
+      {
+        CHECK(states[i](row, col) >= states[i - 1ull](row, col));
+      }
+    }
+  }
+
+  const auto precision{1e-5};
+  for (auto i{times.size()-1ll}; i < times.size(); ++i)
+  {
+    const auto &state = states[i];
+    std::string path{std::string{"T_"} + std::to_string(0) + std::string{".txt"}};
     std::ofstream f{path};
 
-    f << states[i].cur_state;
+    f << (state.cur_state / precision).round() * precision;
     f.close();
   }
 }

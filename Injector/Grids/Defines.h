@@ -257,7 +257,8 @@ namespace GPN
 
         struct BCFunctorBase
         {
-            virtual RealType operator()(RealType x, RealType y, RealType t) const = 0;
+            virtual RealType operator()(ptrdiff_t x, RealType y, RealType t) const = 0;
+            virtual RealType operator()(RealType x, ptrdiff_t y, RealType t) const = 0;
         };
     } // BoundaryConditions
 } // EqSolver
