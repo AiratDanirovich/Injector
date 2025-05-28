@@ -10,6 +10,8 @@ project(${project_name})
 
 # Include Catch2
 include(${CMAKE_SOURCE_DIR}../cmake/Catch2.cmake)
+# Include nlohmann_json::nlohmann_json
+include(${CMAKE_SOURCE_DIR}../cmake/JSON_lib.cmake)
 # add macro with add_catch2_test definition
 include(${CMAKE_SOURCE_DIR}../cmake/AddTest.cmake)
 
@@ -22,6 +24,7 @@ include(Catch)
 
 # Create test executable
 add_catch2_test(stride_test)
+add_catch2_test(json_test)
 
 add_catch2_test(water_test)
 
