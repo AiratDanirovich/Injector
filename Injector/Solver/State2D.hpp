@@ -2,7 +2,6 @@
 
 #include <cmath>
 #include <Eigen/Core>
-// #include <Eigen/Dense>
 
 #include <Injector/Grids/Defines.h>
 
@@ -25,19 +24,19 @@ namespace GPN
 
                 template <typename StructuredGrid2D_t>
                 static auto FillWithZeros(
-                    const StructuredGrid2D_t &grid)
+                    const StructuredGrid2D_t &grid2D)
                 {
-                    return FillWithConst(grid, (RealType)0.0);
+                    return FillWithConst(grid2D, (RealType)0.0);
                 }
 
                 template <typename StructuredGrid2D_t>
                 static auto FillWithConst(
-                    const StructuredGrid2D_t &grid,
+                    const StructuredGrid2D_t &grid2D,
                     RealType val)
                 {
                     State_Container cur_state{
-                        grid.first_coord.size(),
-                        grid.second_coord.size()};
+                        grid2D.first_coord.mesh_size(),
+                        grid2D.second_coord.mesh_size()};
                     cur_state.fill(val);
 
                     return cur_state;
@@ -47,19 +46,19 @@ namespace GPN
                     typename StructuredGrid2D_t,
                     typename Functor>
                 static auto FillWithFunctor(
-                    const StructuredGrid2D_t &grid,
+                    const StructuredGrid2D_t &grid2D,
                     const Functor &f, RealType initial_moment = 0.0)
                 {
                     State_Container cur_state{
-                        grid.first_coord.size(),
-                        grid.second_coord.size()};
+                        grid2D.first_coord.mesh_size(),
+                        grid2D.second_coord.mesh_size()};
 
                     for (std::ptrdiff_t j = 0; j < cur_state.outerSize(); ++j)
                         for (std::ptrdiff_t i = 0; i < cur_state.innerSize(); ++i)
                         {
                             cur_state(i, j) = f(
-                                grid.first_coord.coordinate(i),
-                                grid.second_coord.coordinate(j),
+                                grid2D.first_coord.coordinate(i),
+                                grid2D.second_coord.coordinate(j),
                                 initial_moment);
                         }
 

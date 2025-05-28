@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <Eigen/Core>
+#include <Eigen/SparseCore>
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/Grids2D.hpp>
@@ -37,12 +38,12 @@ namespace GPN
 
             void set_vals(RealType t)
             {
-                for (std::ptrdiff_t i{0ull}; i < south_vals.size(); ++i)
+                for (std::ptrdiff_t i{0ll}; i < south_vals.size(); ++i)
                 {
                     south_vals[i] =
-                        (*functor)(south.fixed_x, grid.coordinate(i), t);
+                        (*functor)(south.fixed_x, i, t);
                     north_vals[i] =
-                        (*functor)(north.fixed_x, grid.coordinate(i), t);
+                        (*functor)(north.fixed_x, i, t);
                 }
             }
         };
@@ -79,10 +80,27 @@ namespace GPN
             {
                 for (std::ptrdiff_t i{0ull}; i < east_vals.size(); ++i)
                 {
-                    east_vals[i] = (*functor)(grid.coordinate(i), east.fixed_y, t);
-                    west_vals[i] = (*functor)(grid.coordinate(i), west.fixed_y, t);
+                    east_vals[i] = (*functor)(i, east.fixed_y, t);
+                    west_vals[i] = (*functor)(i, west.fixed_y, t);
                 }
             }
+        };
+
+        struct MatrixView
+        {
+            using MatrixRow_t = Eigen::Block<Eigen::SparseMatrix<RealType>, 1, -1, false>;
+            using RHS_t = Eigen::Block<Eigen::VectorXd, 1, 1, false>;
+            MatrixView(MatrixRow_t A,
+                       RHS_t rhs,
+                       std::ptrdiff_t diag,
+                       std::ptrdiff_t neib)
+                : matrix{A}, rhs{rhs}, diag{diag}, neib{neib}
+            {
+            }
+
+            MatrixRow_t matrix;
+            RHS_t rhs;
+            std::ptrdiff_t diag, neib;
         };
 
         struct BoundaryConditions
@@ -90,18 +108,14 @@ namespace GPN
             template <typename Grid_t>
             BoundaryConditions(
                 const Grid_t &grid,
-                std::shared_ptr<const BCFunctorBase> functor)
+                std::shared_ptr<const BCFunctorBase> functor,
+                BoundaryCondition::BCType bc_type = BoundaryCondition::first)
                 : south_north{
-                      BCSouth{grid.first_coord.front()},
-                      BCNorth{grid.first_coord.back()},
+                      BCSouth{grid.first_coord.dual_front(), bc_type},
+                      BCNorth{grid.first_coord.dual_back(), bc_type},
                       grid.second_coord,
                       functor},
-                  east_west{
-                        BCEast{grid.second_coord.back()}, 
-                        BCWest{grid.second_coord.front()}, 
-                        grid.first_coord, 
-                        functor
-                    }
+                  east_west{BCEast{grid.second_coord.dual_back(), bc_type}, BCWest{grid.second_coord.dual_front(), bc_type}, grid.first_coord, functor}
             {
             }
 
@@ -111,6 +125,7 @@ namespace GPN
             {
                 return east_west.east_vals[i];
             }
+
             RealType west_vals(auto i) const
             {
                 return east_west.west_vals[i];
@@ -129,6 +144,78 @@ namespace GPN
             {
                 east_west.set_vals(t);
                 south_north.set_vals(t);
+            }
+
+            void set_west_val(MatrixView &view, auto i) const
+            {
+                if (east_west.west.type == BoundaryCondition::BCType::first)
+                {
+                    view.matrix.coeffRef(view.diag) = (RealType)1.0;
+                    view.matrix.coeffRef(view.neib) = (RealType)0.0;
+                    view.rhs.coeffRef(0) = west_vals(i);
+                    return;
+                }
+                else if (east_west.west.type == BoundaryCondition::BCType::second)
+                {
+                    view.rhs.coeffRef(0) += west_vals(i);
+                    return;
+                }
+
+                assert(false && "Boundary condition is not properly set");
+            }
+
+            void set_east_val(MatrixView &view, auto i) const
+            {
+                if (east_west.east.type == BoundaryCondition::BCType::first)
+                {
+                    view.matrix.coeffRef(view.diag) = (RealType)1.0;
+                    view.matrix.coeffRef(view.neib) = (RealType)0.0;
+                    view.rhs.coeffRef(0ll) = east_vals(i);
+                    return;
+                }
+                else if (east_west.east.type == BoundaryCondition::BCType::second)
+                {
+                    view.rhs.coeffRef(0) += east_vals(i);
+                    return;
+                }
+
+                assert(false && "Boundary condition is not properly set");
+            }
+
+            void set_south_val(MatrixView &view, auto i) const
+            {
+                if (south_north.south.type == BoundaryCondition::BCType::first)
+                {
+                    view.matrix.coeffRef(view.diag) = (RealType)1.0;
+                    view.matrix.coeffRef(view.neib) = (RealType)0.0;
+                    view.rhs.coeffRef(0) = south_vals(i);
+                    return;
+                }
+                else if (south_north.south.type == BoundaryCondition::BCType::second)
+                {
+                    view.rhs.coeffRef(0) += south_vals(i);
+                    return;
+                }
+
+                assert(false && "Boundary condition is not properly set");
+            }
+
+            void set_north_val(MatrixView &view, auto i) const
+            {
+                if (south_north.north.type == BoundaryCondition::BCType::first)
+                {
+                    view.matrix.coeffRef(view.diag) = (RealType)1.0;
+                    view.matrix.coeffRef(view.neib) = (RealType)0.0;
+                    view.rhs.coeffRef(0ll) = north_vals(i);
+                    return;
+                }
+                else if (south_north.north.type == BoundaryCondition::BCType::second)
+                {
+                    view.rhs.coeffRef(0) += north_vals(i);
+                    return;
+                }
+
+                assert(false && "Boundary condition is not properly set");
             }
 
         protected:

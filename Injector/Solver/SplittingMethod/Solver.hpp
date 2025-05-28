@@ -10,8 +10,8 @@
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/Grids1D.hpp>
-#include <Injector/Grids/PhysicalField.hpp>
-#include <Injector/Solver/BoundaryConditions.hpp>
+#include <Injector/Properties/PhysicalField.hpp>
+// #include <Injector/Solver/BoundaryConditions.hpp>
 
 #include <Injector/Solver/SplittingMethod/SplitX.hpp>
 #include <Injector/Solver/SplittingMethod/SplitY.hpp>
@@ -28,30 +28,32 @@ namespace GPN
                 TemporalTerm(
                     const Capacity_t &factor,
                     const Grid_t &grid)
-                    : factor{grid.volumes() * factor.values()} // volumes are taken into account
+                    : capacity{grid.volumes() * factor.values()} // volumes are taken into account
                 {
-                    for (auto j{0ll}; j < this->factor.cols(); ++j)
-                        for (auto i{0ll}; i < this->factor.rows(); ++i)
+                    for (auto j{0ll}; j < this->capacity.cols(); ++j)
+                        for (auto i{0ll}; i < this->capacity.rows(); ++i)
                         {
-                            assert(!std::isinf(this->factor(i, j)));
-                            assert(!std::isnan(this->factor(i, j)));
+                            assert(!std::isinf(this->capacity(i, j)));
+                            assert(!std::isnan(this->capacity(i, j)));
                         }
                 }
 
                 auto Divide(RealType tau) const
                 {
                     assert(tau != 0.0);
-                    return (static_cast<RealType>(1.0) / tau) * factor;
+                    return (static_cast<RealType>(1.0) / tau) * capacity;
                 }
 
             protected:
                 // multiplied by cell volume
-                Eigen::ArrayXX<RealType> factor;
+                const Eigen::ArrayXX<RealType> capacity;
             };
 
             template <
                 typename Grid_t,
-                typename Capacity_t>
+                typename Capacity_t,
+                typename FlowField_t,
+                typename BC_t>
             struct Solver
             {
                 using Map1D =
@@ -81,17 +83,19 @@ namespace GPN
                     typename LaplaceFactor_t>
                 Solver(
                     const LaplaceFactor_t &laplace_factor,
+                    const FlowField_t &flow_field,
                     const cptr<Grid_t> grid,
                     const Capacity_t &time_factor,
                     const State::State2D &initial_state,
-                    const BoundaryConditions::BoundaryConditions &bc,
+                    const BC_t &bc,
                     RealType initial_moment = 0.0)
                     : splitX{laplace_factor, grid},
                       splitY{laplace_factor, grid},
                       time_factor{time_factor, *grid},
                       grid{grid},
-                      first_coord_size{grid->first_coord.size()},
-                      second_coord_size{grid->second_coord.size()},
+                      flow_field{flow_field},
+                      first_coord_size{grid->first_coord.mesh_size()},
+                      second_coord_size{grid->second_coord.mesh_size()},
                       state{initial_state}, // init with initial condition
                       bc{bc},
                       states(),
@@ -102,6 +106,9 @@ namespace GPN
                     time_moments.push_back(initial_moment);
                     states.emplace_back(state);
                 }
+
+                Solver(const Solver &) = default;
+                Solver(Solver &&) noexcept = default;
 
                 template <typename Factory_t>
                 static auto set_from_factory(const Factory_t &factory)
@@ -122,11 +129,18 @@ namespace GPN
 
                     // solve a set of 1D problems in y-direction, for various x-coords
                     bc.set_vals(time_moments.back() + tau / 2.0);
-
-                    solve_split_x(tau_factor.data());
+                    solve_split_y(tau_factor.data());
 
                     // solve a set of 1D problems in x-direction, for various y-coords
                     bc.set_vals(time_moments.back() + tau);
+                    solve_split_x(tau_factor.data());
+                    
+                    // solve a set of 1D problems in x-direction, for various y-coords
+                    bc.set_vals(time_moments.back() + tau*3.0/2.0);
+                    solve_split_x(tau_factor.data());
+                    
+                    // solve a set of 1D problems in y-direction, for various x-coords
+                    bc.set_vals(time_moments.back() + tau * 2.0);
                     solve_split_y(tau_factor.data());
 
                     time_moments.push_back(time_moments.back() + tau);
@@ -166,8 +180,11 @@ namespace GPN
                     // to be provided to Eigen::Map
                     Stride_t stride{stride_size};
 
+                    const auto &split_flow_field{flow_field.axes2_as_face_normal};
+
 #pragma omp parallel for // num_threads(16) schedule(dynamic)
-                    //  take every line along x-direction. A line per y-node
+                    //   take every line along x-direction. A line per y-node
+                    //  It is a row of 2D grid representation
                     for (std::ptrdiff_t i = 0; i < first_coord_size; ++i)
                     {
                         // memory chunk in capacity-container, corresponding to x-line
@@ -184,19 +201,32 @@ namespace GPN
 
                         // right handside of Au = b problem
                         // source is only assumed in the last split step
-                        RHS_t rhs =
-                            (data.array() * time_factor.array()).matrix();
+                        RHS_t rhs{
+                            (data.array() * time_factor.array()).matrix()};
 
+                        // Laplace term
                         SpMatrix A{splitX.LaplaceTerm(i)};
+                        // cumulative term
                         A.diagonal() = A.diagonal() + time_factor;
+                        // convection term
+                        const auto &flow{split_flow_field.row(i).tail(second_coord_size).matrix().transpose()};
+                        // exclude leftmost edge
+                        A.diagonal() = A.diagonal() + flow;
+                        // exclude leftmost and rightmost edges
+                        for (auto idx{1ll}; idx < A.rows(); ++idx)
+                            A.coeffRef(idx, idx - 1ll) -= flow(idx - 1ll);
+
+                        // BC
                         applyBC_split_x(A, rhs, i);
                         // update current state
                         data = solve_linear_problem(A, rhs);
                     }
                 }
 
-                void solve_split_y(const RealType * const tau_factor)
+                void solve_split_y(const RealType *const tau_factor)
                 {
+                    const auto &split_flow_field{flow_field.axes1_as_face_normal};
+
 #pragma omp parallel for
                     // take every line along x-direction. A line per y-node.
                     // It is a col of 2D grid representation
@@ -220,10 +250,20 @@ namespace GPN
                         //     first_coord_size};
 
                         // right handside of Au = b problem
-                        RHS_t rhs = (data * time_factor + source).matrix();
+                        RHS_t rhs{(data * time_factor + source).matrix()};
 
+                        // Laplace term
                         SpMatrix A{splitY.LaplaceTerm(j)};
+                        // cululative term
                         A.diagonal() = A.diagonal() + time_factor.matrix();
+                        // convection term
+                        const auto &flow{split_flow_field.col(j).tail(first_coord_size).matrix()};
+                        // exclude leftmost edge
+                        A.diagonal() = A.diagonal() + flow;
+                        // exclude leftmost and rightmost edges
+                        for (auto idx{1ll}; idx < A.rows(); ++idx)
+                            A.coeffRef(idx, idx - 1ll) -= flow(idx - 1ll);
+                        // BC
                         applyBC_split_y(A, rhs, j);
 
                         // update current state
@@ -233,11 +273,12 @@ namespace GPN
 
                 const SplitX splitX;
                 const SplitY splitY;
-                BoundaryConditions::BoundaryConditions bc;
+                BC_t bc;
                 const TemporalTerm time_factor;
                 // required to keep grid in memory ////
                 const cptr<Grid_t> grid; //////////////
                 ///////////////////////////////////////
+                FlowField_t flow_field;
                 const std::ptrdiff_t first_coord_size;
                 const std::ptrdiff_t second_coord_size;
                 State::State2D state;
@@ -260,30 +301,28 @@ namespace GPN
 
                 void applyBC_split_x(SpMatrix &A, RHS_t &b, ptrdiff_t i)
                 {
-                    A.coeffRef(0, 0) = 1.0;
-                    A.coeffRef(0, 1) = 0.0;
-                    b(0) = bc.west_vals(i);
-
-                    ptrdiff_t n = A.outerSize() - 1;
-                    A.coeffRef(n, n) = 1.0;
-                    A.coeffRef(n, n - 1) = 0.0;
-                    b(n) = bc.east_vals(i);
+                    {
+                        BoundaryConditions::MatrixView view{A.row(0ll), b.row(0ll), 0ll, 1ll};
+                        bc.set_west_val(view, i);
+                    }
+                    {
+                        std::ptrdiff_t n = A.outerSize() - 1;
+                        BoundaryConditions::MatrixView view{A.row(n), b.row(n), n, n - 1};
+                        bc.set_east_val(view, i);
+                    }
                 }
 
                 void applyBC_split_y(SpMatrix &A, RHS_t &b, ptrdiff_t j)
                 {
-                    A.coeffRef(0, 0) = 1.0;
-                    A.coeffRef(0, 1) = 0.0;
-                    assert(!std::isinf(bc.south_vals(j)));
-                    assert(!std::isnan(bc.south_vals(j)));
-                    b(0) = bc.south_vals(j);
-
-                    ptrdiff_t n = A.outerSize() - 1ll;
-                    A.coeffRef(n, n) = 1.0;
-                    A.coeffRef(n, n - 1) = 0.0;
-                    assert(!std::isinf(bc.north_vals(j)));
-                    assert(!std::isnan(bc.north_vals(j)));
-                    b(n) = bc.north_vals(j);
+                    {
+                        BoundaryConditions::MatrixView view{A.row(0ll), b.row(0ll), 0ll, 1ll};
+                        bc.set_south_val(view, j);
+                    }
+                    {
+                        std::ptrdiff_t n = A.outerSize() - 1;
+                        BoundaryConditions::MatrixView view{A.row(n), b.row(n), n, n - 1};
+                        bc.set_north_val(view, j);
+                    }
                 }
             };
         } // SplittingMethod

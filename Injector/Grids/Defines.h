@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <vector>
+#include <memory>
 
 #include <Eigen/Core>
 
@@ -53,18 +54,37 @@ namespace GPN
     };
 
     using RealType = double;
-    using MeshNodesContainer = custom_vector<RealType>; // use Eigen::ArrayX<RealType>; in Release
+    using MeshNodesContainer = Eigen::ArrayX<RealType>; // column array
+    using MeshNodesContainerT = Eigen::Array<RealType, 1, -1>; // row array
     using LogValuesContainer = MeshNodesContainer;
+
+    using StepPropertyContainer = Eigen::ArrayX<RealType>;
+    using InternalFaceValues = Eigen::ArrayX<RealType>;
+    using InternalFaceValuesT = Eigen::Array<RealType, 1, -1>; // row array
+
+    /// @brief Container for the dual nodes coordinates
     struct DualNodesContainer : public MeshNodesContainer
     {
+        using MeshNodesContainer::MeshNodesContainer;
     };
     using MeshStepsContainer = MeshNodesContainer;
 
-    /// @brief Normal distance between two faces of control volume
-    using DualStepsContainer = MeshNodesContainer;
+    /// @brief Container for the normal distance
+    /// between two faces of control volume
+    struct DualStepsContainer : public MeshNodesContainer
+    {
+        using MeshNodesContainer::MeshNodesContainer;
+        DualStepsContainer(const std::vector<RealType> &data)
+            : MeshNodesContainer(data.size())
+        {
+            for (std::ptrdiff_t i{0}; i < static_cast<ptrdiff_t>(data.size()); ++i)
+                (*this)[i] = data[i];
+        }
+    };
     using ControlVolumesContainer = MeshNodesContainer;
 
     using CellVolumeContainer2D = Eigen::ArrayXX<RealType>;
+    using CellNodesContainer2D = CellVolumeContainer2D;
     using FluxComponentContainer = Eigen::ArrayXX<RealType>;
 
     using GridNodeValues2D = Eigen::ArrayXX<RealType>;
@@ -73,24 +93,32 @@ namespace GPN
     template <typename T>
     using cptr = std::shared_ptr<T>;
 
-    struct Directions
+    struct Gravity
     {
-        enum
+        constexpr static RealType value() noexcept
         {
-            x1,
-            x2,
-            size
-        };
+            return (RealType)9.81;
+        }
     };
+
+    //    struct Directions
+    //    {
+    enum struct Directions
+    {
+        x1,
+        x2,
+        size
+    };
+    //    };
 
     struct ScalarParameter
     {
-        RealType operator()(std::ptrdiff_t idx)
+        RealType operator()(std::ptrdiff_t)
         {
             return value;
         }
 
-        RealType operator()(RealType coord)
+        RealType operator()(RealType)
         {
             return value;
         }
@@ -189,7 +217,7 @@ namespace GPN
 
         struct BCSouth : public BoundaryCondition
         {
-            BCSouth(RealType fixed_x, BCType type = BCType::first)
+            BCSouth(RealType fixed_x, BCType type)
                 : BoundaryCondition{type}, fixed_x{fixed_x}
             {
             }
@@ -199,7 +227,7 @@ namespace GPN
 
         struct BCNorth : public BoundaryCondition
         {
-            BCNorth(RealType fixed_x, BCType type = BCType::first)
+            BCNorth(RealType fixed_x, BCType type)
                 : BoundaryCondition{type}, fixed_x{fixed_x}
             {
             }
@@ -209,7 +237,7 @@ namespace GPN
 
         struct BCEast : public BoundaryCondition
         {
-            BCEast(RealType fixed_y, BCType type = BCType::first)
+            BCEast(RealType fixed_y, BCType type)
                 : BoundaryCondition{type}, fixed_y{fixed_y}
             {
             }
@@ -219,7 +247,7 @@ namespace GPN
 
         struct BCWest : public BoundaryCondition
         {
-            BCWest(RealType fixed_y, BCType type = BCType::first)
+            BCWest(RealType fixed_y, BCType type)
                 : BoundaryCondition{type}, fixed_y{fixed_y}
             {
             }
@@ -229,7 +257,8 @@ namespace GPN
 
         struct BCFunctorBase
         {
-            virtual RealType operator()(RealType x, RealType y, RealType t) const = 0;
+            virtual RealType operator()(ptrdiff_t x, RealType y, RealType t) const = 0;
+            virtual RealType operator()(RealType x, ptrdiff_t y, RealType t) const = 0;
         };
     } // BoundaryConditions
 } // EqSolver

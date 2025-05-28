@@ -14,14 +14,6 @@ macro(add_catch2_test name)
     ${TEST_NAME} PRIVATE 
       "${CMAKE_CURRENT_SOURCE_DIR}/../deps/eigen"
   )
-#   target_include_directories(
-#     ${TEST_NAME} PRIVATE 
-#       "${CMAKE_CURRENT_SOURCE_DIR}/../deps/gtest"
-#   )
-#   target_link_libraries(
-#     ${TEST_NAME} PRIVATE
-#       gtest_main
-#   ) 
 
 # set_target_properties(
 #     ${TEST_NAME}
@@ -33,6 +25,7 @@ macro(add_catch2_test name)
 # apply_warning_flags_to_targets(TEST_NAME) # Apply warning flags
 
   target_link_libraries(${TEST_NAME} PRIVATE Catch2::Catch2WithMain)
+  target_link_libraries(${TEST_NAME} PRIVATE nlohmann_json::nlohmann_json)
 
   # let the preprocessor know about the system name
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -49,7 +42,7 @@ macro(add_catch2_test name)
   if(MSVC AND MSVC_VERSION GREATER 1400)
     target_compile_options(
       ${TEST_NAME} PRIVATE 
-      /MP)
+      /MP /DEBUG)
   else()
     target_compile_options(
       ${TEST_NAME} PRIVATE

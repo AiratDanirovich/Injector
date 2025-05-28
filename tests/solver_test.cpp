@@ -1,129 +1,108 @@
 #include <iostream>
 #include <memory>
 
-#include <catch2/catch_test_macros.hpp>
-
 #include <Injector/Grids/Defines.h>
-#include <Injector/Grids/CoordinateTypes.h>
-#include <Injector/Properties/Logs.hpp>
-#include <Injector/Grids/PhysicalField.hpp>
+#include <Injector/Properties/FaceProperties.hpp>
 
-#include <Injector/Grids/Grids2D.hpp>
-#include <Injector/Solver/State2D.hpp>
-#include <Injector/Solver/InitialCondition.hpp>
-#include <Injector/Solver/BoundaryConditions.hpp>
-#include <Injector/Grids/Factory.hpp>
-#include <Injector/Properties/Factory.hpp>
+#include <Injector/Properties/FlowField.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
+#include <Injector/Model/Collector.hpp>
 
+#include <Injector/Solver/BoundaryConditions.hpp>
+#include <Injector/Solver/InitialCondition.hpp>
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
 
+#include <catch2/catch_test_macros.hpp>
+
+struct ABCFunctor : public GPN::BoundaryConditions::BCFunctorBase
+{
+    ABCFunctor(RealType val) : val{val} {}
+
+
+  RealType operator()(ptrdiff_t, RealType, RealType) const override
+  {
+    return val;
+  }
+
+  RealType operator()(RealType, ptrdiff_t, RealType) const override
+  {
+    return val;
+  }
+
+protected:
+    RealType val;
+};
+
+using namespace std;
 using namespace GPN;
-using namespace GPN::Grids;
-using namespace GPN::Logs;
 using namespace GPN::EqSolver;
-using namespace GPN::EqSolver::State;
-using namespace GPN::EqSolver::Problem;
 using namespace GPN::EqSolver::SplittingMethod;
 
-struct BCFunctor : public GPN::BoundaryConditions::BCFunctorBase
-{
-    RealType operator()(
-        RealType x, RealType y, RealType t) const override
-    {
-        return 1.0;
-    }
-};
+// const RealType well_rate{1.0};
+const RealType val{1.0};
+const auto z_stencils{
+    Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 5)};
+const auto r_stencils{
+    Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 11)};
+
+// hydrodynamic logs
+const auto is_permeable_stencils{
+    Logs::RawDataFactory::generate_is_permeable(z_stencils)};
+const auto porosity_stencils{
+    Logs::RawDataFactory::generate_porosity(z_stencils, is_permeable_stencils)};
+const auto permeability_stencils{
+    Logs::RawDataFactory::generate_permeability(z_stencils, is_permeable_stencils)};
+// heat logs
+const auto solid_density_stencils{
+    Logs::RawDataFactory::generate_solid_density(z_stencils)};
+const auto solid_specific_heatcapacity_stencils{
+    Logs::RawDataFactory::generate_solid_specific_heatcapacity(z_stencils)};
+const auto heatconductivity_stencils{
+    Logs::RawDataFactory::generate_conductivity(z_stencils)};
 
 TEST_CASE("Solver")
 {
-#pragma region GRID_2D
-    // generate 1D grids in every direction --- points of property jumps
-    const cptr<StructuredCylinderGrid2DAxisymmetric> grid2D{
-        std::make_shared<StructuredCylinderGrid2DAxisymmetric>(
-            Grids::Factory::create_cylinder_grid_2D(
-                Box{Segment{0, 1}, Segment{0, 1}}, 5, 11))};
-    const auto &z_grid_stencils{grid2D->first_coord.dual_stencils};
-    const auto &z_grid{grid2D->first_coord};
-#pragma endregion
-#pragma region HEAT-CONDUCTIVITY
-    // generate heat conductivity field
-    Properties::HeatConductivity conductivity_field{
-        Logs::HeatConductivity{
-            Logs::StepPropertyGrid{
-                Logs::StepProperty{
-                    Logs::Factory::generate_conductivity_StepProperty(
-                        grid2D->first_coord.dual_stencils)},
-                grid2D->first_coord}},
-        grid2D};
-#pragma endregion
+    const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
+    const auto &grid{grid2D->first_coord};
 
-    auto solid_density_stencils{
-        Logs::Factory::generate_solid_density_StepProperty(
-            z_grid_stencils)};
-    auto solid_density{
-        SolidDensity{
-            StepPropertyGrid{
-                StepProperty{
-                    solid_density_stencils},
-                z_grid}}};
+    const Logs::Rocks::HeatLogs heat_logs{
+        solid_density_stencils,
+        solid_specific_heatcapacity_stencils,
+        heatconductivity_stencils,
+        porosity_stencils,
+        Phases::FluidFactory::create_water(1.0, 1.0),
+        grid};
 
-    auto solid_specific_heatcapacity_stencils{
-        Logs::Factory::generate_solid_specific_heatcapacity_StepProperty(
-            z_grid_stencils)};
-    auto solid_specific_heatcapacity{
-        SolidSpecificHeatCapacity{
-            StepPropertyGrid{
-                StepProperty{
-                    solid_specific_heatcapacity_stencils},
-                z_grid}}};
+    const Properties::Rocks::HeatProps heat_props{
+        heat_logs, grid2D};
 
-    auto solid_volumetric_heatcapacity{
-        SolidVolumetricHeatCapacity{
-            solid_density, solid_specific_heatcapacity}};
+    const FaceProperties::Rocks::HeatFaceProps heat_face_props{
+        heat_props, grid2D};
 
-    auto water{Phases::FluidFactory::create_water(300, 10)};
-    auto is_permeable{
-        IsPermeable{
-            StepPropertyGrid{
-                StepProperty{
-                    Logs::Factory::generate_is_permeable_StepProperty(z_grid_stencils)},
-                z_grid}}};
+    const Problem::InitialCondition initial_state{
+        State::State2D::FillWithConst(
+            *grid2D, val)};
 
-    auto porosity_stencils{Logs::Factory::generate_porosity_StepProperty(z_grid_stencils)};
+    const BoundaryConditions::BoundaryConditions bc{
+        *grid2D,
+        make_shared<ABCFunctor>(val)};
 
-    const auto porosity{
-        Logs::Porosity{
-            Logs::StepPropertyGrid{
-                Logs::StepProperty{
-                    porosity_stencils},
-                z_grid} * // guarantee that porosity is zero in rocks
-                is_permeable,
-            is_permeable}};
+    const Logs::Rocks::CoreSampleLogs core_data{
+        is_permeable_stencils,
+        porosity_stencils,
+        permeability_stencils,
+        grid};
 
-    auto capacity{
-        Logs::HeatVolumetricCapacity{
-            porosity, solid_volumetric_heatcapacity, water}};
-
-    Properties::HeatVolumetricCapacity capacity_field{
-        capacity,
-        grid2D};
-
-    InitialCondition
-        initial_state{
-            State2D::FillWithConst(
-                *grid2D, 1.0)};
-
-    GPN::BoundaryConditions::BoundaryConditions
-        bc{
-            *grid2D,
-            std::make_shared<BCFunctor>(BCFunctor{})};
-
-    const double tol = 1E-8;
+    const auto flow_field{
+        FaceProperties::FlowFactory::zero_flow(
+            core_data.is_permeable, *grid2D)};
 
     Solver solver{
-        conductivity_field, grid2D,
-        capacity_field,
+        heat_face_props.heat_conductivity,
+        flow_field, grid2D,
+        heat_props.medium_vol_heatcapacity,
         initial_state,
         bc, 0.0};
+
+    solver.advance(0.005);
 }

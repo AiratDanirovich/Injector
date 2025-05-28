@@ -9,6 +9,9 @@ namespace GPN
 {
     namespace CoordinateTypes
     {   
+        /// @brief Calculations associated with any coordinate axes,
+        /// i.e., steps between (dual and regular) adjacent nodes, 
+        /// center coordinates between two nodes
         struct GeneralCoordinate
         {
             /// @brief Normal distance between two faces of control volume
@@ -17,11 +20,14 @@ namespace GPN
                 auto size{nodes.size()-1ull};
                 assert(size > 0);
                 DualStepsContainer out(size);
-                for(auto idx{size-size}; idx < size-1; ++idx)
+                for(auto idx{size-size}; idx < size; ++idx)
                     out(idx) = nodes(idx+1) - nodes(idx);
                 return out;
             }
 
+            /// @brief 
+            /// @param nodes Nodes of dual mesh
+            /// @return Centers of control volumes
             static auto cell_centers(const DualNodesContainer& nodes)
             {
                 auto size{nodes.size()-1ull};
@@ -31,6 +37,9 @@ namespace GPN
                 return out;
             }
 
+            /// @brief 
+            /// @param nodes Nodes of dual mesh
+            /// @return Steps between centers of control volumes
             static auto mesh_steps(const DualNodesContainer& nodes)
             {
                 auto mesh_nodes{cell_centers(nodes)};
@@ -44,11 +53,12 @@ namespace GPN
             }
         };
 
+        /// @brief Calculations associated with Cartesian
         struct CartesianCoordinate : public GeneralCoordinate
         {
             /// @brief Generate control volumes from dual mesh
-            /// @param nodes 
-            /// @return 
+            /// @param nodes Nodes of dual mesh
+            /// @return Volumes of control cells
             static auto control_volumes(const DualNodesContainer& nodes)
             {
                 auto size{nodes.size()-1ull};
@@ -71,21 +81,38 @@ namespace GPN
                 assert(xMid != xR);
                 assert(xL != xR);
 
+                if((valL == 0.0) || (valR == 0.0))
+                    return 0.0;
+
                 return 1.0/((xMid - xL)/valL + (xR - xMid)/valR);
+            }
+
+            
+            /// @brief Interpolate const heat conductivity (factor at Laplace term)
+            /// @return Heat conductivity at cell face
+            static auto const_face_interpolator(
+                RealType xL,
+                RealType xR,
+                const Eigen::ArrayX<RealType>& val)
+            {
+                assert(xL != xR);
+                return 1.0/((xR-xL)/val);
             }
         };
 
+        /// @brief X coordinate
         struct X : public CartesianCoordinate{};
+        /// @brief Y coordinate
         struct Y : public CartesianCoordinate{};
+        /// @brief Z coordinate
         struct Z : public CartesianCoordinate{};
         
-        using Cartesian2DCoordinates =
-            CoordinateSystem2D<
-                CoordinateTypes::X,
-                CoordinateTypes::Y>;
-
+        /// @brief R coordinate of cylinder (polar) system of coordinates
         struct R_CylCoord  : public GeneralCoordinate
         {
+            /// @brief Calculates volumes of grid cells for radial coordinate
+            /// @param nodes Nodes of dual mesh
+            /// @return Volumes of control volume cells
             static auto control_volumes(const DualNodesContainer& nodes)
             {
                 auto size{nodes.size()-1ull};
@@ -110,6 +137,9 @@ namespace GPN
                 assert(xMid != xR);
                 assert(xL != xR);
 
+                if((valL == 0.0) || (valR == 0.0))
+                    return 0.0;
+                    
                 return 1.0/(std::log(xMid/xL)/valL + std::log(xR/xMid)/valR);
             }
             /// @brief Interpolate const heat conductivity (factor at Laplace term)
@@ -129,10 +159,5 @@ namespace GPN
                 return (x2 * x2 - x1 * x1) / 2.0;
             }
         };
-
-        using CylinderCoordinates =
-            CoordinateSystem2D<
-                CoordinateTypes::Z,
-                CoordinateTypes::R_CylCoord>;
     } // CoordinateTypes
 } // GPN

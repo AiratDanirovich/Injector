@@ -31,8 +31,8 @@ namespace GPN
                     const cptr<Grid_t> &grid)
                     : BaseSplit{
                           laplace_factor.face_vals_axes2,
-                          grid->first_coord.size(),  // nmbr of matricies
-                          grid->second_coord.size()} // nmbr of unknowns
+                          grid->first_coord.mesh_size(),  // nmbr of matricies
+                          grid->second_coord.mesh_size()} // nmbr of unknowns
                 {
                     assert(BaseSplit::laplace_factor.rows() == grid->first_coord.mesh_size());
                     assert(BaseSplit::laplace_factor.cols() == grid->second_coord.dual_size() - 2ll);
@@ -92,6 +92,15 @@ namespace GPN
                         matrix.setFromTriplets(tripletList.begin(), tripletList.end());
                     }
                 }
+            };
+
+            struct ConvectionX
+            {
+                template<typename Grid_t>
+                ConvectionX(
+                    const cptr<Grid_t> &grid)
+                {}
+
             };
         } // SplittingMethod
     } // EqSolver

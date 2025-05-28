@@ -14,14 +14,15 @@ namespace GPN
 
     namespace Grids
     {
-        /// @brief Stencils of temporal grid consists of dual nodes -- moments of rate change
-        struct TemporalGridStencils : public GridDualStencils
+        /// @brief Stencils of temporal grid
+        /// consists of dual nodes -- moments of rate change
+        struct TemporalGridDualStencils : public GridDualStencils
         {
             using GridDualStencils::GridDualStencils;
         };
 
         /// @brief Refined temporal grid
-        struct TemporalGrid : public GridDual
+        struct TemporalGridDual : public GridDual
         {
             using GridDual::GridDual;
         };
