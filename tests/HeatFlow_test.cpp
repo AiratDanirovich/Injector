@@ -238,14 +238,25 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       rates_factory, initial_state,
       bc, t0);
 
-  const auto& solver{*solver_ptr};
+  const auto &solver{*solver_ptr};
 
   SolverManager solver_manager{history, solver_ptr};
 
-  solver_manager.run(0.01);
+  solver_manager.run(0.02);
 
   // assert solution
   const double tol = 1E-15;
+  const auto precision{1e-5};
+
+  {
+    string path{std::string{"flow_field.txt"}};
+    ofstream f{path};
+    f << (rates_factory.get_flow_in_axes1() / precision).round() * precision << endl
+      << endl;
+    f << (rates_factory.get_flow_in_axes2() / precision).round() * precision << endl
+      << endl;
+    f.close();
+  }
 
   cout << "flow_field.axes1_as_face_normal:\n";
   cout << rates_factory.get_flow_in_axes1() << endl
