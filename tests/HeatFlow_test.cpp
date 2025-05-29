@@ -83,7 +83,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   RealType operator()(ptrdiff_t z_id, RealType r, RealType t) const override
   {
     if (r == grid_ptr->second_coord.dual_front())
-      return flow_field.get_flow_in_axes1()(z_id, 0ll) * inlet_temp;
+      return flow_field.get_flow_in_axes2()(z_id, 0ll) * inlet_temp;
 
     if (r == grid_ptr->second_coord.dual_back())
       return 0.0;
