@@ -26,7 +26,7 @@ namespace GPN
                   functor{functor}
             {
                 assert(south_vals.size() == north_vals.size());
-                set_vals(t);
+            //    set_vals(t);
             }
 
             BCSouth south;
@@ -63,7 +63,7 @@ namespace GPN
                   functor{functor}
             {
                 assert(east_vals.size() == west_vals.size());
-                set_vals(t);
+            //    set_vals(t);
             }
 
             BCEast east;
@@ -115,7 +115,11 @@ namespace GPN
                       BCNorth{grid.first_coord.dual_back(), bc_type},
                       grid.second_coord,
                       functor},
-                  east_west{BCEast{grid.second_coord.dual_back(), bc_type}, BCWest{grid.second_coord.dual_front(), bc_type}, grid.first_coord, functor}
+                  east_west{
+                    BCEast{grid.second_coord.dual_back(), bc_type}, 
+                    BCWest{grid.second_coord.dual_front(), bc_type}, 
+                    grid.first_coord, 
+                    functor}
             {
             }
 
