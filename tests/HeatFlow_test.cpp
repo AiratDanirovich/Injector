@@ -125,7 +125,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   RealType
       viscosity{data["fluid"]["viscosity"]},
       density{data["fluid"]["density"]},
-      capacity{data["fluid"]["specificHeatCapacity"]};
+      capacity{data["fluid"]["specificHeatCapacity"]},
+      heat_conductivity{data["fluid"]["heatConductivity"]};
   /*collector*/
   const ptrdiff_t nLayers{data["collector"]["nLayers"]};
   const VR thickness(nLayers, data["collector"]["thickness"]);
@@ -186,8 +187,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       FluidFactory::create_water(
           Viscosity{viscosity},
           Density{density},
-          SpecificHeatCapacity{capacity})};
-  // logs and properties
+          SpecificHeatCapacity{capacity},
+          GPN::HeatConductivity{heat_conductivity})};
+
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
       solid_specific_heatcapacity_stencils,
