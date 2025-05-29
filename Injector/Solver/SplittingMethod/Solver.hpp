@@ -134,7 +134,7 @@ namespace GPN
                     // tau_factor multiplies Delta_u at different time moments,
                     // i.e., t and t+tau
                     Eigen::ArrayXX<RealType> tau_factor{
-                        time_factor.Divide(tau)};
+                        time_factor.Divide(tau/2.0)};
 
                     // solve a set of 1D problems in y-direction, for various x-coords
                     bc.set_vals(time_moments.back() + tau / 4.0);
