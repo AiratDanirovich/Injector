@@ -1,4 +1,5 @@
 #include <fstream>
+#include <vector>
 #include <nlohmann/json.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -12,6 +13,12 @@ TEST_CASE("BaseSplitTest")
 
     REQUIRE(f.is_open());
     json data = json::parse(f);
+
+    std::vector<double> v = data["array"];
+
+    CHECK(v[0] == 0.0);
+    CHECK(v[1] == 1.5);
+    CHECK(v[2] == 2.0);
 
     CHECK(data["fluid"]["density"] == 1.0);
     CHECK(data["fluid"]["viscosity"] == 1.0);
