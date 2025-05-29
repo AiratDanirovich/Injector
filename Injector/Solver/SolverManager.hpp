@@ -35,9 +35,8 @@ namespace GPN
                     // loop within the histroy entry
                     // with the numerical scheme time step
                     for (size_t id{0ull}; id < internal_step_count; ++id)
-                    {std::cout << "before_advance" << std::endl;
+                    {
                         solver->advance(step);
-                       std::cout << "after_advance" << std::endl; 
                     }
                     solver->save_state();
                 }
