@@ -84,7 +84,6 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
     return 0.0;
   }
 
-
 protected:
   RealType inlet_temp;
   const FaceProperties::ReservoirFlowField &flow_field;
@@ -97,7 +96,7 @@ using VR = std::vector<RealType>;
 /*START*/
 // input parameters
 /*fluid*/
-RealType viscosity{6e-4}, density{1}, capacity{1};
+RealType viscosity{6e-4}, density{1}, capacity{1}, heat_conductivity{0.6};
 /*collector*/
 const RealType rMin{1 / (2 * numbers::pi)}, rMax{1.0}, zTop{0.0}; // m
 const std::ptrdiff_t rNodes{201ull};
@@ -152,7 +151,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       FluidFactory::create_water(
           Viscosity{viscosity},
           Density{density},
-          SpecificHeatCapacity{capacity})};
+          SpecificHeatCapacity{capacity},
+          GPN::HeatConductivity{heat_conductivity})};
 
   const Logs::Rocks::IsPermeableLog hydrodynamics_logs{
       is_permeable_stencils,

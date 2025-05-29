@@ -2,7 +2,8 @@
   "fluid": {
     "density": 1.0,
     "viscosity": 6e-4,
-    "specificHeatCapacity": 1.0
+    "specificHeatCapacity": 1.0,
+    "heatConductivity": 0.6
   },
   "collector": {
     "nLayers": 20,

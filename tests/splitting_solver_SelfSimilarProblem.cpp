@@ -117,7 +117,7 @@ struct AFunctorBC : public GPN::BoundaryConditions::BCFunctorBase
       z = grid2D->first_coord.mesh_back();
     else
       assert(false);
-      
+
     return es(z, r, t);
   }
 
@@ -133,7 +133,7 @@ using VR = std::vector<RealType>;
 /*heat rate*/
 RealType q{1.0};
 /*fluid*/
-RealType viscosity{6e-4}, density{1000}, capacity{4200};
+RealType viscosity{6e-4}, density{1000}, capacity{4200}, heat_conductivity{0.6};
 /*collector*/
 const RealType rMin{1.0}, rMax{2.0}, zTop{0.0};
 const std::ptrdiff_t rNodes{301ull};
@@ -170,7 +170,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       FluidFactory::create_water(
           Viscosity{viscosity},
           Density{density},
-          SpecificHeatCapacity{capacity})};
+          SpecificHeatCapacity{capacity},
+          GPN::HeatConductivity{heat_conductivity})};
   // time moments
   const VR t_stencils(
       Grids::Factory::generate_dual_grid_stencils_from_steps(

@@ -15,10 +15,13 @@ namespace GPN
             }
             FluidFactory(Viscosity viscosity,
                          Density density,
-                         SpecificHeatCapacity mass_heat_capacity)
-                : water{create_water(viscosity,
-                                     density,
-                                     mass_heat_capacity)}
+                         SpecificHeatCapacity mass_heat_capacity,
+                         HeatConductivity heat_conductivity)
+                : water{create_water(
+                      viscosity,
+                      density,
+                      mass_heat_capacity,
+                      heat_conductivity)}
             {
             }
 
@@ -29,17 +32,21 @@ namespace GPN
                     PhaseProperties{
                         Viscosity{6e-4},
                         Density{1000},
-                        SpecificHeatCapacity{4180}}};
+                        SpecificHeatCapacity{4180},
+                        HeatConductivity{0.6}}};
             }
-            static Water create_water(Viscosity viscosity,
-                                     Density density,
-                                     SpecificHeatCapacity mass_heat_capacity)
+            static Water create_water(
+                Viscosity viscosity,
+                Density density,
+                SpecificHeatCapacity mass_heat_capacity,
+                HeatConductivity heat_conductivity)
             {
                 return {
                     PhaseProperties{
                         viscosity,
                         density,
-                        mass_heat_capacity}};
+                        mass_heat_capacity,
+                        heat_conductivity}};
             }
         };
 
