@@ -9,7 +9,7 @@
     "thickness": 1.0,
     "porosity": 1.0,
     "permeability": 1.0,
-    "heatConductivity": 0.0,
+    "heatConductivity": 0.0000001,
     "solidDensity": 1.0,
     "solidSpecificHeatCapacity": 1.0,
     "initTemperature": 0.0
@@ -17,13 +17,13 @@
   "grid": {
     "ztop": 0.0,
     "r_start": 1.0,
-    "r_end": 5.0,
-    "rNodes": 150
+    "r_end": 1.25,
+    "rNodes": 11
   },
   "history": {
     "t_start": 0.0,
-    "t_end": 4.0,
-    "t_step": 0.02,
+    "t_end": 5.0,
+    "t_step": 0.01,
     "wellRate": 2.0,
     "inletTemperature": 1.0
   }
