@@ -320,7 +320,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     }
   }
 
-  const auto precision{1e-5};
   for (auto i{times.size() - 1ll}; i < times.size(); ++i)
   {
     const auto &state = states[i];
