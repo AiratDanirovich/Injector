@@ -22,7 +22,7 @@
   },
   "history": {
     "t_start": 0.0,
-    "t_end": 4.0,
+    "t_end": 0.1,
     "t_step": 0.02,
     "wellRate": 2.0,
     "inletTemperature": 1.0

@@ -37,6 +37,11 @@ TEST_CASE("HistoryTest")
     const auto history{
         History{rates}};
 
+    const auto history2{
+        HistoryFactory::create(
+            time_steps, Logs::RawDataFactory::generate_rates(
+                            time_moments))};
+
     const auto &grid{history.rates.grid};
     for (auto id{0ll}; id < grid.dual_nodes.size(); ++id)
         CHECK(grid.dual_nodes(id) == grid.dual_stencils(id));

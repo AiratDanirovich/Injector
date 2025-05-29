@@ -52,7 +52,7 @@ namespace GPN
             template <
                 typename Grid_t,
                 typename Capacity_t,
-                typename FlowField_t,
+                typename ConvectionTermFactory_t,
                 typename BC_t>
             struct Solver
             {
@@ -83,27 +83,33 @@ namespace GPN
                     typename LaplaceFactor_t>
                 Solver(
                     const LaplaceFactor_t &laplace_factor,
-                    const FlowField_t &flow_field,
                     const cptr<Grid_t> grid,
                     const Capacity_t &time_factor,
+                    ConvectionTermFactory_t &convection_factory,
                     const State::State2D &initial_state,
                     const BC_t &bc,
-                    RealType initial_moment = 0.0)
+                    RealType initial_moment)
                     : splitX{laplace_factor, grid},
                       splitY{laplace_factor, grid},
                       time_factor{time_factor, *grid},
                       grid{grid},
-                      flow_field{flow_field},
+                      convection_factory{convection_factory},
                       first_coord_size{grid->first_coord.mesh_size()},
                       second_coord_size{grid->second_coord.mesh_size()},
                       state{initial_state}, // init with initial condition
                       bc{bc},
                       states(),
-                      time_moments()
+                      time_moments(),
+                      cur_time{initial_moment}
                 {
                     time_moments.reserve(10ull);
                     states.reserve(10ull);
-                    time_moments.push_back(initial_moment);
+                    save_state();
+                }
+
+                void save_state()
+                {
+                    time_moments.push_back(cur_time);
                     states.emplace_back(state);
                 }
 
@@ -122,29 +128,31 @@ namespace GPN
 
                 void advance(RealType tau)
                 {
+                    convection_factory.set_flow_field(cur_time, tau);
+                    //    convection_factory.set_boundary_conditions(t0, t1);
+
                     // tau_factor multiplies Delta_u at different time moments,
                     // i.e., t and t+tau
                     Eigen::ArrayXX<RealType> tau_factor{
                         time_factor.Divide(tau)};
 
                     // solve a set of 1D problems in y-direction, for various x-coords
-                    bc.set_vals(time_moments.back() + tau / 2.0);
+                    bc.set_vals(time_moments.back() + tau / 4.0);
                     solve_split_y(tau_factor.data());
 
                     // solve a set of 1D problems in x-direction, for various y-coords
-                    bc.set_vals(time_moments.back() + tau);
+                    bc.set_vals(time_moments.back() + tau/2.0);
                     solve_split_x(tau_factor.data());
-                    
+
                     // solve a set of 1D problems in x-direction, for various y-coords
-                    bc.set_vals(time_moments.back() + tau*3.0/2.0);
+                    bc.set_vals(time_moments.back() + tau * 3.0 / 4.0);
                     solve_split_x(tau_factor.data());
-                    
+
                     // solve a set of 1D problems in y-direction, for various x-coords
-                    bc.set_vals(time_moments.back() + tau * 2.0);
+                    bc.set_vals(time_moments.back() + tau);
                     solve_split_y(tau_factor.data());
 
-                    time_moments.push_back(time_moments.back() + tau);
-                    states.emplace_back(state);
+                    cur_time += tau;
                 }
 
                 struct Solution
@@ -180,7 +188,8 @@ namespace GPN
                     // to be provided to Eigen::Map
                     Stride_t stride{stride_size};
 
-                    const auto &split_flow_field{flow_field.axes2_as_face_normal};
+                    const auto &split_flow_field{
+                        convection_factory.get_flow_in_axes2()};
 
 #pragma omp parallel for // num_threads(16) schedule(dynamic)
                     //   take every line along x-direction. A line per y-node
@@ -225,7 +234,8 @@ namespace GPN
 
                 void solve_split_y(const RealType *const tau_factor)
                 {
-                    const auto &split_flow_field{flow_field.axes1_as_face_normal};
+                    const auto &split_flow_field{
+                        convection_factory.get_flow_in_axes1()};
 
 #pragma omp parallel for
                     // take every line along x-direction. A line per y-node.
@@ -275,10 +285,12 @@ namespace GPN
                 const SplitY splitY;
                 BC_t bc;
                 const TemporalTerm time_factor;
+                double cur_time;
+                // by reference!
+                ConvectionTermFactory_t& convection_factory;
                 // required to keep grid in memory ////
                 const cptr<Grid_t> grid; //////////////
                 ///////////////////////////////////////
-                FlowField_t flow_field;
                 const std::ptrdiff_t first_coord_size;
                 const std::ptrdiff_t second_coord_size;
                 State::State2D state;
