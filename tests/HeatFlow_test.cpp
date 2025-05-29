@@ -149,16 +149,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       zTop{data["grid"]["ztop"]}; // m
   const ptrdiff_t rNodes{data["grid"]["rNodes"]};
   /*history*/
-  const RealType t0{data["history"]["t_start"]},
+  const RealType
+      t0{data["history"]["t_start"]},
       t1{data["history"]["t_end"]};
   REQUIRE(t1 > t0);
-  const ptrdiff_t time_steps_nmbr{static_cast<ptrdiff_t>(ceil(
-      (t1 - t0) / (double)data["history"]["t_step"]))};
-  const RealType time_step{(t1 - t0) / time_steps_nmbr};
-  const VR time_intervals(time_steps_nmbr, time_step);
-  const VR t_stencils(
-      Grids::Factory::generate_dual_grid_stencils_from_steps(
-          t0, time_intervals));
+  const RealType time_step{data["history"]["t_step"]};
+  const VR t_stencils{t0, t1};
   /*temperatures*/
   const RealType well_rate{data["history"]["wellRate"]}; // m^3/s
   const RealType initial_temperature{data["collector"]["initTemperature"]};
