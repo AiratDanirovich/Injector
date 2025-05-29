@@ -242,7 +242,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
   SolverManager solver_manager{history, solver_ptr};
 
-  solver_manager.run(0.02);
+  solver_manager.run((double)data["history"]["t_step"]);
 
   // assert solution
   const double tol = 1E-15;
