@@ -24,16 +24,16 @@ public:
         const RealType density,                 // kg/(m^3)
         const RealType capacity,                // J/(kg*K) /* specific heat capacity */
         const RealType viscosity,               // Pa*s
-        const RealType heat_conductivity_fluid, // Watt/(m*K)
+        const RealType heat_conductivity_fluid, // W/(m*K)
         // grid
         const RealType rMin,       // m /* typically would be zero */
         const RealType rMax,       // m
         const size_t r_nodes_nmbr, // -- /* number of nodes in r-direction, including first and last ones */
         const RealType zTop,       // m, /* typically would be zero */
-        // six vectors of the same size
-        // values are in SI
+        // seven +1 vectors of the same size
+    // values are in SI
         const VR &thickness,                   // meter
-        const VR &conductivity,                // Watt/(m*K)
+        const VR &conductivity,                // W/(m*K)
         const VR &porosity,                    // --
         const VR &permeability,                // m^2
         const VR &is_permeable,                // {0, 1}, --
