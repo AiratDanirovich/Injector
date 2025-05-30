@@ -120,14 +120,6 @@ LogValuesContainer transfer_to_eigen(const VR &data)
   return out;
 }
 
-LogValuesContainer transfer_to_eigen(const VR &data)
-{
-  LogValuesContainer out(data.size());
-  for (auto i{0ull}; i < data.size(); ++i)
-    out(i) = data[i];
-  return out;
-}
-
 VR generate_stencils(RealType t0, RealType t1, RealType t_step_major)
 {
   auto segm_count{static_cast<size_t>(std::ceil(t1 - t0) / t_step_major)};
@@ -192,11 +184,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const RealType inlet_temperature{data["history"]["inletTemperature"]};
   /*well*/
   const RealType hole_radius{data["well"]["hole_radius"]};
-  REQUIRE(rMin < hole_radius);
   /*END*/
 
   REQUIRE(t1 > t0);
   REQUIRE(t_minor_step <= t_major_step);
+  REQUIRE(rMin < hole_radius);
 
   // make grid2D
   VR r_stencils;
