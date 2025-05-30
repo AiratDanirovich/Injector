@@ -17,9 +17,12 @@
   },
   "grid": {
     "ztop": 0.0,
-    "r_start": 1.0,
+    "r_start": 0.0,
     "r_end": 100,
     "rNodes": 101
+  },
+  "well": {
+    "hole_radius": 0.4
   },
   "history": {
     "t_start": 0.0,

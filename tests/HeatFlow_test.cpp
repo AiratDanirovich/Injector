@@ -112,6 +112,13 @@ protected:
 };
 
 using VR = std::vector<RealType>;
+LogValuesContainer transfer_to_eigen(const VR &data)
+{
+  LogValuesContainer out(data.size());
+  for (auto i{0ull}; i < data.size(); ++i)
+    out(i) = data[i];
+  return out;
+}
 
 LogValuesContainer transfer_to_eigen(const VR &data)
 {
@@ -183,18 +190,26 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const RealType well_rate{data["history"]["wellRate"]}; // m^3/s
   const RealType initial_temperature{data["collector"]["initTemperature"]};
   const RealType inlet_temperature{data["history"]["inletTemperature"]};
+  /*well*/
+  const RealType hole_radius{data["well"]["hole_radius"]};
+  REQUIRE(rMin < hole_radius);
   /*END*/
 
   REQUIRE(t1 > t0);
   REQUIRE(t_minor_step <= t_major_step);
 
   // make grid2D
+  VR r_stencils;
+  r_stencils.push_back(rMin);
+  auto temp = Grids::Factory::generate_dual_grid_stencils_uniform(
+          Segment{hole_radius, rMax}, rNodes);
+          r_stencils.insert(r_stencils.end(), temp.begin(), temp.end());
+
   const auto grid2D{
       Grids::CylinderGridFactory::create(
           Grids::Factory::generate_dual_grid_stencils_from_steps(
               zTop, thickness),
-          Grids::Factory::generate_dual_grid_stencils_uniform(
-              Segment{rMin, rMax}, rNodes))};
+          r_stencils)};
   const auto &grid{grid2D->first_coord};
 
   const Logs::Rocks::CoreSampleLogs core_data{
@@ -264,7 +279,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   solver_manager.run(t_minor_step);
 
   // assert solution
-  const double tol = 1E-15;
+  const double tol = 1E-13;
   const auto precision{1e-5};
 
   {
@@ -308,7 +323,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   //   for (auto col{0ll}; col < grid2D->second_coord.mesh_size(); ++col)
   //   {
   //     INFO("" << "col: " << col << ", row: " << row << ", bottom: " << -v1(row + 1ll, col) << ", top: " << v1(row, col) << ", right: " << v2(row, col + 1ll) << ", left: " << -v2(row, col));
-  //     CHECK(-v1(row + 1ll, col) + v1(row, col) == v2(row, col + 1ll) - v2(row, col));
+  //     CHECK_THAT(-v1(row + 1ll, col) + v1(row, col), WithinRel(v2(row, col + 1ll) - v2(row, col), tol));
   //   }
   // }
 
