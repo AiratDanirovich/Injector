@@ -6,26 +6,27 @@
     "heatConductivity": 0.6
   },
   "collector": {
-    "nLayers": 20,
-    "thickness": 1.0,
-    "porosity": 1.0,
-    "permeability": 1.0,
-    "heatConductivity": 0.0000001,
-    "solidDensity": 1.0,
-    "solidSpecificHeatCapacity": 1.0,
-    "initTemperature": 0.0
+    "thickness": [3, 3, 3,   3, 5,   3, 3,  6,    3],
+    "is_permeable": [0.0, 0.0,  1.0,  0.0, 1.0,  0.0, 1.0, 1.0,  0.0],
+    "porosity":     [0.0, 0.0,  0.3,  0.0, 0.2,  0.0, 0.3, 0.25, 0.0],
+    "permeability": [0.0, 0.0,  0.5E-12,  0.0, 0.07E-12, 0.0, 0.2E-12, 0.15E-12, 0.0],
+    "heatConductivity": [1.2, 1.2,  1.2,  1.2, 1.2,  1.2, 1.2, 1.2, 1.2],
+    "solidDensity": [3200, 3000, 3100, 3000, 3200, 3150, 3150, 3150, 3300],
+    "solidSpecificHeatCapacity": [2700, 2700, 2700, 2700 ,2700, 2700, 2700, 2700, 2700],
+    "initTemperature": 348
   },
   "grid": {
     "ztop": 0.0,
     "r_start": 1.0,
-    "r_end": 1.25,
-    "rNodes": 11
+    "r_end": 100,
+    "rNodes": 101
   },
   "history": {
     "t_start": 0.0,
-    "t_end": 5.0,
-    "t_step": 0.01,
-    "wellRate": 2.0,
-    "inletTemperature": 1.0
+    "t_end": 604800,
+    "t_major_step": 3600,
+    "t_minor_step": 3600,
+    "wellRate": 0.00231,
+    "inletTemperature": 293
   }
 }
