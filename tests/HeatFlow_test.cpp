@@ -175,8 +175,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const RealType
       t0{data["history"]["t_start"]},
       t1{data["history"]["t_end"]};
-  const RealType t_major_step{data["history"]["t_major_step"]};
-  const RealType t_minor_step{data["history"]["t_minor_step"]};
+  RealType t_major_step{data["history"]["t_major_step"]};
+  RealType t_minor_step{data["history"]["t_minor_step"]};
+  t_major_step = std::min(t1 - t0, t_major_step);
+  t_minor_step = std::min(t_minor_step, t_major_step);
   const VR t_stencils{generate_stencils(t0, t1, t_major_step)};
   /*temperatures*/
   const RealType well_rate{data["history"]["wellRate"]}; // m^3/s
@@ -194,8 +196,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   VR r_stencils;
   r_stencils.push_back(rMin);
   auto temp = Grids::Factory::generate_dual_grid_stencils_uniform(
-          Segment{hole_radius, rMax}, rNodes);
-          r_stencils.insert(r_stencils.end(), temp.begin(), temp.end());
+      Segment{hole_radius, rMax}, rNodes);
+  r_stencils.insert(r_stencils.end(), temp.begin(), temp.end());
 
   const auto grid2D{
       Grids::CylinderGridFactory::create(
@@ -217,6 +219,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           Density{density},
           SpecificHeatCapacity{capacity},
           GPN::HeatConductivity{heat_conductivity})};
+  // well
+  const Well_KH well{
+      water, core_data.is_permeable, core_data.permeability};
 
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
@@ -225,13 +230,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       porosity_stencils,
       water,
       grid2D->first_coord};
-  const Properties::Rocks::HeatProps heat_props{
+  Properties::Rocks::HeatProps heat_props{
       heat_logs, grid2D};
+
+  heat_props.apply_well(well, water);
+
   const FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
-  // well
-  const Well_KH well{
-      water, core_data.is_permeable, core_data.permeability};
   // history
   const std::vector<RealType> time_steps{generate_steps(t_stencils)};
   const std::vector<RealType> rates(time_steps.size(), well_rate);
@@ -352,7 +357,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     std::string path{std::string{"T_"} + std::to_string(0) + std::string{".txt"}};
     std::ofstream f{path};
 
-    f << ((state.cur_state-initial_temperature) / precision).round() * precision;
+    f << ((state.cur_state - initial_temperature) / precision).round() * precision;
     f.close();
   }
 }

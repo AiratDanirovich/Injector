@@ -149,6 +149,12 @@ namespace GPN
                 {
                 }
 
+                template<typename Well_t, typename Fluid_t>
+                void apply_well(const Well_t& well, const Fluid_t& fluid)
+                {
+                    medium_vol_heatcapacity.col(0ll) = fluid.volumetric_heat_capacity; // MeshNodesContainer::Constant(medium_vol_heatcapacity.rows(), fluid.volumetric_heat_capacity);
+                }
+
                 HeatConductivity<Grid2D_t> heat_conductivity;
                 MediumHeatVolumetricCapacity<Grid2D_t> medium_vol_heatcapacity;
             };
