@@ -34,8 +34,12 @@ namespace GPN
 
                 auto size{nodes.size()-1ll};
                 MeshNodesContainer out(size);
-                for(auto idx{size-size}; idx < size; ++idx)
+                // centers of boundary cells are moved to the domain boundary
+                out.head(1ll) = nodes.head(1ll);
+                for(auto idx{1ll}; idx < size-1ll; ++idx)
                     out(idx) = (nodes(idx+1) + nodes(idx))/2.0;
+                out.tail(1ll) = nodes.tail(1ll);
+
                 return out;
             }
 
@@ -65,7 +69,7 @@ namespace GPN
             {
                 auto size{nodes.size()-1ull};
                 ControlVolumesContainer out(size);
-                for(auto idx{0ll}; idx < size; ++idx)
+                for(auto idx{0ll}; idx < (ptrdiff_t)size; ++idx)
                     out(idx) = nodes(idx+1) - nodes(idx);
                 return out;
             }

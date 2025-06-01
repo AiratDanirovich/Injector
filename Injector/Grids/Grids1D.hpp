@@ -185,7 +185,7 @@ namespace GPN
         public:
             // Stencils of the dual mesh.
             // Here, jumps of physical properties occur.
-            // These nodes must be included in the dual_mesh_nodes
+            // These nodes must be included in the dual_nodes
             // container. So, that operator==() returns true.
             GridDualStencils dual_stencils;
             // Dual mesh to be used in simulation
@@ -264,9 +264,9 @@ namespace GPN
             const GridDualStencils dual_stencils;
             const ControlVolumesContainer control_volumes;
 
-        protected:
+        public:
             // steps between centers of control volumes
-            MeshStepsContainer mesh_steps;
+            const MeshStepsContainer mesh_steps;
         };
     } // Grids
 } // GPN
