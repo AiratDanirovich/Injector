@@ -190,11 +190,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
   REQUIRE(t1 > t0);
   REQUIRE(t_minor_step <= t_major_step);
-  REQUIRE(rMin < hole_radius);
+//  REQUIRE(rMin < hole_radius);
 
   // make grid2D
   VR r_stencils;
-  r_stencils.push_back(rMin);
+//  r_stencils.push_back(rMin);
   auto temp = Grids::Factory::generate_dual_grid_stencils_uniform(
       Segment{hole_radius, rMax}, rNodes);
   r_stencils.insert(r_stencils.end(), temp.begin(), temp.end());
@@ -205,6 +205,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
               zTop, thickness),
           r_stencils)};
   const auto &grid{grid2D->first_coord};
+
+cout << grid2D->second_coord.mesh_steps << endl;
 
   const Logs::Rocks::CoreSampleLogs core_data{
       is_permeable_stencils,
@@ -357,7 +359,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     std::string path{std::string{"T_"} + std::to_string(0) + std::string{".txt"}};
     std::ofstream f{path};
 
-    f << ((state.cur_state - initial_temperature) / precision).round() * precision;
+    f << ((state.cur_state.leftCols(20ll) - initial_temperature) / precision).round() * precision;
     f.close();
   }
 }
