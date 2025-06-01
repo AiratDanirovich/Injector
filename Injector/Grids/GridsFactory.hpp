@@ -55,7 +55,7 @@ namespace GPN
             template <typename CoordinateType_t>
             static auto create_axes(const auto &stencils)
             {
-                auto nodes{GridDual{GridDualStencils{stencils}}};
+                auto nodes{GridDual{GridDualStencils{stencils}, CoordinateType_t{}}};
                 return AxesGrid<CoordinateType_t>{nodes};
             }
 

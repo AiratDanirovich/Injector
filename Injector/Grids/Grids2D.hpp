@@ -156,7 +156,7 @@ namespace GPN
             {
                 auto stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, n)};
 
-                auto nodes{GridDual{stencils}};
+                auto nodes{GridDual{stencils, CoordinateTypes::X{}}};
 
                 auto x_grid{
                     AxesGrid<CoordinateTypes::X>{nodes}};
