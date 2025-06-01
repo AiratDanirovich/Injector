@@ -30,7 +30,9 @@ namespace GPN
             /// @return Centers of control volumes
             static auto cell_centers(const DualNodesContainer& nodes)
             {
-                auto size{nodes.size()-1ull};
+                assert(nodes.size() > 2ll);
+
+                auto size{nodes.size()-1ll};
                 MeshNodesContainer out(size);
                 for(auto idx{size-size}; idx < size; ++idx)
                     out(idx) = (nodes(idx+1) + nodes(idx))/2.0;
@@ -44,16 +46,16 @@ namespace GPN
             {
                 auto mesh_nodes{cell_centers(nodes)};
 
-                assert(mesh_nodes.size() >= 1);
-                auto size{mesh_nodes.size()-1ull};
+                assert(mesh_nodes.size() > 1ll);
+                auto size{mesh_nodes.size()-1ll};
                 MeshStepsContainer out(size);
-                for(auto id{size-size}; id < size; ++id)
+                for(auto id{0ll}; id < size; ++id)
                     out(id) = mesh_nodes(id+1)-mesh_nodes(id);
                 return out;                    
             }
         };
 
-        /// @brief Calculations associated with Cartesian
+        /// @brief Calculations associated with Cartesian coordinate
         struct CartesianCoordinate : public GeneralCoordinate
         {
             /// @brief Generate control volumes from dual mesh
@@ -63,7 +65,7 @@ namespace GPN
             {
                 auto size{nodes.size()-1ull};
                 ControlVolumesContainer out(size);
-                for(auto idx{size-size}; idx < size; ++idx)
+                for(auto idx{0ll}; idx < size; ++idx)
                     out(idx) = nodes(idx+1) - nodes(idx);
                 return out;
             }

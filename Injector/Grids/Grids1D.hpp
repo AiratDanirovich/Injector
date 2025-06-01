@@ -195,7 +195,6 @@ namespace GPN
             // steps between dual nodes
             const DualStepsContainer dual_steps;
 
-
         protected:
             GridDual(
                 const GridDualStencils &nodes,
@@ -219,7 +218,7 @@ namespace GPN
         /// volume per node, heat resistivity etc.
         /// @tparam CoordinateType_t Type of coordinate
         template <typename CoordinateType_t>
-//            requires CoordinateTypes::ICoordinate<CoordinateType_t>
+        //            requires CoordinateTypes::ICoordinate<CoordinateType_t>
         struct AxesGrid : public GridDual
         {
             using Axes = CoordinateType_t;

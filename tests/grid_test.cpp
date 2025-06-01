@@ -9,10 +9,11 @@ using namespace GPN::Grids;
 // Tests Cylinder grid, (r; z)
 TEST_CASE("GridTest", "GeneralCoordinate")
 {
-        auto z_stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, 2)};
-        auto r_stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, 5)};
+    const auto z_dual_size{3ll};
+    const auto r_dual_size{5ll};
+    auto z_stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, z_dual_size)};
+    auto r_stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, r_dual_size)};
     {
-
         auto nodes{GridDual{z_stencils}};
 
         auto x_grid{
