@@ -200,6 +200,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   for (size_t t_step{0ll}; t_step < time_intervals.size(); ++t_step)
   {
     solver.advance(time_intervals[t_step]);
+    solver.save_state();
   }
 
   const auto &v1 = rates_factory.get_flow_in_axes1();
@@ -227,12 +228,17 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     }
   }
 
-  for (auto i{0ull}; i < times.size(); ++i)
+  //for (auto i{0ull}; i < times.size(); ++i)
   {
-    std::string path{std::string{"T_"} + std::to_string(i) + std::string{".txt"}};
+    std::string path{std::string{"T_end_horflow.txt"}};
     std::ofstream f{path};
 
-    f << states[i].cur_state;
+    f << states.back().cur_state << endl << endl;
+
+    f << rates_factory.get_flow_in_axes2() << endl << endl;
+    
+    f << rates_factory.get_flow_in_axes1() << endl << endl;
+
     f.close();
   }
 }

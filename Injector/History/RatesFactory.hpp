@@ -24,7 +24,6 @@ namespace GPN
                   fluid{fluid},
                   pos{-1ll}
             {
-                std::vector<double> t_stencils(history.time_steps.size());
             }
 
             void set_flow_field(
@@ -81,8 +80,8 @@ namespace GPN
                 const Logs::IsPermeable &is_permeable)
                 : heat_flow_field{
                       std::make_shared<FaceProperties::ReservoirFlowField>(
-                          FaceProperties::FlowFactory::zero_flow(
-                              is_permeable, *grid2D))}
+                          FaceProperties::FlowFactory::horizontal_flow(
+                            well_rate, is_permeable, *grid2D))}
             {
                 FaceProperties::multiply(*heat_flow_field, fluid.volumetric_heat_capacity);
             }
