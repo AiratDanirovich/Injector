@@ -4,7 +4,8 @@
 #include <Injector/Grids/Defines.h>
 #include <Injector/Properties/FaceProperties.hpp>
 
-#include <Injector/Properties/FlowField.hpp>
+// #include <Injector/Properties/FlowField.hpp>
+#include <Injector/History/RatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 
@@ -18,16 +19,15 @@ struct ABCFunctor : public GPN::BoundaryConditions::BCFunctorBase
 {
     ABCFunctor(RealType val) : val{val} {}
 
+    RealType operator()(ptrdiff_t, RealType, RealType) const override
+    {
+        return val;
+    }
 
-  RealType operator()(ptrdiff_t, RealType, RealType) const override
-  {
-    return val;
-  }
-
-  RealType operator()(RealType, ptrdiff_t, RealType) const override
-  {
-    return val;
-  }
+    RealType operator()(RealType, ptrdiff_t, RealType) const override
+    {
+        return val;
+    }
 
 protected:
     RealType val;
@@ -93,15 +93,15 @@ TEST_CASE("Solver")
         permeability_stencils,
         grid};
 
-    const auto flow_field{
-        FaceProperties::FlowFactory::zero_flow(
-            core_data.is_permeable, *grid2D)};
+    // rates field factory
+    FaceProperties::ZeroRatesFactory rates_factory{
+        grid2D, core_data.is_permeable};
 
     Solver solver{
         heat_face_props.heat_conductivity,
-        flow_field, grid2D,
+        grid2D,
         heat_props.medium_vol_heatcapacity,
-        initial_state,
+        rates_factory, initial_state,
         bc, 0.0};
 
     solver.advance(0.005);

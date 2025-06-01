@@ -69,7 +69,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
       GPN::FaceProperties::RatesFactory<
           Grid2D_t, Well_KH, PhaseProperties>;
   FunctorBC(
-      RealType inlet_temp,
+      const RealType inlet_temp,
       const Logs::IsPermeable &is_permeable,
       const ConvectionFieldFactory_t &flow_field, // volumetric heat flow rate
       const cptr<const Grid2D_t> grid_ptr)

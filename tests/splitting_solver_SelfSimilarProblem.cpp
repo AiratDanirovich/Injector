@@ -6,6 +6,7 @@
 #include <Injector/Grids/Grids2D.hpp>
 
 #include <Injector/Properties/Logs.hpp>
+#include <Injector/History/RatesFactory.hpp>
 #include <Injector/Properties/FieldsFactory.hpp>
 #include <Injector/Properties/FlowField.hpp>
 
@@ -208,11 +209,15 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const GPN::BoundaryConditions::BoundaryConditions bc{
       *grid2D, std::make_shared<AFunctorBC>(es, grid2D)};
 
+  // rates field factory
+  FaceProperties::ZeroRatesFactory rates_factory{
+      grid2D, core_data.is_permeable};
+
   Solver solver{
       heat_face_props.heat_conductivity,
-      flow_field, grid2D,
+      grid2D,
       heat_props.medium_vol_heatcapacity,
-      initial_state,
+      rates_factory, initial_state,
       bc, t0};
 
   const double tol = 1E-3;

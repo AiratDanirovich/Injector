@@ -9,7 +9,7 @@
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 
-#include <Injector/Properties/FlowField.hpp>
+#include <Injector/History/RatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Solver/BoundaryConditions.hpp>
 #include <Injector/Solver/State2D.hpp>
@@ -57,11 +57,15 @@ auto ICFactory(RealType t0, const Grid_t_ptr grid, const RealType val)
 struct FunctorBC : public BoundaryConditions::BCFunctorBase
 {
   using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
+  using ConvectionFieldFactory_t =
+      GPN::FaceProperties::HorizontalRatesFactory<
+          Grid2D_t, PhaseProperties>;
+
   FunctorBC(
-      RealType inlet_temp,
+      const RealType inlet_temp,
       const Logs::IsPermeable &is_permeable,
-      const FaceProperties::ReservoirFlowField &flow_field, // volumetric flow rate
-      const cptr<const Grid2D_t> grid_ptr)
+      const ConvectionFieldFactory_t &flow_field, // volumetric flow rate
+      const cptr<Grid2D_t> grid_ptr)
       : inlet_temp{inlet_temp},
         flow_field{flow_field},
         is_permeable{is_permeable},
@@ -69,11 +73,11 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   {
   }
 
-  RealType operator()(ptrdiff_t z, RealType r, RealType t) const override
+  RealType operator()(ptrdiff_t z_id, RealType r, RealType t) const override
   {
     if (r == grid_ptr->second_coord.dual_front())
     {
-      return flow_field.axes2_as_face_normal(z, 0) * inlet_temp;
+      return flow_field.get_flow_in_axes2()(z_id, 0ll) * inlet_temp;
     }
 
     return 0.0;
@@ -86,9 +90,9 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
 
 protected:
   RealType inlet_temp;
-  const FaceProperties::ReservoirFlowField &flow_field;
+  const ConvectionFieldFactory_t &flow_field;
   const Logs::IsPermeable &is_permeable;
-  const cptr<const Grid2D_t> grid_ptr;
+  const cptr<Grid2D_t> grid_ptr;
 };
 
 using VR = std::vector<RealType>;
@@ -141,13 +145,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   is_permeable_stencils[nLayers / 2] = 0.0;
   porosity_stencils(nLayers / 2) = 0.0;
 
-  const Logs::IsPermeable is_permeable{
-      IsPermeableFactory::create(is_permeable_stencils, grid)};
   const Logs::Porosity porosity{
       PorosityFactory::create(porosity_stencils, is_permeable_stencils, grid)};
 
   // make fluid
-  const Water water{
+  const PhaseProperties water{
       FluidFactory::create_water(
           Viscosity{viscosity},
           Density{density},
@@ -172,11 +174,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
 
-  FaceProperties::ReservoirFlowField flow_field{
-      FaceProperties::FlowFactory::horizontal_flow(
-          well_rate, hydrodynamics_logs.is_permeable, *grid2D)};
-
-  FaceProperties::multiply(flow_field, water.volumetric_heat_capacity);
+  // rates field factory
+  GPN::FaceProperties::HorizontalRatesFactory rates_factory{
+      well_rate, water,
+      grid2D, hydrodynamics_logs.is_permeable};
 
   // initial condition
   const auto initial_state{ICFactory(t0, grid2D, initial_temperature)};
@@ -184,15 +185,14 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const GPN::BoundaryConditions::BoundaryConditions bc{
       *grid2D,
       std::make_shared<FunctorBC>(
-          inlet_temperature, is_permeable, flow_field, grid2D),
+          inlet_temperature, hydrodynamics_logs.is_permeable, rates_factory, grid2D),
       BoundaryConditions::BoundaryCondition::second};
   // solver
-
   Solver solver{
       heat_face_props.heat_conductivity,
-      flow_field, grid2D,
+      grid2D,
       heat_props.medium_vol_heatcapacity,
-      initial_state,
+      rates_factory, initial_state,
       bc, t0};
 
   // assert solution
@@ -202,15 +202,15 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     solver.advance(time_intervals[t_step]);
   }
 
-  const auto &v1 = flow_field.axes1_as_face_normal;
+  const auto &v1 = rates_factory.get_flow_in_axes1();
   for (auto col{0ll}; col < v1.cols(); ++col)
     for (auto row{0ll}; row < v1.rows(); ++row)
       CHECK(v1(row, col) == 0.0);
 
-  const auto &v2 = flow_field.axes2_as_face_normal;
+  const auto &v2 = rates_factory.get_flow_in_axes2();
   for (auto col{0ll}; col < v2.cols(); ++col)
     for (auto row{0ll}; row < v2.rows(); ++row)
-      CHECK(((v2(row, col) > 0.0) || ((v2(row, col) == 0.0) && (is_permeable.log_vals(row) == 0.0))));
+      CHECK(((v2(row, col) > 0.0) || ((v2(row, col) == 0.0) && (hydrodynamics_logs.is_permeable.log_vals(row) == 0.0))));
 
   const auto &[times, states] = solver.solution();
   for (size_t i{0ll}; i < times.size(); ++i)

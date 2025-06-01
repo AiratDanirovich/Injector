@@ -4,6 +4,7 @@
 #include <Injector/Grids/Defines.h>
 
 #include <Injector/Properties/FlowField.hpp>
+#include <Injector/History/RatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 
@@ -90,12 +91,15 @@ TEST_CASE("Solver")
 
   const FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
+    // rates field factory
+    FaceProperties::ZeroRatesFactory rates_factory{
+        grid2D, core_data.is_permeable};
 
   Solver solver{
       heat_face_props.heat_conductivity,
-      flow_field, grid2D,
+      grid2D,
       heat_props.medium_vol_heatcapacity,
-      initial_state,
+      rates_factory, initial_state,
       bc, 0.0};
 
   RealType step{1.0};
