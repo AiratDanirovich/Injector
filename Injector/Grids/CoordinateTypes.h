@@ -37,10 +37,10 @@ namespace GPN
                 auto size{nodes.size()-1ll};
                 MeshNodesContainer out(size);
                 // centers of boundary cells are moved to the domain boundary
-                out.head(1ll) = nodes.head(1ll)+tol;
-                for(auto idx{1ll}; idx < size-1ll; ++idx)
+        //        out.head(1ll) = nodes.head(1ll)+tol;
+                for(auto idx{0ll}; idx < size-0ll; ++idx)
                     out(idx) = (nodes(idx+1) + nodes(idx))/2.0;
-                out.tail(1ll) = nodes.tail(1ll)-tol;
+        //        out.tail(1ll) = nodes.tail(1ll)-tol;
 
                 return out;
             }
