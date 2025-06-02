@@ -190,11 +190,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
   REQUIRE(t1 > t0);
   REQUIRE(t_minor_step <= t_major_step);
-//  REQUIRE(rMin < hole_radius);
+  //  REQUIRE(rMin < hole_radius);
 
   // make grid2D
   VR r_stencils;
-//  r_stencils.push_back(rMin);
+  //  r_stencils.push_back(rMin);
   auto temp = Grids::Factory::generate_dual_grid_stencils_uniform(
       Segment{hole_radius, rMax}, rNodes);
   r_stencils.insert(r_stencils.end(), temp.begin(), temp.end());
@@ -206,7 +206,20 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           r_stencils)};
   const auto &grid{grid2D->first_coord};
 
-cout << grid2D->second_coord.mesh_steps << endl;
+  cout << "radial grid:\n"
+       << grid2D->second_coord.dual_nodes.transpose() << endl;
+  cout << "vertical grid:\n"
+       << grid2D->first_coord.dual_nodes.transpose() << endl;
+
+  cout << "radial grid cell centers:\n"
+       << grid2D->second_coord.mesh_nodes.transpose() << endl;
+  cout << "vertical grid cell centers:\n"
+       << grid2D->first_coord.mesh_nodes.transpose() << endl;
+
+  cout << "radial grid mesh steps:\n"
+       << grid2D->second_coord.mesh_steps.transpose() << endl;
+  cout << "vertical grid mesh steps:\n"
+       << grid2D->first_coord.mesh_steps.transpose() << endl;
 
   const Logs::Rocks::CoreSampleLogs core_data{
       is_permeable_stencils,
@@ -291,75 +304,66 @@ cout << grid2D->second_coord.mesh_steps << endl;
     f.close();
   }
 
-  cout << "flow_field.axes1_as_face_normal:\n";
-  cout << rates_factory.get_flow_in_axes1() << endl
-       << endl;
-  cout << "flow_field.axes2_as_face_normal:\n";
-  cout << rates_factory.get_flow_in_axes2() << endl
-       << endl;
+  // verify flow field
+  const auto &v1 = rates_factory.get_flow_in_axes1();
+  for (auto row{0ll}; row < v1.rows(); ++row)
+  {
+    CHECK(v1(row, 0ll) >= 0.0);
+    for (auto col{1ll}; col < v1.cols(); ++col)
+      CHECK(v1(row, col) == 0.0);
+  }
+  const auto &v2 = rates_factory.get_flow_in_axes2();
+  for (auto col{2ll}; col < v2.cols(); ++col)
+    for (auto row{0ll}; row < v2.rows(); ++row)
+      CHECK(v2(row, col) == v2(row, 1ll));
 
-  // const auto &v1 = rates_factory.get_flow_in_axes1();
-  // for (auto row{0ll}; row < v1.rows(); ++row)
-  // {
-  //   CHECK(v1(row, 0ll) >= 0.0);
-  //   for (auto col{1ll}; col < v1.cols(); ++col)
-  //     CHECK(v1(row, col) == 0.0);
-  // }
-
-  // const auto &v2 = rates_factory.get_flow_in_axes2();
-  // for (auto col{2ll}; col < v2.cols(); ++col)
-  //   for (auto row{0ll}; row < v2.rows(); ++row)
-  //     CHECK(v2(row, col) == v2(row, 1ll));
-
-  // for (auto row{0ll}, col{0ll}; row < v2.rows(); ++row)
-  // {
-  //   CHECK(v2(row, col) == 0.0);
-  //   //  CHECK(v1(row, col) == v1(row + 1, col) + v2(row, col));
-  // }
-
-  // for (auto row{0ll}; row < grid2D->first_coord.mesh_size(); ++row)
-  // {
-  //   for (auto col{0ll}; col < grid2D->second_coord.mesh_size(); ++col)
-  //   {
-  //     INFO("" << "col: " << col << ", row: " << row << ", bottom: " << -v1(row + 1ll, col) << ", top: " << v1(row, col) << ", right: " << v2(row, col + 1ll) << ", left: " << -v2(row, col));
-  //     CHECK_THAT(-v1(row + 1ll, col) + v1(row, col), WithinRel(v2(row, col + 1ll) - v2(row, col), tol));
-  //   }
-  // }
-
+  for (auto row{0ll}, col{0ll}; row < v2.rows(); ++row)
+  {
+    CHECK(v2(row, col) == 0.0);
+    CHECK(v1(row, col) == v1(row + 1, col) + v2(row, col + 1ll));
+  }
+  // flow volume balance
+  for (auto row{0ll}; row < grid2D->first_coord.mesh_size(); ++row)
+  {
+    for (auto col{0ll}; col < grid2D->second_coord.mesh_size(); ++col)
+    {
+      INFO("" << "col: " << col << ", row: " << row << ", bottom: " << -v1(row + 1ll, col) << ", top: " << v1(row, col) << ", right: " << v2(row, col + 1ll) << ", left: " << -v2(row, col));
+      CHECK_THAT(-v1(row + 1ll, col) + v1(row, col), WithinRel(v2(row, col + 1ll) - v2(row, col), tol));
+    }
+  }
+  // maximum principle
   const auto &[times, states] = solver.solution();
-  // for (size_t i{0ll}; i < times.size(); ++i)
-  // {
-  //   const auto &state = states[i];
-  //   for (auto row{0ll}; row < state.rows(); ++row)
-  //   {
-  //     CHECK(state(row, 0ll) <= inlet_temperature);
-  //     for (auto col{1ll}; col < state.cols(); ++col)
-  //     {
-  //       CHECK(state(row, col) <= inlet_temperature);
-  //       INFO("time: " << i << ", col: " << col << ", row: " << row);
-  //       CHECK(state(row, col) <= state(row, col - 1ll));
-  //     }
-  //   }
-  // }
-
-  // for (size_t i{1ll}; i < times.size(); ++i)
-  // {
-  //   for (auto row{0ll}; row < states[0].rows(); ++row)
-  //   {
-  //     for (auto col{1ll}; col < states[0].cols(); ++col)
-  //     {
-  //       CHECK(states[i](row, col) >= states[i - 1ull](row, col));
-  //     }
-  //   }
-  // }
-
-  for (auto i{times.size() - 1ll}; i < times.size(); ++i)
+  for (size_t i{0ll}; i < times.size(); ++i)
   {
     const auto &state = states[i];
+    for (auto row{0ll}; row < state.rows(); ++row)
+    {
+      CHECK(state(row, 0ll) >= inlet_temperature);
+      for (auto col{1ll}; col < state.cols(); ++col)
+      {
+        INFO("time: " << i << ", col: " << col << ", row: " << row);
+        CHECK(state(row, col) >= inlet_temperature);
+      }
+    }
+  }
+  for (size_t i{1ull}; i < times.size(); ++i)
+  {
+    const auto &state = states[i];
+    for (auto row{0ll}; row < state.rows(); ++row)
+    {
+      for (auto col{1ll}; col < state.cols(); ++col)
+      {
+        CHECK(states[i](row, col) <= states[i-1ull](row, col)+tol);
+      }
+    }
+  }
+
+  {
+    const auto &state = states.back();
     std::string path{std::string{"T_"} + std::to_string(0) + std::string{".txt"}};
     std::ofstream f{path};
 
-    f << ((state.cur_state - initial_temperature) / precision).round() * precision;
+    f << ((state.cur_state - 0 * initial_temperature) / precision).round() * precision;
     f.close();
   }
 }

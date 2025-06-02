@@ -32,15 +32,15 @@ namespace GPN
             {
                 assert(nodes.size() > 2ll);
 
-                const RealType tol = 1e-12;
-
                 auto size{nodes.size()-1ll};
                 MeshNodesContainer out(size);
                 // centers of boundary cells are moved to the domain boundary
-        //        out.head(1ll) = nodes.head(1ll)+tol;
                 for(auto idx{0ll}; idx < size-0ll; ++idx)
                     out(idx) = (nodes(idx+1) + nodes(idx))/2.0;
-        //        out.tail(1ll) = nodes.tail(1ll)-tol;
+
+                const RealType tol = 1e-12;
+                out.head(1ll) = nodes.head(1ll)+tol;
+                out.tail(1ll) = nodes.tail(1ll)-tol;
 
                 return out;
             }

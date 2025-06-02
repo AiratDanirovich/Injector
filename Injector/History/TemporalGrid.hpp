@@ -14,9 +14,7 @@ namespace GPN
             /// @return Centers of control volumes
             static auto cell_centers(const DualNodesContainer& nodes)
             {
-                assert(nodes.size() > 2ll);
-
-                const RealType tol = 1e-12;
+                assert(nodes.size() > 1ll);
 
                 auto size{nodes.size()-1ll};
                 MeshNodesContainer out(size);
