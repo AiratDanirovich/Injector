@@ -1,8 +1,10 @@
 #include <iostream>
+#include <vector>
+
 #include <InjectorDLL/Defines.h>
 #include <InjectorDLL/Wrapper.h>
 
-#include <vector>
+#include <nlohmann/json.hpp>
 
 using VR = std::vector<RealType>;
 

@@ -1,0 +1,36 @@
+{
+  "fluid": {
+    "density": 1000,
+    "viscosity": 6e-4,
+    "specificHeatCapacity": 4200,
+    "heatConductivity": 0.5
+  },
+  "collector": {
+    "thickness": [   3,   3,    3,    3,   3,    3,   3,   3,    3],
+    "is_permeable": [0.0, 0.0,  1.0,  0.0, 1.0,   0.0, 1.0, 1.0,  0.0],
+    "porosity":     [0.0, 0.0,  0.3,  0.0, 0.2,   0.0, 0.3, 0.25, 0.0],
+    "permeability": [0.0, 0.0,  0.5,  0.0, 0.07,  0.0, 0.2, 0.15, 0.0],
+    "heatConductivity0": [1.2, 1.2,  1.2,  1.2, 1.2,  1.2, 1.2, 1.2, 1.2],
+    "heatConductivity": [0, 0,  0,  0, 0,  0, 0, 0, 0],
+    "solidDensity": [3200, 3000, 3100, 3000, 3200, 3150, 3150, 3150, 3300],
+    "solidSpecificHeatCapacity": [2700,2700,2700,2700,2700,2700,2700,2700,2700],
+    "initTemperature": 348
+  },
+  "grid": {
+    "ztop": 0.0,
+    "r_start": 0.0,
+    "r_end": 30,
+    "rNodes": 41
+  },
+  "well": {
+    "hole_radius": 0.0
+  },
+  "history": {
+    "t_start": 0.0,
+    "t_end": 960000,
+    "t_major_step": 9600,
+    "t_minor_step": 9600,
+    "wellRate": 0.00231,
+    "inletTemperature": 293
+  }
+}
