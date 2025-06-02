@@ -82,7 +82,7 @@ namespace GPN
             /// @brief cell volume at node ids {id1, id2}
             auto volume(auto id1, auto id2) const
             {
-                return first_coord.cell_volumes(id1) * second_coord.cell_volumes(id2);
+                return its_volumes(id1, id2);
             }
 
             const auto &volumes() const
@@ -156,7 +156,7 @@ namespace GPN
             {
                 auto stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, n)};
 
-                auto nodes{GridDual{stencils}};
+                auto nodes{GridDual{stencils, CoordinateTypes::X{}}};
 
                 auto x_grid{
                     AxesGrid<CoordinateTypes::X>{nodes}};

@@ -24,7 +24,7 @@ TEST_CASE("HistoryTest")
             time_moments)}};
 
     const auto time_grid{
-        TemporalGridDual{GridDualStencils{time_steps}}};
+        TemporalGridDual{GridDualStencils{time_steps}, CoordinateTypes::Time{}}};
 #pragma endregion
 
     const auto rates{
@@ -36,6 +36,11 @@ TEST_CASE("HistoryTest")
 
     const auto history{
         History{rates}};
+
+    const auto history2{
+        HistoryFactory::create(
+            time_steps, Logs::RawDataFactory::generate_rates(
+                            time_moments))};
 
     const auto &grid{history.rates.grid};
     for (auto id{0ll}; id < grid.dual_nodes.size(); ++id)
