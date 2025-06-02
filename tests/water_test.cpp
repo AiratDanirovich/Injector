@@ -6,7 +6,7 @@
 using namespace GPN;
 using namespace GPN::Phases;
 
-RealType viscosity{6e-4}, density{1000}, capacity{4200};
+RealType viscosity{6e-4}, density{1000}, capacity{4200}, heat_conductivity{0.6};
 
 TEST_CASE("PhaseProperties", "Water")
 {
@@ -15,5 +15,6 @@ TEST_CASE("PhaseProperties", "Water")
         FluidFactory::create_water(
             Viscosity{viscosity},
             Density{density},
-            SpecificHeatCapacity{capacity})};
+            SpecificHeatCapacity{capacity},
+            HeatConductivity{heat_conductivity})};
 }

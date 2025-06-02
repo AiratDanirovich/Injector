@@ -101,18 +101,16 @@ namespace GPN
         /// uniformly or non-uniformly, between adjuscent stencils.
         struct GridDual
         {
-        private:
-            using CoordinateType = CoordinateTypes::GeneralCoordinate;
-
         public:
             /// @brief Simple ctor without mesh refinement.
             /// Only stencil nodes are used,
             /// without mesh refinement
             /// @param nodes stencils of dual mesh
-            GridDual(const GridDualStencils &nodes) noexcept
+            template <typename CoordinateType>
+            GridDual(const GridDualStencils &nodes, const CoordinateType &ct) noexcept
                 : GridDual{
-                      nodes,                  // stencils for the dual mesh
-                      nodes.get_dual_nodes()} // nodes of the dual mesh --- same as stencils
+                      nodes,                      // stencils for the dual mesh
+                      nodes.get_dual_nodes(), ct} // nodes of the dual mesh --- same as stencils
             {
             }
 
@@ -120,14 +118,15 @@ namespace GPN
             /// @tparam RefinementPolicy Type of mesh refinement policy
             /// @param nodes
             /// @param policy
-            template <typename RefinementPolicy>
+            template <typename RefinementPolicy, typename CoordinateType>
             GridDual(
                 const GridDualStencils &dual_nodes_stencils,
-                RefinementPolicy &&policy) noexcept
+                RefinementPolicy &&policy,
+                const CoordinateType &ct) noexcept
                 : GridDual{
-                      dual_nodes_stencils,               // nodes of dual mesh
-                      policy.refine(dual_nodes_stencils) // nodes of dual mesh --- refined from stencils
-                  }
+                      dual_nodes_stencils,                // nodes of dual mesh
+                      policy.refine(dual_nodes_stencils), // nodes of dual mesh --- refined from stencils
+                      ct}
             {
                 // define refinement policy
                 assert(false);
@@ -185,7 +184,7 @@ namespace GPN
         public:
             // Stencils of the dual mesh.
             // Here, jumps of physical properties occur.
-            // These nodes must be included in the dual_mesh_nodes
+            // These nodes must be included in the dual_nodes
             // container. So, that operator==() returns true.
             GridDualStencils dual_stencils;
             // Dual mesh to be used in simulation
@@ -195,11 +194,12 @@ namespace GPN
             // steps between dual nodes
             const DualStepsContainer dual_steps;
 
-
         protected:
+            template <typename CoordinateType>
             GridDual(
                 const GridDualStencils &nodes,
-                const DualNodesContainer &refined_mesh) noexcept
+                const DualNodesContainer &refined_mesh,
+                const CoordinateType &ct) noexcept
                 : dual_stencils{nodes},
                   dual_nodes{refined_mesh},
                   // make mesh nodes -- centers of control volumes
@@ -219,7 +219,7 @@ namespace GPN
         /// volume per node, heat resistivity etc.
         /// @tparam CoordinateType_t Type of coordinate
         template <typename CoordinateType_t>
-//            requires CoordinateTypes::ICoordinate<CoordinateType_t>
+        //            requires CoordinateTypes::ICoordinate<CoordinateType_t>
         struct AxesGrid : public GridDual
         {
             using Axes = CoordinateType_t;
@@ -265,9 +265,9 @@ namespace GPN
             const GridDualStencils dual_stencils;
             const ControlVolumesContainer control_volumes;
 
-        protected:
+        public:
             // steps between centers of control volumes
-            MeshStepsContainer mesh_steps;
+            const MeshStepsContainer mesh_steps;
         };
     } // Grids
 } // GPN

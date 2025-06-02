@@ -218,12 +218,12 @@ namespace GPN
                         // cumulative term
                         A.diagonal() = A.diagonal() + time_factor;
                         // convection term
-                        const auto &flow{split_flow_field.row(i).tail(second_coord_size).matrix().transpose()};
-                        // exclude leftmost edge
+                        const auto &flow{split_flow_field.row(i).head(second_coord_size).matrix().transpose()};
+                        // exclude rightmost edge
                         A.diagonal() = A.diagonal() + flow;
                         // exclude leftmost and rightmost edges
                         for (auto idx{1ll}; idx < A.rows(); ++idx)
-                            A.coeffRef(idx, idx - 1ll) -= flow(idx - 1ll);
+                            A.coeffRef(idx, idx - 1ll) -= flow(idx - 0ll);
 
                         // BC
                         applyBC_split_x(A, rhs, i);
@@ -267,12 +267,12 @@ namespace GPN
                         // cululative term
                         A.diagonal() = A.diagonal() + time_factor.matrix();
                         // convection term
-                        const auto &flow{split_flow_field.col(j).tail(first_coord_size).matrix()};
+                        const auto &flow{split_flow_field.col(j).head(first_coord_size).matrix()};
                         // exclude leftmost edge
                         A.diagonal() = A.diagonal() + flow;
                         // exclude leftmost and rightmost edges
                         for (auto idx{1ll}; idx < A.rows(); ++idx)
-                            A.coeffRef(idx, idx - 1ll) -= flow(idx - 1ll);
+                            A.coeffRef(idx, idx - 1ll) -= flow(idx - 0ll);
                         // BC
                         applyBC_split_y(A, rhs, j);
 

@@ -62,7 +62,7 @@ namespace GPN
             const auto temp0{DualStepsContainer{time_steps}};
             const auto temp{Grids::GridDualStencils{temp0}};
             const auto temp2{Grids::TemporalGridDual{
-                        temp}};
+                        temp, CoordinateTypes::Time{}}};
             return History{
                 Logs::InjectorRate{Logs::StepPropertyGrid{
                     rates, temp2
