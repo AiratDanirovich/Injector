@@ -82,7 +82,7 @@ namespace GPN
             /// @brief cell volume at node ids {id1, id2}
             auto volume(auto id1, auto id2) const
             {
-                return first_coord.cell_volumes(id1) * second_coord.cell_volumes(id2);
+                return its_volumes(id1, id2);
             }
 
             const auto &volumes() const
