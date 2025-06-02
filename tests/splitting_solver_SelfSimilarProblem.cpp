@@ -6,6 +6,7 @@
 #include <Injector/Grids/Grids2D.hpp>
 
 #include <Injector/Properties/Logs.hpp>
+#include <Injector/History/RatesFactory.hpp>
 #include <Injector/Properties/FieldsFactory.hpp>
 #include <Injector/Properties/FlowField.hpp>
 
@@ -117,7 +118,7 @@ struct AFunctorBC : public GPN::BoundaryConditions::BCFunctorBase
       z = grid2D->first_coord.mesh_back();
     else
       assert(false);
-      
+
     return es(z, r, t);
   }
 
@@ -133,7 +134,7 @@ using VR = std::vector<RealType>;
 /*heat rate*/
 RealType q{1.0};
 /*fluid*/
-RealType viscosity{6e-4}, density{1000}, capacity{4200};
+RealType viscosity{6e-4}, density{1000}, capacity{4200}, heat_conductivity{0.6};
 /*collector*/
 const RealType rMin{1.0}, rMax{2.0}, zTop{0.0};
 const std::ptrdiff_t rNodes{301ull};
@@ -170,7 +171,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       FluidFactory::create_water(
           Viscosity{viscosity},
           Density{density},
-          SpecificHeatCapacity{capacity})};
+          SpecificHeatCapacity{capacity},
+          GPN::HeatConductivity{heat_conductivity})};
   // time moments
   const VR t_stencils(
       Grids::Factory::generate_dual_grid_stencils_from_steps(
@@ -207,11 +209,15 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const GPN::BoundaryConditions::BoundaryConditions bc{
       *grid2D, std::make_shared<AFunctorBC>(es, grid2D)};
 
+  // rates field factory
+  FaceProperties::ZeroRatesFactory rates_factory{
+      grid2D, core_data.is_permeable};
+
   Solver solver{
       heat_face_props.heat_conductivity,
-      flow_field, grid2D,
+      grid2D,
       heat_props.medium_vol_heatcapacity,
-      initial_state,
+      rates_factory, initial_state,
       bc, t0};
 
   const double tol = 1E-3;
