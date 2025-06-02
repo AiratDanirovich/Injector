@@ -29,7 +29,7 @@ TEST_CASE("GridTest", "GeneralCoordinate")
     const RealType tol = 1e-11;
 
     const auto z_dual_size{3ll};
-    const auto r_dual_size{5ll};
+    const auto r_dual_size{15ll};
     auto z_stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, z_dual_size)};
     auto r_stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, r_dual_size)};
     {
@@ -62,7 +62,7 @@ TEST_CASE("GridTest", "GeneralCoordinate")
             AxesGrid<CoordinateTypes::X>{nodes}};
 
         for (auto i{0ll}; i < x_grid.mesh_steps.size(); ++i)
-            CHECK(x_grid.mesh_steps(i) == z_stencils[i + 1] - z_stencils[i]);
+            CHECK(x_grid.mesh_steps(i) == x_grid.mesh_nodes(i + 1ll) - x_grid.mesh_nodes(i));
         for (auto i{0ll}; i < x_grid.control_volumes.size(); ++i)
             CHECK(x_grid.control_volumes(i) == z_stencils[i + 1] - z_stencils[i]);
 
@@ -70,21 +70,41 @@ TEST_CASE("GridTest", "GeneralCoordinate")
             AxesGrid<CoordinateTypes::Y>{nodes}};
 
         StructuredXYGrid2D result{x_grid, y_grid};
+        for (auto col{0ll}; col < y_grid.mesh_nodes.size(); ++col)
+        {
+            for (auto row{0ll}; row < x_grid.mesh_nodes.size(); ++row)
+                CHECK(result.volume(row, col) == result.second_coord.control_volumes(col) * result.first_coord.control_volumes(row));
+        }
     }
 
     {
-        auto nodes{GridDual{r_stencils, CoordinateTypes::R_CylCoord{}}};
+        auto z_nodes{GridDual{z_stencils, CoordinateTypes::Z{}}};
+        auto r_nodes{GridDual{r_stencils, CoordinateTypes::R_CylCoord{}}};
 
         cout << "r_stencils:\n"
              << transfer_to_eigen(r_stencils).transpose() << endl;
 
         auto z_grid{
-            AxesGrid<CoordinateTypes::Z>{nodes}};
+            AxesGrid<CoordinateTypes::Z>{z_nodes}};
 
         auto r_grid{
-            AxesGrid<CoordinateTypes::R_CylCoord>{nodes}};
+            AxesGrid<CoordinateTypes::R_CylCoord>{r_nodes}};
+        for (auto i{0ll}; i < r_grid.mesh_steps.size(); ++i)
+            CHECK(r_grid.mesh_steps(i) == r_grid.mesh_nodes(i + 1ll) - r_grid.mesh_nodes(i));
+        for (auto i{0ll}; i < r_grid.control_volumes.size(); ++i)
+            CHECK(r_grid.control_volumes(i) == (r_stencils[i + 1] * r_stencils[i + 1] - r_stencils[i] * r_stencils[i]) / 2.0);
 
         StructuredCylinderGrid2DAxisymmetric result{z_grid, r_grid};
+        for (auto col{0ll}; col < r_grid.mesh_nodes.size(); ++col)
+        {
+            for (auto row{0ll}; row < z_grid.mesh_nodes.size(); ++row)
+                CHECK_THAT(result.volume(row, col),
+                           WithinRel(
+                               StructuredCylinderGrid2DAxisymmetric::TwoPI() *
+                                   result.second_coord.control_volumes(col) *
+                                   result.first_coord.control_volumes(row),
+                               tol));
+        }
     }
     const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
 }
