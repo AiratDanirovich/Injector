@@ -31,7 +31,7 @@ public:
         const size_t r_nodes_nmbr, // -- /* number of nodes in r-direction, including first and last ones */
         const RealType zTop,       // m, /* typically would be zero */
         // seven +1 vectors of the same size
-    // values are in SI
+        // values are in SI
         const VR &thickness,                   // meter
         const VR &conductivity,                // W/(m*K)
         const VR &porosity,                    // --
@@ -41,8 +41,9 @@ public:
         const VR &solid_specific_heatcapacity, // J/(kg*K)
         const RealType initial_temperature,    // K // should be log in the future
         // temporal grid
-        const RealType t_start,   // start time in seconds
-        const VR &time_intervals, // time intervals (in seconds) of const rates
+        const RealType t_start,      // start time in seconds
+        const VR &time_intervals,    // time intervals (in seconds) of const rates
+        const RealType t_minor_step, // time step used for numerical integration
         // well
         const RealType well_rate,        // ~1.1E-3 m^3/s
         const RealType inlet_temperature // K

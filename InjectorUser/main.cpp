@@ -31,10 +31,11 @@ int main()
     const RealType initial_temperature{273 + 40}; // K
     /*temporal grid*/
     const std::ptrdiff_t time_steps_nmbr{51ull};
-    const RealType t_start{2e6}; // initial time moment
+    const RealType t_start{0.0}; // initial time moment
     const RealType t1{t_start + 2e6};
     const RealType time_step{(t1 - t_start) / time_steps_nmbr};
     const VR time_intervals(time_steps_nmbr, time_step);
+    const RealType t_minor_step{960};
     // well
     const RealType well_rate{1.1e-3};          // ~1.1E-3 m^3/s
     const RealType inlet_temperature{273 + 2}; // K
@@ -68,6 +69,7 @@ int main()
         t_start,        // start time in seconds
                         //    const size_t nt, // = time_intervals.size()
         time_intervals, // in seconds
+        t_minor_step,   // time step used for numerical integration
         // well
         well_rate,        // ~1.1E-3 m^3/s
         inlet_temperature // K
@@ -81,9 +83,13 @@ int main()
     for (auto i{0ull}; i < t.size(); ++i)
         std::cout << "t: " << t[i] << std::endl;
 
-    std::cout << "In main of InjectorUser\nPress Enter to exit" << std::endl;
+    std::cout << "In main of InjectorUser\nPress Enter to continue" << std::endl;
+    getchar();
+
     delete instance;
 
+    std::cout << "Instance deleted. Simulation done\nPress Enter to exit" << std::endl;
     getchar();
+
     return 0;
 }
