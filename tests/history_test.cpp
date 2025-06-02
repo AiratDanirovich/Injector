@@ -24,7 +24,7 @@ TEST_CASE("HistoryTest")
             time_moments)}};
 
     const auto time_grid{
-        TemporalGridDual{GridDualStencils{time_steps}}};
+        TemporalGridDual{GridDualStencils{time_steps}, CoordinateTypes::Time{}}};
 #pragma endregion
 
     const auto rates{

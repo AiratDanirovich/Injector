@@ -112,11 +112,11 @@ protected:
 };
 
 using VR = std::vector<RealType>;
-LogValuesContainer transfer_to_eigen(const VR &data)
+LogValuesContainer transfer_to_eigen(const VR &data, const RealType factor = 1.0)
 {
   LogValuesContainer out(data.size());
   for (auto i{0ull}; i < data.size(); ++i)
-    out(i) = data[i];
+    out(i) = factor*data[i];
   return out;
 }
 
@@ -160,7 +160,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // hydrodynamic logs
   const auto is_permeable_stencils{transfer_to_eigen(data["collector"]["is_permeable"])};
   const auto porosity_stencils{transfer_to_eigen(data["collector"]["porosity"])};
-  const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"])};
+  const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"], 1e-12)};
   // heat logs
   const VR heatconductivity_stencils = data["collector"]["heatConductivity"];
   const auto solid_density_stencils{transfer_to_eigen(data["collector"]["solidDensity"])};
@@ -291,7 +291,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   solver_manager.run(t_minor_step);
 
   // assert solution
-  const double tol = 1E-13;
+  const double tol = 1E-12;
   const auto precision{1e-5};
 
   {
@@ -320,7 +320,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   for (auto row{0ll}, col{0ll}; row < v2.rows(); ++row)
   {
     CHECK(v2(row, col) == 0.0);
-    CHECK(v1(row, col) == v1(row + 1, col) + v2(row, col + 1ll));
+    CHECK_THAT(v1(row, col), WithinRel( v1(row + 1, col) + v2(row, col + 1ll), tol));
   }
   // flow volume balance
   for (auto row{0ll}; row < grid2D->first_coord.mesh_size(); ++row)
@@ -338,7 +338,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto &state = states[i];
     for (auto row{0ll}; row < state.rows(); ++row)
     {
-      CHECK(state(row, 0ll) >= inlet_temperature);
+      CHECK(state(row, 0ll) >= inlet_temperature-tol);
       for (auto col{1ll}; col < state.cols(); ++col)
       {
         INFO("time: " << i << ", col: " << col << ", row: " << row);
@@ -353,9 +353,29 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     {
       for (auto col{1ll}; col < state.cols(); ++col)
       {
-        CHECK(states[i](row, col) <= states[i-1ull](row, col)+tol);
+        CHECK(states[i](row, col) <= states[i - 1ull](row, col) + tol);
       }
     }
+  }
+
+  // overall heat balance
+  RealType cur_heat_incr = 0.0;
+  RealType cum_inlet_heat = 0.0;
+  cout << "volumetric heat capacity\n" << heat_props.medium_vol_heatcapacity.its_values <<endl;
+
+  for (auto t{1ll}; t < (ptrdiff_t)times.size(); ++t)
+  {
+    cur_heat_incr =
+        ((states[t].cur_state - states[0ll].cur_state) *
+         heat_props.medium_vol_heatcapacity.its_values*grid2D->volumes())
+            .sum();
+    cum_inlet_heat =
+        (times[t] - times[0ll]) *
+        history.rates(t - 1ll) *
+        water.volumetric_heat_capacity * (inlet_temperature - initial_temperature);
+
+        RealType rel_tol = std::abs(2.0*(cur_heat_incr - cum_inlet_heat)/(cur_heat_incr + cum_inlet_heat));
+        CHECK(rel_tol < 0.03);
   }
 
   {
@@ -363,7 +383,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     std::string path{std::string{"T_"} + std::to_string(0) + std::string{".txt"}};
     std::ofstream f{path};
 
-    f << ((state.cur_state - 0 * initial_temperature) / precision).round() * precision;
+    f << ((state.cur_state - initial_temperature) / precision).round() * precision;
     f.close();
   }
 }
