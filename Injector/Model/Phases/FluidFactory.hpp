@@ -32,7 +32,7 @@ namespace GPN
                     PhaseProperties{
                         Viscosity{6e-4},
                         Density{1000},
-                        SpecificHeatCapacity{4180},
+                        SpecificHeatCapacity{4000},
                         HeatConductivity{0.6}}};
             }
             static Water create_water(

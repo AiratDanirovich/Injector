@@ -76,15 +76,6 @@ namespace GPN
             using Grid_t = Grids::GridDual; // AxesGrid<CoordinateTypes::Z>;
 
             StepPropertyGrid(const StepPropertyGrid &) noexcept = default;
-            StepPropertyGrid(
-                const StepPropertyContainer &interpolated_vals, // interpolated values corresponding to the grid
-                const Grid_t &grid)
-                : log_vals{interpolated_vals},
-                  grid{grid}
-            {
-                assert(log_vals.size() == grid.dual_size() - 1ll);
-                assert(log_vals.size() == grid.mesh_size());
-            }
 
             StepPropertyGrid(
                 // stencil values per every layer
@@ -122,6 +113,17 @@ namespace GPN
             const StepPropertyContainer log_vals;
             const Grid_t grid;
 
+        protected:
+            StepPropertyGrid(
+                const StepPropertyContainer &interpolated_vals, // interpolated values corresponding to the grid
+                const Grid_t &grid)
+                : log_vals{interpolated_vals},
+                  grid{grid}
+            {
+                assert(log_vals.size() == grid.dual_size() - 1ll);
+                assert(log_vals.size() == grid.mesh_size());
+            }
+
         private:
             static StepPropertyContainer interpolate(
                 const StepProperty &property_vals,
@@ -158,29 +160,29 @@ namespace GPN
 
         auto operator-(const StepPropertyGrid &lhs, RealType c)
         {
-            return StepPropertyGrid{lhs.log_vals - c, lhs.grid};
+            return StepPropertyGrid{StepProperty{lhs.log_vals - c}, lhs.grid};
         }
         auto operator*(const StepPropertyGrid &lhs, RealType c)
         {
-            return StepPropertyGrid{lhs.log_vals * c, lhs.grid};
+            return StepPropertyGrid{StepProperty{lhs.log_vals * c}, lhs.grid};
         }
         auto operator*(const StepPropertyGrid &lhs, const StepPropertyGrid &rhs)
         {
-            return StepPropertyGrid{lhs.log_vals * rhs.log_vals, lhs.grid};
+            return StepPropertyGrid{StepProperty{lhs.log_vals * rhs.log_vals}, lhs.grid};
         }
         auto operator/(const StepPropertyGrid &lhs, const StepPropertyGrid &rhs)
         {
-            return StepPropertyGrid{lhs.log_vals / rhs.log_vals, lhs.grid};
+            return StepPropertyGrid{StepProperty{lhs.log_vals / rhs.log_vals}, lhs.grid};
         }
 
         auto operator+(const StepPropertyGrid &lhs, const StepPropertyGrid &rhs)
         {
-            return StepPropertyGrid{(lhs.log_vals + rhs.log_vals), lhs.grid};
+            return StepPropertyGrid{StepProperty{(lhs.log_vals + rhs.log_vals)}, lhs.grid};
         }
 
         auto operator-(RealType c, const StepPropertyGrid &rhs)
         {
-            return StepPropertyGrid{c - rhs.log_vals, rhs.grid};
+            return StepPropertyGrid{StepProperty{c - rhs.log_vals}, rhs.grid};
         }
 
         struct AssertNonNegative
