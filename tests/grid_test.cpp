@@ -111,7 +111,12 @@ TEST_CASE("GridTest", "GeneralCoordinate")
     const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
 
 
+LogValuesContainer is_permeable(z_dual_size - 1ll);
+is_permeable << 0.0 , 0.0;
 
+RefinerVerticle refiner{0.01, is_permeable};
+
+cout << refiner.refine(z_stencils);
 
 
 }
