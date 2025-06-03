@@ -90,7 +90,7 @@ namespace GPN
                     std::plus<RealType>{});
                 return out;
             }
-            static auto copy_vals(const std::vector<RealType> &nodes)
+            static DualNodesContainer copy_vals(const std::vector<RealType> &nodes)
             {
                 DualNodesContainer out(nodes.size());
                 for (size_t idx{0ull}; idx < nodes.size(); ++idx)

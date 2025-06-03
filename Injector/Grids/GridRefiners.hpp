@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <assert>
+#include <cassert>
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Properties/Logs.hpp>
@@ -23,11 +23,25 @@ namespace GPN
             DualNodesContainer refine(
                 const GridDualStencils &dual_nodes_stencils) noexcept
             {
-                const auto &nodes{dual_nodes_stencils.dual_nodes};
+                return refine(dual_nodes_stencils.dual_nodes);
+            }
+            DualNodesContainer refine(
+                const DualNodesContainer &dual_nodes) noexcept
+            {
+                std::vector<RealType> buf(dual_nodes.size());
+                std::copy(dual_nodes.cbegin(), dual_nodes.cend(), buf.begin());
 
-                RealType top{nodes.head(1ll)(0ll)},
-                    bot{nodes.tail(1ll)(0ll)};
-                ptrdiff_t layers{std::ceil((bot - top) / step)};
+                return refine(buf);
+            }
+
+            DualNodesContainer refine(
+                const std::vector<RealType> &nodes) noexcept
+            {
+                assert(nodes.size() == is_permeable.size() + 1ll);
+
+                RealType top{nodes.front()},
+                    bot{nodes.back()};
+                ptrdiff_t layers{static_cast<ptrdiff_t>(std::ceil((bot - top) / step))};
 
                 std::vector<RealType> buf;
                 buf.reserve(layers + 1ll);
@@ -38,28 +52,33 @@ namespace GPN
                 {
                     if (is_permeable(i) == 1.0)
                         // perforated layer -- do nothing
-                        buf.push_back(nodes(i));
+                        buf.push_back(nodes[i]);
                     else if (is_permeable(i) == 0.0)
                     {
                         // rocks -- refine grid
-                        RealType l_top{nodes(i - 1ll)}, l_bot{nodes(i)};
+                        RealType l_top{nodes[i - 1ull]}, l_bot{nodes[i]};
                         RealType thickness{l_bot - l_top};
-                        ptrdiff_t segm_nmbr{std::ceil(thickness / step)};
+                        ptrdiff_t segm_nmbr{static_cast<ptrdiff_t>(std::ceil(thickness / step))};
                         RealType local_step{thickness / segm_nmbr};
 
                         for (auto j{0ll}; j < segm_nmbr - 1ll; ++j)
                             buf.push_back(buf.back() + local_step);
-                        bur.push_back(l_bot);
+                        buf.push_back(l_bot);
                     }
                     else
-                    // is_permeable should take only {0.0, 1.0} values
+                        // is_permeable should take only {0.0, 1.0} values
                         assert(false);
                 }
 
                 // nodes are in increasing order
-                assert(buf[0ull] == nodes(0ll));
+                assert(buf[0ull] == nodes[0ull]);
                 for (auto i{1ull}; i < buf.size(); ++i)
                     assert(buf[i - 1ull] < buf[i]);
+
+                    
+                DualNodesContainer out(buf.size());
+                std::copy(buf.cbegin(), buf.cend(), out.begin());
+                return out;
             }
 
         protected:
