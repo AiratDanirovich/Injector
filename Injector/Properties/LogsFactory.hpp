@@ -49,10 +49,10 @@ namespace GPN
 
         struct PermeabilityFactory
         {
-            template <typename Container_t, typename Grid_t>
+            template <typename Grid_t>
             static Permeability create(
-                const Container_t &permeability,
-                const Container_t &is_permeable,
+                const auto &permeability,
+                const auto &is_permeable,
                 const Grid_t &grid)
             {
                 return {

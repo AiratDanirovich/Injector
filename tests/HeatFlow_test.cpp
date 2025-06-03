@@ -201,7 +201,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       Segment{hole_radius, rMax}, rNodes);
   r_stencils.insert(r_stencils.end(), temp.begin(), temp.end());
 
-  RefinerVerticle refiner{z_minor_step, std::move(is_permeable_stencils)};
+  RefinerVerticle refiner{z_minor_step, is_permeable_stencils};
 
   const auto grid2D{
       Grids::CylinderGridFactory::create(refiner,
