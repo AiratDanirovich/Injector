@@ -10,6 +10,29 @@ namespace GPN
 {
     namespace Grids
     {
+        struct EmptyRefinerVerticle
+        {
+            DualNodesContainer refine(
+                const GridDualStencils &dual_nodes_stencils) noexcept
+            {
+                return refine(dual_nodes_stencils.dual_nodes);
+            }
+            DualNodesContainer refine(
+                const DualNodesContainer &dual_nodes) noexcept
+            {
+                return dual_nodes;
+            }
+
+            DualNodesContainer refine(
+                const std::vector<RealType> &buf) noexcept
+            {
+                DualNodesContainer out(buf.size());
+                std::copy(buf.cbegin(), buf.cend(), out.begin());
+                return out;
+            }
+
+        };
+
         struct RefinerVerticle
         {
             RefinerVerticle(
