@@ -41,6 +41,13 @@ namespace GPN
                   step{step}
             {
             }
+            RefinerVerticle(
+                const RealType step,
+                const LogValuesContainer &is_permeable)
+                : is_permeable{is_permeable},
+                  step{step}
+            {
+            }
 
             DualNodesContainer refine(
                 const GridDualStencils &dual_nodes_stencils) noexcept

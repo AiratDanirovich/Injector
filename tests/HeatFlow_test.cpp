@@ -8,6 +8,7 @@
 #include <Injector/Grids/Defines.h>
 
 #include <Injector/Grids/GridsFactory.hpp>
+#include <Injector/Grids/GridRefiners.hpp>
 #include <Injector/History/History.hpp>
 #include <Injector/History/RatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
@@ -169,7 +170,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const RealType
       rMin{data["grid"]["r_start"]},
       rMax{data["grid"]["r_end"]},
-      zTop{data["grid"]["ztop"]}; // m
+      zTop{data["grid"]["ztop"]},
+      z_minor_step{data["grid"]["z_minor_step"]}; // m
   const ptrdiff_t rNodes{data["grid"]["rNodes"]};
   /*history*/
   const RealType
@@ -199,8 +201,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       Segment{hole_radius, rMax}, rNodes);
   r_stencils.insert(r_stencils.end(), temp.begin(), temp.end());
 
+  RefinerVerticle refiner{z_minor_step, std::move(is_permeable_stencils)};
+
   const auto grid2D{
-      Grids::CylinderGridFactory::create(
+      Grids::CylinderGridFactory::create(refiner,
           Grids::Factory::generate_dual_grid_stencils_from_steps(
               zTop, thickness),
           r_stencils)};
