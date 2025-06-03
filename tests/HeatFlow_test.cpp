@@ -8,6 +8,7 @@
 #include <Injector/Grids/Defines.h>
 
 #include <Injector/Grids/GridsFactory.hpp>
+#include <Injector/Grids/GridRefiners.hpp>
 #include <Injector/History/History.hpp>
 #include <Injector/History/RatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
@@ -116,7 +117,7 @@ LogValuesContainer transfer_to_eigen(const VR &data, const RealType factor = 1.0
 {
   LogValuesContainer out(data.size());
   for (auto i{0ull}; i < data.size(); ++i)
-    out(i) = factor*data[i];
+    out(i) = factor * data[i];
   return out;
 }
 
@@ -169,7 +170,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const RealType
       rMin{data["grid"]["r_start"]},
       rMax{data["grid"]["r_end"]},
-      zTop{data["grid"]["ztop"]}; // m
+      zTop{data["grid"]["ztop"]},
+      z_minor_step{data["grid"]["z_minor_step"]}; // m
   const ptrdiff_t rNodes{data["grid"]["rNodes"]};
   /*history*/
   const RealType
@@ -199,8 +201,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       Segment{hole_radius, rMax}, rNodes);
   r_stencils.insert(r_stencils.end(), temp.begin(), temp.end());
 
+  RefinerVerticle refiner{z_minor_step, is_permeable_stencils};
+
   const auto grid2D{
-      Grids::CylinderGridFactory::create(
+      Grids::CylinderGridFactory::create(refiner,
           Grids::Factory::generate_dual_grid_stencils_from_steps(
               zTop, thickness),
           r_stencils)};
@@ -320,7 +324,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   for (auto row{0ll}, col{0ll}; row < v2.rows(); ++row)
   {
     CHECK(v2(row, col) == 0.0);
-    CHECK_THAT(v1(row, col), WithinRel( v1(row + 1, col) + v2(row, col + 1ll), tol));
+    CHECK_THAT(v1(row, col), WithinRel(v1(row + 1, col) + v2(row, col + 1ll), tol));
   }
   // flow volume balance
   for (auto row{0ll}; row < grid2D->first_coord.mesh_size(); ++row)
@@ -338,7 +342,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto &state = states[i];
     for (auto row{0ll}; row < state.rows(); ++row)
     {
-      CHECK(state(row, 0ll) >= inlet_temperature-tol);
+      CHECK(state(row, 0ll) >= inlet_temperature - tol);
       for (auto col{1ll}; col < state.cols(); ++col)
       {
         INFO("time: " << i << ", col: " << col << ", row: " << row);
@@ -361,13 +365,14 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // overall heat balance
   RealType cur_heat_incr = 0.0;
   RealType cum_inlet_heat = 0.0;
-  cout << "volumetric heat capacity\n" << heat_props.medium_vol_heatcapacity.its_values <<endl;
+  cout << "volumetric heat capacity\n"
+       << heat_props.medium_vol_heatcapacity.its_values << endl;
 
   for (auto t{1ll}; t < (ptrdiff_t)times.size(); ++t)
   {
     cur_heat_incr =
         ((states[t].cur_state - states[0ll].cur_state) *
-         heat_props.medium_vol_heatcapacity.its_values*grid2D->volumes())
+         heat_props.medium_vol_heatcapacity.its_values * grid2D->volumes())
             .sum();
     cum_inlet_heat =
         (times[t] - times[0ll]) *
