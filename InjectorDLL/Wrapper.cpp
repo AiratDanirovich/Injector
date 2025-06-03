@@ -11,6 +11,7 @@
 #include <Injector/Grids/Defines.h>
 
 #include <Injector/Grids/GridsFactory.hpp>
+#include <Injector/Grids/GridRefiners.hpp>
 #include <Injector/History/History.hpp>
 #include <Injector/History/RatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
@@ -117,17 +118,18 @@ Wrapper::Wrapper(
     const RealType viscosity,               // Pa*s
     const RealType heat_conductivity_fluid, // Watt/(m*K)
     // grid
-    const RealType rMin, // m /* typically would be zero */
-    const RealType rMax, // m
-    const size_t rNodes, // -- /* number of nodes in r-direction, including first and last ones */
-    const RealType zTop, // m, /* typically would be zero */
+    const RealType rMin,         // m /* typically would be zero */
+    const RealType rMax,         // m
+    const size_t rNodes,         // -- /* number of nodes in r-direction, including first and last ones */
+    const RealType zTop,         // m, /* typically would be zero */
+    const RealType z_minor_step, // m, /*maximum step within impermeable layers*/
     // seven +1 vectors of the same size
     // values are in SI
     const VR &thickness,                   // meter
     const VR &heatconductivity_stencils,   // Watt/(m*K)
     const VR &porosity,                    // 0.0 < porosity <= 1.0, --
     const VR &permeability_stencils,       // m^2
-    const VR &is_permeable_stencils,       // {0, 1}, --
+    const VR &is_permeable,                // {0, 1}, --
     const VR &solid_density,               // kg/(m^3)
     const VR &solid_specific_heatcapacity, // J/(kg*K)
     const RealType initial_temperature,    // K // should be log in the future
@@ -141,6 +143,8 @@ Wrapper::Wrapper(
 )
 {
     // adapt stl container to Eigne conteiner
+    LogValuesContainer is_permeable_stencils(is_permeable.size());
+    std::copy(is_permeable.cbegin(), is_permeable.cend(), is_permeable_stencils.begin());
     LogValuesContainer solid_density_stencils(solid_density.size());
     std::copy(solid_density.begin(), solid_density.end(), solid_density_stencils.begin());
     LogValuesContainer solid_specific_heatcapacity_stencils(solid_specific_heatcapacity.size());
@@ -149,8 +153,10 @@ Wrapper::Wrapper(
     std::copy(porosity.begin(), porosity.end(), porosity_stencils.begin());
 
     // make grid2D
+    Grids::RefinerVerticle refiner{z_minor_step, is_permeable_stencils};
     const auto grid2D{
         Grids::CylinderGridFactory::create(
+            refiner,
             Grids::Factory::generate_dual_grid_stencils_from_steps(
                 zTop, thickness),
             Grids::Factory::generate_dual_grid_stencils_uniform(
@@ -239,7 +245,6 @@ Wrapper::Wrapper(
             ofstream f{std::string{"output/layer_"} + std::to_string(layer_id) + std::string{".csv"}};
 
             f << sep << sep << grid2D->second_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
-            cout << z << " " << layer_id << endl;
             for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
             {
                 f << t << sep << times[t] << sep << states[t].cur_state.row(z).format(commaFmt) << '\n';
@@ -248,6 +253,28 @@ Wrapper::Wrapper(
             f.close();
             ++layer_id;
         }
+    }
+    
+    {
+        ofstream f{std::string{"output/well_temperature.csv"}};
+        f << sep << sep << grid2D->first_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
+        for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
+            {
+                f << t << sep << times[t] << sep << states[t].cur_state.col(0ll).format(commaFmt) << '\n';
+            }
+        f.close();
+    }
+
+    // print grids
+    {
+        ofstream f{std::string{"output/z_grid.csv"}};
+        f << grid2D->first_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
+        f.close();
+    }
+    {
+        ofstream f{std::string{"output/r_grid.csv"}};
+        f << grid2D->second_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
+        f.close();
     }
 }
 

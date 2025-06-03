@@ -24,11 +24,11 @@ VR generate_stencils(RealType t0, RealType t1, RealType t_step_major)
 }
 VR generate_steps(const VR &dual_nodes)
 {
-  VR out(dual_nodes.size() - 1ll);
+    VR out(dual_nodes.size() - 1ll);
 
-  for (auto i{0ull}; i < out.size(); ++i)
-    out[i] = dual_nodes[i + 1] - dual_nodes[i];
-  return out;
+    for (auto i{0ull}; i < out.size(); ++i)
+        out[i] = dual_nodes[i + 1] - dual_nodes[i];
+    return out;
 }
 
 int main()
@@ -59,7 +59,8 @@ int main()
     const RealType
         rMin{data["grid"]["r_start"]},
         rMax{data["grid"]["r_end"]},
-        zTop{data["grid"]["ztop"]}; // m
+        zTop{data["grid"]["ztop"]},
+        z_minor_step{data["grid"]["z_minor_step"]}; // m
     const ptrdiff_t rNodes{data["grid"]["rNodes"]};
     /*history*/
     const RealType
@@ -93,6 +94,7 @@ int main()
         rMax,   // m
         rNodes, // -- /* number of nodes in r-direction, including first and last ones */
         zTop,   // m, /* typically would be zero */
+        z_minor_step, // m, /*maximum step within impermeable layers*/
         // seven +1 vectors of the same size
         // values are in SI
         thickness,                            // meter
@@ -125,7 +127,7 @@ int main()
     delete instance;
 
     std::cout << "Simulation done\nPress Enter to exit" << std::endl;
-    //getchar();
+    getchar();
 
     return 0;
 }

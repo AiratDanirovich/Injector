@@ -30,6 +30,7 @@ public:
         const RealType rMax,       // m
         const size_t r_nodes_nmbr, // -- /* number of nodes in r-direction, including first and last ones */
         const RealType zTop,       // m, /* typically would be zero */
+        const RealType z_minor_step, // m, /*maximum step within impermeable layers*/
         // seven +1 vectors of the same size
         // values are in SI
         const VR &thickness,                   // meter
