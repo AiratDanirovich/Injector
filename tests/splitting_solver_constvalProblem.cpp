@@ -107,6 +107,7 @@ TEST_CASE("Solver")
   for (ptrdiff_t t{0ll}; t < nT; ++t)
   {
     solver.advance(step);
+    solver.save_state();
     std::cout << "time: " << t * step << std::endl;
   }
 
