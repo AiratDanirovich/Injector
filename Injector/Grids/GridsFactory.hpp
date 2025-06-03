@@ -58,6 +58,13 @@ namespace GPN
                 auto nodes{GridDual{GridDualStencils{stencils}, CoordinateType_t{}}};
                 return AxesGrid<CoordinateType_t>{nodes};
             }
+            
+            template <typename CoordinateType_t, typename Refiner_t>
+            static auto create_axes(Refiner_t&& refiner, const auto &stencils)
+            {
+                auto nodes{GridDual{refiner, GridDualStencils{stencils}, CoordinateType_t{}}};
+                return AxesGrid<CoordinateType_t>{nodes};
+            }
 
         };
     }

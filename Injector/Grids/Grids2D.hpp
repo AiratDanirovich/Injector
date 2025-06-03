@@ -150,6 +150,14 @@ namespace GPN
                 return create_cylinder_grid_2D_ptr(
                     z_stencils, r_stencils);
             }
+            
+            template<typename Refiner_t>
+            static auto create(Refiner_t&& refiner, const auto &z_stencils, const auto &r_stencils)
+            {
+                return create_cylinder_grid_2D_ptr(
+                    refiner,
+                    z_stencils, r_stencils);
+            }
 
         protected:
             static auto create_cartesian_grid_2D_ptr(ptrdiff_t n)
@@ -177,6 +185,15 @@ namespace GPN
             static auto create_cylinder_grid_2D_ptr(const auto &z_stencils, const auto &r_stencils)
             {
                 auto z_grid{Factory::create_axes<CoordinateTypes::Z>(z_stencils)};
+                auto r_grid{Factory::create_axes<CoordinateTypes::R_CylCoord>(r_stencils)};
+
+                return std::make_shared<StructuredCylinderGrid2DAxisymmetric>(z_grid, r_grid);
+            }
+            
+            template<typename Refiner_t>
+            static auto create_cylinder_grid_2D_ptr(Refiner_t&& refiner, const auto &z_stencils, const auto &r_stencils)
+            {
+                auto z_grid{Factory::create_axes<CoordinateTypes::Z>(refiner, z_stencils)};
                 auto r_grid{Factory::create_axes<CoordinateTypes::R_CylCoord>(r_stencils)};
 
                 return std::make_shared<StructuredCylinderGrid2DAxisymmetric>(z_grid, r_grid);

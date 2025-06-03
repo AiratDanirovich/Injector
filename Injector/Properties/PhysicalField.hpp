@@ -57,6 +57,10 @@ namespace GPN
             {
                 return its_values.rows();
             }
+            auto cols() const
+            {
+                return its_values.cols();
+            }
 
             using Grid_type = Grid_t;
 
