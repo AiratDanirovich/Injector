@@ -23,6 +23,20 @@ namespace GPN
         RealType f_factor;
     };
 
+    struct WellHoles
+    {
+        WellHoles(
+            const RealType tube_radius,
+            const RealType well_radius)
+            : tube_radius{tube_radius},
+              well_radius{well_radius}
+        {
+        }
+
+        const RealType tube_radius;
+        const RealType well_radius;
+    };
+
     struct IWellDesign
     {
         IWellDesign(const Logs::IsPermeable &is_permeable)

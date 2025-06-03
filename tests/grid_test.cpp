@@ -3,6 +3,8 @@
 #include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Grids/Grids2D.hpp>
 
+#include <Injector/Grids/GridRefiners.hpp>
+
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
@@ -107,4 +109,9 @@ TEST_CASE("GridTest", "GeneralCoordinate")
         }
     }
     const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
+
+
+
+
+
 }

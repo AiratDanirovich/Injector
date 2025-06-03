@@ -41,7 +41,7 @@ namespace GPN
 
             GridDualStencils(
                 const std::vector<RealType> &nodes) noexcept
-                : dual_nodes(nodes.size())
+                : dual_nodes{copy_vals(nodes)}
             {
 #pragma region ASSERTIONS
                 // at least two nodes are required,
@@ -52,10 +52,6 @@ namespace GPN
                 for (size_t idx{0}; idx < nodes.size() - 1; ++idx)
                     assert(nodes[idx] < nodes[idx + 1]);
 #pragma endregion
-
-                // copy dual mesh stencils to local container
-                for (size_t idx{0ull}; idx < nodes.size(); ++idx)
-                    dual_nodes(idx) = nodes[idx];
             }
 
             GridDualStencils(GridDualStencils &&) noexcept = default;
@@ -78,9 +74,9 @@ namespace GPN
                 return dual_nodes.size();
             }
 
-        protected:
+        public:
             // read-only
-            DualNodesContainer dual_nodes;
+            const DualNodesContainer dual_nodes;
 
         private:
             static std::vector<RealType> partial_sum_steps(const DualStepsContainer &adata)
@@ -92,6 +88,14 @@ namespace GPN
                     adata.cend(),
                     out.begin() + 1ull,
                     std::plus<RealType>{});
+                return out;
+            }
+            static auto copy_vals(const std::vector<RealType> &nodes)
+            {
+                DualNodesContainer out(nodes.size());
+                for (size_t idx{0ull}; idx < nodes.size(); ++idx)
+                    out(idx) = nodes[idx];
+
                 return out;
             }
         };
