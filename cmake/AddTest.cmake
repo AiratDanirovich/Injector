@@ -62,4 +62,11 @@ macro(add_catch2_test name)
     NAME ${TEST_NAME} 
     COMMAND ${TEST_EXECUTABLE})
 
+    # install(TARGETS ${TEST_NAME}
+    # # copy *.dll file
+    # RUNTIME DESTINATION ${PROJECT_BINARY_DIR}/bin
+    # # copy public header(s)
+    # PUBLIC_HEADER DESTINATION ${PROJECT_BINARY_DIR}/bin
+    # )
+
 endmacro()
