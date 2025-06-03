@@ -159,7 +159,7 @@ namespace GPN
                 const auto &solid_specific_heatcapacity,
                 const auto &grid)
             {
-                assert(solid_specific_heatcapacity.size() == grid.mesh_size());
+                assert(solid_specific_heatcapacity.size() == grid.dual_stencils.dual_nodes.size()-1ll);
                 return {
                     StepPropertyGrid{
                         StepProperty{
@@ -200,9 +200,9 @@ namespace GPN
                 const auto &fluid,
                 const auto &grid)
             {
-                return {StepPropertyGrid{
+                return {StepPropertyGrid{StepProperty{
                     porosity * fluid.volumetric_heat_capacity +
-                        (1.0 - porosity) * solid_vol_heatcapacity,
+                        (1.0 - porosity) * solid_vol_heatcapacity},
                     grid}};
             }
 
