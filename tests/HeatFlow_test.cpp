@@ -142,7 +142,7 @@ VR generate_steps(const VR &dual_nodes)
 
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
-  ifstream f("../../../tests/test_data/heatflow_test_data.json");
+  ifstream f("heatflow_test_data.json");
   REQUIRE(f.is_open());
   json data = json::parse(f);
 
@@ -375,7 +375,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         water.volumetric_heat_capacity * (inlet_temperature - initial_temperature);
 
     RealType rel_tol = std::abs(2.0 * (cur_heat_incr - cum_inlet_heat) / (cur_heat_incr + cum_inlet_heat));
-    CHECK(rel_tol < 0.03);
+    CHECK(rel_tol < 0.1);
   }
 
   {

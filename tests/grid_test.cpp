@@ -3,6 +3,8 @@
 #include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Grids/Grids2D.hpp>
 
+#include <Injector/Grids/GridRefiners.hpp>
+
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
@@ -28,7 +30,7 @@ TEST_CASE("GridTest", "GeneralCoordinate")
 {
     const RealType tol = 1e-11;
 
-    const auto z_dual_size{3ll};
+    const auto z_dual_size{4ll};
     const auto r_dual_size{15ll};
     auto z_stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, z_dual_size)};
     auto r_stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, r_dual_size)};
@@ -107,4 +109,12 @@ TEST_CASE("GridTest", "GeneralCoordinate")
         }
     }
     const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
+
+
+LogValuesContainer is_permeable(z_dual_size - 1ll);
+is_permeable << 0.0, 1.0 , 0.0;
+
+RefinerVerticle refiner{0.1, std::move(is_permeable)};
+
+cout << refiner.refine(z_stencils);
 }
