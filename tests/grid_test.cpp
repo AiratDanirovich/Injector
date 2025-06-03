@@ -30,7 +30,7 @@ TEST_CASE("GridTest", "GeneralCoordinate")
 {
     const RealType tol = 1e-11;
 
-    const auto z_dual_size{3ll};
+    const auto z_dual_size{4ll};
     const auto r_dual_size{15ll};
     auto z_stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, z_dual_size)};
     auto r_stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, r_dual_size)};
@@ -112,11 +112,9 @@ TEST_CASE("GridTest", "GeneralCoordinate")
 
 
 LogValuesContainer is_permeable(z_dual_size - 1ll);
-is_permeable << 0.0 , 0.0;
+is_permeable << 0.0, 1.0 , 0.0;
 
-RefinerVerticle refiner{0.01, is_permeable};
+RefinerVerticle refiner{0.1, is_permeable};
 
 cout << refiner.refine(z_stencils);
-
-
 }

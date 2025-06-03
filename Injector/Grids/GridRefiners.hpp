@@ -48,15 +48,15 @@ namespace GPN
 
                 // push the top node
                 buf.push_back(top);
-                for (auto i{1ll}; i < is_permeable.size(); ++i)
+                for (auto i{0ll}; i < is_permeable.size(); ++i)
                 {
                     if (is_permeable(i) == 1.0)
                         // perforated layer -- do nothing
-                        buf.push_back(nodes[i]);
+                        buf.push_back(nodes[i+1ull]);
                     else if (is_permeable(i) == 0.0)
                     {
                         // rocks -- refine grid
-                        RealType l_top{nodes[i - 1ull]}, l_bot{nodes[i]};
+                        RealType l_top{nodes[i]}, l_bot{nodes[i+1ll]};
                         RealType thickness{l_bot - l_top};
                         ptrdiff_t segm_nmbr{static_cast<ptrdiff_t>(std::ceil(thickness / step))};
                         RealType local_step{thickness / segm_nmbr};
