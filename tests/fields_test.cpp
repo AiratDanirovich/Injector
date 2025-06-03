@@ -40,6 +40,7 @@ const auto heatconductivity_stencils{
 
 TEST_CASE("FieldsTest")
 {
+    {
     const auto grid2D{
         Grids::CylinderGridFactory::create(grid_stencils, grid_stencils)};
 
@@ -69,4 +70,8 @@ TEST_CASE("FieldsTest")
         
     const Properties::Rocks::HeatProps heat_props{
         heat_logs, grid2D};
+    }
+    {
+        
+    }
 }
