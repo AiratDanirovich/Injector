@@ -18,7 +18,7 @@
   },
   "grid": {
     "ztop": 0.0,
-    "z_minor_step": 3,
+    "z_minor_step": 3.0,
     "r_start": 0.0,
     "r_end": 30,
     "rNodes": 41
