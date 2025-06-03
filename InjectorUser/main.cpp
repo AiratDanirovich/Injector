@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 
 #include <InjectorDLL/Defines.h>
@@ -9,89 +10,122 @@
 using VR = std::vector<RealType>;
 
 using namespace std;
+using json = nlohmann::json;
+
+VR generate_stencils(RealType t0, RealType t1, RealType t_step_major)
+{
+    auto segm_count{static_cast<size_t>(std::ceil(t1 - t0) / t_step_major)};
+    double step = (t1 - t0) / (segm_count);
+    VR out(segm_count + 1ll);
+
+    for (auto i{0ull}; i < out.size(); ++i)
+        out[i] = t0 + i * step;
+    return out;
+}
+VR generate_steps(const VR &dual_nodes)
+{
+  VR out(dual_nodes.size() - 1ll);
+
+  for (auto i{0ull}; i < out.size(); ++i)
+    out[i] = dual_nodes[i + 1] - dual_nodes[i];
+  return out;
+}
 
 int main()
 {
+    ifstream f("injector_launch.json");
+    json data = json::parse(f);
+
     /*START*/
     // input parameters
     /*fluid*/
-    RealType viscosity{6e-4}, density{1000}, capacity{4200},
-        heat_conductivity_fluid{0.6};
+    RealType
+        viscosity{data["fluid"]["viscosity"]},
+        density{data["fluid"]["density"]},
+        capacity{data["fluid"]["specificHeatCapacity"]},
+        heat_conductivity{data["fluid"]["heatConductivity"]};
     /*collector*/
-    const RealType rMin{2.0}, rMax{4.0}, zTop{0.0}; // in meters
-    const std::ptrdiff_t r_nodes_nmbr{31ull};
-    const std::ptrdiff_t nLayers{11ull};
-    const VR thickness(nLayers, 0.01); // each layer is 0.01m thick
-
-    const VR conductivity(nLayers, 3.9);
-    const VR porosity(nLayers, 1e-16); // porosity assumed zero to exclude contribution of mobile phase, but may be any value < 1.0
-    constexpr RealType Darcy2m2 = 9.869E-13;
-    const VR permeability(nLayers, Darcy2m2 * 300e-3);
-    const VR is_permeable(nLayers, 1.0);
-    const VR solid_density(nLayers, 2600);
-    const VR solid_specific_heatcapacity(nLayers, 770);
-    const RealType initial_temperature{273 + 40}; // K
-    /*temporal grid*/
-    const std::ptrdiff_t time_steps_nmbr{51ull};
-    const RealType t_start{0.0}; // initial time moment
-    const RealType t1{t_start + 2e6};
-    const RealType time_step{(t1 - t_start) / time_steps_nmbr};
-    const VR time_intervals(time_steps_nmbr, time_step);
-    const RealType t_minor_step{960};
-    // well
-    const RealType well_rate{1.1e-3};          // ~1.1E-3 m^3/s
-    const RealType inlet_temperature{273 + 2}; // K
+    const VR thickness = data["collector"]["thickness"];
+    //  const ptrdiff_t nLayers{thickness.size()};
+    // hydrodynamic logs
+    const VR is_permeable_stencils = data["collector"]["is_permeable"];
+    const VR porosity_stencils = data["collector"]["porosity"];
+    const VR permeability_stencils = data["collector"]["permeability"];
+    // heat logs
+    const VR heatconductivity_stencils = data["collector"]["heatConductivity"];
+    const VR solid_density_stencils = data["collector"]["solidDensity"];
+    const VR solid_specific_heatcapacity_stencils = data["collector"]["solidSpecificHeatCapacity"];
+    /*grid*/
+    const RealType
+        rMin{data["grid"]["r_start"]},
+        rMax{data["grid"]["r_end"]},
+        zTop{data["grid"]["ztop"]}; // m
+    const ptrdiff_t rNodes{data["grid"]["rNodes"]};
+    /*history*/
+    const RealType
+        t0{data["history"]["t_start"]},
+        t1{data["history"]["t_end"]};
+    RealType t_major_step{data["history"]["t_major_step"]};
+    RealType t_minor_step{data["history"]["t_minor_step"]};
+    t_major_step = std::min(t1 - t0, t_major_step);
+    t_minor_step = std::min(t_minor_step, t_major_step);
+    const VR t_stencils{generate_stencils(t0, t1, t_major_step)};
+    const VR time_steps{generate_steps(t_stencils)};
+    /*temperatures*/
+    const RealType well_rate{data["history"]["wellRate"]}; // m^3/s
+    const RealType initial_temperature{data["collector"]["initTemperature"]};
+    const RealType inlet_temperature{data["history"]["inletTemperature"]};
+    /*well*/
+    const RealType hole_radius{data["well"]["hole_radius"]};
     /*END*/
 
-    cout << "before call to DLL\nPress Enter to continue" << endl;
-    getchar();
+    // cout << "before call to DLL\nPress Enter to continue" << endl;
+    // getchar();
 
     Wrapper *instance = new Wrapper(
         // fluid params in SI
-        density,                 // kg/(m^3)
-        capacity,                // J/(kg*K) /* specific heat capacity */
-        viscosity,               // Pa*s
-        heat_conductivity_fluid, // W/(m*K)
+        density,           // kg/(m^3)
+        capacity,          // J/(kg*K) /* specific heat capacity */
+        viscosity,         // Pa*s
+        heat_conductivity, // W/(m*K)
         // grid
-        rMin,         // m /* typically would be zero */
-        rMax,         // m
-        r_nodes_nmbr, // -- /* number of nodes in r-direction, including first and last ones */
-        zTop,         // m, /* typically would be zero */
+        rMin,   // m /* typically would be zero */
+        rMax,   // m
+        rNodes, // -- /* number of nodes in r-direction, including first and last ones */
+        zTop,   // m, /* typically would be zero */
         // seven +1 vectors of the same size
         // values are in SI
-        thickness,                   // meter
-        conductivity,                // Watt/(m*K)
-        porosity,                    // --
-        permeability,                // m^2
-        is_permeable,                // {0, 1}, --
-        solid_density,               // kg/(m^3)
-        solid_specific_heatcapacity, // J/(kg*K)
-        initial_temperature,         // K // should be log in the future
+        thickness,                            // meter
+        heatconductivity_stencils,            // Watt/(m*K)
+        porosity_stencils,                    // --
+        permeability_stencils,                // m^2
+        is_permeable_stencils,                // {0, 1}, --
+        solid_density_stencils,               // kg/(m^3)
+        solid_specific_heatcapacity_stencils, // J/(kg*K)
+        initial_temperature,                  // K // should be log in the future
         // temporal grid
-        t_start,        // start time in seconds
-                        //    const size_t nt, // = time_intervals.size()
-        time_intervals, // in seconds
-        t_minor_step,   // time step used for numerical integration
+        t0,           // start time in seconds
+                      //    const size_t nt, // = time_intervals.size()
+        time_steps,   // in seconds
+        t_minor_step, // time step used for numerical integration
         // well
         well_rate,        // ~1.1E-3 m^3/s
         inlet_temperature // K
     );
 
-    cout << "After call to DLL\nPress Enter to continue" << endl;
-    getchar();
+    // cout << "After call to DLL\nPress Enter to continue" << endl;
+    // getchar();
 
     const auto &t = instance->get_times();
+    cout << "number of saved time moments:       " << t.size() << endl;
 
-    for (auto i{0ull}; i < t.size(); ++i)
-        std::cout << "t: " << t[i] << std::endl;
-
-    std::cout << "In main of InjectorUser\nPress Enter to continue" << std::endl;
-    getchar();
+    // std::cout << "In main of InjectorUser\nPress Enter to continue" << std::endl;
+    // getchar();
 
     delete instance;
 
-    std::cout << "Instance deleted. Simulation done\nPress Enter to exit" << std::endl;
-    getchar();
+    std::cout << "Simulation done\nPress Enter to exit" << std::endl;
+    //getchar();
 
     return 0;
 }

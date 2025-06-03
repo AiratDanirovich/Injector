@@ -2,6 +2,9 @@
 #include <cmath>
 #include <memory>
 #include <numbers>
+#include <fstream>
+#include <iostream>
+#include <filesystem>
 
 #include <InjectorDLL/Wrapper.h>
 
@@ -24,10 +27,16 @@
 
 #include <Injector/Properties/FieldsFactory.hpp>
 
+#include <Eigen/Core>
+
+using namespace std;
+
 using namespace GPN;
 using namespace GPN::Phases;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
+
+namespace fs = std::filesystem;
 
 /// @brief Initial temperature is assumed to be constant
 struct FunctorIC
@@ -212,16 +221,44 @@ Wrapper::Wrapper(
     SolverManager solver_manager{history, solver_ptr};
 
     solver_manager.run(t_minor_step);
+
+    const auto &[times, states] = solver.solution();
+    this->time = times;
+
+    if (!fs::is_directory("output") || !fs::exists("output")) // Check if src folder exists
+    {
+        fs::create_directory("output"); // create src folder
+    }
+
+    const std::string sep{", "};
+    const Eigen::IOFormat commaFmt(Eigen::StreamPrecision, Eigen::DontAlignCols, sep, sep, "", "", "", "");
+    for (auto z{0ll}, layer_id{0ll}; z < grid2D->first_coord.mesh_nodes.size(); ++z)
+    {
+        if (core_data.is_permeable(z) == 1.0)
+        {
+            ofstream f{std::string{"output/layer_"} + std::to_string(layer_id) + std::string{".csv"}};
+
+            f << sep << sep << grid2D->second_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
+            cout << z << " " << layer_id << endl;
+            for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
+            {
+                f << t << sep << times[t] << sep << states[t].cur_state.row(z).format(commaFmt) << '\n';
+            }
+
+            f.close();
+            ++layer_id;
+        }
+    }
 }
 
 std::vector<RealType> Wrapper::get_times() const
 {
     return time;
 }
-std::vector<std::vector<RealType>> Wrapper::get_temps() const
-{
-    return t_radial_distribution;
-}
+// std::vector<std::vector<RealType>> Wrapper::get_temps() const
+// {
+//     return t_radial_distribution;
+// }
 
 Wrapper::~Wrapper()
 {

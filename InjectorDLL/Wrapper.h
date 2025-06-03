@@ -51,7 +51,7 @@ public:
     ~Wrapper();
 
     std::vector<RealType> get_times() const;
-    std::vector<std::vector<RealType>> get_temps() const;
+    // std::vector<std::vector<RealType>> get_temps() const;
 
 private:
     std::vector<std::vector<RealType>> t_radial_distribution;
