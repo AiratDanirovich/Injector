@@ -75,6 +75,17 @@ namespace GPN
         {
             using Grid_t = Grids::GridDual; // AxesGrid<CoordinateTypes::Z>;
 
+            StepPropertyGrid(
+                const StepPropertyContainer &interpolated_vals, // interpolated values corresponding to the grid
+                const Grid_t &grid)
+                : log_vals{interpolated_vals},
+                  grid{grid}
+            {
+                assert(log_vals.size() == grid.dual_size() - 1ll);
+                assert(log_vals.size() == grid.mesh_size());
+                assert(grid.dual_stencils.dual_nodes.size() <= grid.dual_size());
+            }
+
             StepPropertyGrid(const StepPropertyGrid &) noexcept = default;
 
             StepPropertyGrid(
@@ -112,17 +123,6 @@ namespace GPN
 
             const StepPropertyContainer log_vals;
             const Grid_t grid;
-
-        protected:
-            StepPropertyGrid(
-                const StepPropertyContainer &interpolated_vals, // interpolated values corresponding to the grid
-                const Grid_t &grid)
-                : log_vals{interpolated_vals},
-                  grid{grid}
-            {
-                assert(log_vals.size() == grid.dual_size() - 1ll);
-                assert(log_vals.size() == grid.mesh_size());
-            }
 
         private:
             static StepPropertyContainer interpolate(
