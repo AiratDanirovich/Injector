@@ -30,15 +30,14 @@ namespace GPN
                 std::copy(buf.cbegin(), buf.cend(), out.begin());
                 return out;
             }
-
         };
 
         struct RefinerVerticle
         {
             RefinerVerticle(
                 const RealType step,
-                const LogValuesContainer &is_permeable)
-                : is_permeable{is_permeable},
+                LogValuesContainer &&is_permeable)
+                : is_permeable{std::move(is_permeable)},
                   step{step}
             {
             }
@@ -60,6 +59,9 @@ namespace GPN
             DualNodesContainer refine(
                 const std::vector<RealType> &nodes) noexcept
             {
+                for (auto i{0ll}; i < is_permeable.size(); ++i)
+                    assert((is_permeable(i) == 0.0) || (is_permeable(i) == 1.0));
+
                 assert(nodes.size() == is_permeable.size() + 1ll);
 
                 RealType top{nodes.front()},
@@ -75,11 +77,11 @@ namespace GPN
                 {
                     if (is_permeable(i) == 1.0)
                         // perforated layer -- do nothing
-                        buf.push_back(nodes[i+1ull]);
+                        buf.push_back(nodes[i + 1ull]);
                     else if (is_permeable(i) == 0.0)
                     {
                         // rocks -- refine grid
-                        RealType l_top{nodes[i]}, l_bot{nodes[i+1ll]};
+                        RealType l_top{nodes[i]}, l_bot{nodes[i + 1ll]};
                         RealType thickness{l_bot - l_top};
                         ptrdiff_t segm_nmbr{static_cast<ptrdiff_t>(std::ceil(thickness / step))};
                         RealType local_step{thickness / segm_nmbr};
@@ -98,14 +100,13 @@ namespace GPN
                 for (auto i{1ull}; i < buf.size(); ++i)
                     assert(buf[i - 1ull] < buf[i]);
 
-                    
                 DualNodesContainer out(buf.size());
                 std::copy(buf.cbegin(), buf.cend(), out.begin());
                 return out;
             }
 
         protected:
-            const LogValuesContainer &is_permeable;
+            const LogValuesContainer is_permeable;
             const RealType step;
         };
 

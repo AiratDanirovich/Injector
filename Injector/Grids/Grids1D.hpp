@@ -124,8 +124,8 @@ namespace GPN
             /// @param policy
             template <typename RefinementPolicy, typename CoordinateType>
             GridDual(
-                const GridDualStencils &dual_nodes_stencils,
                 RefinementPolicy &&policy,
+                const GridDualStencils &dual_nodes_stencils,
                 const CoordinateType &ct) noexcept
                 : GridDual{
                       dual_nodes_stencils,                // nodes of dual mesh
@@ -133,7 +133,7 @@ namespace GPN
                       ct}
             {
                 // define refinement policy
-                assert(false);
+            //    assert(false);
             }
 
             auto dual_size() const { return dual_nodes.size(); }
