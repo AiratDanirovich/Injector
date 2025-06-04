@@ -6,7 +6,7 @@
     "heatConductivity": 0.0
   },
   "collector": {
-    "thickness": [   90,   3,    3,    3,   3,    3,   3,   3,    3],
+    "thickness": [   3,   3,    0.3,  3,   0.3,  3,   0.3,  0.3,  3],
     "is_permeable": [0.0, 0.0,  1.0,  0.0, 1.0,   0.0, 1.0, 1.0,  0.0],
     "porosity":     [0.0, 0.0,  0.3,  0.0, 0.2,   0.0, 0.3, 0.25, 0.0],
     "permeability": [0.0, 0.0,  0.5,  0.0, 0.07,  0.0, 0.2, 0.15, 0.0],
@@ -18,13 +18,21 @@
   },
   "grid": {
     "ztop": 0.0,
-    "z_minor_step": 1.0,
+    "z_minor_step": 0.3,
     "r_start": 0.0,
-    "r_end": 30,
-    "rNodes": 41
+    "r_end": 1.11,
+    "r_grid_type": "log",
+    "r_uniform_grid":{
+      "rNodes": 451
+    },
+    "r_log_grid": {
+      "r_max_step": 0.1,
+      "q": 1.15
+    }
   },
   "well": {
-    "hole_radius": 0.0
+    "tube_radius": 0.05,
+    "sandface_radius": 0.11
   },
   "history": {
     "t_start": 0.0,
