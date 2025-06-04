@@ -22,6 +22,20 @@ namespace GPN
             }
         };
 
+        struct InjectorTemperature
+            : public StepPropertyGrid,
+              // so far it is assumed that the rates are positive.
+              // Injector
+              private AssertNonNegative
+        {
+            InjectorTemperature(
+                const StepPropertyGrid &temps)
+                : StepPropertyGrid{temps},
+                  AssertNonNegative{temps}
+            {
+            }
+        };
+
         struct BottomholePressure
             : public StepPropertyGrid,
               private AssertNonNegative
@@ -37,8 +51,10 @@ namespace GPN
 
     struct History
     {
-        History(const Logs::InjectorRate &rates)
+        History(const Logs::InjectorRate &rates,
+                const Logs::InjectorTemperature &temps)
             : rates{rates},
+              temps{temps},
               time_steps{rates.grid.dual_steps},
               time_moments(time_steps.size() + 1ll, 0.0)
         {
@@ -49,6 +65,7 @@ namespace GPN
         }
 
         const Logs::InjectorRate rates;
+        const Logs::InjectorTemperature temps;
         const DualStepsContainer time_steps;
         std::vector<double> time_moments;
     };
@@ -57,16 +74,18 @@ namespace GPN
     {
         static auto create(
             const auto &time_steps,
-            const auto &rates)
+            const auto &rates,
+            const auto &temps)
         {
-            const auto temp0{DualStepsContainer{time_steps}};
-            const auto temp{Grids::GridDualStencils{temp0}};
-            const auto temp2{Grids::TemporalGridDual{
-                        temp, CoordinateTypes::Time{}}};
+            const auto time{Grids::TemporalGridDual{
+                Grids::GridDualStencils{
+                    DualStepsContainer{time_steps}},
+                CoordinateTypes::Time{}}};
             return History{
                 Logs::InjectorRate{Logs::StepPropertyGrid{
-                    rates, temp2
-                    }}};
+                    rates, time}},
+                Logs::InjectorTemperature{Logs::StepPropertyGrid{
+                    temps, time}}};
         }
     };
 } // GPN

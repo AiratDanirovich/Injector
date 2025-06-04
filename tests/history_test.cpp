@@ -33,14 +33,24 @@ TEST_CASE("HistoryTest")
                 Logs::RawDataFactory::generate_rates(
                     time_moments),
                 time_grid}}};
+            
+    const auto temps{
+        InjectorRate{
+            StepPropertyGrid{
+                Logs::RawDataFactory::generate_temperatures(
+                    time_moments),
+                time_grid}}};
 
     const auto history{
-        History{rates}};
+        History{rates, temps}};
 
     const auto history2{
         HistoryFactory::create(
-            time_steps, Logs::RawDataFactory::generate_rates(
-                            time_moments))};
+            time_steps, 
+            Logs::RawDataFactory::generate_rates(
+                            time_moments), 
+                            Logs::RawDataFactory::generate_temperatures(
+            time_moments))};
 
     const auto &grid{history.rates.grid};
     for (auto id{0ll}; id < grid.dual_nodes.size(); ++id)
