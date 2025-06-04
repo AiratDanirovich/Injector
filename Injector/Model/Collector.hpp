@@ -2,7 +2,6 @@
 #include <cassert>
 
 #include <Injector/Properties/LogsFactory.hpp>
-#include <Injector/Properties/FieldsFactory.hpp>
 #include <Injector/Properties/FaceProperties.hpp>
 
 namespace GPN

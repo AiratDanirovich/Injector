@@ -7,7 +7,6 @@
 
 #include <Injector/Properties/Logs.hpp>
 #include <Injector/History/RatesFactory.hpp>
-#include <Injector/Properties/FieldsFactory.hpp>
 #include <Injector/Properties/FlowField.hpp>
 
 #include <Injector/Model/Phases/FluidFactory.hpp>
