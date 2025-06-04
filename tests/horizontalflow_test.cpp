@@ -16,7 +16,6 @@
 #include <Injector/Solver/InitialCondition.hpp>
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
 
-#include <Injector/Properties/FieldsFactory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
