@@ -307,7 +307,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       << endl;
     f.close();
   }
-
+#pragma region CHECKS
   // verify flow field
   const auto &v1 = rates_factory.get_flow_in_axes1();
   for (auto row{0ll}; row < v1.rows(); ++row)
@@ -382,7 +382,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     RealType rel_tol = std::abs(2.0 * (cur_heat_incr - cum_inlet_heat) / (cur_heat_incr + cum_inlet_heat));
     CHECK(rel_tol < 0.1);
   }
-
+#pragma endregion
   {
     const auto &state = states.back();
     std::string path{std::string{"T_"} + std::to_string(0) + std::string{".txt"}};
