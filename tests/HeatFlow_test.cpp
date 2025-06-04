@@ -259,8 +259,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // history
   const std::vector<RealType> time_steps{generate_steps(t_stencils)};
   const std::vector<RealType> rates(time_steps.size(), well_rate);
+  const std::vector<RealType> temps(time_steps.size(), inlet_temperature);
   const History history{
-      HistoryFactory::create(time_steps, rates)};
+      HistoryFactory::create(time_steps, rates, temps)};
   // rates field factory
   FaceProperties::RatesFactory rates_factory{
       grid2D, well, history, water};
