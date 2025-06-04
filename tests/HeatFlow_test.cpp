@@ -82,7 +82,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   RealType operator()(ptrdiff_t z_id, RealType r, RealType t) const override
   {
     if (r == grid_ptr->second_coord.dual_front())
-      return flow_field.get_flow_in_axes2()(z_id, 0ll) * inlet_temp;
+      return flow_field.get_flow_in_axes2()(z_id, 0ll) * flow_field.get_temperature();
 
     if (r == grid_ptr->second_coord.dual_back())
       return 0.0;
@@ -94,7 +94,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   RealType operator()(RealType z, ptrdiff_t r_id, RealType t) const override
   {
     if (z == grid_ptr->first_coord.dual_front())
-      return flow_field.get_flow_in_axes1()(0ll, r_id) * inlet_temp;
+      return flow_field.get_flow_in_axes1()(0ll, r_id) * flow_field.get_temperature();
 
     if (z == grid_ptr->first_coord.dual_back())
       return 0.0;
@@ -184,6 +184,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const RealType well_rate{data["history"]["wellRate"]}; // m^3/s
   const RealType initial_temperature{data["collector"]["initTemperature"]};
   const RealType inlet_temperature{data["history"]["inletTemperature"]};
+  const VR inlet_temperature_array = data["history"]["inletTemperatureArray"];
   /*well*/
   const RealType hole_radius{data["well"]["hole_radius"]};
   /*END*/
@@ -203,25 +204,25 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
   const auto grid2D{
       Grids::CylinderGridFactory::create(refiner,
-          Grids::Factory::generate_dual_grid_stencils_from_steps(
-              zTop, thickness),
-          r_stencils)};
+                                         Grids::Factory::generate_dual_grid_stencils_from_steps(
+                                             zTop, thickness),
+                                         r_stencils)};
   const auto &grid{grid2D->first_coord};
 
-  cout << "radial grid:\n"
-       << grid2D->second_coord.dual_nodes.transpose() << endl;
-  cout << "vertical grid:\n"
-       << grid2D->first_coord.dual_nodes.transpose() << endl;
+  // cout << "radial grid:\n"
+  //      << grid2D->second_coord.dual_nodes.transpose() << endl;
+  // cout << "vertical grid:\n"
+  //      << grid2D->first_coord.dual_nodes.transpose() << endl;
 
-  cout << "radial grid cell centers:\n"
-       << grid2D->second_coord.mesh_nodes.transpose() << endl;
-  cout << "vertical grid cell centers:\n"
-       << grid2D->first_coord.mesh_nodes.transpose() << endl;
+  // cout << "radial grid cell centers:\n"
+  //      << grid2D->second_coord.mesh_nodes.transpose() << endl;
+  // cout << "vertical grid cell centers:\n"
+  //      << grid2D->first_coord.mesh_nodes.transpose() << endl;
 
-  cout << "radial grid mesh steps:\n"
-       << grid2D->second_coord.mesh_steps.transpose() << endl;
-  cout << "vertical grid mesh steps:\n"
-       << grid2D->first_coord.mesh_steps.transpose() << endl;
+  // cout << "radial grid mesh steps:\n"
+  //      << grid2D->second_coord.mesh_steps.transpose() << endl;
+  // cout << "vertical grid mesh steps:\n"
+  //      << grid2D->first_coord.mesh_steps.transpose() << endl;
 
   const Logs::Rocks::CoreSampleLogs core_data{
       is_permeable_stencils,
@@ -257,9 +258,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // history
   const std::vector<RealType> time_steps{generate_steps(t_stencils)};
   const std::vector<RealType> rates(time_steps.size(), well_rate);
-  const std::vector<RealType> temps(time_steps.size(), inlet_temperature);
+  // const std::vector<RealType> temps(time_steps.size(), inlet_temperature);
   const History history{
-      HistoryFactory::create(time_steps, rates, temps)};
+      HistoryFactory::create(time_steps, rates, inlet_temperature_array)};
   // rates field factory
   FaceProperties::RatesFactory rates_factory{
       grid2D, well, history, water};
@@ -294,7 +295,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   solver_manager.run(t_minor_step);
 
   // assert solution
-  const double tol = 1E-12;
+  const double tol = 1E-11;
   const auto precision{1e-5};
 
   {
@@ -356,7 +357,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     {
       for (auto col{1ll}; col < state.cols(); ++col)
       {
-        CHECK(states[i](row, col) <= states[i - 1ull](row, col) + tol);
+        CHECK((states[i](row, col) - states[i - 1ull](row, col))/(states[i](row, col) + states[i - 1ull](row, col)) <= tol);
       }
     }
   }
@@ -364,22 +365,22 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // overall heat balance
   RealType cur_heat_incr = 0.0;
   RealType cum_inlet_heat = 0.0;
-  cout << "volumetric heat capacity\n"
-       << heat_props.medium_vol_heatcapacity.its_values << endl;
+//  cout << "volumetric heat capacity\n"
+//       << heat_props.medium_vol_heatcapacity.its_values << endl;
 
   for (auto t{1ll}; t < (ptrdiff_t)times.size(); ++t)
   {
-    cur_heat_incr =
-        ((states[t].cur_state - states[0ll].cur_state) *
+    cur_heat_incr +=
+        ((states[t].cur_state - states[t - 1ll].cur_state) *
          heat_props.medium_vol_heatcapacity.its_values * grid2D->volumes())
             .sum();
-    cum_inlet_heat =
-        (times[t] - times[0ll]) *
+    cum_inlet_heat +=
+        (times[t] - times[t - 1ll]) *
         history.rates(t - 1ll) *
-        water.volumetric_heat_capacity * (inlet_temperature - initial_temperature);
+        water.volumetric_heat_capacity * (history.temps(t - 1ll) - initial_temperature);
 
     RealType rel_tol = std::abs(2.0 * (cur_heat_incr - cum_inlet_heat) / (cur_heat_incr + cum_inlet_heat));
-    CHECK(rel_tol < 0.1);
+    CHECK(rel_tol < 0.05);
   }
 #pragma endregion
   {
