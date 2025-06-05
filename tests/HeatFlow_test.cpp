@@ -188,6 +188,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const VR inlet_temperature_array = data["history"]["inletTemperatureArray"];
   /*well*/
   const RealType sandface_radius{data["well"]["sandface_radius"]};
+  const RealType column_radius{data["well"]["column_radius"]};
   const RealType tube_radius{data["well"]["tube_radius"]};
   /*END*/
 
@@ -197,8 +198,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
   // make grid2D
   // r_stencils
-  VR r_stencils;
-  WellHoles well_holes{tube_radius, sandface_radius};
+  VR r_stencils; // they take into account the well construction
+  WellHoles well_holes{tube_radius, column_radius, sandface_radius};
   if (r_grid_type == "uniform")
   {
     const auto& data2 = data["grid"]["r_uniform_grid"];

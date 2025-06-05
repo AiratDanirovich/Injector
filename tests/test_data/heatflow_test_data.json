@@ -32,7 +32,8 @@
   },
   "well": {
     "tube_radius": 0.05,
-    "sandface_radius": 0.11
+    "sandface_radius": 0.11,
+    "column_radius": 0.08
   },
   "history": {
     "t_start": 0.0,

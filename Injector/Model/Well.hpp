@@ -23,18 +23,24 @@ namespace GPN
         RealType f_factor;
     };
 
+    /// @brief Descriptor for the well circular desing,
+    /// contains radii of tube < column < sandface.
+    /// Cement is between column and sandface
     struct WellHoles
     {
         WellHoles(
             const RealType tube_radius,
+            const RealType column_radius,
             const RealType sandface_radius)
             : tube_radius{tube_radius},
+              column_radius{column_radius},
               sandface_radius{sandface_radius}
         {
             assert(tube_radius < sandface_radius);
         }
 
-        std::vector<RealType> generate_uniform_radial_grid(const RealType r_min, const RealType r_max, const ptrdiff_t r_nodes)
+        std::vector<RealType> generate_uniform_radial_grid(
+            const RealType r_min, const RealType r_max, const ptrdiff_t r_nodes)
         {
             assert(r_min < tube_radius);
             assert(r_max > sandface_radius);
@@ -122,7 +128,38 @@ namespace GPN
         }
 
         const RealType tube_radius;
+        const RealType column_radius;
         const RealType sandface_radius;
+    };
+
+    /// @brief Descriptor of materials that fill the
+    /// rings that form the well up to sandface.
+    /// There is a variation along the verticle direction.
+    /// Tube ends at the depth z_tube.
+    struct WellMaterial
+    {
+        WellMaterial(
+            const WellHoles &well_holes,
+            const RealType tube_lambda,
+            const RealType column_lambda,
+            const RealType sandface_lambda,
+            const RealType z_tube)
+            : well_holes{well_holes},
+              tube_lambda{tube_lambda},
+              column_lambda{column_lambda},
+              sandface_lambda{sandface_lambda},
+              z_tube{z_tube}
+        {
+        }
+
+        /// @brief Depth of the tube
+        const RealType z_tube;
+
+        /// @brief well concentric geometry
+        const WellHoles well_holes;
+        const RealType tube_lambda;
+        const RealType column_lambda;
+        const RealType sandface_lambda;
     };
 
     struct IWellDesign
