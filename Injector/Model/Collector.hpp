@@ -200,6 +200,14 @@ namespace GPN
                     const auto it = std::upper_bound(mesh.cbegin(), mesh.cend(), well_material.tube_depth);
                     const ptrdiff_t tube_end{std::distance(mesh.cbegin(), it) - 1ll};
                     
+                    // second column -- contains annulus + cement
+                    const RealType
+                        c_annulus = well_material.annulus.volumetric_heat_capacity,
+                        c_cement = well_material.cement.volumetric_heat_capacity,
+                        r_tube = well_material.well_holes.tube_radius,
+                        r_column = well_material.well_holes.column_radius,
+                        r_sandface = well_material.well_holes.sandface_radius;
+                    
                     medium_vol_heatcapacity.col(0ll).head(tube_end) =
                         fluid.volumetric_heat_capacity;
                     medium_vol_heatcapacity.col(0ll).tail(medium_vol_heatcapacity.rows() - tube_end) =
@@ -208,13 +216,6 @@ namespace GPN
 #pragma region SET-HEAT-CAPACITY
                     // first column -- inside the tube, contains only water
                     medium_vol_heatcapacity.col(0ll) = fluid.volumetric_heat_capacity;
-                    // second column -- contains annulus + cement
-                    const RealType
-                        c_annulus = well_material.annulus.volumetric_heat_capacity,
-                        c_cement = well_material.cement.volumetric_heat_capacity,
-                        r_tube = well_material.well_holes.tube_radius,
-                        r_column = well_material.well_holes.column_radius,
-                        r_sandface = well_material.well_holes.sandface_radius;
 
                     const RealType
                         annulus_vol =
@@ -225,7 +226,7 @@ namespace GPN
                             (r_sandface * r_sandface - r_tube * r_tube);
                     assert(annulus_vol < 1.0);
                     assert(cement_vol < 1.0);
-                    assert(abs::(cement_vol + annulus_vol - 1.0) < 1E-12);
+                    assert(std::abs(cement_vol + annulus_vol - 1.0) < 1E-12);
 
                     const RealType
                         upper_annulus_capacity{
