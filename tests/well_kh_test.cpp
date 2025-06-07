@@ -15,6 +15,7 @@ using namespace GPN::CoordinateTypes;
 std::vector<RealType> grid_stencils{0.0, 1.0, 3.0, 7.0, 10.0};
 std::vector<RealType> permeability_stencils(grid_stencils.size() - 1ull, 1.0);
 std::vector<RealType> is_permeable_stencils(grid_stencils.size() - 1ull, 1.0);
+std::vector<RealType> is_perforated_stencils{is_permeable_stencils};
 
 TEST_CASE("Well_KH_Test")
 {
@@ -24,6 +25,12 @@ TEST_CASE("Well_KH_Test")
 
     const auto is_permeable{
         Logs::IsPermeableFactory::create(
+            is_permeable_stencils,
+            z_grid)};
+            
+    const auto is_perforated{
+        Logs::IsPerforatedFactory::create(
+            is_perforated_stencils,
             is_permeable_stencils,
             z_grid)};
 
@@ -36,7 +43,7 @@ TEST_CASE("Well_KH_Test")
     const auto water{FluidFactory::create_water(1.0, 1.0)};
 
     const Well_KH well{
-        water, is_permeable, permeability};
+        water, is_permeable, is_perforated, permeability};
 
     const RealType rate{1.0};
     const auto rfp = RFPFactory::create(well.get_RFP(rate), is_permeable);

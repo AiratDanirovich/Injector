@@ -127,14 +127,19 @@ namespace GPN
 
     struct IWellDesign
     {
-        IWellDesign(const Logs::IsPermeable &is_permeable)
-            : is_permeable{is_permeable}
+        IWellDesign(
+            const Logs::IsPermeable &is_permeable,
+            const Logs::IsPerforated &is_perforated
+        )
+            : is_permeable{is_permeable},
+            is_perforated{is_perforated}
         {
         }
         using Grid_t = Logs::StepPropertyGrid::Grid_t;
         virtual LogValuesContainer get_RFP(RealType rate) const = 0;
 
         const Logs::IsPermeable is_permeable;
+        const Logs::IsPerforated is_perforated;
     };
 
     struct Well_KH : public IWellDesign
@@ -142,8 +147,9 @@ namespace GPN
         Well_KH(
             const PhaseProperties &fluid,
             const Logs::IsPermeable &is_permeable,
+            const Logs::IsPerforated &is_perforated,
             const StepPropertyContainer &permeability)
-            : IWellDesign{is_permeable},
+            : IWellDesign{is_permeable, is_perforated},
               temp{permeability * is_permeable.grid.dual_steps * (StepPropertyContainer)is_permeable}
         {
             assert(permeability.size() == is_permeable.grid.dual_steps.size());

@@ -18,6 +18,7 @@ std::vector<RealType> z_stencils{0.0, 1.0, 3.0, 7.0, 10.0};
 std::vector<RealType> r_stencils{0.0, 1.0, 3.0, 7.0, 10.0};
 std::vector<RealType> permeability_stencils(z_stencils.size() - 1ull, 1.0);
 std::vector<RealType> is_permeable_stencils(z_stencils.size() - 1ull, 1.0);
+std::vector<RealType> is_perforated_stencils{is_permeable_stencils};
 
 TEST_CASE("RFP_reservoir")
 {
@@ -26,6 +27,12 @@ TEST_CASE("RFP_reservoir")
 
     const auto is_permeable{
         Logs::IsPermeableFactory::create(
+            is_permeable_stencils,
+            grid2D->first_coord)};
+            
+    const auto is_perforated{
+        Logs::IsPerforatedFactory::create(
+            is_perforated_stencils,
             is_permeable_stencils,
             grid2D->first_coord)};
 
@@ -38,7 +45,7 @@ TEST_CASE("RFP_reservoir")
     const auto water{FluidFactory::create_water(1.0, 1.0)};
 
     const Well_KH well{
-        water, is_permeable, permeability};
+        water, is_permeable, is_perforated, permeability};
 
     const RealType well_rate{1.0};
     const auto rfp{
