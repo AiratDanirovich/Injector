@@ -33,6 +33,8 @@ const auto grid_stencils{
 // hydrodynamic logs
 const auto is_permeable_stencils{
     Logs::RawDataFactory::generate_is_permeable(grid_stencils)};
+const auto is_perforated_stencils{
+    Logs::RawDataFactory::generate_is_permeable(grid_stencils)};
 const auto porosity_stencils{
     Logs::RawDataFactory::generate_porosity(grid_stencils, is_permeable_stencils)};
 const auto permeability_stencils{
@@ -60,6 +62,7 @@ TEST_CASE("FieldsTest")
 
         const Logs::Rocks::CoreSampleLogs core_data{
             is_permeable_stencils,
+            is_perforated_stencils,
             porosity_stencils,
             permeability_stencils,
             grid};
@@ -100,6 +103,7 @@ TEST_CASE("FieldsTest")
 
         const Logs::Rocks::CoreSampleLogs core_data{
             is_permeable_stencils,
+            is_perforated_stencils,
             porosity_stencils,
             permeability_stencils,
             grid};

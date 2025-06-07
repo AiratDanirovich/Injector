@@ -47,6 +47,42 @@ namespace GPN
             IsPermeable is_permeable;
         };
 
+        struct IsPerforatedFactory
+        {
+            template <typename Grid_t>
+            static IsPerforated create(
+                const auto &is_perforated, 
+                const auto& is_permeable, 
+                const Grid_t &grid)
+            {
+                assert(is_perforated.size() == is_permeable.size());
+                for(auto i{0ll}; i < (ptrdiff_t)is_perforated.size(); ++i)
+                {
+                    assert(
+                        (is_perforated[i]==0.0) || 
+                        (is_perforated[i] == 1.0));
+                    assert(
+                        (is_perforated[i]==0.0) || 
+                        ((is_perforated[i] == 1.0) && (is_permeable[i]== 1.0)));
+                }
+
+                return IsPerforated{
+                    StepPropertyGrid{
+                        StepProperty{
+                            is_perforated},
+                        grid}};
+            }
+
+            const auto &is_permeable_stencils() const
+            {
+                return is_permeable.log_vals;
+            }
+
+            IsPerforated is_permeable;
+        };
+
+
+
         struct PermeabilityFactory
         {
             template <typename Grid_t>

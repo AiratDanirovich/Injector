@@ -155,9 +155,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       heat_conductivity{data["fluid"]["heatConductivity"]};
   /*collector*/
   const VR thickness = data["collector"]["thickness"];
-  //  const ptrdiff_t nLayers{thickness.size()};
+  // const ptrdiff_t nLayers{thickness.size()};
   // hydrodynamic logs
   const auto is_permeable_stencils{transfer_to_eigen(data["collector"]["is_permeable"])};
+  const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"])};
   const auto porosity_stencils{transfer_to_eigen(data["collector"]["porosity"])};
   const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"], 1e-12)};
   // heat logs
@@ -243,6 +244,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
   const Logs::Rocks::CoreSampleLogs core_data{
       is_permeable_stencils,
+      is_perforated_stencils,
       porosity_stencils,
       permeability_stencils,
       grid};
