@@ -194,6 +194,18 @@ namespace GPN
                     const Well_t &well,
                     const Fluid_t &fluid)
                 {
+
+                    // last row with the tube
+                    const auto &mesh = grid2D->first_coord.mesh_nodes;
+                    const auto it = std::upper_bound(mesh.cbegin(), mesh.cend(), well_material.tube_depth);
+                    const ptrdiff_t tube_end{std::distance(mesh.cbegin(), it) - 1ll};
+                    
+                    medium_vol_heatcapacity.col(0ll).head(tube_end) =
+                        fluid.volumetric_heat_capacity;
+                    medium_vol_heatcapacity.col(0ll).tail(medium_vol_heatcapacity.rows() - tube_end) =
+                        fluid.volumetric_heat_capacity*(r_column*r_column)/(r_tube*r_tube);
+
+#pragma region SET-HEAT-CAPACITY
                     // first column -- inside the tube, contains only water
                     medium_vol_heatcapacity.col(0ll) = fluid.volumetric_heat_capacity;
                     // second column -- contains annulus + cement
@@ -201,26 +213,38 @@ namespace GPN
                         c_annulus = well_material.annulus.volumetric_heat_capacity,
                         c_cement = well_material.cement.volumetric_heat_capacity,
                         r_tube = well_material.well_holes.tube_radius,
-                        r_annulus = well_material.well_holes.column_radius,
+                        r_column = well_material.well_holes.column_radius,
                         r_sandface = well_material.well_holes.sandface_radius;
+
                     const RealType
                         annulus_vol =
-                            (r_annulus * r_annulus - r_tube * r_tube) /
+                            (r_column * r_column - r_tube * r_tube) /
                             (r_sandface * r_sandface - r_tube * r_tube),
                         cement_vol =
-                            (r_sandface * r_sandface - r_annulus * r_annulus) /
+                            (r_sandface * r_sandface - r_column * r_column) /
                             (r_sandface * r_sandface - r_tube * r_tube);
+                    assert(annulus_vol < 1.0);
+                    assert(cement_vol < 1.0);
+                    assert(abs::(cement_vol + annulus_vol - 1.0) < 1E-12);
+
                     const RealType
                         upper_annulus_capacity{
                             c_annulus * annulus_vol + c_cement * cement_vol},
                         lower_annulus_capacity{
                             fluid.volumetric_heat_capacity * annulus_vol + c_cement * cement_vol};
+                    assert(upper_annulus_capacity < std::max(c_cement, c_annulus));
+                    assert(upper_annulus_capacity > std::min(c_cement, c_annulus));
+                    assert(lower_annulus_capacity < std::max(c_cement, fluid.volumetric_heat_capacity));
+                    assert(lower_annulus_capacity > std::min(c_cement, fluid.volumetric_heat_capacity));
 
-                    const auto &mesh = grid2D->first_coord.mesh_nodes;
-                    const auto it = std::upper_bound(mesh.cbegin(), mesh.cend(), well_material.tube_depth);
-                    const ptrdiff_t tube_end{std::distance(mesh.cbegin(), it) - 1ll};
-                    medium_vol_heatcapacity.col(1ll).head(tube_end) = upper_annulus_capacity;
-                    medium_vol_heatcapacity.col(1ll).tail(medium_vol_heatcapacity.rows() - tube_end) = lower_annulus_capacity;
+                    medium_vol_heatcapacity.col(1ll).head(tube_end) =
+                        upper_annulus_capacity;
+                    medium_vol_heatcapacity.col(1ll).tail(medium_vol_heatcapacity.rows() - tube_end) =
+                        lower_annulus_capacity;
+#pragma endregion
+#pragma region SET-HEAT-CONDUCTIVITY
+
+#pragma endregion
                 }
 
                 HeatConductivity<Grid2D_t> heat_conductivity;
