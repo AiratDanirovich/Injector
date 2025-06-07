@@ -6,7 +6,7 @@
     "heatConductivity": 0.0
   },
   "collector": {
-    "thickness": [   3,   3,    0.3,  3,   0.3,  3,   0.3,  0.3,  3],
+    "thickness": [   50,   3,    0.3,  3,   0.3,  3,   0.3,  0.3,  3],
     "is_permeable": [0.0, 0.0,  1.0,  0.0, 1.0,   0.0, 1.0, 1.0,  0.0],
     "porosity":     [0.0, 0.0,  0.3,  0.0, 0.2,   0.0, 0.3, 0.25, 0.0],
     "permeability": [0.0, 0.0,  0.5,  0.0, 0.07,  0.0, 0.2, 0.15, 0.0],
@@ -31,9 +31,25 @@
     }
   },
   "well": {
-    "tube_radius": 0.05,
-    "sandface_radius": 0.11,
-    "column_radius": 0.08
+    "radius":{
+      "tube": 0.05,
+      "column": 0.08,
+      "sandface": 0.11
+    },
+    "tube":{
+      "depth": 25,
+      "heat_conductivity": 1E20
+    },
+    "annulus":{
+      "heat_conductivity": 0.04,
+      "specific_heat_capacity": 1000,
+      "density": 90
+    },
+    "cement":{
+      "heat_conductivity": 1.2,
+      "specific_heat_capacity": 900,
+      "density": 3500
+    }
   },
   "history": {
     "t_start": 0.0,

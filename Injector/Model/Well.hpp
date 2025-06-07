@@ -40,7 +40,7 @@ namespace GPN
         }
 
         std::vector<RealType> generate_uniform_radial_grid(
-            const RealType r_min, const RealType r_max, const ptrdiff_t r_nodes)
+            const RealType r_min, const RealType r_max, const ptrdiff_t r_nodes) const
         {
             assert(r_min < tube_radius);
             assert(r_max > sandface_radius);
@@ -70,6 +70,7 @@ namespace GPN
             const RealType r_min, const RealType r_max,
             const RealType q,        // ratio of adjascent steps
             const RealType max_step) // max allowed step
+            const
         {
             assert(r_min < tube_radius);
             assert(r_max > sandface_radius);
@@ -135,31 +136,30 @@ namespace GPN
     /// @brief Descriptor of materials that fill the
     /// rings that form the well up to sandface.
     /// There is a variation along the verticle direction.
-    /// Tube ends at the depth z_tube.
+    /// Tube ends at the depth tube_depth.
     struct WellMaterial
     {
         WellMaterial(
             const WellHoles &well_holes,
+            const RealType tube_depth,
             const RealType tube_lambda,
-            const RealType column_lambda,
-            const RealType sandface_lambda,
-            const RealType z_tube)
+            const StationaryPhaseProperties &annulus,
+            const StationaryPhaseProperties &cement)
             : well_holes{well_holes},
               tube_lambda{tube_lambda},
-              column_lambda{column_lambda},
-              sandface_lambda{sandface_lambda},
-              z_tube{z_tube}
+              tube_depth{tube_depth},
+              annulus{annulus},
+              cement{cement}
         {
         }
 
         /// @brief Depth of the tube
-        const RealType z_tube;
-
+        const RealType tube_depth;
         /// @brief well concentric geometry
         const WellHoles well_holes;
         const RealType tube_lambda;
-        const RealType column_lambda;
-        const RealType sandface_lambda;
+
+        const StationaryPhaseProperties annulus, cement;
     };
 
     struct IWellDesign

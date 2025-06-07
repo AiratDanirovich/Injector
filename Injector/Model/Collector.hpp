@@ -1,5 +1,6 @@
 #pragma once
 #include <cassert>
+#include <iterator>
 
 #include <Injector/Properties/LogsFactory.hpp>
 #include <Injector/Properties/FaceProperties.hpp>
@@ -64,10 +65,7 @@ namespace GPN
                     const auto &grid)
                     : solid_density{
                           SolidDensityFactory::create(solid_density, grid)},
-                      solid_specific_heatcapacity{SolidSpecificHeatCapacityFactory::create(solid_specific_heatcapacity, grid)}, 
-                      heat_conductivity{HeatConductivityFactory::create(heat_conductivity, grid)}, 
-                      solid_vol_heatcapacity{SolidVolumetricHeatCapacityFactory::create(solid_density, solid_specific_heatcapacity, grid)}, 
-                      medium_vol_heatcapacity{MediumHeatVolumetricCapacityFactory::create(porosity, solid_density, solid_specific_heatcapacity, fluid, grid)}
+                      solid_specific_heatcapacity{SolidSpecificHeatCapacityFactory::create(solid_specific_heatcapacity, grid)}, heat_conductivity{HeatConductivityFactory::create(heat_conductivity, grid)}, solid_vol_heatcapacity{SolidVolumetricHeatCapacityFactory::create(solid_density, solid_specific_heatcapacity, grid)}, medium_vol_heatcapacity{MediumHeatVolumetricCapacityFactory::create(porosity, solid_density, solid_specific_heatcapacity, fluid, grid)}
                 {
                     assert(solid_density.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
                     assert(solid_specific_heatcapacity.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
@@ -174,7 +172,7 @@ namespace GPN
                     const cptr<Grid2D_t> grid2D)
                     : medium_vol_heatcapacity{
                           FieldFactory::create(medium_vol_heatcapacity, grid2D)},
-                      heat_conductivity{FieldFactory::create(heat_conductivity, grid2D)}
+                      heat_conductivity{FieldFactory::create(heat_conductivity, grid2D)}, grid2D{grid2D}
                 {
                 }
 
@@ -187,14 +185,47 @@ namespace GPN
                 {
                 }
 
-                template <typename Well_t, typename Fluid_t>
-                void apply_well(const Well_t &well, const Fluid_t &fluid)
+                template <
+                    typename WellMaterial_t,
+                    typename Well_t,
+                    typename Fluid_t>
+                void apply_well(
+                    const WellMaterial_t &well_material,
+                    const Well_t &well,
+                    const Fluid_t &fluid)
                 {
-                    medium_vol_heatcapacity.col(0ll) = fluid.volumetric_heat_capacity; // MeshNodesContainer::Constant(medium_vol_heatcapacity.rows(), fluid.volumetric_heat_capacity);
+                    // first column -- inside the tube, contains only water
+                    medium_vol_heatcapacity.col(0ll) = fluid.volumetric_heat_capacity;
+                    // second column -- contains annulus + cement
+                    const RealType
+                        c_annulus = well_material.annulus.volumetric_heat_capacity,
+                        c_cement = well_material.cement.volumetric_heat_capacity,
+                        r_tube = well_material.well_holes.tube_radius,
+                        r_annulus = well_material.well_holes.column_radius,
+                        r_sandface = well_material.well_holes.sandface_radius;
+                    const RealType
+                        annulus_vol =
+                            (r_annulus * r_annulus - r_tube * r_tube) /
+                            (r_sandface * r_sandface - r_tube * r_tube),
+                        cement_vol =
+                            (r_sandface * r_sandface - r_annulus * r_annulus) /
+                            (r_sandface * r_sandface - r_tube * r_tube);
+                    const RealType
+                        upper_annulus_capacity{
+                            c_annulus * annulus_vol + c_cement * cement_vol},
+                        lower_annulus_capacity{
+                            fluid.volumetric_heat_capacity * annulus_vol + c_cement * cement_vol};
+
+                    const auto &mesh = grid2D->first_coord.mesh_nodes;
+                    const auto it = std::upper_bound(mesh.cbegin(), mesh.cend(), well_material.tube_depth);
+                    const ptrdiff_t tube_end{std::distance(mesh.cbegin(), it) - 1ll};
+                    medium_vol_heatcapacity.col(1ll).head(tube_end) = upper_annulus_capacity;
+                    medium_vol_heatcapacity.col(1ll).tail(medium_vol_heatcapacity.rows() - tube_end) = lower_annulus_capacity;
                 }
 
                 HeatConductivity<Grid2D_t> heat_conductivity;
                 MediumHeatVolumetricCapacity<Grid2D_t> medium_vol_heatcapacity;
+                const cptr<Grid2D_t> grid2D;
             };
         } // Rocks
     } // Properties

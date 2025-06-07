@@ -187,9 +187,20 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const RealType inlet_temperature{data["history"]["inletTemperature"]};
   const VR inlet_temperature_array = data["history"]["inletTemperatureArray"];
   /*well*/
-  const RealType sandface_radius{data["well"]["sandface_radius"]};
+  const RealType sandface_radius{data["well"]["radius"]["sandface"]};
   const RealType column_radius{data["well"]["column_radius"]};
   const RealType tube_radius{data["well"]["tube_radius"]};
+
+  const RealType tube_depth{data["well"]["tube"]["depth"]};
+  const RealType tube_lambda{data["well"]["tube"]["lambda"]};
+
+  const RealType annulus_lambda{data["well"]["annulus"]["lambda"]};
+  const RealType annulus_c{data["well"]["annulus"]["lambda"]};
+  const RealType annulus_density{data["well"]["annulus"]["density"]};
+
+  const RealType cement_lambda{data["well"]["cement"]["lambda"]};
+  const RealType cement_c{data["well"]["cement"]["lambda"]};
+  const RealType cement_density{data["well"]["cement"]["density"]};
   /*END*/
 
   REQUIRE(t1 > t0);
@@ -199,32 +210,34 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // make grid2D
   // r_stencils
   VR r_stencils; // they take into account the well construction
-  WellHoles well_holes{tube_radius, column_radius, sandface_radius};
+  // radial well geometry: radii where material properties are changed
+  const WellHoles well_holes{tube_radius, column_radius, sandface_radius};
   if (r_grid_type == "uniform")
   {
-    const auto& data2 = data["grid"]["r_uniform_grid"];
+    const auto &data2 = data["grid"]["r_uniform_grid"];
     r_stencils = well_holes.generate_uniform_radial_grid(
         rMin, rMax, data2["rNodes"]);
   }
   else if (r_grid_type == "log")
   {
-    const auto& data2 = data["grid"]["r_log_grid"];
+    const auto &data2 = data["grid"]["r_log_grid"];
     r_stencils = well_holes.generate_log_radial_grid(
         rMin, rMax, data2["q"], data2["r_max_step"]);
   }
   else
-    throw std::runtime_error("Incorrect radial grid descriptors.");
-    
+    throw std::runtime_error("Incorrect radial grid descriptor.");
+
   cout << "radial dual grid stencils:\n"
        << transfer_to_eigen(r_stencils).transpose() << endl;
   // z-refiner
   RefinerVerticle refiner{z_minor_step, is_permeable_stencils};
   // the grid itself
   const auto grid2D{
-      Grids::CylinderGridFactory::create(refiner,
-                                         Grids::Factory::generate_dual_grid_stencils_from_steps(
-                                             zTop, thickness),
-                                         r_stencils)};
+      Grids::CylinderGridFactory::create(
+          refiner,
+          Grids::Factory::generate_dual_grid_stencils_from_steps(
+              zTop, thickness),
+          r_stencils)};
   const auto &grid{grid2D->first_coord};
 
   // cout << "radial grid:\n"
@@ -266,10 +279,28 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       porosity_stencils,
       water,
       grid2D->first_coord};
+
   Properties::Rocks::HeatProps heat_props{
       heat_logs, grid2D};
 
-  heat_props.apply_well(well, water);
+  // properties of material that fills the well up to the sandface
+  const StationaryPhaseProperties cement{
+          Density{cement_density},
+          SpecificHeatCapacity{cement_c},
+          GPN::HeatConductivity{cement_lambda}};
+
+  const StationaryPhaseProperties annulus{
+          Density{annulus_density},
+          SpecificHeatCapacity{annulus_c},
+          GPN::HeatConductivity{annulus_lambda}};
+
+  const WellMaterial well_material{
+      well_holes, tube_depth,
+      tube_lambda,
+      annulus, cement};
+
+
+  heat_props.apply_well(well_material, well, water);
 
   const FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
