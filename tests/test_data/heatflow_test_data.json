@@ -37,11 +37,11 @@
   },
   "history": {
     "t_start": 0.0,
-    "t_end": 768,
+    "t_end": 672,
     "t_major_step": 96,
     "t_minor_step": 96,
     "wellRate": 0.00231,
     "inletTemperature": 293,
-    "inletTemperatureArray": [293, 323]
+    "inletTemperatureArray": [323, 323]
   }
 }

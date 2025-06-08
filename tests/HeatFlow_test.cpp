@@ -330,17 +330,18 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   }
 #pragma region CHECKS
   // verify flow field
-  const auto &v1 = rates_factory.get_flow_in_axes1();
+  const auto &v1 = rates_factory.get_flow_in_axes1(); // verticle flow
   for (auto row{0ll}; row < v1.rows(); ++row)
   {
     CHECK(v1(row, 0ll) >= 0.0);
-    for (auto col{1ll}; col < v1.cols(); ++col)
+    CHECK(v1(row, 1ll) <= 0.0);
+    for (auto col{2ll}; col < v1.cols(); ++col)
       CHECK(v1(row, col) == 0.0);
   }
-  const auto &v2 = rates_factory.get_flow_in_axes2();
-  for (auto col{2ll}; col < v2.cols(); ++col)
+  const auto &v2 = rates_factory.get_flow_in_axes2(); // horizontal flow
+  for (auto col{3ll}; col < v2.cols(); ++col)
     for (auto row{0ll}; row < v2.rows(); ++row)
-      CHECK(v2(row, col) == v2(row, 1ll));
+      CHECK(v2(row, col) == v2(row, 2ll));
 
   for (auto row{0ll}, col{0ll}; row < v2.rows(); ++row)
   {
