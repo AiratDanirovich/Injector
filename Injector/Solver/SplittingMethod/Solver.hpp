@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <tuple>
+#include <cassert>
 
 #include <Eigen/Dense>
 #include <Eigen/Core>
@@ -264,15 +265,29 @@ namespace GPN
 
                         // Laplace term
                         SpMatrix A{splitY.LaplaceTerm(j)};
-                        // cululative term
+                        // cumulative term
                         A.diagonal() = A.diagonal() + time_factor.matrix();
                         // convection term
+                        const auto &temp_flow{split_flow_field.col(j).matrix()};
+                        // negative flow values
+                        const auto flow_plus{(temp_flow.array() + temp_flow.array().abs()) / 2.0};
+                        assert(flow_plus.rows() == first_coord_size+1ll);
+                        assert(std::any_of(flow_plus.cbegin(), flow_plus.cend(), [](const RealType v){return v >= 0.0;}));
+                        // positive flow values
+                        const auto flow_minus{(temp_flow.array() - temp_flow.array().abs()) / 2.0};
+                        assert(flow_minus.rows() == first_coord_size+1ll);
+                        assert(std::any_of(flow_minus.cbegin(), flow_minus.cend(), [](const RealType v){return v <= 0.0;}));
+
                         const auto &flow{split_flow_field.col(j).head(first_coord_size).matrix()};
                         // exclude leftmost edge
-                        A.diagonal() = A.diagonal() + flow;
+
+                        A.diagonal() = A.diagonal() + flow_plus.matrix().head(first_coord_size) - flow_minus.matrix().tail(first_coord_size);
                         // exclude leftmost and rightmost edges
                         for (auto idx{1ll}; idx < A.rows(); ++idx)
-                            A.coeffRef(idx, idx - 1ll) -= flow(idx - 0ll);
+                            A.coeffRef(idx, idx - 1ll) -= flow_plus(idx);
+                        // exclude leftmost and rightmost edges
+                        for (auto idx{0ll}; idx < A.rows()-1ll; ++idx)
+                            A.coeffRef(idx, idx + 1ll) += flow_minus(idx + 1ll);
                         // BC
                         applyBC_split_y(A, rhs, j);
 
