@@ -29,10 +29,10 @@ vector<RealType> make_steps(const VR &data)
 
 LogValuesContainer transfer_to_eigen(const VR &data, const RealType factor = 1.0)
 {
-  LogValuesContainer out(data.size());
-  for (auto i{0ull}; i < data.size(); ++i)
-    out(i) = factor * data[i];
-  return out;
+    LogValuesContainer out(data.size());
+    for (auto i{0ull}; i < data.size(); ++i)
+        out(i) = factor * data[i];
+    return out;
 }
 
 std::vector<RealType> grid_stencils{0.0, 1.0, 3.0, 7.0, 10.0};
@@ -41,10 +41,11 @@ std::vector<RealType> permeability_stencils(grid_stencils.size() - 1ull, 1.0);
 std::vector<RealType> is_permeable_stencils(grid_stencils.size() - 1ull, 1.0);
 std::vector<RealType> is_perforated_stencils{is_permeable_stencils};
 
+const RealType rate{1.0};
+
 TEST_CASE("Well_KH_Test")
 {
-is_perforated_stencils[0ll] = 0.0;
-
+    is_perforated_stencils[0ll] = 0.0;
 
     const auto z_grid{
         Grids::Factory::create_axes<CoordinateTypes::Z>(
@@ -72,7 +73,6 @@ is_perforated_stencils[0ll] = 0.0;
     const Well_KH well{
         water, is_permeable, is_perforated, permeability};
 
-    const RealType rate{1.0};
     const auto rfp = RFPFactory::create(well.get_RFP(rate), is_permeable);
     const auto wfp = WFPFactory::create(well.get_WFP(rate), is_perforated);
 
@@ -106,5 +106,5 @@ is_perforated_stencils[0ll] = 0.0;
         }
     }
 
-    CHECK(wfp(i-1ll) == cum_rate);
+    CHECK(wfp(i - 1ll) == cum_rate);
 }

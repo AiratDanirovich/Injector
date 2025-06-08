@@ -162,7 +162,7 @@ namespace GPN
             weights_sum = RFP_weights.sum();
             WFP_weights = RFP_weights;
             // the well rate is zero at the ghost layer
-            WFP_weights(top_collector_cell_id) = 0.0;
+            WFP_weights(ghost_layer_cell_id) = 0.0;
             // the well rate is a sum of rates of ghost and top collector layers
             WFP_weights(top_collector_cell_id) = RFP_weights(ghost_layer_cell_id) + RFP_weights(top_collector_cell_id);
         }
