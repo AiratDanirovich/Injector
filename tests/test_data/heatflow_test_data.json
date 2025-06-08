@@ -20,14 +20,14 @@
     "ztop": 0.0,
     "z_minor_step": 0.3,
     "r_start": 0.0,
-    "r_end": 1.11,
+    "r_end": 10.11,
     "r_grid_type": "log",
     "r_uniform_grid":{
       "rNodes": 451
     },
     "r_log_grid": {
       "r_max_step": 0.1,
-      "q": 1.15
+      "q": 1.05
     }
   },
   "well": {
@@ -36,8 +36,8 @@
   },
   "history": {
     "t_start": 0.0,
-    "t_end": 50000,
-    "t_major_step": 25000,
+    "t_end": 768,
+    "t_major_step": 96,
     "t_minor_step": 96,
     "wellRate": 0.00231,
     "inletTemperature": 293,
