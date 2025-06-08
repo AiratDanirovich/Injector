@@ -8,7 +8,7 @@ namespace GPN
     {
         struct RawDataFactory
         {
-    //        using Grid_t = Grids::AxesGrid<CoordinateTypes::Z>;
+            //        using Grid_t = Grids::AxesGrid<CoordinateTypes::Z>;
 #pragma region HYDRODYNAMIC-LOGS
 
             static auto generate_is_permeable_const(
@@ -138,6 +138,29 @@ namespace GPN
 
                 for (auto id{size - size}; id < size; ++id)
                     vals[id] = (id % 2 == 1) ? 50.0 : 0.0;
+                return vals;
+            }
+
+            static auto generate_temperatures(
+                const auto &dual_stencils)
+            {
+                auto size{dual_stencils.size() - 1};
+                std::vector<RealType> vals(size);
+
+                for (auto id{size - size}; id < size; ++id)
+                    vals[id] = (id % 2 == 1) ? 293.0 : 273.0;
+                return vals;
+            }
+
+            static auto generate_temperatures_periodic(
+                const auto &dual_stencils,
+                const auto &periodic_data)
+            {
+                auto size{dual_stencils.size() - 1};
+                std::vector<RealType> vals(size);
+
+                for (auto id{size - size}; id < size; ++id)
+                    vals[id] = periodic_data[id % periodic_data.size()];
                 return vals;
             }
         };

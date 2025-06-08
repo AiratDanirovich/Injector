@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+#include <algorithm>
 #include <numbers>
 #include <cassert>
 
@@ -8,7 +10,6 @@
 #include <Injector/Grids/Defines.h>
 #include <Injector/Model/Phases/PhaseProperties.hpp>
 #include <Injector/Properties/Logs.hpp>
-// #include <Injector/History/History.hpp>
 
 namespace GPN
 {
@@ -27,41 +28,143 @@ namespace GPN
     {
         WellHoles(
             const RealType tube_radius,
-            const RealType well_radius)
+            const RealType sandface_radius)
             : tube_radius{tube_radius},
-              well_radius{well_radius}
+              sandface_radius{sandface_radius}
         {
+            assert(tube_radius < sandface_radius);
+        }
+
+        std::vector<RealType> generate_uniform_radial_grid(const RealType r_min, const RealType r_max, const ptrdiff_t r_nodes)
+        {
+            assert(r_min < tube_radius);
+            assert(r_max > sandface_radius);
+            assert(r_nodes > 1ll);
+
+            std::vector<RealType> out;
+            out.reserve(r_nodes + 2ll);
+
+            out.push_back(r_min);
+            out.push_back(tube_radius);
+            out.push_back(sandface_radius);
+
+            const RealType step{(r_max - sandface_radius) / (r_nodes - 1ll)};
+            for (auto i{2ll}; i < r_nodes; ++i)
+                out.push_back(out.back() + step);
+            out.push_back(r_max);
+
+            assert(out.front() == r_min);
+            for (auto i{1ull}; i < out.size(); ++i)
+                assert(out[i] > out[i - 1ull]);
+            assert(out.back() == r_max);
+
+            return out;
+        }
+
+        std::vector<RealType> generate_log_radial_grid(
+            const RealType r_min, const RealType r_max,
+            const RealType q,        // ratio of adjascent steps
+            const RealType max_step) // max allowed step
+        {
+            assert(r_min < tube_radius);
+            assert(r_max > sandface_radius);
+            assert(max_step > tube_radius);
+            assert(max_step > sandface_radius - tube_radius);
+            assert(q >= 1.0);
+            // base, minimum step for geometric progression
+            const RealType base_step = sandface_radius - tube_radius;
+
+            if (q == 1.0)
+            {
+                // uniform grid
+                return generate_uniform_radial_grid(r_min, r_max, (ptrdiff_t)std::ceil((r_max - r_min) / base_step));
+            }
+            else
+            {
+                // non-uniform grid
+                // nmbr of steps within segment [sandface_radius; r_max],
+                // which increase geometrically
+                ptrdiff_t nx{
+                    (ptrdiff_t)std::ceil(
+                        std::log(1.0 + (r_max - sandface_radius) / base_step * (q - 1.0)) /
+                        std::log(q))};
+
+                std::vector<RealType> out;
+                out.reserve(nx + 20ll);
+
+                out.push_back(r_min);           // push leftmost boundary
+                out.push_back(tube_radius);     // push tube radius
+                out.push_back(sandface_radius); // push sandface radius
+
+                // recalculate the base step
+                const RealType hx{base_step}; //{(r_max - sandface_radius) * (q - 1.0) / (std::pow(q, nx) - 1.0)};
+                assert(hx <= base_step);
+
+                if (max_step < hx * (std::pow(q, nx - 1ll)))
+                {
+                    // the furthest steps are too large
+                    for (auto i{0ll}; i < nx; ++i)
+                        out.push_back(out.back() + std::min(max_step, hx * std::pow(q, i)));
+                    // tail of the segment where the geometric steps are too large
+                    while (out.back() < r_max)
+                        out.push_back(out.back() + max_step);
+                }
+                else
+                {
+                    // the furthest steps are fine
+                    for (auto i{0ll}; i < nx; ++i)
+                        out.push_back(out.back() + hx * std::pow(q, i));
+                }
+                for (auto i{1ull}; i < out.size(); ++i)
+                    assert(out[i] > out[i - 1ull]);
+
+                return out;
+            }
         }
 
         const RealType tube_radius;
-        const RealType well_radius;
+        const RealType sandface_radius;
     };
 
     struct IWellDesign
     {
-        IWellDesign(const Logs::IsPermeable &is_permeable)
-            : is_permeable{is_permeable}
+        IWellDesign(
+            const Logs::IsPermeable &is_permeable,
+            const Logs::IsPerforated &is_perforated)
+            : is_permeable{is_permeable},
+              is_perforated{is_perforated}
         {
         }
         using Grid_t = Logs::StepPropertyGrid::Grid_t;
         virtual LogValuesContainer get_RFP(RealType rate) const = 0;
 
         const Logs::IsPermeable is_permeable;
+        const Logs::IsPerforated is_perforated;
     };
 
     struct Well_KH : public IWellDesign
     {
         Well_KH(
+            //    const RealType tube_depth,
             const PhaseProperties &fluid,
             const Logs::IsPermeable &is_permeable,
+            const Logs::IsPerforated &is_perforated,
             const StepPropertyContainer &permeability)
-            : IWellDesign{is_permeable},
-              temp{permeability * is_permeable.grid.dual_steps * (StepPropertyContainer)is_permeable}
+            : IWellDesign{is_permeable, is_perforated},
+              RFP_weights{permeability * is_permeable.grid.dual_steps * (StepPropertyContainer)is_permeable},
+              top_collector_cell_id{layer_id(is_perforated)},
+              ghost_layer_cell_id{layer_id(is_permeable)}
         {
             assert(permeability.size() == is_permeable.grid.dual_steps.size());
             assert(is_permeable.size() == is_permeable.grid.dual_steps.size());
+            assert(is_perforated.size() == is_perforated.grid.dual_steps.size());
 
-            temp_sum = temp.sum();
+            weights_sum = RFP_weights.sum();
+            WFP_weights = RFP_weights;
+            // the well rate is zero at the ghost layer
+            WFP_weights(ghost_layer_cell_id) = 0.0;
+            // the well rate is a sum of rates of ghost and top collector layers
+            WFP_weights(top_collector_cell_id) = RFP_weights(ghost_layer_cell_id) + RFP_weights(top_collector_cell_id);
         }
 
         // void set_P_top(RealType rate)
@@ -73,19 +176,32 @@ namespace GPN
 
         StepPropertyContainer get_RFP(RealType rate) const override
         {
-            return ((rate / temp_sum) * temp).eval();
+            return ((rate / weights_sum) * RFP_weights).eval();
             //  {
             //     Logs::StepPropertyGrid{
-            //         Logs::StepProperty{(temp * (rate / temp.sum())).eval()},
+            //         Logs::StepProperty{(RFP_weights * (rate / RFP_weights.sum())).eval()},
             //         grid},
             //     is_permeable};
         }
+        StepPropertyContainer get_WFP(RealType rate) const
+        {
+            return ((rate / weights_sum) * WFP_weights).eval();
+        }
+
+        const ptrdiff_t top_collector_cell_id{-1ll};
+        const ptrdiff_t ghost_layer_cell_id{-1ll};
 
     protected:
-        //    const PhaseProperties fluid;
-        const StepPropertyContainer temp;
-        RealType temp_sum;
-        //    const Logs::IsPermeable is_permeable;
+        const StepPropertyContainer RFP_weights;
+        StepPropertyContainer WFP_weights;
+        RealType weights_sum;
+
+    private:
+        static ptrdiff_t layer_id(const auto &indicator)
+        {
+            const auto perforated_it = std::ranges::find(indicator.log_vals, 1.0);
+            return std::distance(indicator.log_vals.cbegin(), perforated_it);
+        }
     };
 
     // struct Well : public IWellDesign
@@ -125,11 +241,11 @@ namespace GPN
 
     //     Logs::RFP get_RFP(RealType rate, const Grid_t &grid) const override
     //     {
-    //         const auto temp{(permeability * cell_volumes * is_permeable.log_vals).eval()};
+    //         const auto RFP_weights{(permeability * cell_volumes * is_permeable.log_vals).eval()};
 
     //         return {
     //             Logs::StepPropertyGrid{
-    //                 Logs::StepProperty{(temp * (rate / temp.sum())).eval()},
+    //                 Logs::StepProperty{(RFP_weights * (rate / RFP_weights.sum())).eval()},
     //                 grid},
     //             is_permeable};
     //     }
@@ -156,14 +272,14 @@ namespace GPN
     // {
     //     Well(
 
-    //         WellRadius well_radius,
+    //         WellRadius sandface_radius,
     //         const Permeability& permeability) noexcept
-    //     : well_radius{well_radius}
+    //     : sandface_radius{sandface_radius}
     //     , permeability{permeability}
     //     {}
 
     // protected:
-    //     WellRadius well_radius;
+    //     WellRadius sandface_radius;
     //     Permeability permeability;
     // };
 

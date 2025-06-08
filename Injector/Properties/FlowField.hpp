@@ -1,5 +1,6 @@
 #pragma once
 #include <numeric>
+#include <algorithm>
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Properties/Logs.hpp>
@@ -27,9 +28,9 @@ namespace GPN
             template <typename Grid_t>
             static auto create(
                 RealType well_rate,
-                const Grid_t &grid2D)
+                const Grid_t &grid1D)
             {
-                const auto temp{make_rates(well_rate, grid2D)};
+                const auto temp{make_rates(well_rate, grid1D)};
                 return ZFlowRateLog{temp};
             }
 
@@ -37,14 +38,14 @@ namespace GPN
             template <typename Grid_t>
             static StepPropertyGrid make_rates(
                 RealType well_rate,
-                const Grid_t &grid2D)
+                const Grid_t &grid1D)
             {
                 StepPropertyContainer verticle_rates_vals{
-                    StepPropertyContainer::Zero(grid2D.mesh_size())};
+                    StepPropertyContainer::Zero(grid1D.mesh_size())};
                 verticle_rates_vals(0ll) = well_rate;
 
                 return {verticle_rates_vals,
-                        grid2D};
+                        grid1D};
             }
         };
     } // Logs
@@ -118,14 +119,16 @@ namespace GPN
 #pragma region AXES2-AS-FACENORMAL
                 const auto rfp{Logs::RFPFactory::create(well_rate, well)};
                 auto axes2_as_face_normal{FlowFieldFactory::flow_in_dir2(rfp, grid2D)};
-                axes2_as_face_normal.col(0ll) = 0.0;
+                axes2_as_face_normal.col(0ll) = 0.0;                     // boundary condition, zero flux at the axis of symmetry
+                axes2_as_face_normal.col(1ll) = well.get_WFP(well_rate); // flow at the tube radius
 #pragma endregion
 #pragma region AXES1-AS-FACENORMAL
+                const auto wfp{Logs::WFPFactory::create(well_rate, well)};
                 // ref to log vals as Eigen::ArrayX container
-                const auto &rfp_vals{rfp.log_vals};
+                const auto &wfp_vals{wfp.log_vals};
                 // cumsum of rfp flow rates
                 LogValuesContainer cum_sum{LogValuesContainer::Zero(grid2D.first_coord.dual_size())};
-                std::partial_sum(rfp_vals.cbegin(), rfp_vals.cend(), cum_sum.begin() + 1ll, std::plus<RealType>());
+                std::partial_sum(wfp_vals.cbegin(), wfp_vals.cend(), cum_sum.begin() + 1ll, std::plus<RealType>());
                 // leftover flowrate along the well
                 const LogValuesContainer z_flow{well_rate - cum_sum};
 
@@ -135,6 +138,11 @@ namespace GPN
                         grid2D.second_coord.mesh_size())};
 
                 axes1_as_face_normal.col(0ll) = z_flow;
+                // interval between ghost layer and top collector layer
+                // is filled with verticle flux towards the upper, ghost, layer
+                axes1_as_face_normal.col(1ll).middleRows(well.ghost_layer_cell_id+1ll, well.top_collector_cell_id - well.ghost_layer_cell_id) =
+                    -(*std::ranges::find_if(rfp.log_vals, [&](const RealType v)
+                                            { return v > 0.0; }));
 #pragma endregion
                 return ReservoirFlowField{
                     axes1_as_face_normal,
@@ -148,7 +156,7 @@ namespace GPN
                 const Grid2D_t &grid2D)
             {
                 return ReservoirFlowField{
-                    Logs::ZFlowRateLogFactory::create(well_rate, grid2D.first_coord),
+                    Logs::ZFlowRateLogFactory::create(well_rate, grid2D.second_coord),
                     axes1_value,
                     grid2D};
             }

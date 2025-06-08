@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cassert>
 #include <memory>
+#include <limits>
 
 #include <Injector/History/History.hpp>
 #include <Injector/Properties/FlowField.hpp>
@@ -22,7 +23,8 @@ namespace GPN
                   well{well},
                   history{history},
                   fluid{fluid},
-                  pos{-1ll}
+                  pos{-1ll},
+                  inlet_temperature{std::numeric_limits<RealType>::lowest()}
             {
             }
 
@@ -47,6 +49,9 @@ namespace GPN
                                 history.rates(pos), well, *grid2D));
 
                     FaceProperties::multiply(*heat_flow_field, fluid.volumetric_heat_capacity);
+
+                    inlet_temperature = history.temps(pos);
+                    rate = history.rates(pos);
                 }
             }
 
@@ -59,6 +64,15 @@ namespace GPN
                 return heat_flow_field->axes2_as_face_normal;
             }
 
+            const auto get_temperature() const
+            {
+                return inlet_temperature;
+            }
+            const auto get_rate() const
+            {
+                return inlet_temperature;
+            }
+
         protected:
             const cptr<Grid2D_t> grid2D;
             const Well_t &well;
@@ -68,6 +82,8 @@ namespace GPN
 
         private:
             std::ptrdiff_t pos{-1ll};
+            RealType inlet_temperature;
+            RealType rate;
         };
 
         template <typename Grid2D_t, typename Fluid_t>
