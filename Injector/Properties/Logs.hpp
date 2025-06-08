@@ -263,6 +263,23 @@ namespace GPN
                         ((is_permeable(id) == 0.0) && (rfp(id) == 0.0)));
             }
         };
+        
+        struct WFP
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            WFP(const StepPropertyGrid &wfp,
+                const IsPerforated &is_perforated)
+                : StepPropertyGrid{wfp},
+                  AssertNonNegative{wfp}
+            {
+                assert(wfp.size() == is_perforated.size());
+                for (std::ptrdiff_t id{0ll}; id < wfp.size(); ++id)
+                    assert(
+                        ((is_perforated(id) == 1.0)) ||
+                        ((is_perforated(id) == 0.0) && (wfp(id) == 0.0)));
+            }
+        };
 
         struct Permeability
             : public StepPropertyGrid,

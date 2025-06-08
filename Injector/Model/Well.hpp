@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <algorithm>
 #include <numbers>
 #include <cassert>
 
@@ -129,10 +130,9 @@ namespace GPN
     {
         IWellDesign(
             const Logs::IsPermeable &is_permeable,
-            const Logs::IsPerforated &is_perforated
-        )
+            const Logs::IsPerforated &is_perforated)
             : is_permeable{is_permeable},
-            is_perforated{is_perforated}
+              is_perforated{is_perforated}
         {
         }
         using Grid_t = Logs::StepPropertyGrid::Grid_t;
@@ -145,17 +145,26 @@ namespace GPN
     struct Well_KH : public IWellDesign
     {
         Well_KH(
+            //    const RealType tube_depth,
             const PhaseProperties &fluid,
             const Logs::IsPermeable &is_permeable,
             const Logs::IsPerforated &is_perforated,
             const StepPropertyContainer &permeability)
             : IWellDesign{is_permeable, is_perforated},
-              temp{permeability * is_permeable.grid.dual_steps * (StepPropertyContainer)is_permeable}
+              RFP_weights{permeability * is_permeable.grid.dual_steps * (StepPropertyContainer)is_permeable},
+              top_collector_cell_id{layer_id(is_perforated)},
+              ghost_layer_cell_id{layer_id(is_permeable)}
         {
             assert(permeability.size() == is_permeable.grid.dual_steps.size());
             assert(is_permeable.size() == is_permeable.grid.dual_steps.size());
+            assert(is_perforated.size() == is_perforated.grid.dual_steps.size());
 
-            temp_sum = temp.sum();
+            weights_sum = RFP_weights.sum();
+            WFP_weights = RFP_weights;
+            // the well rate is zero at the ghost layer
+            WFP_weights(top_collector_cell_id) = 0.0;
+            // the well rate is a sum of rates of ghost and top collector layers
+            WFP_weights(top_collector_cell_id) = RFP_weights(ghost_layer_cell_id) + RFP_weights(top_collector_cell_id);
         }
 
         // void set_P_top(RealType rate)
@@ -167,19 +176,32 @@ namespace GPN
 
         StepPropertyContainer get_RFP(RealType rate) const override
         {
-            return ((rate / temp_sum) * temp).eval();
+            return ((rate / weights_sum) * RFP_weights).eval();
             //  {
             //     Logs::StepPropertyGrid{
-            //         Logs::StepProperty{(temp * (rate / temp.sum())).eval()},
+            //         Logs::StepProperty{(RFP_weights * (rate / RFP_weights.sum())).eval()},
             //         grid},
             //     is_permeable};
         }
+        StepPropertyContainer get_WFP(RealType rate) const
+        {
+            return ((rate / weights_sum) * WFP_weights).eval();
+        }
+
+        const ptrdiff_t top_collector_cell_id{-1ll};
+        const ptrdiff_t ghost_layer_cell_id{-1ll};
 
     protected:
-        //    const PhaseProperties fluid;
-        const StepPropertyContainer temp;
-        RealType temp_sum;
-        //    const Logs::IsPermeable is_permeable;
+        const StepPropertyContainer RFP_weights;
+        StepPropertyContainer WFP_weights;
+        RealType weights_sum;
+
+    private:
+        static ptrdiff_t layer_id(const auto &indicator)
+        {
+            const auto perforated_it = std::ranges::find(indicator.log_vals, 1.0);
+            return std::distance(indicator.log_vals.cbegin(), perforated_it);
+        }
     };
 
     // struct Well : public IWellDesign
@@ -219,11 +241,11 @@ namespace GPN
 
     //     Logs::RFP get_RFP(RealType rate, const Grid_t &grid) const override
     //     {
-    //         const auto temp{(permeability * cell_volumes * is_permeable.log_vals).eval()};
+    //         const auto RFP_weights{(permeability * cell_volumes * is_permeable.log_vals).eval()};
 
     //         return {
     //             Logs::StepPropertyGrid{
-    //                 Logs::StepProperty{(temp * (rate / temp.sum())).eval()},
+    //                 Logs::StepProperty{(RFP_weights * (rate / RFP_weights.sum())).eval()},
     //                 grid},
     //             is_permeable};
     //     }

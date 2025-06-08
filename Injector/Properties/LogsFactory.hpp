@@ -275,6 +275,30 @@ namespace GPN
                     well.is_permeable};
             }
         };
+        
+        struct WFPFactory
+        {
+            template <typename Container_t, typename IsPerforated_t>
+            static auto create(
+                const Container_t &wfp,
+                const IsPerforated_t &is_perforated)
+            {
+                return WFP{
+                    StepPropertyGrid{wfp, is_perforated.grid},
+                    is_perforated};
+            }
+
+            template <typename Well_t>
+            static auto create(
+                RealType well_rate,
+                const Well_t &well)
+            {
+                return WFP{
+                    StepPropertyGrid{well.get_RFP(well_rate), well.is_perforated.grid},
+                    well.is_perforated};
+            }
+        };
+
 
         struct HydrodynamicLogsFactory : public IsPermeableFactory
         {
