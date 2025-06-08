@@ -25,10 +25,12 @@ namespace GPN
             {
                 CoreSampleLogs(
                     const auto &is_permeable_stencils,
+                    const auto &is_perforated_stencils,
                     const auto &porosity_stencils,
                     const auto &permeability_stencils,
                     const auto &grid)
                     : is_permeable{IsPermeableFactory::create(is_permeable_stencils, grid)},
+                      is_perforated{IsPerforatedFactory::create(is_perforated_stencils, is_permeable_stencils, grid)},
                       permeability{PermeabilityFactory::create(permeability_stencils, is_permeable_stencils, grid)},
                       porosity{PorosityFactory::create(porosity_stencils, is_permeable_stencils, grid)}
                 {
@@ -49,6 +51,7 @@ namespace GPN
                 }
 
                 IsPermeable is_permeable;
+                IsPerforated is_perforated;
                 Permeability permeability;
                 Porosity porosity;
             };
@@ -64,10 +67,7 @@ namespace GPN
                     const auto &grid)
                     : solid_density{
                           SolidDensityFactory::create(solid_density, grid)},
-                      solid_specific_heatcapacity{SolidSpecificHeatCapacityFactory::create(solid_specific_heatcapacity, grid)}, 
-                      heat_conductivity{HeatConductivityFactory::create(heat_conductivity, grid)}, 
-                      solid_vol_heatcapacity{SolidVolumetricHeatCapacityFactory::create(solid_density, solid_specific_heatcapacity, grid)}, 
-                      medium_vol_heatcapacity{MediumHeatVolumetricCapacityFactory::create(porosity, solid_density, solid_specific_heatcapacity, fluid, grid)}
+                      solid_specific_heatcapacity{SolidSpecificHeatCapacityFactory::create(solid_specific_heatcapacity, grid)}, heat_conductivity{HeatConductivityFactory::create(heat_conductivity, grid)}, solid_vol_heatcapacity{SolidVolumetricHeatCapacityFactory::create(solid_density, solid_specific_heatcapacity, grid)}, medium_vol_heatcapacity{MediumHeatVolumetricCapacityFactory::create(porosity, solid_density, solid_specific_heatcapacity, fluid, grid)}
                 {
                     assert(solid_density.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
                     assert(solid_specific_heatcapacity.size() == grid.dual_stencils.dual_nodes.size() - 1ll);

@@ -47,6 +47,53 @@ namespace GPN
             IsPermeable is_permeable;
         };
 
+        struct IsPerforatedFactory
+        {
+            template <typename Grid_t>
+            static IsPerforated create(
+                const auto &is_perforated, 
+                const auto& is_permeable, 
+                const Grid_t &grid)
+            {
+                assert(is_perforated.size() == is_permeable.size());
+                for(auto i{0ll}; i < (ptrdiff_t)is_perforated.size(); ++i)
+                {
+                    assert(
+                        (is_perforated[i]==0.0) || 
+                        (is_perforated[i] == 1.0));
+                    assert(
+                        (is_perforated[i]==0.0) || 
+                        ((is_perforated[i] == 1.0) && (is_permeable[i]== 1.0)));
+                }
+
+                size_t predicate = 0ull;
+                for(auto i{0ll}; i < (ptrdiff_t)is_perforated.size(); ++i)
+                {
+                    if((is_perforated[i]==0.0) && 
+                        (is_permeable[i] == 1.0))
+                    {
+                        ++predicate;
+                    }
+                }
+                assert(predicate == 1ull);
+
+                return IsPerforated{
+                    StepPropertyGrid{
+                        StepProperty{
+                            is_perforated},
+                        grid}};
+            }
+
+            const auto &is_permeable_stencils() const
+            {
+                return is_permeable.log_vals;
+            }
+
+            IsPerforated is_permeable;
+        };
+
+
+
         struct PermeabilityFactory
         {
             template <typename Grid_t>
@@ -239,6 +286,30 @@ namespace GPN
                     well.is_permeable};
             }
         };
+        
+        struct WFPFactory
+        {
+            template <typename Container_t, typename IsPerforated_t>
+            static auto create(
+                const Container_t &wfp,
+                const IsPerforated_t &is_perforated)
+            {
+                return WFP{
+                    StepPropertyGrid{wfp, is_perforated.grid},
+                    is_perforated};
+            }
+
+            template <typename Well_t>
+            static auto create(
+                RealType well_rate,
+                const Well_t &well)
+            {
+                return WFP{
+                    StepPropertyGrid{well.get_WFP(well_rate), well.is_perforated.grid},
+                    well.is_perforated};
+            }
+        };
+
 
         struct HydrodynamicLogsFactory : public IsPermeableFactory
         {
