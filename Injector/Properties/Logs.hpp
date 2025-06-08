@@ -213,7 +213,18 @@ namespace GPN
             }
         };
 
+        /// @brief Indicator of permeable layers,
+        /// so the liquid can flow outside the well,
+        /// and along the collector layers
         struct IsPermeable : public IndicatorProperty
+        {
+            using IndicatorProperty::IndicatorProperty;
+        };
+        
+        /// @brief Indicator of perforated cells,
+        /// so the liquid can leave the tube-column,
+        /// to further flow along the cement
+        struct IsPerforated : public IndicatorProperty
         {
             using IndicatorProperty::IndicatorProperty;
         };
@@ -250,6 +261,23 @@ namespace GPN
                     assert(
                         ((is_permeable(id) == 1.0)) ||
                         ((is_permeable(id) == 0.0) && (rfp(id) == 0.0)));
+            }
+        };
+        
+        struct WFP
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            WFP(const StepPropertyGrid &wfp,
+                const IsPerforated &is_perforated)
+                : StepPropertyGrid{wfp},
+                  AssertNonNegative{wfp}
+            {
+                assert(wfp.size() == is_perforated.size());
+                for (std::ptrdiff_t id{0ll}; id < wfp.size(); ++id)
+                    assert(
+                        ((is_perforated(id) == 1.0)) ||
+                        ((is_perforated(id) == 0.0) && (wfp(id) == 0.0)));
             }
         };
 
