@@ -4,7 +4,6 @@
 #include <Injector/Grids/Defines.h>
 #include <Injector/Properties/FaceProperties.hpp>
 
-// #include <Injector/Properties/FlowField.hpp>
 #include <Injector/History/RatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
@@ -48,7 +47,7 @@ const auto r_stencils{
 // hydrodynamic logs
 const auto is_permeable_stencils{
     Logs::RawDataFactory::generate_is_permeable(z_stencils)};
-const auto is_perforated_stencils{
+auto is_perforated_stencils{
     Logs::RawDataFactory::generate_is_permeable(z_stencils)};
 const auto porosity_stencils{
     Logs::RawDataFactory::generate_porosity(z_stencils, is_permeable_stencils)};
@@ -64,6 +63,12 @@ const auto heatconductivity_stencils{
 
 TEST_CASE("Solver")
 {
+    auto it = std::ranges::find_if(
+        is_perforated_stencils,
+        [](RealType v)
+        { return v == 1.0; });
+    (*it) = 0.0;
+
     const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
     const auto &grid{grid2D->first_coord};
 

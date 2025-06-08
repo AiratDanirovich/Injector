@@ -66,6 +66,17 @@ namespace GPN
                         ((is_perforated[i] == 1.0) && (is_permeable[i]== 1.0)));
                 }
 
+                size_t predicate = 0ull;
+                for(auto i{0ll}; i < (ptrdiff_t)is_perforated.size(); ++i)
+                {
+                    if((is_perforated[i]==0.0) && 
+                        (is_permeable[i] == 1.0))
+                    {
+                        ++predicate;
+                    }
+                }
+                assert(predicate == 1ull);
+
                 return IsPerforated{
                     StepPropertyGrid{
                         StepProperty{
@@ -294,7 +305,7 @@ namespace GPN
                 const Well_t &well)
             {
                 return WFP{
-                    StepPropertyGrid{well.get_RFP(well_rate), well.is_perforated.grid},
+                    StepPropertyGrid{well.get_WFP(well_rate), well.is_perforated.grid},
                     well.is_perforated};
             }
         };

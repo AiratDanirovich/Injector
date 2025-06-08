@@ -33,7 +33,7 @@ const auto grid_stencils{
 // hydrodynamic logs
 const auto is_permeable_stencils{
     Logs::RawDataFactory::generate_is_permeable(grid_stencils)};
-const auto is_perforated_stencils{
+auto is_perforated_stencils{
     Logs::RawDataFactory::generate_is_permeable(grid_stencils)};
 const auto porosity_stencils{
     Logs::RawDataFactory::generate_porosity(grid_stencils, is_permeable_stencils)};
@@ -55,6 +55,12 @@ const auto heatconductivity_stencils{
 TEST_CASE("FieldsTest")
 {
     {
+        auto it = std::ranges::find_if(
+            is_perforated_stencils,
+            [](RealType v)
+            { return v == 1.0; });
+        (*it) = 0.0;
+
         const auto grid2D{
             Grids::CylinderGridFactory::create(grid_stencils, grid_stencils)};
 
@@ -116,7 +122,7 @@ TEST_CASE("FieldsTest")
             is_permeable_stencils,
             ext_pressure_stencils,
             skin_stencils, grid};
-            
+
         cout << "refined ext pressure: " << hydrodynamics_logs.ext_pressure.log_vals.transpose().format(CommaInitFmt) << endl;
         cout << "refined skin:         " << hydrodynamics_logs.skin.log_vals.transpose().format(CommaInitFmt) << endl;
 
@@ -127,7 +133,7 @@ TEST_CASE("FieldsTest")
             porosity_stencils,
             Phases::FluidFactory::create_water(1.0, 1.0),
             grid};
-            
+
         cout << "refined density:             " << heat_logs.solid_density.log_vals.transpose().format(CommaInitFmt) << endl;
         cout << "refined spec heat cap:       " << heat_logs.solid_specific_heatcapacity.log_vals.transpose().format(CommaInitFmt) << endl;
         cout << "refined medium vol heat cap: " << heat_logs.medium_vol_heatcapacity.log_vals.transpose().format(CommaInitFmt) << endl;
