@@ -53,6 +53,7 @@ add_catch2_test(HeatFlow_test)
 
 
 add_catch2_test(history_test)
+add_catch2_test(geotherma_test)
 
 # install(FILES ${PROJECT_SOURCE_DIR}/test_data/json_test_data.json
 #     DESTINATION ${PROJECT_BINARY_DIR}/Debug)
