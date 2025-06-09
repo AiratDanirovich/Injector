@@ -220,7 +220,7 @@ namespace GPN
         {
             using IndicatorProperty::IndicatorProperty;
         };
-        
+
         /// @brief Indicator of perforated cells,
         /// so the liquid can leave the tube-column,
         /// to further flow along the cement
@@ -263,7 +263,7 @@ namespace GPN
                         ((is_permeable(id) == 0.0) && (rfp(id) == 0.0)));
             }
         };
-        
+
         struct WFP
             : public StepPropertyGrid,
               private AssertNonNegative
@@ -319,6 +319,19 @@ namespace GPN
                 }
             }
         };
+
+        struct Geotherma
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            Geotherma(
+                const StepPropertyGrid &temperature)
+                : StepPropertyGrid{temperature},
+                  AssertNonNegative{temperature}
+            {
+            }
+        };
+
         struct SkinFactor : public StepPropertyGrid
         {
             SkinFactor(
