@@ -26,8 +26,6 @@
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
 #include <Injector/Solver/SolverManager.hpp>
 
-#include <Injector/Properties/FieldsFactory.hpp>
-
 #include <Eigen/Core>
 
 using namespace std;
@@ -61,7 +59,7 @@ auto ICFactory(RealType t_start, const Grid_t_ptr grid, const RealType val)
     return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{val}, t_start)};
 }
 
-struct FunctorBC : public BoundaryConditions::BCFunctorBase
+struct FunctorBC : public GPN::BoundaryConditions::BCFunctorBase
 {
     using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
     using ConvectionFieldFactory_t =
@@ -83,7 +81,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
     RealType operator()(ptrdiff_t z_id, RealType r, RealType t) const override
     {
         if (r == grid_ptr->second_coord.dual_front())
-            return flow_field.get_flow_in_axes2()(z_id, 0ll) * inlet_temp;
+            return flow_field.get_flow_in_axes2()(z_id, 0ll) * flow_field.get_temperature();
 
         if (r == grid_ptr->second_coord.dual_back())
             return 0.0;
@@ -95,7 +93,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
     RealType operator()(RealType z, ptrdiff_t r_id, RealType t) const override
     {
         if (z == grid_ptr->first_coord.dual_front())
-            return flow_field.get_flow_in_axes1()(0ll, r_id) * inlet_temp;
+            return flow_field.get_flow_in_axes1()(0ll, r_id) * flow_field.get_temperature();
 
         if (z == grid_ptr->first_coord.dual_back())
             return 0.0;
@@ -120,24 +118,28 @@ Wrapper::Wrapper(
     // grid
     const RealType rMin,         // m /* typically would be zero */
     const RealType rMax,         // m
-    const size_t rNodes,         // -- /* number of nodes in r-direction, including first and last ones */
+    const RealType q,            // --, q >= 1.0 /* step increment factor */
+    const RealType r_max_step,   // m /* maximum allowed step in radial direction */
     const RealType zTop,         // m, /* typically would be zero */
     const RealType z_minor_step, // m, /*maximum step within impermeable layers*/
-    // seven +1 vectors of the same size
+    // eight +1 vectors of the same size
     // values are in SI
     const VR &thickness,                   // meter
     const VR &heatconductivity_stencils,   // Watt/(m*K)
     const VR &porosity,                    // 0.0 < porosity <= 1.0, --
     const VR &permeability_stencils,       // m^2
     const VR &is_permeable,                // {0, 1}, --
+    const VR &is_perforated,               // {0, 1}, --
     const VR &solid_density,               // kg/(m^3)
     const VR &solid_specific_heatcapacity, // J/(kg*K)
     const RealType initial_temperature,    // K // should be log in the future
     // temporal grid
-    const RealType t_start,      // start time in seconds
-    const VR &time_intervals,    // intervals of const rates)
-    const RealType t_minor_step, // time step used for numerical integration
+    const RealType t_start,          // start time in seconds
+    const VR &time_intervals,        // intervals of const rates)
+    const RealType t_minor_step,     // time step used for numerical integration
     // well
+    const RealType tube_radius,      // m
+    const RealType sandface_radius,  // m
     const RealType well_rate,        // ~1.1E-3 m^3/s
     const RealType inlet_temperature // K
 )
@@ -145,6 +147,8 @@ Wrapper::Wrapper(
     // adapt stl container to Eigne conteiner
     LogValuesContainer is_permeable_stencils(is_permeable.size());
     std::copy(is_permeable.cbegin(), is_permeable.cend(), is_permeable_stencils.begin());
+    LogValuesContainer is_perforated_stencils(is_perforated.size());
+    std::copy(is_perforated.cbegin(), is_perforated.cend(), is_perforated_stencils.begin());
     LogValuesContainer solid_density_stencils(solid_density.size());
     std::copy(solid_density.begin(), solid_density.end(), solid_density_stencils.begin());
     LogValuesContainer solid_specific_heatcapacity_stencils(solid_specific_heatcapacity.size());
@@ -152,19 +156,24 @@ Wrapper::Wrapper(
     LogValuesContainer porosity_stencils(porosity.size());
     std::copy(porosity.begin(), porosity.end(), porosity_stencils.begin());
 
-    // make grid2D
-    Grids::RefinerVerticle refiner{z_minor_step, is_permeable_stencils};
+    // r_stencils
+    GPN::WellHoles well_holes{tube_radius, sandface_radius};
+    VR r_stencils = well_holes.generate_log_radial_grid(
+        rMin, rMax, q, r_max_step);
+    // z-refiner
+    GPN::Grids::RefinerVerticle refiner{z_minor_step, is_permeable_stencils};
+    // the grid itself
     const auto grid2D{
         Grids::CylinderGridFactory::create(
             refiner,
             Grids::Factory::generate_dual_grid_stencils_from_steps(
                 zTop, thickness),
-            Grids::Factory::generate_dual_grid_stencils_uniform(
-                Segment{rMin, rMax}, rNodes))};
+            r_stencils)};
     const auto &grid{grid2D->first_coord};
     // collector
     const Logs::Rocks::CoreSampleLogs core_data{
         is_permeable_stencils,
+        is_perforated_stencils,
         porosity_stencils,
         permeability_stencils,
         grid};
@@ -177,7 +186,7 @@ Wrapper::Wrapper(
             HeatConductivity{heat_conductivity_fluid})};
 
     const Well_KH well{
-        water, core_data.is_permeable, core_data.permeability};
+        water, core_data.is_permeable, core_data.is_perforated, core_data.permeability};
 
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
@@ -194,8 +203,9 @@ Wrapper::Wrapper(
         heat_props, grid2D};
     // history
     const std::vector<RealType> rates(time_intervals.size(), well_rate);
+    const std::vector<RealType> inlet_temperature_set(time_intervals.size(), inlet_temperature);
     const History history{
-        HistoryFactory::create(time_intervals, rates)};
+        HistoryFactory::create(time_intervals, rates, inlet_temperature_set)};
     // rates field factory
     FaceProperties::RatesFactory rates_factory{
         grid2D, well, history, water};
@@ -254,14 +264,24 @@ Wrapper::Wrapper(
             ++layer_id;
         }
     }
-    
+
     {
         ofstream f{std::string{"output/well_temperature.csv"}};
         f << sep << sep << grid2D->first_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
         for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
-            {
-                f << t << sep << times[t] << sep << states[t].cur_state.col(0ll).format(commaFmt) << '\n';
-            }
+        {
+            f << t << sep << times[t] << sep << states[t].cur_state.col(0ll).format(commaFmt) << '\n';
+        }
+        f.close();
+    }
+
+    {
+        ofstream f{std::string{"output/cement_temperature.csv"}};
+        f << sep << sep << grid2D->first_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
+        for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
+        {
+            f << t << sep << times[t] << sep << states[t].cur_state.col(1ll).format(commaFmt) << '\n';
+        }
         f.close();
     }
 
@@ -276,6 +296,14 @@ Wrapper::Wrapper(
         f << grid2D->second_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
         f.close();
     }
+
+    {
+        ofstream f{std::string{"output/data.txt"}};
+        f << "ghost layer height:   " << grid.mesh_nodes(well.ghost_layer_cell_id) << " m" << endl;
+        f << "top collector height: " << grid.mesh_nodes(well.top_collector_cell_id) << " m" << endl;
+        f.close();
+    }
+
 }
 
 std::vector<RealType> Wrapper::get_times() const

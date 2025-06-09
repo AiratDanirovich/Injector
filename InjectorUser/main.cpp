@@ -49,6 +49,7 @@ int main()
     //  const ptrdiff_t nLayers{thickness.size()};
     // hydrodynamic logs
     const VR is_permeable_stencils = data["collector"]["is_permeable"];
+    const VR is_perforated_stencils = data["collector"]["is_perforated"];
     const VR porosity_stencils = data["collector"]["porosity"];
     const VR permeability_stencils = data["collector"]["permeability"];
     // heat logs
@@ -59,9 +60,10 @@ int main()
     const RealType
         rMin{data["grid"]["r_start"]},
         rMax{data["grid"]["r_end"]},
+        q{data["grid"]["r_log_grid"]["q"]},
+        r_max_step{data["grid"]["r_log_grid"]["r_max_step"]},
         zTop{data["grid"]["ztop"]},
         z_minor_step{data["grid"]["z_minor_step"]}; // m
-    const ptrdiff_t rNodes{data["grid"]["rNodes"]};
     /*history*/
     const RealType
         t0{data["history"]["t_start"]},
@@ -76,12 +78,18 @@ int main()
     const RealType well_rate{data["history"]["wellRate"]}; // m^3/s
     const RealType initial_temperature{data["collector"]["initTemperature"]};
     const RealType inlet_temperature{data["history"]["inletTemperature"]};
+    // const VR inlet_temperature_array = data["history"]["inletTemperatureArray"];
     /*well*/
-    const RealType hole_radius{data["well"]["hole_radius"]};
+    const RealType sandface_radius{data["well"]["sandface_radius"]};
+    const RealType tube_radius{data["well"]["tube_radius"]};
     /*END*/
 
     // cout << "before call to DLL\nPress Enter to continue" << endl;
     // getchar();
+
+    
+    cout << "Simulation is started." << endl;
+    cout << "Please wait..." << endl;
 
     Wrapper *instance = new Wrapper(
         // fluid params in SI
@@ -90,27 +98,30 @@ int main()
         viscosity,         // Pa*s
         heat_conductivity, // W/(m*K)
         // grid
-        rMin,   // m /* typically would be zero */
-        rMax,   // m
-        rNodes, // -- /* number of nodes in r-direction, including first and last ones */
-        zTop,   // m, /* typically would be zero */
+        rMin,         // m /* typically would be zero */
+        rMax,         // m
+        q,            // --, q >= 1.0 /* step increment factor */
+        r_max_step,   // m /* maximum allowed step in radial direction */
+        zTop,         // m, /* typically would be zero */
         z_minor_step, // m, /*maximum step within impermeable layers*/
-        // seven +1 vectors of the same size
+        // eight +1 vectors of the same size
         // values are in SI
         thickness,                            // meter
         heatconductivity_stencils,            // Watt/(m*K)
         porosity_stencils,                    // --
         permeability_stencils,                // m^2
         is_permeable_stencils,                // {0, 1}, --
+        is_perforated_stencils,               // {0, 1}, --
         solid_density_stencils,               // kg/(m^3)
         solid_specific_heatcapacity_stencils, // J/(kg*K)
         initial_temperature,                  // K // should be log in the future
         // temporal grid
-        t0,           // start time in seconds
-                      //    const size_t nt, // = time_intervals.size()
-        time_steps,   // in seconds
-        t_minor_step, // time step used for numerical integration
+        t0,           // s, start time in seconds
+        time_steps,   // s, in seconds
+        t_minor_step, // s, time step used for numerical integration
         // well
+        tube_radius,      // m
+        sandface_radius,  // m
         well_rate,        // ~1.1E-3 m^3/s
         inlet_temperature // K
     );
@@ -126,7 +137,7 @@ int main()
 
     delete instance;
 
-    std::cout << "Simulation done\nPress Enter to exit" << std::endl;
+    std::cout << "Simulation is finished.\nPress any key to exit..." << std::endl;
     getchar();
 
     return 0;

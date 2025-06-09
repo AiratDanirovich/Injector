@@ -26,18 +26,20 @@ public:
         const RealType viscosity,               // Pa*s
         const RealType heat_conductivity_fluid, // W/(m*K)
         // grid
-        const RealType rMin,       // m /* typically would be zero */
-        const RealType rMax,       // m
-        const size_t r_nodes_nmbr, // -- /* number of nodes in r-direction, including first and last ones */
-        const RealType zTop,       // m, /* typically would be zero */
+        const RealType rMin,         // m /* typically would be zero */
+        const RealType rMax,         // m
+        const RealType q,            // --, q >= 1.0 /* step increment factor */
+        const RealType r_max_step,   // m /* maximum allowed step in radial direction */
+        const RealType zTop,         // m, /* typically would be zero */
         const RealType z_minor_step, // m, /*maximum step within impermeable layers*/
-        // seven +1 vectors of the same size
+                                     // eight +1 vectors of the same size
         // values are in SI
         const VR &thickness,                   // meter
         const VR &conductivity,                // W/(m*K)
         const VR &porosity,                    // --
         const VR &permeability,                // m^2
         const VR &is_permeable,                // {0, 1}, --
+        const VR &is_perforated,               // {0, 1}, --
         const VR &solid_density,               // kg/(m^3)
         const VR &solid_specific_heatcapacity, // J/(kg*K)
         const RealType initial_temperature,    // K // should be log in the future
@@ -46,6 +48,8 @@ public:
         const VR &time_intervals,    // time intervals (in seconds) of const rates
         const RealType t_minor_step, // time step used for numerical integration
         // well
+        const RealType tube_radius,      // m
+        const RealType sandface_radius,  // m
         const RealType well_rate,        // ~1.1E-3 m^3/s
         const RealType inlet_temperature // K
     );
