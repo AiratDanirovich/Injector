@@ -19,13 +19,13 @@ struct ABCFunctor : public GPN::BoundaryConditions::BCFunctorBase
 {
   ABCFunctor(RealType val) : val{val} {}
 
-  RealType operator()(ptrdiff_t z, RealType r, RealType t) const override
+  RealType operator()(const ptrdiff_t z, const RealType r, const RealType t) const override
   {
 
     return val;
   }
 
-  RealType operator()(RealType z, ptrdiff_t r, RealType t) const override
+  RealType operator()(const RealType z, const ptrdiff_t r, const RealType t) const override
   {
     return val;
   }

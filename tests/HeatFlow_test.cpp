@@ -41,13 +41,13 @@ using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
 /// @brief Initial temperature is assumed to be constant
-struct FunctorIC
+struct FunctorIC : public InitialConditions::ICFunctorBase
 {
   FunctorIC(const Logs::Geotherma &geotherma)
       : geotherma{geotherma}
   {
   }
-  RealType operator()(const ptrdiff_t z_id, const ptrdiff_t, RealType) const
+  RealType operator()(const ptrdiff_t z_id, const ptrdiff_t, RealType) const override
   {
     return geotherma(z_id);
   }
@@ -80,7 +80,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   {
   }
 
-  RealType operator()(ptrdiff_t z_id, RealType r, RealType t) const override
+  RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t) const override
   {
     if (r == grid_ptr->second_coord.dual_front())
       return flow_field.get_flow_in_axes2()(z_id, 0ll) * flow_field.get_temperature();
@@ -92,7 +92,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
     return 0.0;
   }
 
-  RealType operator()(RealType z, ptrdiff_t r_id, RealType t) const override
+  RealType operator()(const RealType z, const ptrdiff_t r_id, const RealType t) const override
   {
     if (z == grid_ptr->first_coord.dual_front())
       return flow_field.get_flow_in_axes1()(0ll, r_id) * flow_field.get_temperature();
