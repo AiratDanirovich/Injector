@@ -169,12 +169,11 @@ namespace GPN
                 const RealType end,
                 const ptrdiff_t amount)
             {
-                std::vector<RealType> out;
-                out.reserve(amount);
+                std::vector<RealType> out(amount);
                 const RealType step{(end - begin) / (amount - 1ll)};
 
                 for (auto id{0ll}; id < amount; ++id)
-                    out[id] = id * step;
+                    out[id] = begin + id * step;
                 return out;
             }
 
@@ -184,11 +183,10 @@ namespace GPN
                 const RealType ref_val,
                 const RealType slope)
             {
-                std::vector<RealType> out;
-                out.reserve(nodes.size());
+                std::vector<RealType> out(nodes.size());
 
                 for (auto id{0ull}; id < nodes.size(); ++id)
-                    out[id] = ref_val + slope*(ref_node - nodes[id]);
+                    out[id] = ref_val + slope * (nodes[id] - ref_node);
                 return out;
             }
         };

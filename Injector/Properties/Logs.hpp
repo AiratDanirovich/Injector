@@ -332,7 +332,8 @@ namespace GPN
             }
         };
 
-        struct SkinFactor : public StepPropertyGrid
+        struct SkinFactor
+            : public StepPropertyGrid
         {
             SkinFactor(
                 const StepPropertyGrid &skin,
