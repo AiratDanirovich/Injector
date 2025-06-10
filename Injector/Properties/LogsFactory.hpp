@@ -132,7 +132,7 @@ namespace GPN
             /// @param vals Reference t-values for geotherma
             /// @param z_top Coordinate of the top
             /// @param q_grid Mesh nodes for temperature calculation
-            /// @return 
+            /// @return
             static Geotherma create(
                 const auto &nodes,
                 const auto &vals,
@@ -141,16 +141,16 @@ namespace GPN
             {
                 return {
                     StepPropertyGrid{
-                        StepProperty{
+                        StepPropertyContainer{
                             interpolate(
                                 nodes, vals, z_top, q_grid.mesh_nodes)},
                         q_grid}};
             }
-            
+
             /// @brief Create const-value geotherms
             /// @param val Const temperature value
             /// @param q_grid Mesh nodes for temperature calculation
-            /// @return 
+            /// @return
             static Geotherma create(
                 const RealType val,
                 const auto &q_grid)
@@ -178,13 +178,14 @@ namespace GPN
             static auto interpolate(
                 const auto &nodes, const auto &vals, const RealType z_top, const auto &q_nodes)
             {
-                std::vector<RealType> out;
-                out.reserve(q_nodes.size());
+                StepPropertyContainer out(q_nodes.size());
 
                 ptrdiff_t left{0ll};
                 for (auto i{0ll}; i < q_nodes.size(); ++i)
-                    out.push_back(interpolate_node(
-                        nodes, vals, z_top + q_nodes[i], left));
+                {
+                    out(i) = interpolate_node(
+                        nodes, vals, z_top + q_nodes[i], left);
+                }
                 return out;
             }
         };
