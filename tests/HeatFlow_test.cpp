@@ -303,8 +303,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // history
   const std::vector<RealType> time_steps{generate_steps(t_stencils)};
   const std::vector<RealType> rates(time_steps.size(), well_rate);
-  const std::vector<RealType> inlet_temperature_set(Logs::RawDataFactory::generate_temperatures_periodic(t_stencils, inlet_temperature_array));
-  // const std::vector<RealType> temps(time_steps.size(), inlet_temperature);
+  const std::vector<RealType> inlet_temperature_set(
+    Logs::RawDataFactory::generate_temperatures_periodic(t_stencils, inlet_temperature_array));
   const History history{
       HistoryFactory::create(time_steps, rates, inlet_temperature_set)};
   // rates field factory
