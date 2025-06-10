@@ -6,7 +6,7 @@
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/HydrodynamicSolver.hpp>
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
-#include <Injector/Solver/SplittingMethod/SolverFactory.hpp>
+// #include <Injector/Solver/SplittingMethod/SolverFactory.hpp>
 #include <Injector/Solver/SolverManager.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -20,8 +20,8 @@ using namespace GPN::Logs;
 using namespace GPN::Grids;
 using namespace GPN::Phases;
 using namespace GPN::Model::Injector;
-using namespace GPN::EqSolver;
-using namespace GPN::EqSolver::SplittingMethod;
+//using namespace GPN::EqSolver;
+//using namespace GPN::EqSolver::SplittingMethod;
 
 struct ExactSolution
 {
@@ -36,14 +36,14 @@ struct ExactSolution
   {
   }
 
-  RealType operator()(RealType z, RealType r, RealType t) const
+  RealType operator()(const RealType z, const RealType r, const RealType t) const
   {
     return -q * heat_conductivity.value(0ull, 0ull) *
            std::expint(-r * r / (4.0 * kappa.value(0ull, 0ull) * t));
   }
 
   template <typename Grid_t>
-  RealType operator()(ptrdiff_t z, ptrdiff_t r, RealType t, const Grid_t &grid) const
+  RealType operator()(const ptrdiff_t z, const ptrdiff_t r, const RealType t, const Grid_t &grid) const
   {
     const auto [zv, rv]{grid.coordinates(z, r)};
     return (*this)(zv, rv, t);
@@ -56,14 +56,16 @@ protected:
   const Properties::HeatConductivity::Grid_type &grid;
 };
 
-struct FunctorIC
+struct FunctorIC : public InitialConditions::ICFunctorBase
 {
   FunctorIC(const ExactSolution &es)
       : es{es}
   {
   }
-  RealType operator()(RealType z, RealType r, RealType t0) const
+  RealType operator()(const ptrdiff_t z_id, const ptrdiff_t r_id, const RealType t0) const override
   {
+    const RealType z = es.grid.first_coord.mesh_nodes(z_id);
+    const RealType r = es.grid.second_coord.mesh_nodes(r_id);
     return es(z, r, t0);
   }
 
@@ -79,17 +81,44 @@ auto initialcondition_factory(RealType t0, const Grid_t_ptr grid, const ExactSol
 
 struct FunctorBC : public GPN::BoundaryConditions::BCFunctorBase
 {
-  FunctorBC(const ExactSolution &es)
-      : es{es}
+  using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
+  
+  FunctorBC(
+      const ExactSolution &es,
+      const cptr<Grid2D_t> grid2D)
+      : es{es},
+        grid2D{grid2D}
   {
   }
-  RealType operator()(RealType z, RealType r, RealType t) const override
+  RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t) const override
   {
+    RealType z{grid2D->first_coord.mesh_nodes(z_id)};
+    if (r == grid2D->second_coord.dual_front())
+      r = grid2D->second_coord.mesh_front();
+    else if (r == grid2D->second_coord.dual_back())
+      r = grid2D->second_coord.mesh_back();
+    else
+      assert(false);
+
+    return es(z, r, t);
+  }
+
+  RealType operator()(const RealType z, const ptrdiff_t r_id, const RealType t) const override
+  {
+    RealType r{grid2D->second_coord.mesh_nodes(r_id)};
+    if (z == grid2D->first_coord.dual_front())
+      z = grid2D->first_coord.mesh_front();
+    else if (z == grid2D->first_coord.dual_back())
+      z = grid2D->first_coord.mesh_back();
+    else
+      assert(false);
+
     return es(z, r, t);
   }
 
 protected:
   const ExactSolution &es;
+  const cptr<Grid2D_t> grid2D;
 };
 
 using VR = std::vector<RealType>;

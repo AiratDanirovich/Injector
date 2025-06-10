@@ -43,11 +43,10 @@ namespace GPN
                 }
 
                 template <
-                    typename StructuredGrid2D_t,
-                    typename Functor>
+                    typename StructuredGrid2D_t>
                 static auto FillWithFunctor(
                     const StructuredGrid2D_t &grid2D,
-                    const Functor &f, RealType initial_moment = 0.0)
+                    const InitialConditions::ICFunctorBase &f, RealType initial_moment = 0.0)
                 {
                     State_Container cur_state{
                         grid2D.first_coord.mesh_size(),
@@ -57,8 +56,8 @@ namespace GPN
                         for (std::ptrdiff_t i = 0; i < cur_state.innerSize(); ++i)
                         {
                             cur_state(i, j) = f(
-                                grid2D.first_coord.coordinate(i),
-                                grid2D.second_coord.coordinate(j),
+                                i, //grid2D.first_coord.coordinate(i),
+                                j, //grid2D.second_coord.coordinate(j),
                                 initial_moment);
                         }
 
