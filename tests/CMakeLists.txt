@@ -67,6 +67,3 @@ install(FILES ${PROJECT_SOURCE_DIR}/test_data/heatflow_test_data.json
     DESTINATION $<TARGET_FILE_DIR:HeatFlow_test>)
 install(FILES ${PROJECT_SOURCE_DIR}/test_data/heatflow_test_data.json
     DESTINATION ${PROJECT_BINARY_DIR})
-
-
-

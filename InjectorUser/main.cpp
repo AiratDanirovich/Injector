@@ -39,11 +39,11 @@ int main()
     /*START*/
     // input parameters
     /*fluid*/
-    RealType
-        viscosity{data["fluid"]["viscosity"]},
-        density{data["fluid"]["density"]},
-        capacity{data["fluid"]["specificHeatCapacity"]},
-        heat_conductivity{data["fluid"]["heatConductivity"]};
+     RealType
+         viscosity{data["fluid"]["viscosity"]},
+         density{data["fluid"]["density"]},
+         capacity{data["fluid"]["specificHeatCapacity"]},
+         heat_conductivity{data["fluid"]["heatConductivity"]};
     /*collector*/
     const VR thickness = data["collector"]["thickness"];
     //  const ptrdiff_t nLayers{thickness.size()};
@@ -62,7 +62,6 @@ int main()
         rMax{data["grid"]["r_end"]},
         q{data["grid"]["r_log_grid"]["q"]},
         r_max_step{data["grid"]["r_log_grid"]["r_max_step"]},
-        zTop{data["grid"]["ztop"]},
         z_minor_step{data["grid"]["z_minor_step"]}; // m
     /*history*/
     const RealType
@@ -76,18 +75,18 @@ int main()
     const VR time_steps{generate_steps(t_stencils)};
     /*temperatures*/
     const RealType well_rate{data["history"]["wellRate"]}; // m^3/s
-    const RealType initial_temperature{data["collector"]["initTemperature"]};
     const RealType inlet_temperature{data["history"]["inletTemperature"]};
-    // const VR inlet_temperature_array = data["history"]["inletTemperatureArray"];
     /*well*/
     const RealType sandface_radius{data["well"]["sandface_radius"]};
     const RealType tube_radius{data["well"]["tube_radius"]};
     /*END*/
 
-    // cout << "before call to DLL\nPress Enter to continue" << endl;
-    // getchar();
-
+    const auto &data2 = data["collector"]["geotherma"]["interpolate"];
+    const VR geotherma_nodes = data2["z_nodes"];
+    const VR geotherma_vals = data2["t_vals"];
+    const RealType z_top = data2["z_top"];
     
+
     cout << "Simulation is started." << endl;
     cout << "Please wait..." << endl;
 
@@ -102,9 +101,8 @@ int main()
         rMax,         // m
         q,            // --, q >= 1.0 /* step increment factor */
         r_max_step,   // m /* maximum allowed step in radial direction */
-        zTop,         // m, /* typically would be zero */
         z_minor_step, // m, /*maximum step within impermeable layers*/
-        // eight +1 vectors of the same size
+        // eight vectors of the same size
         // values are in SI
         thickness,                            // meter
         heatconductivity_stencils,            // Watt/(m*K)
@@ -114,7 +112,10 @@ int main()
         is_perforated_stencils,               // {0, 1}, --
         solid_density_stencils,               // kg/(m^3)
         solid_specific_heatcapacity_stencils, // J/(kg*K)
-        initial_temperature,                  // K // should be log in the future
+        // geotherma
+        z_top,           // m, /* z-coordinate of the top */
+        geotherma_nodes, // m, /* nodes for geotherma interpolation */
+        geotherma_vals,  // K, /* reference vals for interpolation */
         // temporal grid
         t0,           // s, start time in seconds
         time_steps,   // s, in seconds

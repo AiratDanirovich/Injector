@@ -30,9 +30,8 @@ public:
         const RealType rMax,         // m
         const RealType q,            // --, q >= 1.0 /* step increment factor */
         const RealType r_max_step,   // m /* maximum allowed step in radial direction */
-        const RealType zTop,         // m, /* typically would be zero */
         const RealType z_minor_step, // m, /*maximum step within impermeable layers*/
-                                     // eight +1 vectors of the same size
+        // eight vectors of the same size
         // values are in SI
         const VR &thickness,                   // meter
         const VR &conductivity,                // W/(m*K)
@@ -42,7 +41,10 @@ public:
         const VR &is_perforated,               // {0, 1}, --
         const VR &solid_density,               // kg/(m^3)
         const VR &solid_specific_heatcapacity, // J/(kg*K)
-        const RealType initial_temperature,    // K // should be log in the future
+        // geotherma
+        const RealType z_top,     // m, /* z-coordinate of the top */
+        const VR geotherma_nodes, // m, /* nodes for geotherma interpolation */
+        const VR geotherma_vals,  // K, /* reference vals for interpolation */
         // temporal grid
         const RealType t_start,      // start time in seconds
         const VR &time_intervals,    // time intervals (in seconds) of const rates

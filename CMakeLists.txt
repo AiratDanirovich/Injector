@@ -67,6 +67,18 @@ install(TARGETS InjectorGPNDLL
     # message(PROJECT_BINARY_DIR=${PROJECT_BINARY_DIR})
 install(FILES ${PROJECT_SOURCE_DIR}/tests/test_data/injector_launch.json
     DESTINATION ${PROJECT_BINARY_DIR}/bin)
+    
+    
+# install(FILES ${PROJECT_SOURCE_DIR}/test_data/injector_launch.json
+#     DESTINATION $<TARGET_FILE_DIR:InjectorUser>)
+install(TARGETS InjectorGPNDLL
+    # copy *.dll file
+    RUNTIME DESTINATION $<TARGET_FILE_DIR:InjectorUser>
+    # copy public header(s)
+    PUBLIC_HEADER DESTINATION $<TARGET_FILE_DIR:InjectorUser>
+    )
+install(FILES ${PROJECT_SOURCE_DIR}/tests/test_data/injector_launch.json
+    DESTINATION $<TARGET_FILE_DIR:InjectorUser>)
 
 
 # install section

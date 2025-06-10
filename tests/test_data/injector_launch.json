@@ -15,10 +15,15 @@
     "heatConductivity": [0, 0,  0,  0, 0,  0, 0, 0, 0],
     "solidDensity": [3200, 3000, 3100, 3000, 3200, 3150, 3150, 3150, 3300],
     "solidSpecificHeatCapacity": [2700,2700,2700,2700,2700,2700,2700,2700,2700],
-    "initTemperature": 348
+    "geotherma":{
+      "interpolate":{
+        "z_top": 0.0,
+        "z_nodes": [0.0, 60.0,  300,  2000, 2503, 2508, 3000],
+        "t_vals":  [293, 273.0, 283,  323,  348,  348,  364]
+      }
+    }
   },
   "grid": {
-    "ztop": 0.0,
     "z_minor_step": 3.0,
     "r_start": 0.0,
     "r_end": 30,

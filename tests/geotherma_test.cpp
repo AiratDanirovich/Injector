@@ -38,7 +38,6 @@ const auto geotherma_vals{
 
 TEST_CASE("FieldsTest")
 {
-
     const auto grid{Grids::Factory::create_axes<CoordinateTypes::Z>(z_grid_stencils)};
     const auto geotherma{Logs::GeothermaFactory::create(
         geotherma_nodes,

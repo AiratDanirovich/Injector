@@ -291,7 +291,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             grid2D->first_coord));
   }
   else
-    throw std::runtime_error("Incorrect radial grid descriptors.");
+    throw std::runtime_error("Incorrect geotherma interpolation type. Choose between const/interpolate");
 
   Properties::Rocks::HeatProps heat_props{
       heat_logs, grid2D};

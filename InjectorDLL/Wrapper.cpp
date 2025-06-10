@@ -10,6 +10,8 @@
 
 #include <Injector/Grids/Defines.h>
 
+#include <Injector/Grids/Grids2D.hpp>
+
 #include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Grids/GridRefiners.hpp>
 #include <Injector/History/History.hpp>
@@ -38,25 +40,25 @@ using namespace GPN::EqSolver::SplittingMethod;
 namespace fs = std::filesystem;
 
 /// @brief Initial temperature is assumed to be constant
-struct FunctorIC
+struct FunctorIC : public InitialConditions::ICFunctorBase
 {
-    FunctorIC(const RealType val)
-        : val{val}
+    FunctorIC(const Logs::Geotherma &geotherma)
+        : geotherma{geotherma}
     {
     }
-    RealType operator()(RealType z, RealType r, RealType t_start) const
+    RealType operator()(const ptrdiff_t z_id, const ptrdiff_t, RealType) const override
     {
-        return val;
+        return geotherma(z_id);
     }
 
 protected:
-    const RealType val;
+    const Logs::Geotherma &geotherma;
 };
 
 template <typename Grid_t_ptr>
-auto ICFactory(RealType t_start, const Grid_t_ptr grid, const RealType val)
+auto ICFactory(RealType t_start, const Grid_t_ptr grid, const Logs::Geotherma &geotherma)
 {
-    return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{val}, t_start)};
+    return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{geotherma}, t_start)};
 }
 
 struct FunctorBC : public GPN::BoundaryConditions::BCFunctorBase
@@ -120,9 +122,8 @@ Wrapper::Wrapper(
     const RealType rMax,         // m
     const RealType q,            // --, q >= 1.0 /* step increment factor */
     const RealType r_max_step,   // m /* maximum allowed step in radial direction */
-    const RealType zTop,         // m, /* typically would be zero */
     const RealType z_minor_step, // m, /*maximum step within impermeable layers*/
-    // eight +1 vectors of the same size
+    // eight vectors of the same size
     // values are in SI
     const VR &thickness,                   // meter
     const VR &heatconductivity_stencils,   // Watt/(m*K)
@@ -132,11 +133,14 @@ Wrapper::Wrapper(
     const VR &is_perforated,               // {0, 1}, --
     const VR &solid_density,               // kg/(m^3)
     const VR &solid_specific_heatcapacity, // J/(kg*K)
-    const RealType initial_temperature,    // K // should be log in the future
+    // geotherma
+    const RealType z_top,     // m, /* z-coordinate of the top */
+    const VR geotherma_nodes, // m, /* nodes for geotherma interpolation */
+    const VR geotherma_vals,  // K, /* reference vals for interpolation */
     // temporal grid
-    const RealType t_start,          // start time in seconds
-    const VR &time_intervals,        // intervals of const rates)
-    const RealType t_minor_step,     // time step used for numerical integration
+    const RealType t_start,      // start time in seconds
+    const VR &time_intervals,    // intervals of const rates)
+    const RealType t_minor_step, // time step used for numerical integration
     // well
     const RealType tube_radius,      // m
     const RealType sandface_radius,  // m
@@ -167,7 +171,7 @@ Wrapper::Wrapper(
         Grids::CylinderGridFactory::create(
             refiner,
             Grids::Factory::generate_dual_grid_stencils_from_steps(
-                zTop, thickness),
+                0.0, thickness),
             r_stencils)};
     const auto &grid{grid2D->first_coord};
     // collector
@@ -210,7 +214,13 @@ Wrapper::Wrapper(
     FaceProperties::RatesFactory rates_factory{
         grid2D, well, history, water};
     // initial condition
-    const auto initial_state{ICFactory(t_start, grid2D, initial_temperature)};
+    Logs::Geotherma geotherma{
+        Logs::GeothermaFactory::create(
+            geotherma_nodes,
+            geotherma_vals,
+            z_top,
+            grid2D->first_coord)};
+    const auto initial_state{ICFactory(t_start, grid2D, geotherma)};
     // boundary conditions
     const GPN::BoundaryConditions::BoundaryConditions bc{
         *grid2D,
@@ -296,6 +306,12 @@ Wrapper::Wrapper(
         f << grid2D->second_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
         f.close();
     }
+    {
+        ofstream f{std::string{"output/geotherma.csv"}};
+        f << grid2D->first_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
+        f << initial_state.cur_state.col(0ll).transpose().format(commaFmt) << '\n';
+        f.close();
+    }
 
     {
         ofstream f{std::string{"output/data.txt"}};
@@ -303,7 +319,6 @@ Wrapper::Wrapper(
         f << "top collector height: " << grid.mesh_nodes(well.top_collector_cell_id) << " m" << endl;
         f.close();
     }
-
 }
 
 std::vector<RealType> Wrapper::get_times() const
