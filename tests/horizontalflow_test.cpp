@@ -32,13 +32,13 @@ using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
 /// @brief Initial temperature is assumed to be constant
-struct FunctorIC
+struct FunctorIC : public InitialConditions::ICFunctorBase
 {
   FunctorIC(const RealType val)
       : val{val}
   {
   }
-  RealType operator()(RealType z, RealType r, RealType t0) const
+  RealType operator()(const ptrdiff_t, const ptrdiff_t, const RealType) const override
   {
     return val;
   }
@@ -72,7 +72,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   {
   }
 
-  RealType operator()(ptrdiff_t z_id, RealType r, RealType t) const override
+  RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t) const override
   {
     if (r == grid_ptr->second_coord.dual_front())
     {
@@ -82,7 +82,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
     return 0.0;
   }
 
-  RealType operator()(RealType z, ptrdiff_t r, RealType t) const override
+  RealType operator()(const RealType z, const ptrdiff_t r, const RealType t) const override
   {
     return 0.0;
   }
