@@ -43,23 +43,23 @@ using namespace GPN::EqSolver::SplittingMethod;
 /// @brief Initial temperature is assumed to be constant
 struct FunctorIC
 {
-  FunctorIC(const RealType val)
-      : val{val}
+  FunctorIC(const Logs::Geotherma &geotherma)
+      : geotherma{geotherma}
   {
   }
-  RealType operator()(RealType z, RealType r, RealType t0) const
+  RealType operator()(const ptrdiff_t z_id, const ptrdiff_t, RealType) const
   {
-    return val;
+    return geotherma(z_id);
   }
 
 protected:
-  const RealType val;
+  const Logs::Geotherma &geotherma;
 };
 
 template <typename Grid_t_ptr>
-auto ICFactory(RealType t0, const Grid_t_ptr grid, const RealType val)
+auto ICFactory(RealType t0, const Grid_t_ptr grid, const Logs::Geotherma &geotherma)
 {
-  return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{val}, t0)};
+  return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{geotherma}, t0)};
 }
 
 struct FunctorBC : public BoundaryConditions::BCFunctorBase
@@ -173,6 +173,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       rMin{data["grid"]["r_start"]},
       rMax{data["grid"]["r_end"]}; // m
   const std::string r_grid_type = data["grid"]["r_grid_type"];
+  const std::string geotherma_type = data["collector"]["geotherma"]["type"];
   //  const ptrdiff_t rNodes{data["grid"]["rNodes"]};
   /*history*/
   const RealType
@@ -203,19 +204,19 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   WellHoles well_holes{tube_radius, sandface_radius};
   if (r_grid_type == "uniform")
   {
-    const auto& data2 = data["grid"]["r_uniform_grid"];
+    const auto &data2 = data["grid"]["r_uniform_grid"];
     r_stencils = well_holes.generate_uniform_radial_grid(
         rMin, rMax, data2["rNodes"]);
   }
   else if (r_grid_type == "log")
   {
-    const auto& data2 = data["grid"]["r_log_grid"];
+    const auto &data2 = data["grid"]["r_log_grid"];
     r_stencils = well_holes.generate_log_radial_grid(
         rMin, rMax, data2["q"], data2["r_max_step"]);
   }
   else
     throw std::runtime_error("Incorrect radial grid descriptors.");
-    
+
   cout << "radial dual grid stencils:\n"
        << transfer_to_eigen(r_stencils).transpose() << endl;
   // z-refiner
@@ -268,6 +269,30 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       porosity_stencils,
       water,
       grid2D->first_coord};
+
+  std::unique_ptr<const Logs::Geotherma> geotherma;
+  if (geotherma_type == "const")
+  {
+    const auto &data2 = data["collector"]["geotherma"]["const"];
+    geotherma = make_unique<Logs::Geotherma>(
+        Logs::GeothermaFactory::create(data2["initTemperature"], grid2D->first_coord));
+  }
+  else if (r_grid_type == "interpolate")
+  {
+    const auto &data2 = data["collector"]["geotherma"]["interpolate"];
+    const VR nodes = data2["z_nodes"];
+    const VR vals = data2["t_vals"];
+    const RealType z_top = data2["z_top"];
+    geotherma = make_unique<Logs::Geotherma>(
+        Logs::GeothermaFactory::create(
+            nodes,
+            vals,
+            z_top,
+            grid2D->first_coord));
+  }
+  else
+    throw std::runtime_error("Incorrect radial grid descriptors.");
+
   Properties::Rocks::HeatProps heat_props{
       heat_logs, grid2D};
 
@@ -286,7 +311,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   FaceProperties::RatesFactory rates_factory{
       grid2D, well, history, water};
   // initial condition
-  const auto initial_state{ICFactory(t0, grid2D, initial_temperature)};
+  const auto initial_state{ICFactory(t0, grid2D, *geotherma)};
   // boundary conditions
   const GPN::BoundaryConditions::BoundaryConditions bc{
       *grid2D,

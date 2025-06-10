@@ -57,8 +57,8 @@ namespace GPN
                         for (std::ptrdiff_t i = 0; i < cur_state.innerSize(); ++i)
                         {
                             cur_state(i, j) = f(
-                                grid2D.first_coord.coordinate(i),
-                                grid2D.second_coord.coordinate(j),
+                                i, //grid2D.first_coord.coordinate(i),
+                                j, //grid2D.second_coord.coordinate(j),
                                 initial_moment);
                         }
 

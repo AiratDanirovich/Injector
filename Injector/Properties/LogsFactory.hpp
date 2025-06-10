@@ -127,6 +127,12 @@ namespace GPN
 
         struct GeothermaFactory
         {
+            /// @brief Create geotherma based on values table interpolation
+            /// @param nodes Reference z-nodes for geotherma table
+            /// @param vals Reference t-values for geotherma
+            /// @param z_top Coordinate of the top
+            /// @param q_grid Mesh nodes for temperature calculation
+            /// @return 
             static Geotherma create(
                 const auto &nodes,
                 const auto &vals,
@@ -138,6 +144,21 @@ namespace GPN
                         StepProperty{
                             interpolate(
                                 nodes, vals, z_top, q_grid.mesh_nodes)},
+                        q_grid}};
+            }
+            
+            /// @brief Create const-value geotherms
+            /// @param val Const temperature value
+            /// @param q_grid Mesh nodes for temperature calculation
+            /// @return 
+            static Geotherma create(
+                const RealType val,
+                const auto &q_grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            std::vector<RealType>(q_grid.mesh_nodes.size(), val)},
                         q_grid}};
             }
 
