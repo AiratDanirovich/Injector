@@ -5,8 +5,9 @@
 
 #include <Injector/Grids/Grids2D.hpp>
 
-#include <Injector/Properties/Logs.hpp>
 #include <Injector/History/RatesFactory.hpp>
+
+#include <Injector/Properties/Logs.hpp>
 #include <Injector/Properties/FlowField.hpp>
 
 #include <Injector/Model/Phases/FluidFactory.hpp>
@@ -56,21 +57,23 @@ struct ExactSolution
     return (*this)(zv, rv, t);
   }
 
+  const Grid2D_t &grid;
 protected:
   const Properties::ThermalDiffusivity<Grid2D_t> kappa;
   const Properties::HeatConductivity<Grid2D_t> &heat_conductivity;
   const RealType q;
-  const Grid2D_t &grid;
 };
 
-struct FunctorIC
+struct FunctorIC : public InitialConditions::ICFunctorBase
 {
   FunctorIC(const ExactSolution &es)
       : es{es}
   {
   }
-  RealType operator()(RealType z, RealType r, RealType t0) const
+  RealType operator()(ptrdiff_t z_id, ptrdiff_t r_id, RealType t0) const override
   {
+    const RealType z = es.grid.first_coord.mesh_nodes(z_id);
+    const RealType r = es.grid.second_coord.mesh_nodes(r_id);
     return es(z, r, t0);
   }
 
@@ -95,7 +98,7 @@ struct AFunctorBC : public GPN::BoundaryConditions::BCFunctorBase
   {
   }
 
-  RealType operator()(ptrdiff_t z_id, RealType r, RealType t) const override
+  RealType operator()(const ptrdiff_t z_id, RealType r, const RealType t) const override
   {
     RealType z{grid2D->first_coord.mesh_nodes(z_id)};
     if (r == grid2D->second_coord.dual_front())
@@ -108,7 +111,7 @@ struct AFunctorBC : public GPN::BoundaryConditions::BCFunctorBase
     return es(z, r, t);
   }
 
-  RealType operator()(RealType z, ptrdiff_t r_id, RealType t) const override
+  RealType operator()(RealType z, const ptrdiff_t r_id, const RealType t) const override
   {
     RealType r{grid2D->second_coord.mesh_nodes(r_id)};
     if (z == grid2D->first_coord.dual_front())
@@ -166,7 +169,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
   const auto &grid{grid2D->first_coord};
   // make fluid
-  const Water water{
+  const PhaseProperties water{
       FluidFactory::create_water(
           Viscosity{viscosity},
           Density{density},

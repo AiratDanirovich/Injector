@@ -51,25 +51,25 @@ namespace GPN
         {
             template <typename Grid_t>
             static IsPerforated create(
-                const auto &is_perforated, 
-                const auto& is_permeable, 
+                const auto &is_perforated,
+                const auto &is_permeable,
                 const Grid_t &grid)
             {
                 assert(is_perforated.size() == is_permeable.size());
-                for(auto i{0ll}; i < (ptrdiff_t)is_perforated.size(); ++i)
+                for (auto i{0ll}; i < (ptrdiff_t)is_perforated.size(); ++i)
                 {
                     assert(
-                        (is_perforated[i]==0.0) || 
+                        (is_perforated[i] == 0.0) ||
                         (is_perforated[i] == 1.0));
                     assert(
-                        (is_perforated[i]==0.0) || 
-                        ((is_perforated[i] == 1.0) && (is_permeable[i]== 1.0)));
+                        (is_perforated[i] == 0.0) ||
+                        ((is_perforated[i] == 1.0) && (is_permeable[i] == 1.0)));
                 }
 
                 size_t predicate = 0ull;
-                for(auto i{0ll}; i < (ptrdiff_t)is_perforated.size(); ++i)
+                for (auto i{0ll}; i < (ptrdiff_t)is_perforated.size(); ++i)
                 {
-                    if((is_perforated[i]==0.0) && 
+                    if ((is_perforated[i] == 0.0) &&
                         (is_permeable[i] == 1.0))
                     {
                         ++predicate;
@@ -91,8 +91,6 @@ namespace GPN
 
             IsPerforated is_permeable;
         };
-
-
 
         struct PermeabilityFactory
         {
@@ -124,6 +122,70 @@ namespace GPN
                             porosity},
                         grid},
                     IsPermeableFactory::create(is_permeable, grid)};
+            }
+        };
+
+        struct GeothermaFactory
+        {
+            /// @brief Create geotherma based on values table interpolation
+            /// @param nodes Reference z-nodes for geotherma table
+            /// @param vals Reference t-values for geotherma
+            /// @param z_top Coordinate of the top
+            /// @param q_grid Mesh nodes for temperature calculation
+            /// @return 
+            static Geotherma create(
+                const auto &nodes,
+                const auto &vals,
+                const RealType z_top,
+                const auto &q_grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            interpolate(
+                                nodes, vals, z_top, q_grid.mesh_nodes)},
+                        q_grid}};
+            }
+            
+            /// @brief Create const-value geotherms
+            /// @param val Const temperature value
+            /// @param q_grid Mesh nodes for temperature calculation
+            /// @return 
+            static Geotherma create(
+                const RealType val,
+                const auto &q_grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            std::vector<RealType>(q_grid.mesh_nodes.size(), val)},
+                        q_grid}};
+            }
+
+        private:
+            static RealType interpolate_node(
+                const auto &nodes, const auto &vals, RealType q_node, ptrdiff_t &left)
+            {
+                assert(left >= 0ll);
+                // iterator to the point which is above the "node" value
+                const auto it = std::upper_bound(nodes.cbegin() + left, nodes.cend(), q_node);
+                const ptrdiff_t dist = std::distance(nodes.cbegin(), it);
+                left = dist - 1ll;
+                const ptrdiff_t right{dist};
+
+                return (vals[right] - vals[left]) / (nodes[right] - nodes[left]) * (q_node - nodes[left]) + vals[left];
+            }
+            static auto interpolate(
+                const auto &nodes, const auto &vals, const RealType z_top, const auto &q_nodes)
+            {
+                std::vector<RealType> out;
+                out.reserve(q_nodes.size());
+
+                ptrdiff_t left{0ll};
+                for (auto i{0ll}; i < q_nodes.size(); ++i)
+                    out.push_back(interpolate_node(
+                        nodes, vals, z_top + q_nodes[i], left));
+                return out;
             }
         };
 
@@ -206,7 +268,7 @@ namespace GPN
                 const auto &solid_specific_heatcapacity,
                 const auto &grid)
             {
-                assert(solid_specific_heatcapacity.size() == grid.dual_stencils.dual_nodes.size()-1ll);
+                assert(solid_specific_heatcapacity.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
                 return {
                     StepPropertyGrid{
                         StepProperty{
@@ -248,9 +310,9 @@ namespace GPN
                 const auto &grid)
             {
                 return {StepPropertyGrid{StepProperty{
-                    porosity * fluid.volumetric_heat_capacity +
-                        (1.0 - porosity) * solid_vol_heatcapacity},
-                    grid}};
+                                             porosity * fluid.volumetric_heat_capacity +
+                                             (1.0 - porosity) * solid_vol_heatcapacity},
+                                         grid}};
             }
 
             static MediumHeatVolumetricCapacity create(
@@ -286,7 +348,7 @@ namespace GPN
                     well.is_permeable};
             }
         };
-        
+
         struct WFPFactory
         {
             template <typename Container_t, typename IsPerforated_t>
@@ -309,7 +371,6 @@ namespace GPN
                     well.is_perforated};
             }
         };
-
 
         struct HydrodynamicLogsFactory : public IsPermeableFactory
         {
