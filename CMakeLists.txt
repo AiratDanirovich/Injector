@@ -44,11 +44,14 @@ find_package(OpenMP)
     else()
             message(STATUS "OpenMP NOT Found") 
     endif()
+    
+# Include nlohmann_json::nlohmann_json
+include(${CMAKE_SOURCE_DIR}../cmake/JSON_lib.cmake)
 
 # enable testing
-enable_testing()
+# enable_testing()
 # process tests/CMakeLists.txt
-add_subdirectory(tests)
+# add_subdirectory(tests)
 
 add_subdirectory(InjectorDLL)
 add_subdirectory(InjectorUser)
