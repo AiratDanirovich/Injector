@@ -5,8 +5,9 @@
 
 #include <Injector/Grids/Grids2D.hpp>
 
-#include <Injector/Properties/Logs.hpp>
 #include <Injector/History/RatesFactory.hpp>
+
+#include <Injector/Properties/Logs.hpp>
 #include <Injector/Properties/FlowField.hpp>
 
 #include <Injector/Model/Phases/FluidFactory.hpp>
@@ -168,7 +169,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
   const auto &grid{grid2D->first_coord};
   // make fluid
-  const Water water{
+  const PhaseProperties water{
       FluidFactory::create_water(
           Viscosity{viscosity},
           Density{density},

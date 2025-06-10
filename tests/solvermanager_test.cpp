@@ -3,10 +3,17 @@
 #include <fstream>
 #include <cassert>
 
+#include <Injector/Grids/Defines.h>
+
+#include <Injector/Properties/Factory.hpp>
+#include <Injector/History/RatesFactory.hpp>
+
 #include <Injector/Model/Phases/FluidFactory.hpp>
-#include <Injector/Model/HydrodynamicSolver.hpp>
+#include <Injector/Model/Collector.hpp>
+
+#include <Injector/Solver/BoundaryConditions.hpp>
+#include <Injector/Solver/InitialCondition.hpp>
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
-// #include <Injector/Solver/SplittingMethod/SolverFactory.hpp>
 #include <Injector/Solver/SolverManager.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -19,15 +26,16 @@ using namespace GPN;
 using namespace GPN::Logs;
 using namespace GPN::Grids;
 using namespace GPN::Phases;
-using namespace GPN::Model::Injector;
-//using namespace GPN::EqSolver;
-//using namespace GPN::EqSolver::SplittingMethod;
+using namespace GPN::EqSolver;
+using namespace GPN::EqSolver::SplittingMethod;
 
 struct ExactSolution
 {
+  using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
+
   ExactSolution(
-      const Properties::HeatVolumetricCapacity &volumetric_capacity,
-      const Properties::HeatConductivity &heat_conductivity,
+      const Properties::MediumHeatVolumetricCapacity<Grid2D_t> &volumetric_capacity,
+      const Properties::HeatConductivity<Grid2D_t> &heat_conductivity,
       RealType q)
       : kappa{volumetric_capacity, heat_conductivity},
         heat_conductivity{heat_conductivity},
@@ -36,24 +44,25 @@ struct ExactSolution
   {
   }
 
-  RealType operator()(const RealType z, const RealType r, const RealType t) const
+  RealType operator()(RealType z, RealType r, RealType t) const
   {
     return -q * heat_conductivity.value(0ull, 0ull) *
            std::expint(-r * r / (4.0 * kappa.value(0ull, 0ull) * t));
   }
 
   template <typename Grid_t>
-  RealType operator()(const ptrdiff_t z, const ptrdiff_t r, const RealType t, const Grid_t &grid) const
+  RealType operator()(ptrdiff_t z, ptrdiff_t r, RealType t, const Grid_t &grid) const
   {
     const auto [zv, rv]{grid.coordinates(z, r)};
     return (*this)(zv, rv, t);
   }
 
+  const Grid2D_t &grid;
+
 protected:
-  const Properties::ThermalDiffusivity kappa;
-  const Properties::HeatConductivity &heat_conductivity;
+  const Properties::ThermalDiffusivity<Grid2D_t> kappa;
+  const Properties::HeatConductivity<Grid2D_t> &heat_conductivity;
   const RealType q;
-  const Properties::HeatConductivity::Grid_type &grid;
 };
 
 struct FunctorIC : public InitialConditions::ICFunctorBase
@@ -82,7 +91,7 @@ auto initialcondition_factory(RealType t0, const Grid_t_ptr grid, const ExactSol
 struct FunctorBC : public GPN::BoundaryConditions::BCFunctorBase
 {
   using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
-  
+
   FunctorBC(
       const ExactSolution &es,
       const cptr<Grid2D_t> grid2D)
@@ -90,7 +99,7 @@ struct FunctorBC : public GPN::BoundaryConditions::BCFunctorBase
         grid2D{grid2D}
   {
   }
-  RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t) const override
+  RealType operator()(const ptrdiff_t z_id, RealType r, const RealType t) const override
   {
     RealType z{grid2D->first_coord.mesh_nodes(z_id)};
     if (r == grid2D->second_coord.dual_front())
@@ -103,7 +112,7 @@ struct FunctorBC : public GPN::BoundaryConditions::BCFunctorBase
     return es(z, r, t);
   }
 
-  RealType operator()(const RealType z, const ptrdiff_t r_id, const RealType t) const override
+  RealType operator()(RealType z, const ptrdiff_t r_id, const RealType t) const override
   {
     RealType r{grid2D->second_coord.mesh_nodes(r_id)};
     if (z == grid2D->first_coord.dual_front())
@@ -122,6 +131,33 @@ protected:
 };
 
 using VR = std::vector<RealType>;
+LogValuesContainer transfer_to_eigen(const VR &data, const RealType factor = 1.0)
+{
+  LogValuesContainer out(data.size());
+  for (auto i{0ull}; i < data.size(); ++i)
+    out(i) = factor * data[i];
+  return out;
+}
+
+VR generate_stencils(RealType t0, RealType t1, RealType t_step_major)
+{
+  auto segm_count{static_cast<size_t>(std::ceil(t1 - t0) / t_step_major)};
+  double step = (t1 - t0) / (segm_count);
+  VR out(segm_count + 1ll);
+
+  for (auto i{0ull}; i < out.size(); ++i)
+    out[i] = t0 + i * step;
+  return out;
+}
+
+VR generate_steps(const VR &dual_nodes)
+{
+  VR out(dual_nodes.size() - 1ll);
+
+  for (auto i{0ull}; i < out.size(); ++i)
+    out[i] = dual_nodes[i + 1] - dual_nodes[i];
+  return out;
+}
 
 TEST_CASE("SolverManager", "SelfSimilarCyl")
 {
@@ -130,7 +166,7 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
   /*heat rate*/
   RealType q{1.0};
   /*fluid*/
-  RealType viscosity{6e-4}, density{1000}, capacity{4200};
+  RealType viscosity{6e-4}, density{1000}, capacity{4200}, heat_conductivity{0.6};
   /*collector*/
   const RealType rMin{1.0}, rMax{2.0}, zTop{0.0};
   const std::ptrdiff_t rNodes{301ull};
@@ -139,9 +175,11 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
 
   const VR conductivity(nLayers, 3.9);
   const VR porosity(nLayers, 1e-16);
-  const VR is_permeable(nLayers, 1.0);
-  const VR solid_density(nLayers, 3.9 /*should be 2600 in SI*/);
-  const VR solid_specific_heatcapacity(nLayers, 1.0 /*should be 770 in SI*/);
+  const VR is_permeable_stencils(nLayers, 1.0);
+  const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 0.0)};
+  const VR heatconductivity_stencils(nLayers, 3.9);
+  const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 3.9 /*should be 2600 in SI*/)};
+  const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
   /*temporal grid*/
   const std::ptrdiff_t time_steps_nmbr{501ull};
   const RealType t0{1.0}; // initial time moment
@@ -155,69 +193,79 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
       Grids::Factory::generate_dual_grid_steps(
           time_moments)};
   /*rates*/
-  const VR rates{Logs::Factory::generate_rates(
-      time_moments)};
+  // const VR rates{Logs::RawDataFactory::generate_rates(
+  //     time_moments)};
   /*END*/
 
   // make grid1D
-  const VR z_stencils(
+  const auto z_stencils(
       Grids::Factory::generate_dual_grid_stencils_from_steps(
           zTop, thickness));
-  const RealType zBottom{z_stencils.back()};
-  const VR r_stencils{
+  const auto r_stencils{
       Grids::Factory::generate_dual_grid_stencils_uniform(
           Segment{rMin, rMax}, rNodes)};
-  // make grid2D
-  const auto grid2D{
-      Grids::Factory::create_cylinder_grid_2D_ptr(
-          z_stencils, r_stencils)};
-  // heat conductivity
-  const Properties::HeatConductivity conductivity_field{
-      Properties::Factory::generate_heatconductivity_Property(
-          conductivity, grid2D)};
+  const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
+  const auto &grid{grid2D->first_coord};
   // make fluid
-  const Water water{
+  const PhaseProperties water{
       FluidFactory::create_water(
           Viscosity{viscosity},
           Density{density},
-          SpecificHeatCapacity{capacity})};
-  // volumetric heat capacity of multiphaase system
-  const Properties::HeatVolumetricCapacity capacity_field{
-      Properties::Factory::generate_volumetric_heatcapacity_Property(
-          is_permeable, porosity,
-          solid_density, solid_specific_heatcapacity,
-          water, grid2D)};
+          SpecificHeatCapacity{capacity},
+          GPN::HeatConductivity{heat_conductivity})};
+  // solver
+  const Logs::Rocks::IsPermeableLog core_data{
+      is_permeable_stencils,
+      grid};
+
+  const auto flow_field{
+      FaceProperties::FlowFactory::zero_flow(
+          core_data.is_permeable, *grid2D)};
+
+  const Logs::Rocks::HeatLogs heat_logs{
+      solid_density_stencils,
+      solid_specific_heatcapacity_stencils,
+      heatconductivity_stencils,
+      porosity_stencils,
+      water,
+      grid};
+
+  const Properties::Rocks::HeatProps heat_props{
+      heat_logs, grid2D};
+
+  const FaceProperties::Rocks::HeatFaceProps heat_face_props{
+      heat_props, grid2D};
+  // history
+  const std::vector<RealType> rates(time_intervals.size(), 0.0);
+  const std::vector<RealType> inlet_temperature_set(time_intervals.size(), 0.0);
+  const History history{
+      HistoryFactory::create(time_intervals, rates, inlet_temperature_set)};
+
   // exact solution
-  ExactSolution es{capacity_field,
-                   conductivity_field, q};
+  ExactSolution es{heat_props.medium_vol_heatcapacity,
+                   heat_props.heat_conductivity, q};
   // initial conditions
   const auto initial_state{initialcondition_factory(t0, grid2D, es)};
   // boundary conditions
   const GPN::BoundaryConditions::BoundaryConditions bc{
-      *grid2D, std::make_shared<FunctorBC>(es)};
-  // history
-  const History history{
-      InjectorRate{
-          StepPropertyGrid{
-              rates,
-              TemporalGridDual{GridDualStencils{DualStepsContainer{time_intervals}}}}}};
-  // const VR t_stencils(
-  //     Grids::Factory::generate_dual_grid_stencils_from_steps(
-  //         t0, time_intervals));
+      *grid2D, std::make_shared<FunctorBC>(es, grid2D)};
+  // rates field factory
+  FaceProperties::ZeroRatesFactory rates_factory{
+      grid2D, core_data.is_permeable};
 
   // solver
-  using Solver_t = Solver<
-      Grids::StructuredCylinderGrid2DAxisymmetric,
-      Properties::HeatVolumetricCapacity,
-      FlowField>;
-
-  FlowField flow_field{};
+  using Solver_t = decltype(Solver{
+      heat_face_props.heat_conductivity,
+      grid2D,
+      heat_props.medium_vol_heatcapacity,
+      rates_factory, initial_state,
+      bc, t0});
 
   const cptr<Solver_t> solver{std::make_shared<Solver_t>(
-      conductivity_field,
-      flow_field, grid2D,
-      capacity_field,
-      initial_state,
+      heat_face_props.heat_conductivity,
+      grid2D,
+      heat_props.medium_vol_heatcapacity,
+      rates_factory, initial_state,
       bc, t0)};
 
   // const double tol = 1E-3;
