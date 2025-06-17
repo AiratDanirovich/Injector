@@ -48,6 +48,11 @@ std::vector<RealType> is_permeable_stencils(z_stencils.size() - 1ull, 1.0);
 
 const RealType well_rate{1.0};
 
+const RealType rMax{300.0}; // m
+/*well*/
+const RealType sandface_radius{0.3}; // m
+const RealType tube_radius{0.1}; // m
+
 TEST_CASE("RFP_reservoir")
 {
     is_permeable_stencils[0] = 0.0;
@@ -85,8 +90,10 @@ TEST_CASE("RFP_reservoir")
 
     const auto water{FluidFactory::create_water(1.0, 1.0)};
 
+    WellHoles well_holes{tube_radius, sandface_radius};
+
     const Well_KH_FixedRate well{
-        water, is_permeable, is_perforated, permeability};
+        water, is_permeable, is_perforated, permeability, well_holes, rMax};
 
     {
         const auto rfp{

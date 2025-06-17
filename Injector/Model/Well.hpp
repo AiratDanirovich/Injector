@@ -3,6 +3,7 @@
 #include <vector>
 #include <algorithm>
 #include <numbers>
+#include <cmath>
 #include <cassert>
 
 #include <Eigen/Core>
@@ -136,7 +137,7 @@ namespace GPN
         {
         }
         using Grid_t = Logs::StepPropertyGrid::Grid_t;
-        virtual LogValuesContainer get_RFP(RealType rate) const = 0;
+        virtual LogValuesContainer get_RFP(RealType rate, RealType pressure) const = 0;
 
         const Logs::IsPermeable is_permeable;
         const Logs::IsPerforated is_perforated;
@@ -150,11 +151,15 @@ namespace GPN
             const PhaseProperties &fluid,
             const Logs::IsPermeable &is_permeable,
             const Logs::IsPerforated &is_perforated,
-            const StepPropertyContainer &permeability)
+            const StepPropertyContainer &permeability,
+            const WellHoles &holes,
+            const RealType Rext)
             : IWellDesign{is_permeable, is_perforated},
               RFP_weights{permeability * is_permeable.grid.dual_steps * (StepPropertyContainer)is_permeable},
               top_collector_cell_id{layer_id(is_perforated)},
-              ghost_layer_cell_id{layer_id(is_permeable)}
+              ghost_layer_cell_id{layer_id(is_permeable)},
+              fluid{fluid},
+              log_dist{std::log(Rext / holes.sandface_radius)}
         {
             assert(permeability.size() == is_permeable.grid.dual_steps.size());
             assert(is_permeable.size() == is_permeable.grid.dual_steps.size());
@@ -175,8 +180,25 @@ namespace GPN
         //                      ((permeability * cell_volumes * is_permeable.log_vals).sum() / std::log(R_ext / r_col));
         // }
 
-        StepPropertyContainer get_RFP(RealType rate) const override
+        StepPropertyContainer get_RFP(
+            RealType rate,
+            RealType pressure = std::numeric_limits<double>::quiet_NaN()) const override
         {
+            if (std::isnan(rate))
+            { // define rate from pressure
+                assert(!std::isnan(pressure));
+                rate = 2 * std::numbers::pi / fluid.viscosity / log_dist * pressure * weights_sum;
+            }
+            else if (std::isnan(pressure))
+            { // define pressure from rate
+                assert(!std::isnan(rate));
+                pressure = rate/(2 * std::numbers::pi / fluid.viscosity / log_dist * weights_sum);
+            }
+            else
+                assert("Incorrect injector regime!");
+
+            assert(pressure > 0.0);
+            assert(rate > 0.0);
             return ((rate / weights_sum) * RFP_weights).eval();
             //  {
             //     Logs::StepPropertyGrid{
@@ -184,8 +206,27 @@ namespace GPN
             //         grid},
             //     is_permeable};
         }
-        StepPropertyContainer get_WFP(RealType rate) const
+
+        StepPropertyContainer get_WFP(
+            RealType rate,
+            RealType pressure = std::numeric_limits<double>::quiet_NaN()) const
         {
+            if (std::isnan(rate))
+            { // define rate from pressure
+                assert(!std::isnan(pressure));
+                rate = 2 * std::numbers::pi / fluid.viscosity / log_dist * pressure * weights_sum;
+            }
+            else if (std::isnan(pressure))
+            { // define pressure from rate
+                assert(!std::isnan(rate));
+                pressure = rate/(2 * std::numbers::pi / fluid.viscosity / log_dist * weights_sum);
+            }
+            else
+                assert("Incorrect injector regime!");
+
+            assert(pressure > 0.0);
+            assert(rate > 0.0);
+
             return ((rate / weights_sum) * WFP_weights).eval();
         }
 
@@ -196,6 +237,7 @@ namespace GPN
         const StepPropertyContainer RFP_weights;
         StepPropertyContainer WFP_weights;
         RealType weights_sum;
+        const PhaseProperties fluid;
 
     private:
         static ptrdiff_t layer_id(const auto &indicator)
@@ -203,5 +245,6 @@ namespace GPN
             const auto perforated_it = std::ranges::find(indicator.log_vals, 1.0);
             return std::distance(indicator.log_vals.cbegin(), perforated_it);
         }
+        const RealType log_dist;
     };
 } // GPN

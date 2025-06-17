@@ -260,7 +260,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           GPN::HeatConductivity{heat_conductivity})};
   // well
   const Well_KH_FixedRate well{
-      water, core_data.is_permeable, core_data.is_perforated, core_data.permeability};
+      water, core_data.is_permeable, core_data.is_perforated, core_data.permeability, well_holes, rMax};
 
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
