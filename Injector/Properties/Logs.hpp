@@ -228,6 +228,14 @@ namespace GPN
         {
             using IndicatorProperty::IndicatorProperty;
         };
+        
+        /// @brief Indicator of perforated cells,
+        /// so the liquid can leave the tube-column,
+        /// to further flow along the cement
+        struct IsGhostLayer : public IndicatorProperty
+        {
+            using IndicatorProperty::IndicatorProperty;
+        };
 
         struct ExternalPressure
             : public StepPropertyGrid,

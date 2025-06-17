@@ -124,7 +124,7 @@ namespace GPN
 #pragma region AXES2-AS-FACENORMAL
                 const auto rfp{Logs::RFPFactory::create_from_well(history_record, well)};
                 auto axes2_as_face_normal{FlowFieldFactory::flow_in_dir2(rfp, grid2D)};
-                axes2_as_face_normal.col(0ll) = 0.0;                     // boundary condition, zero flux at the axis of symmetry
+                axes2_as_face_normal.col(0ll) = 0.0;                          // boundary condition, zero flux at the axis of symmetry
                 axes2_as_face_normal.col(1ll) = well.get_WFP(history_record); // flow at the tube radius
 #pragma endregion
 #pragma region AXES1-AS-FACENORMAL
