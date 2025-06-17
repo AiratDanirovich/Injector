@@ -140,6 +140,17 @@ namespace GPN
                     vals[id] = (id % 2 == 1) ? 50.0 : 0.0;
                 return vals;
             }
+            
+            static auto generate_pressures(
+                const auto &dual_stencils)
+            {
+                auto size{dual_stencils.size() - 1};
+                std::vector<RealType> vals(size);
+
+                for (auto id{size - size}; id < size; ++id)
+                    vals[id] = (30/*atm*/)*1e5/*Pa*/;
+                return vals;
+            }
 
             static auto generate_temperatures(
                 const auto &dual_stencils)

@@ -239,7 +239,7 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
   const std::vector<RealType> rates(time_intervals.size(), 0.0);
   const std::vector<RealType> inlet_temperature_set(time_intervals.size(), 0.0);
   const History history{
-      HistoryFactory::create(time_intervals, rates, inlet_temperature_set)};
+      HistoryFactory::createFixedRate(time_intervals, rates, inlet_temperature_set)};
 
   // exact solution
   ExactSolution es{heat_props.medium_vol_heatcapacity,

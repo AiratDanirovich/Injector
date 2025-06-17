@@ -1,5 +1,6 @@
 #pragma once
 #include <numeric>
+#include <limits>
 
 #include <Injector/Properties/Logs.hpp>
 #include <Injector/History/TemporalGrid.hpp>
@@ -8,6 +9,7 @@ namespace GPN
 {
     namespace Logs
     {
+        /// @brief The rate of fluid injection
         struct InjectorRate
             : public StepPropertyGrid,
               // so far it is assumed that the rates are positive.
@@ -22,6 +24,7 @@ namespace GPN
             }
         };
 
+        /// @brief Temperature of injected fluid
         struct InjectorTemperature
             : public StepPropertyGrid,
               // so far it is assumed that the rates are positive.
@@ -47,16 +50,42 @@ namespace GPN
             {
             }
         };
+
+        /// @brief Surface at the to of well, P_{top}
+        struct SurfacePressure
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            SurfacePressure(
+                const StepPropertyGrid &pressure)
+                : StepPropertyGrid{pressure},
+                  AssertNonNegative{pressure}
+            {
+            }
+        };
     } // Logs
+
+    struct InjectorRegimes
+    {
+        enum Type
+        {
+            FixedRate,
+            FixedPressure
+        };
+    };
 
     struct History
     {
         History(const Logs::InjectorRate &rates,
-                const Logs::InjectorTemperature &temps)
+                const Logs::SurfacePressure &pressure,
+                const Logs::InjectorTemperature &temps,
+                const std::vector<InjectorRegimes::Type> &regimes)
             : rates{rates},
+              pressure{pressure},
               temps{temps},
               time_steps{rates.grid.dual_steps},
-              time_moments(time_steps.size() + 1ll, 0.0)
+              time_moments(time_steps.size() + 1ll, 0.0),
+              regimes{regimes}
         {
             std::partial_sum(
                 time_steps.cbegin(),
@@ -65,18 +94,29 @@ namespace GPN
         }
 
         const Logs::InjectorRate rates;
+        const Logs::SurfacePressure pressure;
         const Logs::InjectorTemperature temps;
         const DualStepsContainer time_steps;
         std::vector<double> time_moments;
+
+        const std::vector<InjectorRegimes::Type> regimes;
     };
 
     struct HistoryFactory
     {
-        static auto create(
+        static auto createFixedRate(
             const auto &time_steps,
             const auto &rates,
             const auto &temps)
         {
+            const std::vector<InjectorRegimes::Type> regimes(
+                rates.size(),
+                InjectorRegimes::FixedRate);
+
+            // nan-valued pressure.
+            // can be calculated during the simulation
+            const std::vector<RealType> p(rates.size(), std::numeric_limits<double>::quiet_NaN());
+
             const auto time{Grids::TemporalGridDual{
                 Grids::GridDualStencils{
                     DualStepsContainer{time_steps}},
@@ -84,8 +124,38 @@ namespace GPN
             return History{
                 Logs::InjectorRate{Logs::StepPropertyGrid{
                     rates, time}},
+                Logs::SurfacePressure{Logs::StepPropertyGrid{
+                    p, time}},
                 Logs::InjectorTemperature{Logs::StepPropertyGrid{
-                    temps, time}}};
+                    temps, time}},
+                regimes};
+        }
+
+        static auto createFixedPressure(
+            const auto &time_steps,
+            const auto &pressure,
+            const auto &temps)
+        {
+            const std::vector<InjectorRegimes::Type> regimes(
+                pressure.size(),
+                InjectorRegimes::FixedPressure);
+
+            // nan-valued rate.
+            // can be calculated during the simulation
+            const std::vector<RealType> q(pressure.size(), std::numeric_limits<double>::quiet_NaN());
+
+            const auto time{Grids::TemporalGridDual{
+                Grids::GridDualStencils{
+                    DualStepsContainer{time_steps}},
+                CoordinateTypes::Time{}}};
+            return History{
+                Logs::InjectorRate{Logs::StepPropertyGrid{
+                    q, time}},
+                Logs::SurfacePressure{Logs::StepPropertyGrid{
+                    pressure, time}},
+                Logs::InjectorTemperature{Logs::StepPropertyGrid{
+                    temps, time}},
+                regimes};
         }
     };
 } // GPN
