@@ -92,7 +92,7 @@ TEST_CASE("RFP_reservoir")
 
     WellHoles well_holes{tube_radius, sandface_radius};
 
-    const Well_KH_FixedRate well{
+    const Well_KH well{
         water, is_permeable, is_perforated, permeability, well_holes, rMax};
 
     {
