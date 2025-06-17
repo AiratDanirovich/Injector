@@ -137,7 +137,18 @@ namespace GPN
                 std::vector<RealType> vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
-                    vals[id] = (id % 2 == 1) ? 50.0 : 0.0;
+                    vals[id] = (id % 2 == 1) ? 50.0 : 10.0;
+                return vals;
+            }
+            
+            static auto generate_pressures(
+                const auto &dual_stencils)
+            {
+                auto size{dual_stencils.size() - 1};
+                std::vector<RealType> vals(size);
+
+                for (auto id{size - size}; id < size; ++id)
+                    vals[id] = (30/*atm*/)*1e5/*Pa*/;
                 return vals;
             }
 
@@ -162,6 +173,32 @@ namespace GPN
                 for (auto id{size - size}; id < size; ++id)
                     vals[id] = periodic_data[id % periodic_data.size()];
                 return vals;
+            }
+
+            static auto generate_geotherma_nodes(
+                const RealType begin,
+                const RealType end,
+                const ptrdiff_t amount)
+            {
+                std::vector<RealType> out(amount);
+                const RealType step{(end - begin) / (amount - 1ll)};
+
+                for (auto id{0ll}; id < amount; ++id)
+                    out[id] = begin + id * step;
+                return out;
+            }
+
+            static auto generate_geotherma_vals_linear(
+                const auto &nodes,
+                const RealType ref_node,
+                const RealType ref_val,
+                const RealType slope)
+            {
+                std::vector<RealType> out(nodes.size());
+
+                for (auto id{0ull}; id < nodes.size(); ++id)
+                    out[id] = ref_val + slope * (nodes[id] - ref_node);
+                return out;
             }
         };
     }

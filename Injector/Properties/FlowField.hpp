@@ -1,6 +1,8 @@
 #pragma once
 #include <numeric>
 #include <algorithm>
+#include <cmath>
+
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Properties/Logs.hpp>
@@ -30,6 +32,7 @@ namespace GPN
                 RealType well_rate,
                 const Grid_t &grid1D)
             {
+                assert(std::isnormal(well_rate));
                 const auto temp{make_rates(well_rate, grid1D)};
                 return ZFlowRateLog{temp};
             }
@@ -40,6 +43,8 @@ namespace GPN
                 RealType well_rate,
                 const Grid_t &grid1D)
             {
+                assert(std::isnormal(well_rate));
+
                 StepPropertyContainer verticle_rates_vals{
                     StepPropertyContainer::Zero(grid1D.mesh_size())};
                 verticle_rates_vals(0ll) = well_rate;
@@ -110,27 +115,27 @@ namespace GPN
 
         struct FlowFactory
         {
-            template <typename Well_t, typename Grid2D_t>
-            static auto create(
-                RealType well_rate,
+            template <typename Record_t, typename Well_t, typename Grid2D_t>
+            static auto create_from_well(
+                const Record_t& history_record,
                 const Well_t &well,
                 const Grid2D_t &grid2D)
             {
 #pragma region AXES2-AS-FACENORMAL
-                const auto rfp{Logs::RFPFactory::create(well_rate, well)};
+                const auto rfp{Logs::RFPFactory::create_from_well(history_record, well)};
                 auto axes2_as_face_normal{FlowFieldFactory::flow_in_dir2(rfp, grid2D)};
                 axes2_as_face_normal.col(0ll) = 0.0;                     // boundary condition, zero flux at the axis of symmetry
-                axes2_as_face_normal.col(1ll) = well.get_WFP(well_rate); // flow at the tube radius
+                axes2_as_face_normal.col(1ll) = well.get_WFP(history_record); // flow at the tube radius
 #pragma endregion
 #pragma region AXES1-AS-FACENORMAL
-                const auto wfp{Logs::WFPFactory::create(well_rate, well)};
+                const auto wfp{Logs::WFPFactory::create_from_well(history_record, well)};
                 // ref to log vals as Eigen::ArrayX container
                 const auto &wfp_vals{wfp.log_vals};
                 // cumsum of rfp flow rates
                 LogValuesContainer cum_sum{LogValuesContainer::Zero(grid2D.first_coord.dual_size())};
                 std::partial_sum(wfp_vals.cbegin(), wfp_vals.cend(), cum_sum.begin() + 1ll, std::plus<RealType>());
                 // leftover flowrate along the well
-                const LogValuesContainer z_flow{well_rate - cum_sum};
+                const LogValuesContainer z_flow{history_record.rate - cum_sum};
 
                 FaceValuesContainer axes1_as_face_normal{
                     FaceValuesContainer::Zero(
@@ -149,14 +154,15 @@ namespace GPN
                     axes2_as_face_normal};
             }
 
-            template <typename Grid2D_t>
+            template <typename Record_t, typename Grid2D_t>
             static auto create(
                 const Logs::StepPropertyGrid &axes1_value,
-                RealType well_rate,
+                const Record_t& history_record,
                 const Grid2D_t &grid2D)
             {
+                assert(std::isnormal(history_record.rate));
                 return ReservoirFlowField{
-                    Logs::ZFlowRateLogFactory::create(well_rate, grid2D.second_coord),
+                    Logs::ZFlowRateLogFactory::create(history_record.rate, grid2D.second_coord),
                     axes1_value,
                     grid2D};
             }

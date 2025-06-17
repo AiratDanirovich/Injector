@@ -39,7 +39,7 @@ namespace GPN
                           adata.end())}
             {
             }
-
+ 
             StepProperty(
                 const std::vector<RealType> &adata)
                 : data(adata.size())
@@ -48,7 +48,7 @@ namespace GPN
                 assert(data.size() > (decltype(data.size()))0);
                 for (auto idx{adata.cbegin()}; idx != adata.cend(); ++idx)
                     // all properties are non-negative
-                    assert(*idx >= 0.0);
+                    assert((*idx >= 0.0) || std::isnan(*idx));
 #pragma endregion
                 std::copy(adata.cbegin(), adata.cend(), data.begin());
             }
@@ -220,7 +220,7 @@ namespace GPN
         {
             using IndicatorProperty::IndicatorProperty;
         };
-        
+
         /// @brief Indicator of perforated cells,
         /// so the liquid can leave the tube-column,
         /// to further flow along the cement
@@ -263,7 +263,7 @@ namespace GPN
                         ((is_permeable(id) == 0.0) && (rfp(id) == 0.0)));
             }
         };
-        
+
         struct WFP
             : public StepPropertyGrid,
               private AssertNonNegative
@@ -319,7 +319,21 @@ namespace GPN
                 }
             }
         };
-        struct SkinFactor : public StepPropertyGrid
+
+        struct Geotherma
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            Geotherma(
+                const StepPropertyGrid &temperature)
+                : StepPropertyGrid{temperature},
+                  AssertNonNegative{temperature}
+            {
+            }
+        };
+
+        struct SkinFactor
+            : public StepPropertyGrid
         {
             SkinFactor(
                 const StepPropertyGrid &skin,
