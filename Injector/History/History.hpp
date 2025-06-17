@@ -1,6 +1,7 @@
 #pragma once
 #include <numeric>
 #include <limits>
+#include <cassert>
 
 #include <Injector/Properties/Logs.hpp>
 #include <Injector/History/TemporalGrid.hpp>
@@ -105,7 +106,7 @@ namespace GPN
                     assert(rates.log_vals(i) > 0.0);
                 }
                 else
-                    assert(false, "Wrong injector regime!");
+                    assert(false && "Wrong injector regime!");
             }
 
             std::partial_sum(
