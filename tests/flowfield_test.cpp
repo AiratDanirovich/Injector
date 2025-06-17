@@ -1,4 +1,5 @@
 #include <iostream>
+#include <limits>
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/GridsFactory.hpp>
@@ -51,7 +52,12 @@ const RealType well_rate{1.0};
 const RealType rMax{300.0}; // m
 /*well*/
 const RealType sandface_radius{0.3}; // m
-const RealType tube_radius{0.1}; // m
+const RealType tube_radius{0.1};     // m
+
+struct Record
+{
+    const RealType rate, pressure;
+} history_record{well_rate, std::numeric_limits<double>::quiet_NaN()};
 
 TEST_CASE("RFP_reservoir")
 {
@@ -97,8 +103,8 @@ TEST_CASE("RFP_reservoir")
 
     {
         const auto rfp{
-            RFPFactory::create(
-                well.get_RFP(well_rate), is_permeable)};
+            RFPFactory::create_from_container(
+                well.get_RFP(history_record), is_permeable)};
 
         for (auto i{0ll}; i < rfp.size(); ++i)
         {
@@ -112,7 +118,7 @@ TEST_CASE("RFP_reservoir")
 
         FaceProperties::ReservoirFlowField flow_field{
             FaceProperties::FlowFactory::create(
-                rfp, well_rate,
+                rfp, history_record,
                 *grid2D)};
 
         // check the first column of verticle flow
@@ -143,8 +149,8 @@ TEST_CASE("RFP_reservoir")
 
     {
         FaceProperties::ReservoirFlowField flow_field{
-            FaceProperties::FlowFactory::create(
-                well_rate, well,
+            FaceProperties::FlowFactory::create_from_well(
+                history_record, well,
                 *grid2D)};
 
         cout << "horizontl flow:\n"

@@ -46,7 +46,7 @@ const RealType rate{1.0};
 const RealType rMax{300.0}; // m
 /*well*/
 const RealType sandface_radius{0.3}; // m
-const RealType tube_radius{0.1}; // m
+const RealType tube_radius{0.1};     // m
 
 TEST_CASE("Well_KH_Test")
 {
@@ -80,8 +80,13 @@ TEST_CASE("Well_KH_Test")
     const Well_KH well{
         water, is_permeable, is_perforated, permeability, well_holes, rMax};
 
-    const auto rfp = RFPFactory::create(well.get_RFP(rate), is_permeable);
-    const auto wfp = WFPFactory::create(well.get_WFP(rate), is_perforated);
+    struct Record
+    {
+        const RealType rate, pressure;
+    } history_record{rate, std::numeric_limits<double>::quiet_NaN()};
+
+    const auto rfp = RFPFactory::create_from_container(well.get_RFP(history_record), is_permeable);
+    const auto wfp = WFPFactory::create_from_container(well.get_WFP(history_record), is_perforated);
 
     cout << "thickness profile:     \n"
          << transfer_to_eigen(grid_thickness).transpose();

@@ -180,9 +180,24 @@ namespace GPN
         //                      ((permeability * cell_volumes * is_permeable.log_vals).sum() / std::log(R_ext / r_col));
         // }
 
+        template <typename HistoryRecord_t>
+        auto get_RFP(const HistoryRecord_t &history_record) const
+        {
+            return get_RFP(history_record.rate, history_record.pressure);
+        }
+        template <typename HistoryRecord_t>
+        auto get_WFP(const HistoryRecord_t &history_record) const
+        {
+            return get_WFP(history_record.rate, history_record.pressure);
+        }
+
+        const ptrdiff_t top_collector_cell_id{-1ll};
+        const ptrdiff_t ghost_layer_cell_id{-1ll};
+
+    protected:
         StepPropertyContainer get_RFP(
             RealType rate,
-            RealType pressure = std::numeric_limits<double>::quiet_NaN()) const override
+            RealType pressure) const override
         {
             if (std::isnan(rate))
             { // define rate from pressure
@@ -192,7 +207,7 @@ namespace GPN
             else if (std::isnan(pressure))
             { // define pressure from rate
                 assert(!std::isnan(rate));
-                pressure = rate/(2 * std::numbers::pi / fluid.viscosity / log_dist * weights_sum);
+                pressure = rate / (2 * std::numbers::pi / fluid.viscosity / log_dist * weights_sum);
             }
             else
                 assert("Incorrect injector regime!");
@@ -209,7 +224,7 @@ namespace GPN
 
         StepPropertyContainer get_WFP(
             RealType rate,
-            RealType pressure = std::numeric_limits<double>::quiet_NaN()) const
+            RealType pressure) const
         {
             if (std::isnan(rate))
             { // define rate from pressure
@@ -219,7 +234,7 @@ namespace GPN
             else if (std::isnan(pressure))
             { // define pressure from rate
                 assert(!std::isnan(rate));
-                pressure = rate/(2 * std::numbers::pi / fluid.viscosity / log_dist * weights_sum);
+                pressure = rate / (2 * std::numbers::pi / fluid.viscosity / log_dist * weights_sum);
             }
             else
                 assert("Incorrect injector regime!");
@@ -230,10 +245,6 @@ namespace GPN
             return ((rate / weights_sum) * WFP_weights).eval();
         }
 
-        const ptrdiff_t top_collector_cell_id{-1ll};
-        const ptrdiff_t ghost_layer_cell_id{-1ll};
-
-    protected:
         const StepPropertyContainer RFP_weights;
         StepPropertyContainer WFP_weights;
         RealType weights_sum;
