@@ -42,11 +42,13 @@ namespace GPN
                 { // the filed is only updated if a new history interval is set
                     pos = pos_new;
                     assert(pos >= 0ll);
+                    // this method only works at FixedRate injection
+                    assert(history.regimes[pos] == InjectorRegimes::FixedRate);
 
                     heat_flow_field =
                         std::make_shared<FaceProperties::ReservoirFlowField>(
-                            FaceProperties::FlowFactory::create(
-                                history.rates(pos), well, *grid2D));
+                            FaceProperties::FlowFactory::create_from_well(
+                                history.get_record(pos), well, *grid2D));
 
                     FaceProperties::multiply(*heat_flow_field, fluid.volumetric_heat_capacity);
 
@@ -70,7 +72,7 @@ namespace GPN
             }
             const auto get_rate() const
             {
-                return inlet_temperature;
+                return rate;
             }
 
         protected:
@@ -97,7 +99,7 @@ namespace GPN
                 : heat_flow_field{
                       std::make_shared<FaceProperties::ReservoirFlowField>(
                           FaceProperties::FlowFactory::horizontal_flow(
-                            well_rate, is_permeable, *grid2D))}
+                              well_rate, is_permeable, *grid2D))}
             {
                 FaceProperties::multiply(*heat_flow_field, fluid.volumetric_heat_capacity);
             }

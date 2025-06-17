@@ -330,7 +330,7 @@ namespace GPN
         struct RFPFactory
         {
             template <typename Container_t, typename IsPermeable_t>
-            static auto create(
+            static auto create_from_container(
                 const Container_t &rfp,
                 const IsPermeable_t &is_permeable)
             {
@@ -339,13 +339,13 @@ namespace GPN
                     is_permeable};
             }
 
-            template <typename Well_t>
-            static auto create(
-                RealType well_rate,
+            template <typename Record_t, typename Well_t>
+            static auto create_from_well(
+                const Record_t& history_record,
                 const Well_t &well)
             {
                 return RFP{
-                    StepPropertyGrid{well.get_RFP(well_rate), well.is_permeable.grid},
+                    StepPropertyGrid{well.get_RFP(history_record), well.is_permeable.grid},
                     well.is_permeable};
             }
         };
@@ -353,7 +353,7 @@ namespace GPN
         struct WFPFactory
         {
             template <typename Container_t, typename IsPerforated_t>
-            static auto create(
+            static auto create_from_container(
                 const Container_t &wfp,
                 const IsPerforated_t &is_perforated)
             {
@@ -362,13 +362,13 @@ namespace GPN
                     is_perforated};
             }
 
-            template <typename Well_t>
-            static auto create(
-                RealType well_rate,
+            template <typename Record_t, typename Well_t>
+            static auto create_from_well(
+                const Record_t history_record,
                 const Well_t &well)
             {
                 return WFP{
-                    StepPropertyGrid{well.get_WFP(well_rate), well.is_perforated.grid},
+                    StepPropertyGrid{well.get_WFP(history_record), well.is_perforated.grid},
                     well.is_perforated};
             }
         };
