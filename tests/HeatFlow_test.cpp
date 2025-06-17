@@ -67,7 +67,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
   using ConvectionFieldFactory_t =
       GPN::FaceProperties::RatesFactory<
-          Grid2D_t, Well_KH, PhaseProperties>;
+          Grid2D_t, Well_KH_FixedRate, PhaseProperties>;
   FunctorBC(
       const RealType inlet_temp,
       const Logs::IsPermeable &is_permeable,
@@ -259,7 +259,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           SpecificHeatCapacity{capacity},
           GPN::HeatConductivity{heat_conductivity})};
   // well
-  const Well_KH well{
+  const Well_KH_FixedRate well{
       water, core_data.is_permeable, core_data.is_perforated, core_data.permeability};
 
   const Logs::Rocks::HeatLogs heat_logs{

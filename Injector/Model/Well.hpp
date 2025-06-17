@@ -142,9 +142,9 @@ namespace GPN
         const Logs::IsPerforated is_perforated;
     };
 
-    struct Well_KH : public IWellDesign
+    struct Well_KH_FixedRate : public IWellDesign
     {
-        Well_KH(
+        Well_KH_FixedRate(
             //    const RealType tube_depth,
             const PhaseProperties &fluid,
             const Logs::IsPermeable &is_permeable,

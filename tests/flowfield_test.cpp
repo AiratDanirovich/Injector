@@ -85,7 +85,7 @@ TEST_CASE("RFP_reservoir")
 
     const auto water{FluidFactory::create_water(1.0, 1.0)};
 
-    const Well_KH well{
+    const Well_KH_FixedRate well{
         water, is_permeable, is_perforated, permeability};
 
     {

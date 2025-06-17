@@ -42,6 +42,8 @@ namespace GPN
                 { // the filed is only updated if a new history interval is set
                     pos = pos_new;
                     assert(pos >= 0ll);
+                    // this method only works at FixedRate injection
+                    assert(history.regimes[pos] == InjectorRegimes::FixedRate);
 
                     heat_flow_field =
                         std::make_shared<FaceProperties::ReservoirFlowField>(
