@@ -13,14 +13,14 @@ namespace GPN
         /// @brief The rate of fluid injection
         struct InjectorRate
             : public StepPropertyGrid //,
-              // so far it is assumed that the rates are positive.
-              // Injector
-            //  private AssertNonNegative
+                                      // so far it is assumed that the rates are positive.
+                                      // Injector
+        //  private AssertNonNegative
         {
             InjectorRate(
                 const StepPropertyGrid &rates)
-                : StepPropertyGrid{rates}//,
-                //  AssertNonNegative{rates}
+                : StepPropertyGrid{rates} //,
+            //  AssertNonNegative{rates}
             {
             }
         };
@@ -54,14 +54,14 @@ namespace GPN
 
         /// @brief Surface at the to of well, P_{top}
         struct SurfacePressure
-            : public StepPropertyGrid//,
-            //  private AssertNonNegative
+            : public StepPropertyGrid //,
+        //  private AssertNonNegative
         {
             SurfacePressure(
                 const StepPropertyGrid &pressure)
                 : StepPropertyGrid{pressure}
-                //,
-                //  AssertNonNegative{pressure}
+            //,
+            //  AssertNonNegative{pressure}
             {
             }
         };
@@ -78,6 +78,29 @@ namespace GPN
 
     struct History
     {
+        struct SomeProperty
+        {
+            operator RealType() const { return value; }
+            RealType value;
+        };
+        struct Pressure : public SomeProperty
+        {
+        };
+        struct Rate : public SomeProperty
+        {
+        };
+
+        struct Record
+        {
+            Record(Pressure pressure, Rate rate, const InjectorRegimes::Type type)
+                : pressure{pressure}, rate{rate}, type{type}
+            {
+            }
+            const RealType rate;
+            const RealType pressure;
+            const InjectorRegimes::Type type;
+        };
+
         History(const Logs::InjectorRate &rates,
                 const Logs::SurfacePressure &pressure,
                 const Logs::InjectorTemperature &temps,
@@ -114,6 +137,11 @@ namespace GPN
                 time_steps.cbegin(),
                 time_steps.cend(),
                 time_moments.begin() + 1ull);
+        }
+
+        const auto get_record(auto idx) const
+        {
+            return Record{Pressure{pressure(idx)}, Rate{rates(idx)}, regimes[idx]};
         }
 
         const Logs::InjectorRate rates;
