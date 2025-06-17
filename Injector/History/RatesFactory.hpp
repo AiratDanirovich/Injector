@@ -72,7 +72,7 @@ namespace GPN
             }
             const auto get_rate() const
             {
-                return inlet_temperature;
+                return rate;
             }
 
         protected:
