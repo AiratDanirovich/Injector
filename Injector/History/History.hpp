@@ -87,6 +87,27 @@ namespace GPN
               time_moments(time_steps.size() + 1ll, 0.0),
               regimes{regimes}
         {
+            assert(rates.size() == time_steps.size());
+            assert(pressure.size() == time_steps.size());
+            assert(temps.size() == time_steps.size());
+            assert(regimes.size() == time_steps.size());
+
+            for (auto i{0ll}; i < rates.size(); ++i)
+            {
+                if (regimes[i] == InjectorRegimes::FixedPressure)
+                {
+                    assert(std::isnan(rates.log_vals(i)));
+                    assert(pressure.log_vals(i) > 0.0);
+                }
+                else if (regimes[i] == InjectorRegimes::FixedRate)
+                {
+                    assert(std::isnan(pressure.log_vals(i)));
+                    assert(rates.log_vals(i) > 0.0);
+                }
+                else
+                    assert(false, "Wrong injector regime!");
+            }
+
             std::partial_sum(
                 time_steps.cbegin(),
                 time_steps.cend(),
