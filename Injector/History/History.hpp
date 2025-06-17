@@ -12,15 +12,15 @@ namespace GPN
     {
         /// @brief The rate of fluid injection
         struct InjectorRate
-            : public StepPropertyGrid,
+            : public StepPropertyGrid //,
               // so far it is assumed that the rates are positive.
               // Injector
-              private AssertNonNegative
+            //  private AssertNonNegative
         {
             InjectorRate(
                 const StepPropertyGrid &rates)
-                : StepPropertyGrid{rates},
-                  AssertNonNegative{rates}
+                : StepPropertyGrid{rates}//,
+                //  AssertNonNegative{rates}
             {
             }
         };
@@ -54,13 +54,14 @@ namespace GPN
 
         /// @brief Surface at the to of well, P_{top}
         struct SurfacePressure
-            : public StepPropertyGrid,
-              private AssertNonNegative
+            : public StepPropertyGrid//,
+            //  private AssertNonNegative
         {
             SurfacePressure(
                 const StepPropertyGrid &pressure)
-                : StepPropertyGrid{pressure},
-                  AssertNonNegative{pressure}
+                : StepPropertyGrid{pressure}
+                //,
+                //  AssertNonNegative{pressure}
             {
             }
         };

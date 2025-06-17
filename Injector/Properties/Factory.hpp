@@ -137,7 +137,7 @@ namespace GPN
                 std::vector<RealType> vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
-                    vals[id] = (id % 2 == 1) ? 50.0 : 0.0;
+                    vals[id] = (id % 2 == 1) ? 50.0 : 10.0;
                 return vals;
             }
             

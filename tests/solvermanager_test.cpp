@@ -236,7 +236,7 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
   const FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
   // history
-  const std::vector<RealType> rates(time_intervals.size(), 0.0);
+  const std::vector<RealType> rates(time_intervals.size(), 1.0);
   const std::vector<RealType> inlet_temperature_set(time_intervals.size(), 0.0);
   const History history{
       HistoryFactory::createFixedRate(time_intervals, rates, inlet_temperature_set)};

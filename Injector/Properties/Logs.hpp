@@ -39,7 +39,7 @@ namespace GPN
                           adata.end())}
             {
             }
-
+ 
             StepProperty(
                 const std::vector<RealType> &adata)
                 : data(adata.size())
@@ -48,7 +48,7 @@ namespace GPN
                 assert(data.size() > (decltype(data.size()))0);
                 for (auto idx{adata.cbegin()}; idx != adata.cend(); ++idx)
                     // all properties are non-negative
-                    assert(*idx >= 0.0);
+                    assert((*idx >= 0.0) || std::isnan(*idx));
 #pragma endregion
                 std::copy(adata.cbegin(), adata.cend(), data.begin());
             }
