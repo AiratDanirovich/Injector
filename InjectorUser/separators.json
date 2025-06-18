@@ -1,4 +1,3 @@
 {
-    "decimal_sep": ", ",
-    "coeff_sep": ", "
+    "coeff_sep": "; "
 }

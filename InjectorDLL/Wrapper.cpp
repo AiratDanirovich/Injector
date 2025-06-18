@@ -260,68 +260,79 @@ Wrapper::Wrapper(
         fs::create_directory("output"); // create src folder
     }
 
-    const std::string sep{", "};
-    const Eigen::IOFormat commaFmt(Eigen::StreamPrecision, Eigen::DontAlignCols, sep, sep, "", "", "", "");
-    for (auto z{0ll}, layer_id{0ll}; z < grid2D->first_coord.mesh_nodes.size(); ++z)
+    try
     {
-        if (core_data.is_permeable(z) == 1.0)
-        {
-            ofstream f{std::string{"output/layer_"} + std::to_string(layer_id) + std::string{".csv"}};
+        ifstream f("separators.json");
+        json data = json::parse(f);
 
-            f << sep << sep << grid2D->second_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
+        const std::string sep = data["coeff_sep"];
+
+        const Eigen::IOFormat commaFmt(Eigen::StreamPrecision, Eigen::DontAlignCols, sep, sep, "", "", "", "");
+        for (auto z{0ll}, layer_id{0ll}; z < grid2D->first_coord.mesh_nodes.size(); ++z)
+        {
+            if (core_data.is_permeable(z) == 1.0)
+            {
+                ofstream f{std::string{"output/layer_"} + std::to_string(layer_id) + std::string{".csv"}};
+
+                f << sep << sep << grid2D->second_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
+                for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
+                {
+                    f << t << sep << times[t] << sep << states[t].cur_state.row(z).format(commaFmt) << '\n';
+                }
+
+                f.close();
+                ++layer_id;
+            }
+        }
+
+        {
+            ofstream f{std::string{"output/well_temperature.csv"}};
+            f << sep << sep << grid2D->first_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
             for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
             {
-                f << t << sep << times[t] << sep << states[t].cur_state.row(z).format(commaFmt) << '\n';
+                f << t << sep << times[t] << sep << states[t].cur_state.col(0ll).format(commaFmt) << '\n';
             }
-
             f.close();
-            ++layer_id;
         }
-    }
 
-    {
-        ofstream f{std::string{"output/well_temperature.csv"}};
-        f << sep << sep << grid2D->first_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
-        for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
         {
-            f << t << sep << times[t] << sep << states[t].cur_state.col(0ll).format(commaFmt) << '\n';
+            ofstream f{std::string{"output/cement_temperature.csv"}};
+            f << sep << sep << grid2D->first_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
+            for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
+            {
+                f << t << sep << times[t] << sep << states[t].cur_state.col(1ll).format(commaFmt) << '\n';
+            }
+            f.close();
         }
-        f.close();
-    }
 
-    {
-        ofstream f{std::string{"output/cement_temperature.csv"}};
-        f << sep << sep << grid2D->first_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
-        for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
+        // print grids
         {
-            f << t << sep << times[t] << sep << states[t].cur_state.col(1ll).format(commaFmt) << '\n';
+            ofstream f{std::string{"output/z_grid.csv"}};
+            f << grid2D->first_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
+            f.close();
         }
-        f.close();
-    }
+        {
+            ofstream f{std::string{"output/r_grid.csv"}};
+            f << grid2D->second_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
+            f.close();
+        }
+        {
+            ofstream f{std::string{"output/geotherma.csv"}};
+            f << grid2D->first_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
+            f << initial_state.cur_state.col(0ll).transpose().format(commaFmt) << '\n';
+            f.close();
+        }
 
-    // print grids
-    {
-        ofstream f{std::string{"output/z_grid.csv"}};
-        f << grid2D->first_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
-        f.close();
+        {
+            ofstream f{std::string{"output/data.txt"}};
+            f << "ghost layer height:   " << grid.mesh_nodes(well.ghost_layer_cell_id) << " m" << endl;
+            f << "top collector height: " << grid.mesh_nodes(well.top_collector_cell_id) << " m" << endl;
+            f.close();
+        }
     }
+    catch (const std::exception &e)
     {
-        ofstream f{std::string{"output/r_grid.csv"}};
-        f << grid2D->second_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
-        f.close();
-    }
-    {
-        ofstream f{std::string{"output/geotherma.csv"}};
-        f << grid2D->first_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
-        f << initial_state.cur_state.col(0ll).transpose().format(commaFmt) << '\n';
-        f.close();
-    }
-
-    {
-        ofstream f{std::string{"output/data.txt"}};
-        f << "ghost layer height:   " << grid.mesh_nodes(well.ghost_layer_cell_id) << " m" << endl;
-        f << "top collector height: " << grid.mesh_nodes(well.top_collector_cell_id) << " m" << endl;
-        f.close();
+        std::cerr << e.what() << '\n';
     }
 }
 
