@@ -30,7 +30,11 @@
 
 #include <Eigen/Core>
 
+#include <nlohmann/json.hpp>
+
 using namespace std;
+
+using json = nlohmann::json;
 
 using namespace GPN;
 using namespace GPN::Phases;
