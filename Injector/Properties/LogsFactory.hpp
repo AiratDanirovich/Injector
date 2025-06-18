@@ -115,6 +115,9 @@ namespace GPN
                 }
                 assert(predicate <= 1ull);
 
+                // at least one perforated layer must exist
+                assert(std::any_of(is_perforated.cbegin(), is_perforated.cend(), [](const RealType v){return v == 1.0;}));
+
                 return IsPerforated{
                     StepPropertyGrid{
                         StepProperty{
