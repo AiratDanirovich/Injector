@@ -70,7 +70,8 @@ install(TARGETS InjectorGPNDLL
     # message(PROJECT_BINARY_DIR=${PROJECT_BINARY_DIR})
 install(FILES ${PROJECT_SOURCE_DIR}/tests/test_data/injector_launch.json
     DESTINATION ${PROJECT_BINARY_DIR}/bin)
-    
+install(FILES ${PROJECT_SOURCE_DIR}/InjectorUser/separators.json
+    DESTINATION ${PROJECT_BINARY_DIR}/bin) 
     
 # install(FILES ${PROJECT_SOURCE_DIR}/test_data/injector_launch.json
 #     DESTINATION $<TARGET_FILE_DIR:InjectorUser>)

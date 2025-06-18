@@ -31,6 +31,7 @@ set(HEADER_FILES
 # Create the shared library (DLL)
 add_library(InjectorGPNDLL SHARED ${HEADER_FILES}
     ${SOURCE_FILES})
+target_link_libraries(InjectorGPNDLL PUBLIC nlohmann_json::nlohmann_json)
 set_target_properties(InjectorGPNDLL PROPERTIES
     VERSION ${PROJECT_VERSION}
     PUBLIC_HEADER InjectorDLL/Wrapper.h
