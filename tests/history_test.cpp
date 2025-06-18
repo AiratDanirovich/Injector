@@ -33,7 +33,7 @@ TEST_CASE("HistoryTest")
                 Logs::RawDataFactory::generate_rates(
                     time_moments),
                 time_grid}}};
-            
+
     const auto temps{
         InjectorRate{
             StepPropertyGrid{
@@ -41,18 +41,23 @@ TEST_CASE("HistoryTest")
                     time_moments),
                 time_grid}}};
 
-    const auto history{
-        History{rates, temps}};
+    const auto history_pressure{
+        HistoryFactory::createFixedPressure(
+            time_steps,
+            Logs::RawDataFactory::generate_pressures(
+                time_moments),
+            Logs::RawDataFactory::generate_temperatures(
+                time_moments))};
 
-    const auto history2{
-        HistoryFactory::create(
-            time_steps, 
+    const auto history_rate{
+        HistoryFactory::createFixedRate(
+            time_steps,
             Logs::RawDataFactory::generate_rates(
-                            time_moments), 
-                            Logs::RawDataFactory::generate_temperatures(
-            time_moments))};
+                time_moments),
+            Logs::RawDataFactory::generate_temperatures(
+                time_moments))};
 
-    const auto &grid{history.rates.grid};
+    const auto &grid{history_rate.rates.grid};
     for (auto id{0ll}; id < grid.dual_nodes.size(); ++id)
         CHECK(grid.dual_nodes(id) == grid.dual_stencils(id));
 }

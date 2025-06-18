@@ -3,6 +3,7 @@
 #include <vector>
 #include <algorithm>
 #include <numbers>
+#include <cmath>
 #include <cassert>
 
 #include <Eigen/Core>
@@ -136,24 +137,29 @@ namespace GPN
         {
         }
         using Grid_t = Logs::StepPropertyGrid::Grid_t;
-        virtual LogValuesContainer get_RFP(RealType rate) const = 0;
+        virtual LogValuesContainer get_RFP(RealType rate, RealType pressure) const = 0;
 
         const Logs::IsPermeable is_permeable;
         const Logs::IsPerforated is_perforated;
     };
 
-    struct Well_KH : public IWellDesign
+    struct Well_KH
+        : public IWellDesign
     {
         Well_KH(
             //    const RealType tube_depth,
             const PhaseProperties &fluid,
             const Logs::IsPermeable &is_permeable,
             const Logs::IsPerforated &is_perforated,
-            const StepPropertyContainer &permeability)
+            const StepPropertyContainer &permeability,
+            const WellHoles &holes,
+            const RealType Rext)
             : IWellDesign{is_permeable, is_perforated},
               RFP_weights{permeability * is_permeable.grid.dual_steps * (StepPropertyContainer)is_permeable},
               top_collector_cell_id{layer_id(is_perforated)},
-              ghost_layer_cell_id{layer_id(is_permeable)}
+              ghost_layer_cell_id{layer_id(is_permeable)},
+              fluid{fluid},
+              log_dist{std::log(Rext / holes.sandface_radius)}
         {
             assert(permeability.size() == is_permeable.grid.dual_steps.size());
             assert(is_permeable.size() == is_permeable.grid.dual_steps.size());
@@ -174,8 +180,40 @@ namespace GPN
         //                      ((permeability * cell_volumes * is_permeable.log_vals).sum() / std::log(R_ext / r_col));
         // }
 
-        StepPropertyContainer get_RFP(RealType rate) const override
+        template <typename HistoryRecord_t>
+        auto get_RFP(const HistoryRecord_t &history_record) const
         {
+            return get_RFP(history_record.rate, history_record.pressure);
+        }
+        template <typename HistoryRecord_t>
+        auto get_WFP(const HistoryRecord_t &history_record) const
+        {
+            return get_WFP(history_record.rate, history_record.pressure);
+        }
+
+        const ptrdiff_t top_collector_cell_id{-1ll};
+        const ptrdiff_t ghost_layer_cell_id{-1ll};
+
+    protected:
+        StepPropertyContainer get_RFP(
+            RealType rate,
+            RealType pressure) const override
+        {
+            if (std::isnan(rate))
+            { // define rate from pressure
+                assert(!std::isnan(pressure));
+                rate = 2 * std::numbers::pi / fluid.viscosity / log_dist * pressure * weights_sum;
+            }
+            else if (std::isnan(pressure))
+            { // define pressure from rate
+                assert(!std::isnan(rate));
+                pressure = rate / (2 * std::numbers::pi / fluid.viscosity / log_dist * weights_sum);
+            }
+            else
+                assert("Incorrect injector regime!");
+
+            assert(pressure > 0.0);
+            assert(rate > 0.0);
             return ((rate / weights_sum) * RFP_weights).eval();
             //  {
             //     Logs::StepPropertyGrid{
@@ -183,18 +221,34 @@ namespace GPN
             //         grid},
             //     is_permeable};
         }
-        StepPropertyContainer get_WFP(RealType rate) const
+
+        StepPropertyContainer get_WFP(
+            RealType rate,
+            RealType pressure) const
         {
+            if (std::isnan(rate))
+            { // define rate from pressure
+                assert(!std::isnan(pressure));
+                rate = 2 * std::numbers::pi / fluid.viscosity / log_dist * pressure * weights_sum;
+            }
+            else if (std::isnan(pressure))
+            { // define pressure from rate
+                assert(!std::isnan(rate));
+                pressure = rate / (2 * std::numbers::pi / fluid.viscosity / log_dist * weights_sum);
+            }
+            else
+                assert("Incorrect injector regime!");
+
+            assert(pressure > 0.0);
+            assert(rate > 0.0);
+
             return ((rate / weights_sum) * WFP_weights).eval();
         }
 
-        const ptrdiff_t top_collector_cell_id{-1ll};
-        const ptrdiff_t ghost_layer_cell_id{-1ll};
-
-    protected:
         const StepPropertyContainer RFP_weights;
         StepPropertyContainer WFP_weights;
         RealType weights_sum;
+        const PhaseProperties fluid;
 
     private:
         static ptrdiff_t layer_id(const auto &indicator)
@@ -202,85 +256,6 @@ namespace GPN
             const auto perforated_it = std::ranges::find(indicator.log_vals, 1.0);
             return std::distance(indicator.log_vals.cbegin(), perforated_it);
         }
+        const RealType log_dist;
     };
-
-    // struct Well : public IWellDesign
-    // {
-
-    //     template <typename IsPermeable_t, typename Permeability_t, typename ExternalPressure_t>
-    //     Well(
-    //         RealType R_ext,
-    //         RealType r_col,
-    //         RealType r_tube,
-    //         const PhaseProperties &fluid,
-    //         const Friction &friction,
-    //         const IsPermeable_t &is_permeable,
-    //         const Permeability_t &permeability,
-    //         const ExternalPressure_t &ext_pressure)
-    //         : R_ext{R_ext},
-    //           r_col{r_col},
-    //           r_tube{r_tube},
-    //           fluid{fluid},
-    //           friction{friction},
-    //           is_permeable{is_permeable},
-    //           permeability{permeability.log_vals},
-    //           ext_pressure{ext_pressure.log_vals},
-    //           mesh_nodes{is_permeable.grid.get_mesh_nodes()},
-    //           cell_volumes{is_permeable.grid.get_dual_steps()}
-    //     //      ,
-    //     //      grid{is_permeable.grid}
-    //     {
-    //     }
-
-    //     void set_P_top(RealType rate)
-    //     {
-    //         RealType factor{TwoPi / fluid.viscosity};
-    //         RealType P_top = (rate / factor - (permeability * cell_volumes * (fluid.density * Gravity::value() * mesh_nodes - ext_pressure) * is_permeable.log_vals).sum() / std::log(R_ext / r_col)) /
-    //                          ((permeability * cell_volumes * is_permeable.log_vals).sum() / std::log(R_ext / r_col));
-    //     }
-
-    //     Logs::RFP get_RFP(RealType rate, const Grid_t &grid) const override
-    //     {
-    //         const auto RFP_weights{(permeability * cell_volumes * is_permeable.log_vals).eval()};
-
-    //         return {
-    //             Logs::StepPropertyGrid{
-    //                 Logs::StepProperty{(RFP_weights * (rate / RFP_weights.sum())).eval()},
-    //                 grid},
-    //             is_permeable};
-    //     }
-
-    // protected:
-    //     const RealType R_ext, r_col, r_tube;
-    //     const PhaseProperties fluid;
-    //     const Logs::StepPropertyContainer
-    //         //    is_permeable,
-    //         permeability,
-    //         ext_pressure,
-    //         mesh_nodes,
-    //         cell_volumes;
-    //     const Logs::IsPermeable is_permeable;
-    //     //     const Grid_t &grid;
-    //     const Friction friction;
-
-    // private:
-    //     RealType TwoPi{2.0 * std::numbers::pi};
-    //     //     RealType P_top;
-    // };
-
-    // struct Well
-    // {
-    //     Well(
-
-    //         WellRadius sandface_radius,
-    //         const Permeability& permeability) noexcept
-    //     : sandface_radius{sandface_radius}
-    //     , permeability{permeability}
-    //     {}
-
-    // protected:
-    //     WellRadius sandface_radius;
-    //     Permeability permeability;
-    // };
-
 } // GPN
