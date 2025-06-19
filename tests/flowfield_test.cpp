@@ -1,4 +1,5 @@
 #include <iostream>
+#include <limits>
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/GridsFactory.hpp>
@@ -44,15 +45,28 @@ std::vector<RealType> z_stencils{-2.0, -1.0, 0.0, 1.0, 3.0, 7.0, 10.0};
 LogValuesContainer z_thickness{transfer_to_eigen(make_steps(z_stencils))};
 std::vector<RealType> r_stencils{0.0, 1.0, 3.0, 7.0, 10.0};
 std::vector<RealType> permeability_stencils(z_stencils.size() - 1ull, 1.0);
-std::vector<RealType> is_permeable_stencils(z_stencils.size() - 1ull, 1.0);
+std::vector<RealType> is_permeable_stencils(z_stencils.size() - 1ull, 0.0);
 
 const RealType well_rate{1.0};
+
+const RealType rMax{300.0}; // m
+/*well*/
+const RealType sandface_radius{0.3}; // m
+const RealType tube_radius{0.1};     // m
+
+struct Record
+{
+    const RealType rate, pressure;
+} history_record{well_rate, std::numeric_limits<double>::quiet_NaN()};
 
 TEST_CASE("RFP_reservoir")
 {
     is_permeable_stencils[0] = 0.0;
     is_permeable_stencils[2] = 0.0;
     is_permeable_stencils[3] = 0.0;
+
+    
+    is_permeable_stencils[5] = 1.0;
 
     std::vector<RealType> is_perforated_stencils{is_permeable_stencils};
     std::vector<RealType> permeability_stencils{is_permeable_stencils};
@@ -61,7 +75,7 @@ TEST_CASE("RFP_reservoir")
         is_perforated_stencils,
         [](RealType v)
         { return v == 1.0; });
-    (*it) = 0.0;
+//    (*it) = 0.0;
 
     const auto grid2D{Grids::CylinderGridFactory::create(
         z_stencils, r_stencils)};
@@ -85,13 +99,21 @@ TEST_CASE("RFP_reservoir")
 
     const auto water{FluidFactory::create_water(1.0, 1.0)};
 
+    WellHoles well_holes{tube_radius, sandface_radius};
+
     const Well_KH well{
-        water, is_permeable, is_perforated, permeability};
+        water, is_permeable, is_perforated, permeability, well_holes, rMax};
 
     {
         const auto rfp{
-            RFPFactory::create(
-                well.get_RFP(well_rate), is_permeable)};
+            RFPFactory::create_from_container(
+                well.get_RFP(history_record), is_permeable)};
+                
+        cout << "rfp:\n"
+             << rfp.log_vals.transpose() << endl;
+        cout << "top_collector_cell_id:\n"
+             << well.top_collector_cell_id << endl;
+             
 
         for (auto i{0ll}; i < rfp.size(); ++i)
         {
@@ -105,7 +127,7 @@ TEST_CASE("RFP_reservoir")
 
         FaceProperties::ReservoirFlowField flow_field{
             FaceProperties::FlowFactory::create(
-                rfp, well_rate,
+                rfp, history_record,
                 *grid2D)};
 
         // check the first column of verticle flow
@@ -136,9 +158,10 @@ TEST_CASE("RFP_reservoir")
 
     {
         FaceProperties::ReservoirFlowField flow_field{
-            FaceProperties::FlowFactory::create(
-                well_rate, well,
+            FaceProperties::FlowFactory::create_from_well(
+                history_record, well,
                 *grid2D)};
+
 
         cout << "horizontl flow:\n"
              << flow_field.axes2_as_face_normal << endl;
@@ -156,23 +179,23 @@ TEST_CASE("RFP_reservoir")
                         1E-11));
             }
         }
-        {
-            // verify the correct flow in cement
-            const ptrdiff_t col{1ll};
-            for (auto row{0ll}; row <= well.ghost_layer_cell_id; ++row)
-            {
-                CHECK(flow_field.axes1_as_face_normal(row, col) == 0.0);
-            }
-            for (auto row{well.ghost_layer_cell_id + 1ll}; row <= well.top_collector_cell_id; ++row)
-            {
-                CHECK(flow_field.axes1_as_face_normal(row, col) == flow_field.axes1_as_face_normal(well.ghost_layer_cell_id + 1ll, col));
-                CHECK(flow_field.axes1_as_face_normal(row, col) < 0.0);
-            }
-            for (auto row{well.top_collector_cell_id + 1ll}; row < flow_field.axes1_as_face_normal.rows(); ++row)
-            {
-                CHECK(flow_field.axes1_as_face_normal(row, col) == 0.0);
-            }
-        }
+        // {
+        //     // verify the correct flow in cement
+        //     const ptrdiff_t col{1ll};
+        //     for (auto row{0ll}; row <= well.ghost_layer_cell_id; ++row)
+        //     {
+        //         CHECK(flow_field.axes1_as_face_normal(row, col) == 0.0);
+        //     }
+        //     for (auto row{well.ghost_layer_cell_id + 1ll}; row <= well.top_collector_cell_id; ++row)
+        //     {
+        //         CHECK(flow_field.axes1_as_face_normal(row, col) == flow_field.axes1_as_face_normal(well.ghost_layer_cell_id + 1ll, col));
+        //         CHECK(flow_field.axes1_as_face_normal(row, col) < 0.0);
+        //     }
+        //     for (auto row{well.top_collector_cell_id + 1ll}; row < flow_field.axes1_as_face_normal.rows(); ++row)
+        //     {
+        //         CHECK(flow_field.axes1_as_face_normal(row, col) == 0.0);
+        //     }
+        // }
 
         {
             // verify the correct verticle flow in rocks

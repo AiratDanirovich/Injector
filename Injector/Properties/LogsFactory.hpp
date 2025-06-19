@@ -47,6 +47,44 @@ namespace GPN
             IsPermeable is_permeable;
         };
 
+        struct IsGhostLayerFactory
+        {
+            static IsGhostLayer create(
+                const Logs::IsPermeable &is_permeable,
+                const Logs::IsPerforated &is_perforated)
+            {
+                assert(is_perforated.size() == is_permeable.size());
+                for (auto i{0ll}; i < (ptrdiff_t)is_perforated.size(); ++i)
+                {
+                    assert(
+                        (is_perforated(i) == 0.0) ||
+                        (is_perforated(i) == 1.0));
+                    assert(
+                        (is_perforated(i) == 0.0) ||
+                        ((is_perforated(i) == 1.0) && (is_permeable(i) == 1.0)));
+                }
+
+                size_t predicate = 0ull;
+                for (auto i{0ll}; i < (ptrdiff_t)is_perforated.size(); ++i)
+                {
+                    if ((is_perforated(i) == 0.0) &&
+                        (is_permeable(i) == 1.0))
+                    {
+                        ++predicate;
+                    }
+                }
+                // assume one or none ghost layers
+                assert(predicate <= 1ull);
+
+                return IsGhostLayer{
+                    StepPropertyGrid{
+                        StepPropertyContainer{
+                            (is_permeable.log_vals - is_perforated.log_vals).eval()},
+                        is_permeable.grid}};
+            }
+
+        };
+
         struct IsPerforatedFactory
         {
             template <typename Grid_t>
@@ -75,7 +113,10 @@ namespace GPN
                         ++predicate;
                     }
                 }
-                assert(predicate == 1ull);
+                assert(predicate <= 1ull);
+
+                // at least one perforated layer must exist
+                assert(std::any_of(is_perforated.cbegin(), is_perforated.cend(), [](const RealType v){return v == 1.0;}));
 
                 return IsPerforated{
                     StepPropertyGrid{
@@ -330,7 +371,7 @@ namespace GPN
         struct RFPFactory
         {
             template <typename Container_t, typename IsPermeable_t>
-            static auto create(
+            static auto create_from_container(
                 const Container_t &rfp,
                 const IsPermeable_t &is_permeable)
             {
@@ -339,13 +380,13 @@ namespace GPN
                     is_permeable};
             }
 
-            template <typename Well_t>
-            static auto create(
-                RealType well_rate,
+            template <typename Record_t, typename Well_t>
+            static auto create_from_well(
+                const Record_t& history_record,
                 const Well_t &well)
             {
                 return RFP{
-                    StepPropertyGrid{well.get_RFP(well_rate), well.is_permeable.grid},
+                    StepPropertyGrid{well.get_RFP(history_record), well.is_permeable.grid},
                     well.is_permeable};
             }
         };
@@ -353,7 +394,7 @@ namespace GPN
         struct WFPFactory
         {
             template <typename Container_t, typename IsPerforated_t>
-            static auto create(
+            static auto create_from_container(
                 const Container_t &wfp,
                 const IsPerforated_t &is_perforated)
             {
@@ -362,13 +403,13 @@ namespace GPN
                     is_perforated};
             }
 
-            template <typename Well_t>
-            static auto create(
-                RealType well_rate,
+            template <typename Record_t, typename Well_t>
+            static auto create_from_well(
+                const Record_t history_record,
                 const Well_t &well)
             {
                 return WFP{
-                    StepPropertyGrid{well.get_WFP(well_rate), well.is_perforated.grid},
+                    StepPropertyGrid{well.get_WFP(history_record), well.is_perforated.grid},
                     well.is_perforated};
             }
         };

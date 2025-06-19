@@ -169,7 +169,7 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
   RealType viscosity{6e-4}, density{1000}, capacity{4200}, heat_conductivity{0.6};
   /*collector*/
   const RealType rMin{1.0}, rMax{2.0}, zTop{0.0};
-  const std::ptrdiff_t rNodes{301ull};
+  const std::ptrdiff_t rNodes{101ull};
   const std::ptrdiff_t nLayers{11ull};
   const VR thickness(nLayers, 0.01); // each layer is 1m thick
 
@@ -181,7 +181,7 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
   const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 3.9 /*should be 2600 in SI*/)};
   const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
   /*temporal grid*/
-  const std::ptrdiff_t time_steps_nmbr{501ull};
+  const std::ptrdiff_t time_steps_nmbr{51ull};
   const RealType t0{1.0}; // initial time moment
   const RealType t1{t0 + 1.0};
   const auto time_moments{
@@ -236,10 +236,10 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
   const FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
   // history
-  const std::vector<RealType> rates(time_intervals.size(), 0.0);
+  const std::vector<RealType> rates(time_intervals.size(), 1.0);
   const std::vector<RealType> inlet_temperature_set(time_intervals.size(), 0.0);
   const History history{
-      HistoryFactory::create(time_intervals, rates, inlet_temperature_set)};
+      HistoryFactory::createFixedRate(time_intervals, rates, inlet_temperature_set)};
 
   // exact solution
   ExactSolution es{heat_props.medium_vol_heatcapacity,

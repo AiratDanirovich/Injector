@@ -39,7 +39,7 @@ namespace GPN
                           adata.end())}
             {
             }
-
+ 
             StepProperty(
                 const std::vector<RealType> &adata)
                 : data(adata.size())
@@ -48,7 +48,7 @@ namespace GPN
                 assert(data.size() > (decltype(data.size()))0);
                 for (auto idx{adata.cbegin()}; idx != adata.cend(); ++idx)
                     // all properties are non-negative
-                    assert(*idx >= 0.0);
+                    assert((*idx >= 0.0) || std::isnan(*idx));
 #pragma endregion
                 std::copy(adata.cbegin(), adata.cend(), data.begin());
             }
@@ -225,6 +225,14 @@ namespace GPN
         /// so the liquid can leave the tube-column,
         /// to further flow along the cement
         struct IsPerforated : public IndicatorProperty
+        {
+            using IndicatorProperty::IndicatorProperty;
+        };
+        
+        /// @brief Indicator of perforated cells,
+        /// so the liquid can leave the tube-column,
+        /// to further flow along the cement
+        struct IsGhostLayer : public IndicatorProperty
         {
             using IndicatorProperty::IndicatorProperty;
         };
