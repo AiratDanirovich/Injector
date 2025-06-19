@@ -194,7 +194,9 @@ Wrapper::Wrapper(
             HeatConductivity{heat_conductivity_fluid})};
 
     const Well_KH well{
-        water, core_data.is_permeable, core_data.is_perforated, core_data.permeability};
+        water, core_data.is_permeable, 
+        core_data.is_perforated, core_data.permeability, 
+        well_holes, rMax};
 
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
@@ -213,7 +215,7 @@ Wrapper::Wrapper(
     const std::vector<RealType> rates(time_intervals.size(), well_rate);
     const std::vector<RealType> inlet_temperature_set(time_intervals.size(), inlet_temperature);
     const History history{
-        HistoryFactory::create(time_intervals, rates, inlet_temperature_set)};
+        HistoryFactory::createFixedRate(time_intervals, rates, inlet_temperature_set)};
     // rates field factory
     FaceProperties::RatesFactory rates_factory{
         grid2D, well, history, water};
@@ -325,7 +327,6 @@ Wrapper::Wrapper(
 
         {
             ofstream f{std::string{"output/data.txt"}};
-            f << "ghost layer height:   " << grid.mesh_nodes(well.ghost_layer_cell_id) << " m" << endl;
             f << "top collector height: " << grid.mesh_nodes(well.top_collector_cell_id) << " m" << endl;
             f.close();
         }
