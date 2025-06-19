@@ -11,6 +11,7 @@
 #include <Injector/Grids/Defines.h>
 #include <Injector/Model/Phases/PhaseProperties.hpp>
 #include <Injector/Properties/Logs.hpp>
+#include <Injector/Properties/LogsFactory.hpp>
 
 namespace GPN
 {
@@ -133,7 +134,8 @@ namespace GPN
             const Logs::IsPermeable &is_permeable,
             const Logs::IsPerforated &is_perforated)
             : is_permeable{is_permeable},
-              is_perforated{is_perforated}
+              is_perforated{is_perforated},
+              is_ghost{Logs::IsGhostLayerFactory::create(is_permeable, is_perforated)}
         {
         }
         using Grid_t = Logs::StepPropertyGrid::Grid_t;
@@ -141,6 +143,7 @@ namespace GPN
 
         const Logs::IsPermeable is_permeable;
         const Logs::IsPerforated is_perforated;
+        const Logs::IsGhostLayer is_ghost;
     };
 
     struct Well_KH
@@ -157,7 +160,6 @@ namespace GPN
             : IWellDesign{is_permeable, is_perforated},
               RFP_weights{permeability * is_permeable.grid.dual_steps * (StepPropertyContainer)is_permeable},
               top_collector_cell_id{layer_id(is_perforated)},
-              ghost_layer_cell_id{layer_id(is_permeable)},
               fluid{fluid},
               log_dist{std::log(Rext / holes.sandface_radius)}
         {
@@ -166,11 +168,10 @@ namespace GPN
             assert(is_perforated.size() == is_perforated.grid.dual_steps.size());
 
             weights_sum = RFP_weights.sum();
-            WFP_weights = RFP_weights;
             // the well rate is zero at the ghost layer
-            WFP_weights(ghost_layer_cell_id) = 0.0;
-            // the well rate is a sum of rates of ghost and top collector layers
-            WFP_weights(top_collector_cell_id) = RFP_weights(ghost_layer_cell_id) + RFP_weights(top_collector_cell_id);
+            WFP_weights = RFP_weights * (1.0 - is_ghost.log_vals);
+            // all ghost layer fluxes flow through the top collector layer
+            WFP_weights(top_collector_cell_id) = (RFP_weights * is_ghost.log_vals).sum() + RFP_weights(top_collector_cell_id);
         }
 
         // void set_P_top(RealType rate)
@@ -192,7 +193,6 @@ namespace GPN
         }
 
         const ptrdiff_t top_collector_cell_id{-1ll};
-        const ptrdiff_t ghost_layer_cell_id{-1ll};
 
     protected:
         StepPropertyContainer get_RFP(

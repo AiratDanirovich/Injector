@@ -149,7 +149,7 @@ const VR heatconductivity_stencils(nLayers, 3.9);
 const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 3.9 /*should be 2600 in SI*/)};
 const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
 /*temporal grid*/
-const std::ptrdiff_t time_steps_nmbr{501ull};
+const std::ptrdiff_t time_steps_nmbr{51ull};
 const RealType t0{1.0}; // initial time moment
 const RealType t1{t0 + 1.0};
 const RealType time_step{(t1 - t0) / time_steps_nmbr};
