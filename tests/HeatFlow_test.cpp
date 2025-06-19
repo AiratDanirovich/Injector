@@ -303,7 +303,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const std::vector<RealType> time_steps{generate_steps(t_stencils)};
   const std::vector<RealType> rates(time_steps.size(), well_rate);
   const std::vector<RealType> inlet_temperature_set(
-    Logs::RawDataFactory::generate_temperatures_periodic(t_stencils, inlet_temperature_array));
+      Logs::RawDataFactory::generate_temperatures_periodic(t_stencils, inlet_temperature_array));
   const History history{
       HistoryFactory::createFixedRate(time_steps, rates, inlet_temperature_set)};
   // rates field factory
@@ -426,7 +426,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         water.volumetric_heat_capacity * (history.temps(t - 1ll) /*- initial_temperature*/);
 
     RealType rel_tol = std::abs(2.0 * (cur_heat_incr - cum_inlet_heat) / (cur_heat_incr + cum_inlet_heat));
-//    CHECK(rel_tol < 0.05);
+    //    CHECK(rel_tol < 0.05);
   }
 #pragma endregion
   {

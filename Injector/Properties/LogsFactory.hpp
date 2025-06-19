@@ -47,6 +47,44 @@ namespace GPN
             IsPermeable is_permeable;
         };
 
+        struct IsGhostLayerFactory
+        {
+            static IsGhostLayer create(
+                const Logs::IsPermeable &is_permeable,
+                const Logs::IsPerforated &is_perforated)
+            {
+                assert(is_perforated.size() == is_permeable.size());
+                for (auto i{0ll}; i < (ptrdiff_t)is_perforated.size(); ++i)
+                {
+                    assert(
+                        (is_perforated(i) == 0.0) ||
+                        (is_perforated(i) == 1.0));
+                    assert(
+                        (is_perforated(i) == 0.0) ||
+                        ((is_perforated(i) == 1.0) && (is_permeable(i) == 1.0)));
+                }
+
+                size_t predicate = 0ull;
+                for (auto i{0ll}; i < (ptrdiff_t)is_perforated.size(); ++i)
+                {
+                    if ((is_perforated(i) == 0.0) &&
+                        (is_permeable(i) == 1.0))
+                    {
+                        ++predicate;
+                    }
+                }
+                // assume one or none ghost layers
+                assert(predicate <= 1ull);
+
+                return IsGhostLayer{
+                    StepPropertyGrid{
+                        StepPropertyContainer{
+                            (is_permeable.log_vals - is_perforated.log_vals).eval()},
+                        is_permeable.grid}};
+            }
+
+        };
+
         struct IsPerforatedFactory
         {
             template <typename Grid_t>
@@ -75,7 +113,10 @@ namespace GPN
                         ++predicate;
                     }
                 }
-                assert(predicate == 1ull);
+                assert(predicate <= 1ull);
+
+                // at least one perforated layer must exist
+                assert(std::any_of(is_perforated.cbegin(), is_perforated.cend(), [](const RealType v){return v == 1.0;}));
 
                 return IsPerforated{
                     StepPropertyGrid{
