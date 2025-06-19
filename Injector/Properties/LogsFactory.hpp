@@ -50,8 +50,8 @@ namespace GPN
         struct IsGhostLayerFactory
         {
             static IsGhostLayer create(
-                const Logs::IsPerforated &is_perforated,
-                const Logs::IsPermeable &is_permeable)
+                const Logs::IsPermeable &is_permeable,
+                const Logs::IsPerforated &is_perforated)
             {
                 assert(is_perforated.size() == is_permeable.size());
                 for (auto i{0ll}; i < (ptrdiff_t)is_perforated.size(); ++i)
@@ -78,7 +78,7 @@ namespace GPN
 
                 return IsGhostLayer{
                     StepPropertyGrid{
-                        StepProperty{
+                        StepPropertyContainer{
                             (is_permeable.log_vals - is_perforated.log_vals).eval()},
                         is_permeable.grid}};
             }

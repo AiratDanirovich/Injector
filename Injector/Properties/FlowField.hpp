@@ -33,7 +33,7 @@ namespace GPN
                 RealType well_rate,
                 const Grid_t &grid1D)
             {
-                assert(std::isnormal(well_rate));
+                assert(!std::isnan(well_rate) && !std::isinf(well_rate));
                 const auto temp{make_rates(well_rate, grid1D)};
                 return ZFlowRateLog{temp};
             }
@@ -44,7 +44,7 @@ namespace GPN
                 RealType well_rate,
                 const Grid_t &grid1D)
             {
-                assert(std::isnormal(well_rate));
+                assert(!std::isnan(well_rate) && !std::isinf(well_rate));
 
                 StepPropertyContainer verticle_rates_vals{
                     StepPropertyContainer::Zero(grid1D.mesh_size())};

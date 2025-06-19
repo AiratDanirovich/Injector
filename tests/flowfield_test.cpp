@@ -65,6 +65,9 @@ TEST_CASE("RFP_reservoir")
     is_permeable_stencils[2] = 0.0;
     is_permeable_stencils[3] = 0.0;
 
+    
+    is_permeable_stencils[5] = 1.0;
+
     std::vector<RealType> is_perforated_stencils{is_permeable_stencils};
     std::vector<RealType> permeability_stencils{is_permeable_stencils};
 
