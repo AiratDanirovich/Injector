@@ -276,7 +276,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     geotherma = make_unique<Logs::Geotherma>(
         Logs::GeothermaFactory::create(data2["initTemperature"], grid2D->first_coord));
   }
-  else if (r_grid_type == "interpolate")
+  else if (geotherma_type == "interpolate")
   {
     const auto &data2 = data["collector"]["geotherma"]["interpolate"];
     const VR nodes = data2["z_nodes"];
