@@ -132,55 +132,78 @@ namespace GPN
     struct IWellDesign
     {
         IWellDesign(
+            const PhaseProperties &fluid,
             const Logs::IsPermeable &is_permeable,
-            const Logs::IsPerforated &is_perforated)
+            const Logs::IsPerforated &is_perforated,
+            const StepPropertyContainer &RFP_weights)
             : is_permeable{is_permeable},
               is_perforated{is_perforated},
-              is_ghost{Logs::IsGhostLayerFactory::create(is_permeable, is_perforated)}
+              RFP_weights{RFP_weights},
+              WFP_weights{wfp_weights(Logs::IsGhostLayerFactory::create(is_permeable, is_perforated), RFP_weights, layer_id(is_perforated))},
+              fluid{fluid},
+              weights_sum{RFP_weights.sum()},
+              its_top_collector_cell_id{layer_id(is_perforated)}
         {
+            assert(is_permeable.size() == is_permeable.grid.dual_steps.size());
+            assert(is_perforated.size() == is_perforated.grid.dual_steps.size());
         }
         using Grid_t = Logs::StepPropertyGrid::Grid_t;
-        virtual LogValuesContainer get_RFP(RealType rate, RealType pressure) const = 0;
+
+        LogValuesContainer get_RFP(const auto &history_record) const = delete;
+        LogValuesContainer get_WFP(const auto &history_record) const = delete;
 
         const Logs::IsPermeable is_permeable;
         const Logs::IsPerforated is_perforated;
-        const Logs::IsGhostLayer is_ghost;
+        //    const Logs::IsGhostLayer is_ghost;
+
+        const StepPropertyContainer RFP_weights;
+        const StepPropertyContainer WFP_weights;
+        const RealType weights_sum;
+        const PhaseProperties fluid;
+
+        ptrdiff_t top_collector_cell_id() const
+        {
+            return its_top_collector_cell_id;
+        }
+
+    private:
+        static StepPropertyContainer wfp_weights(
+            const Logs::IsGhostLayer &is_ghost,
+            const StepPropertyContainer &RFP_weights,
+            const ptrdiff_t top_collector_cell_id)
+        {
+            // the well rate is zero at the ghost layer
+            StepPropertyContainer WFP_weights{RFP_weights * (1.0 - is_ghost.log_vals)};
+            // all ghost layer fluxes flow through the top collector layer
+            WFP_weights(top_collector_cell_id) = (RFP_weights * is_ghost.log_vals).sum() + RFP_weights(top_collector_cell_id);
+            return WFP_weights;
+        }
+
+    private:
+        static ptrdiff_t layer_id(const auto &indicator)
+        {
+            const auto perforated_it = std::ranges::find(indicator.log_vals, 1.0);
+            return std::distance(indicator.log_vals.cbegin(), perforated_it);
+        }
+        const ptrdiff_t its_top_collector_cell_id{-1ll};
     };
 
-    struct Well_KH
+        struct Well_Explicit
         : public IWellDesign
     {
-        Well_KH(
+        Well_Explicit(
             //    const RealType tube_depth,
             const PhaseProperties &fluid,
             const Logs::IsPermeable &is_permeable,
             const Logs::IsPerforated &is_perforated,
-            const StepPropertyContainer &permeability,
-            const WellHoles &holes,
-            const RealType Rext)
-            : IWellDesign{is_permeable, is_perforated},
-              RFP_weights{permeability * is_permeable.grid.dual_steps * (StepPropertyContainer)is_permeable},
-              top_collector_cell_id{layer_id(is_perforated)},
-              fluid{fluid},
-              log_dist{std::log(Rext / holes.sandface_radius)}
+            const StepPropertyContainer &weights)
+            : IWellDesign{
+                  fluid,
+                  is_permeable,
+                  is_perforated,
+                  /*RFP_weights*/ weights}
         {
-            assert(permeability.size() == is_permeable.grid.dual_steps.size());
-            assert(is_permeable.size() == is_permeable.grid.dual_steps.size());
-            assert(is_perforated.size() == is_perforated.grid.dual_steps.size());
-
-            weights_sum = RFP_weights.sum();
-            // the well rate is zero at the ghost layer
-            WFP_weights = RFP_weights * (1.0 - is_ghost.log_vals);
-            // all ghost layer fluxes flow through the top collector layer
-            WFP_weights(top_collector_cell_id) = (RFP_weights * is_ghost.log_vals).sum() + RFP_weights(top_collector_cell_id);
         }
-
-        // void set_P_top(RealType rate)
-        // {
-        //     RealType factor{TwoPi / fluid.viscosity};
-        //     RealType P_top = (rate / factor - (permeability * cell_volumes * (fluid.density * Gravity::value() * mesh_nodes - ext_pressure) * is_permeable.log_vals).sum() / std::log(R_ext / r_col)) /
-        //                      ((permeability * cell_volumes * is_permeable.log_vals).sum() / std::log(R_ext / r_col));
-        // }
 
         template <typename HistoryRecord_t>
         auto get_RFP(const HistoryRecord_t &history_record) const
@@ -193,12 +216,80 @@ namespace GPN
             return get_WFP(history_record.rate, history_record.pressure);
         }
 
-        const ptrdiff_t top_collector_cell_id{-1ll};
+    protected:
+        StepPropertyContainer get_RFP(
+            RealType rate,
+            RealType pressure) const
+        {
+            if (std::isnan(rate))
+            { // define rate from pressure
+                throw std::invalid_argument("RFP: Rate must be set");
+            }
+            else if (std::isnan(pressure))
+            { // define pressure from rate
+                assert(!std::isnan(rate));
+                assert(rate >= 0.0);
+                return ((rate / weights_sum) * RFP_weights).eval();
+            }
+            else
+                throw std::invalid_argument("RFP: Either rate or pressure must be set, but not both.");
+        }
+
+        StepPropertyContainer get_WFP(
+            RealType rate,
+            RealType pressure) const
+        {
+            if (std::isnan(rate))
+            { // define rate from pressure
+                throw std::invalid_argument("WFP: Rate must be set");
+            }
+            else if (std::isnan(pressure))
+            { // define pressure from rate
+                assert(!std::isnan(rate));
+                assert(rate >= 0.0);
+                return ((rate / weights_sum) * WFP_weights).eval();
+            }
+            else
+                throw std::invalid_argument("WFP: Either rate or pressure must be set, but not both.");
+        }
+    };
+
+    struct Well_KH
+        : public Well_Explicit
+    {
+        Well_KH(
+            //    const RealType tube_depth,
+            const PhaseProperties &fluid,
+            const Logs::IsPermeable &is_permeable,
+            const Logs::IsPerforated &is_perforated,
+            const StepPropertyContainer &permeability,
+            const WellHoles &holes,
+            const RealType Rext)
+            : Well_Explicit{
+                  fluid,
+                  is_permeable,
+                  is_perforated,
+                  /*RFP_weights*/ permeability * is_permeable.grid.dual_steps * (StepPropertyContainer)is_permeable},
+              log_dist{std::log(Rext / holes.sandface_radius)}
+        {
+            assert(permeability.size() == is_permeable.grid.dual_steps.size());
+        }
+
+        template <typename HistoryRecord_t>
+        auto get_RFP(const HistoryRecord_t &history_record) const
+        {
+            return get_RFP(history_record.rate, history_record.pressure);
+        }
+        template <typename HistoryRecord_t>
+        auto get_WFP(const HistoryRecord_t &history_record) const
+        {
+            return get_WFP(history_record.rate, history_record.pressure);
+        }
 
     protected:
         StepPropertyContainer get_RFP(
             RealType rate,
-            RealType pressure) const override
+            RealType pressure) const
         {
             if (std::isnan(rate))
             { // define rate from pressure
@@ -213,16 +304,8 @@ namespace GPN
             else
                 assert("Incorrect injector regime!");
 
-            // assert(pressure >= 0.0);
-            // assert(rate >= 0.0);
-
             assert(((pressure == 0.0) && (rate == 0.0)) || ((pressure > 0.0) && (rate > 0.0)));
             return ((rate / weights_sum) * RFP_weights).eval();
-            //  {
-            //     Logs::StepPropertyGrid{
-            //         Logs::StepProperty{(RFP_weights * (rate / RFP_weights.sum())).eval()},
-            //         grid},
-            //     is_permeable};
         }
 
         StepPropertyContainer get_WFP(
@@ -242,24 +325,12 @@ namespace GPN
             else
                 assert("Incorrect injector regime!");
 
-            // assert(pressure >= 0.0);
-            // assert(rate >= 0.0);
             assert(((pressure == 0.0) && (rate == 0.0)) || ((pressure > 0.0) && (rate > 0.0)));
 
             return ((rate / weights_sum) * WFP_weights).eval();
         }
 
-        const StepPropertyContainer RFP_weights;
-        StepPropertyContainer WFP_weights;
-        RealType weights_sum;
-        const PhaseProperties fluid;
-
     private:
-        static ptrdiff_t layer_id(const auto &indicator)
-        {
-            const auto perforated_it = std::ranges::find(indicator.log_vals, 1.0);
-            return std::distance(indicator.log_vals.cbegin(), perforated_it);
-        }
         const RealType log_dist;
     };
 } // GPN

@@ -231,6 +231,22 @@ namespace GPN
             }
         };
 
+        struct RateWeightsFactory
+        {
+            static RateWeights create(
+                const auto &weights,
+                const IsPermeable& is_permeable,
+                const auto &grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            weights},
+                        grid},
+                    is_permeable};
+            }
+        };
+
         struct SkinFactory
         {
             static SkinFactor create(
