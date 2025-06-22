@@ -37,7 +37,7 @@ const auto solid_density_stencils{
     Logs::RawDataFactory::generate_solid_density(grid_stencils)};
 const auto solid_specific_heatcapacity_stencils{
     Logs::RawDataFactory::generate_solid_specific_heatcapacity(grid_stencils)};
-const auto heatconductivity_stencils{
+const auto solid_heatconductivity_stencils{
     Logs::RawDataFactory::generate_conductivity(grid_stencils)};
 
 TEST_CASE("InterpolatorTest")

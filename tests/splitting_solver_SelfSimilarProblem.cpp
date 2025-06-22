@@ -145,7 +145,7 @@ const VR thickness(nLayers, 0.01); // each layer is 1m thick
 const VR is_permeable_stencils(nLayers, 1.0);
 const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 0.0)};
 
-const VR heatconductivity_stencils(nLayers, 3.9);
+const LogValuesContainer solid_heatconductivity_stencils{LogValuesContainer::Constant(nLayers, 3.9)};
 const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 3.9 /*should be 2600 in SI*/)};
 const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
 /*temporal grid*/
@@ -191,7 +191,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
       solid_specific_heatcapacity_stencils,
-      heatconductivity_stencils,
+      solid_heatconductivity_stencils,
       porosity_stencils,
       Phases::FluidFactory::create_water(1.0, 1.0),
       grid};
@@ -204,7 +204,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
   // exact solution
   ExactSolution es{heat_props.medium_vol_heatcapacity,
-                   heat_props.heat_conductivity, q};
+                   heat_props.medium_heat_conductivity, q};
   // initial conditions
   const auto initial_state{initialcondition_factory(t0, grid2D, es)};
   // boundary conditions
@@ -216,7 +216,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       grid2D, core_data.is_permeable};
 
   Solver solver{
-      heat_face_props.heat_conductivity,
+      heat_face_props.medium_heat_conductivity,
       grid2D,
       heat_props.medium_vol_heatcapacity,
       rates_factory, initial_state,

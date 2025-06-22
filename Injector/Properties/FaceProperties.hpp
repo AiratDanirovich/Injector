@@ -187,6 +187,9 @@ namespace GPN
 
         template <typename Grid_t>
         using HeatConductivity = FaceInterpolatedField<Grid_t>;
+        
+        template <typename Grid_t>
+        using MediumHeatConductivity = HeatConductivity<Grid_t>;
 
         // struct ThermalDiffusivity
         //     : public Properties::Field<

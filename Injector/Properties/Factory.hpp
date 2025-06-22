@@ -122,7 +122,7 @@ namespace GPN
                 const Container_t &dual_stencils)
             {
                 auto size{dual_stencils.size() - 1};
-                std::vector<RealType> vals(size);
+                LogValuesContainer vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
                     vals[id] = (id % 2 == 1) ? 200 : 1000;
