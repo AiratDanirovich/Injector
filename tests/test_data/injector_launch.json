@@ -16,6 +16,11 @@
     "solidDensity": [3200, 3000, 3100, 3000, 3200, 3150, 3150, 3150, 3300],
     "solidSpecificHeatCapacity": [2700,2700,2700,2700,2700,2700,2700,2700,2700],
     "geotherma":{
+      "type": "const",
+      "types": ["const", "interpolate"],
+      "const": {
+        "initTemperature": 348
+      },
       "interpolate":{
         "z_top": 0.0,
         "z_nodes": [0.0, 60.0,  300,  2000, 2503, 2508, 3000],
@@ -24,10 +29,14 @@
     }
   },
   "grid": {
-    "z_minor_step": 3.0,
+    "z_minor_step": 0.3,
     "r_start": 0.0,
-    "r_end": 30,
+    "r_end": 10.11,
     "r_grid_type": "log",
+    "r_grid_types": ["log", "uniform"],
+    "r_uniform_grid":{
+      "rNodes": 451
+    },
     "r_log_grid": {
       "r_max_step": 0.1,
       "q": 1.05
@@ -38,11 +47,23 @@
     "sandface_radius": 0.11
   },
   "history": {
-    "t_start": 0.0,
-    "t_end": 960000,
-    "t_major_step": 96000,
-    "t_minor_step": 9600,
-    "wellRate": 0.00231,
-    "inletTemperature": 293
+    "start_time": 0.0,
+    "t_minor_step": 96,
+    "t_unit": "h",
+    "t_units": ["d", "h", "m", "s"],
+    "history_type": "dynamic",
+    "history_types": ["static", "dynamic"],
+    "dynamic": {
+      "t_major_step": [1.0, 1.0, 1.0],
+      "well_rate": [0.002, 0.002, 0.0],
+      "inlet_temperature": [293, 293, 293]
+    },
+    "static": {
+      "t_start": 0.0,
+      "t_end": 672,
+      "t_major_step": 96,
+      "well_rate": 0.00231,
+      "inlet_temperature": 293
+    }
   }
 }
