@@ -148,7 +148,7 @@ auto make_history(const json &data)
   else if (t_unit == "m")
     factor = 60;
   else if (t_unit == "s")
-    factor = 10;
+    factor = 1;
   else
     throw std::runtime_error("Incorrect unit of time.");
 
