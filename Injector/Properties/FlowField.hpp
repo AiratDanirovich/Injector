@@ -3,8 +3,6 @@
 #include <algorithm>
 #include <cmath>
 
-#include <iostream>
-
 #include <Injector/Grids/Defines.h>
 #include <Injector/Properties/Logs.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
@@ -154,8 +152,6 @@ namespace GPN
                     LogValuesContainer cum_sum{LogValuesContainer::Zero(grid2D.first_coord.dual_size())};
                     std::partial_sum(rfp_vals.cbegin(), rfp_vals.cbegin() + well.top_collector_cell_id, cum_sum.begin() + 1ll, std::plus<RealType>());
 
-                    std:: cout << "cum_sum:\n"
-                    << cum_sum << std::endl;
                     // leftover flowrate along the well
                     const LogValuesContainer& z_flow{cum_sum};
                     

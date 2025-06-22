@@ -127,7 +127,7 @@ namespace GPN
                 else if (regimes[i] == InjectorRegimes::FixedRate)
                 {
                     assert(std::isnan(pressure.log_vals(i)));
-                    assert(rates.log_vals(i) > 0.0);
+                    assert(rates.log_vals(i) >= 0.0);
                 }
                 else
                     assert(false && "Wrong injector regime!");
