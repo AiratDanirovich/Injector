@@ -276,16 +276,13 @@ namespace GPN
             const PhaseProperties &fluid,
             const Logs::IsPermeable &is_permeable,
             const Logs::IsPerforated &is_perforated,
-            const StepPropertyContainer &permeability,
-            const WellHoles &holes,
-            const RealType Rext)
+            const StepPropertyContainer &weights)
             : IWellDesign{
                   fluid,
                   is_permeable,
                   is_perforated,
-                  /*RFP_weights*/ permeability * is_permeable.grid.dual_steps * (StepPropertyContainer)is_permeable}
+                  /*RFP_weights*/ weights}
         {
-            assert(permeability.size() == is_permeable.grid.dual_steps.size());
         }
 
         template <typename HistoryRecord_t>

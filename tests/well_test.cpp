@@ -56,7 +56,7 @@ const RealType tube_radius{0.1};     // m
 
 const RealType tol{1e-12};
 
-TEST_CASE("Well_KH_Test")
+TEST_CASE("Well_Test")
 {
     is_perforated_stencils[0ll] = 0.0;
 
@@ -91,96 +91,108 @@ TEST_CASE("Well_KH_Test")
 
     cout << "thickness profile:\n"
          << transfer_to_eigen(grid_thickness).transpose();
-
-    struct Record
-    {
-        const RealType rate, pressure;
-    } history_record_q{rate, std::numeric_limits<double>::quiet_NaN()},
-        history_record_p{std::numeric_limits<double>::quiet_NaN(), pressure};
-
-    const Well_KH well_q{
-        water, is_permeable, is_perforated, permeability, well_holes, rMax};
-
-    const auto rfp_q = RFPFactory::create_from_container(well_q.get_RFP(history_record_q), is_permeable);
-    const auto wfp_q = WFPFactory::create_from_container(well_q.get_WFP(history_record_q), is_perforated);
-
-    const Well_KH well_p{
-        water, is_permeable, is_perforated, permeability, well_holes, rMax};
-
-    const auto rfp_p = RFPFactory::create_from_container(well_p.get_RFP(history_record_p), is_permeable);
-    const auto wfp_p = WFPFactory::create_from_container(well_p.get_WFP(history_record_p), is_perforated);
-
-    { // check well_kh at fixed rate
-
-        cout << "\nwell rate profile:     \n"
-             << wfp_q.log_vals.transpose();
-        cout << "\nreservoir rate profile:\n"
-             << rfp_q.log_vals.transpose();
-
-        for (auto i{0ll}; i < rfp_q.size(); ++i)
+    { // check Well_KH
+        struct Record
         {
-            CHECK(
-                rfp_q(i) ==
-                rate / (grid_stencils.back() - grid_stencils.front()) *
-                    z_grid.dual_steps(i));
+            const RealType rate, pressure;
+        } history_record_q{rate, std::numeric_limits<double>::quiet_NaN()},
+            history_record_p{std::numeric_limits<double>::quiet_NaN(), pressure};
+
+        const Well_KH well_q{
+            water, is_permeable, is_perforated, permeability, well_holes, rMax};
+
+        const auto rfp_q = RFPFactory::create_from_container(well_q.get_RFP(history_record_q), is_permeable);
+        const auto wfp_q = WFPFactory::create_from_container(well_q.get_WFP(history_record_q), is_perforated);
+
+        const Well_KH well_p{
+            water, is_permeable, is_perforated, permeability, well_holes, rMax};
+
+        const auto rfp_p = RFPFactory::create_from_container(well_p.get_RFP(history_record_p), is_permeable);
+        const auto wfp_p = WFPFactory::create_from_container(well_p.get_WFP(history_record_p), is_perforated);
+
+        { // check well_kh at fixed rate
+
+            cout << "\nwell rate profile:     \n"
+                 << wfp_q.log_vals.transpose();
+            cout << "\nreservoir rate profile:\n"
+                 << rfp_q.log_vals.transpose();
+
+            for (auto i{0ll}; i < rfp_q.size(); ++i)
+            {
+                CHECK(
+                    rfp_q(i) ==
+                    rate / (grid_stencils.back() - grid_stencils.front()) *
+                        z_grid.dual_steps(i));
+            }
+
+            CHECK(rfp_q.log_vals.sum() == rate);
+            CHECK(wfp_q.log_vals.sum() == rate);
+
+            RealType cum_rate{0.0};
+            ptrdiff_t i{0ll};
+            for (auto l{0ll}; (i < rfp_q.size()) && (l < 2ll); ++i)
+            {
+                if (is_permeable(i) == 1.0)
+                {
+                    cum_rate += rfp_q(i);
+                    ++l;
+                }
+            }
+
+            CHECK(wfp_q(i - 1ll) == cum_rate);
         }
 
-        CHECK(rfp_q.log_vals.sum() == rate);
-        CHECK(wfp_q.log_vals.sum() == rate);
+        { // check well_kh at fixed pressure
+            cout << "\nwell rate profile:     \n"
+                 << wfp_p.log_vals.transpose();
+            cout << "\nreservoir rate profile:\n"
+                 << rfp_p.log_vals.transpose();
 
-        RealType cum_rate{0.0};
-        ptrdiff_t i{0ll};
-        for (auto l{0ll}; (i < rfp_q.size()) && (l < 2ll); ++i)
-        {
-            if (is_permeable(i) == 1.0)
+            for (auto i{0ll}; i < rfp_p.size(); ++i)
             {
-                cum_rate += rfp_q(i);
-                ++l;
+                CHECK_THAT(rate / (grid_stencils.back() - grid_stencils.front()) *
+                               z_grid.dual_steps(i),
+                           WithinRel(rfp_p(i), tol));
+            }
+
+            CHECK(rfp_p.log_vals.sum() == rate);
+            CHECK(wfp_p.log_vals.sum() == rate);
+
+            RealType cum_rate{0.0};
+            ptrdiff_t i{0ll};
+            for (auto l{0ll}; (i < rfp_p.size()) && (l < 2ll); ++i)
+            {
+                if (is_permeable(i) == 1.0)
+                {
+                    cum_rate += rfp_p(i);
+                    ++l;
+                }
+            }
+
+            CHECK(wfp_p(i - 1ll) == cum_rate);
+        }
+
+        { // compare well_kh at fixed rate vs fixed pressure
+            assert(rfp_p.size() == rfp_q.size());
+            assert(wfp_p.size() == wfp_q.size());
+            assert(rfp_p.size() == wfp_p.size());
+            assert(rfp_q.size() == rfp_q.size());
+            for (auto i{0ll}; i < rfp_p.size(); ++i)
+            {
+                CHECK_THAT(rfp_p.log_vals(i), WithinRel(rfp_q.log_vals(i), tol));
+                CHECK_THAT(wfp_p.log_vals(i), WithinRel(wfp_q.log_vals(i), tol));
             }
         }
-
-        CHECK(wfp_q(i - 1ll) == cum_rate);
     }
 
-    { // check well_kh at fixed pressure
-        cout << "\nwell rate profile:     \n"
-             << wfp_p.log_vals.transpose();
-        cout << "\nreservoir rate profile:\n"
-             << rfp_p.log_vals.transpose();
+    { // check Well_explicit
 
-        for (auto i{0ll}; i < rfp_p.size(); ++i)
-        {
-            CHECK_THAT(rate / (grid_stencils.back() - grid_stencils.front()) *
-                           z_grid.dual_steps(i),
-                       WithinRel(rfp_p(i), tol));
-        }
+        std::vector<RealType> weights;
+        weights.reserve(grid_thickness.size());
+        for (auto i{0ull}; i < grid_thickness.size(); ++i)
+            weights.push_back(grid_thickness[i] * permeability_stencils[i]);
 
-        CHECK(rfp_p.log_vals.sum() == rate);
-        CHECK(wfp_p.log_vals.sum() == rate);
-
-        RealType cum_rate{0.0};
-        ptrdiff_t i{0ll};
-        for (auto l{0ll}; (i < rfp_p.size()) && (l < 2ll); ++i)
-        {
-            if (is_permeable(i) == 1.0)
-            {
-                cum_rate += rfp_p(i);
-                ++l;
-            }
-        }
-
-        CHECK(wfp_p(i - 1ll) == cum_rate);
-    }
-
-    { // compare well_kh at fixed rate vs fixed pressure
-        assert(rfp_p.size() == rfp_q.size());
-        assert(wfp_p.size() == wfp_q.size());
-        assert(rfp_p.size() == wfp_p.size());
-        assert(rfp_q.size() == rfp_q.size());
-        for (auto i{0ll}; i < rfp_p.size(); ++i)
-        {
-            CHECK_THAT(rfp_p.log_vals(i), WithinRel(rfp_q.log_vals(i), tol));
-            CHECK_THAT(wfp_p.log_vals(i), WithinRel(wfp_q.log_vals(i), tol));
-        }
+        const Well_Explicit well_explicit{
+            water, is_permeable, is_perforated, transfer_to_eigen(weights)};
     }
 }
