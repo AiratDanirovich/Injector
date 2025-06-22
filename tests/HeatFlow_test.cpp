@@ -139,11 +139,26 @@ VR generate_steps(const VR &dual_nodes)
 
 auto make_history(const json &data)
 {
+  const std::string t_unit = data["history"]["t_unit"];
+  RealType factor{1.0};
+  if (t_unit == "d")
+    factor = 24 * 60 * 60;
+  else if (t_unit == "h")
+    factor = 60 * 60;
+  else if (t_unit == "m")
+    factor = 60;
+  else if (t_unit == "s")
+    factor = 10;
+  else
+    throw std::runtime_error("Incorrect unit of time.");
+
   const std::string history_type = data["history"]["history_type"];
   if (history_type == "dynamic")
   {
     const auto &data2 = data["history"]["dynamic"];
-    const VR t_major_steps = data2["t_major_step"];
+    VR t_major_steps = data2["t_major_step"];
+    for (auto &v : t_major_steps)
+      v = v * factor;
     const VR well_rates = data2["well_rate"];
     const VR inlet_temps = data2["inlet_temperature"];
 
@@ -153,14 +168,15 @@ auto make_history(const json &data)
   {
     const auto &data2 = data["history"]["static"];
     const RealType
-        t0{data2["t_start"]},
-        t1{data["history"]["t_end"]};
-    const RealType t_major_step = std::min(t1 - t0, (RealType)data["history"]["t_major_step"]);
+        t0{data2["t_start"]*factor},
+        t1{data2["t_end"]*factor};
+        
+    const RealType t_major_step = std::min(t1 - t0, (RealType)data2["t_major_step"]*factor);
 
     const VR t_stencils{generate_stencils(t0, t1, t_major_step)};
 
-    const RealType well_rate{data["history"]["wellRate"]}; // m^3/s
-    const RealType inlet_temperature{data["history"]["inlet_temperature"]};
+    const RealType well_rate{data2["well_rate"]}; // m^3/s
+    const RealType inlet_temperature{data2["inlet_temperature"]};
 
     const std::vector<RealType> t_major_steps{generate_steps(t_stencils)};
     const std::vector<RealType> well_rates(t_major_steps.size(), well_rate);
@@ -177,7 +193,7 @@ const VR make_r_stencils(const json &data, const auto &well_holes)
   const std::string r_grid_type = data["grid"]["r_grid_type"];
   const RealType
       rMin{data["grid"]["r_start"]},
-      rMax { data["grid"]["r_end"] };
+      rMax{data["grid"]["r_end"]};
 
   if (r_grid_type == "uniform")
   {
@@ -277,7 +293,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                                          r_stencils)};
   const auto &grid{grid2D->first_coord};
 
-  
   cout << "radial dual grid stencils:\n"
        << transfer_to_eigen(r_stencils).transpose() << endl;
 
