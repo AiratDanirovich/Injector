@@ -168,10 +168,10 @@ auto make_history(const json &data)
   {
     const auto &data2 = data["history"]["static"];
     const RealType
-        t0{data2["t_start"]*factor},
-        t1{data2["t_end"]*factor};
-        
-    const RealType t_major_step = std::min(t1 - t0, (RealType)data2["t_major_step"]*factor);
+        t0{data2["t_start"] * factor},
+        t1{data2["t_end"] * factor};
+
+    const RealType t_major_step = std::min(t1 - t0, (RealType)data2["t_major_step"] * factor);
 
     const VR t_stencils{generate_stencils(t0, t1, t_major_step)};
 
@@ -211,18 +211,18 @@ const VR make_r_stencils(const json &data, const auto &well_holes)
     throw std::runtime_error("Incorrect radial grid descriptor.");
 }
 
-const Logs::Geotherma make_geotherma_ptr(const json &data, const auto grid2D)
+const Logs::Geotherma make_geotherma(const json &data, const auto grid2D)
 {
-  const std::string geotherma_type = data["collector"]["geotherma"]["type"];
+  const auto &data1 = data["collector"]["geotherma"];
 
+  const std::string geotherma_type = data1["type"];
   if (geotherma_type == "const")
   {
-    const auto &data2 = data["collector"]["geotherma"]["const"];
-    return Logs::GeothermaFactory::create(data2["initTemperature"], grid2D->first_coord);
+    return Logs::GeothermaFactory::create(data1["const"]["initTemperature"], grid2D->first_coord);
   }
   else if (geotherma_type == "interpolate")
   {
-    const auto &data2 = data["collector"]["geotherma"]["interpolate"];
+    const auto &data2 = data1["interpolate"];
     const VR nodes = data2["z_nodes"];
     const VR vals = data2["t_vals"];
     const RealType z_top = data2["z_top"];
@@ -339,7 +339,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
   std::unique_ptr<const Logs::Geotherma> geotherma{
       make_unique<Logs::Geotherma>(
-          make_geotherma_ptr(data, grid2D))};
+          make_geotherma(data, grid2D))};
 
   Properties::Rocks::HeatProps heat_props{
       heat_logs, grid2D};
