@@ -14,7 +14,7 @@ const auto z_stencils{
     Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 5)};
 const auto r_stencils{
     Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 11)};
-const auto heatconductivity_stencils{
+const auto solid_heatconductivity_stencils{
     Logs::RawDataFactory::generate_conductivity(z_stencils)};
 
 // Tests Cylinder grid, (r; z)
@@ -25,7 +25,7 @@ TEST_CASE("BaseSplitTest")
 
     const auto conductivity{
         Logs::HeatConductivityFactory::create(
-            heatconductivity_stencils, grid)};
+            solid_heatconductivity_stencils, grid)};
 
     Properties::HeatConductivity conductivity_field{
         Properties::FieldFactory::create(

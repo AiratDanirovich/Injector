@@ -61,13 +61,20 @@ namespace GPN
                 HeatLogs(
                     const auto &solid_density,
                     const auto &solid_specific_heatcapacity,
-                    const auto &heat_conductivity,
+                    const auto &solid_heat_conductivity,
                     const auto &porosity,
                     const auto &fluid,
                     const auto &grid)
                     : solid_density{
                           SolidDensityFactory::create(solid_density, grid)},
-                      solid_specific_heatcapacity{SolidSpecificHeatCapacityFactory::create(solid_specific_heatcapacity, grid)}, heat_conductivity{HeatConductivityFactory::create(heat_conductivity, grid)}, solid_vol_heatcapacity{SolidVolumetricHeatCapacityFactory::create(solid_density, solid_specific_heatcapacity, grid)}, medium_vol_heatcapacity{MediumHeatVolumetricCapacityFactory::create(porosity, solid_density, solid_specific_heatcapacity, fluid, grid)}
+                      solid_specific_heatcapacity{
+                        SolidSpecificHeatCapacityFactory::create(solid_specific_heatcapacity, grid)}, 
+                      medium_heat_conductivity{
+                        HeatConductivityFactory::create(porosity, solid_heat_conductivity, fluid, grid)}, 
+                      solid_vol_heatcapacity{
+                        SolidVolumetricHeatCapacityFactory::create(solid_density, solid_specific_heatcapacity, grid)}, 
+                      medium_vol_heatcapacity{
+                        MediumHeatVolumetricCapacityFactory::create(porosity, solid_density, solid_specific_heatcapacity, fluid, grid)}
                 {
                     assert(solid_density.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
                     assert(solid_specific_heatcapacity.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
@@ -83,7 +90,7 @@ namespace GPN
 
                 const SolidDensity solid_density;
                 const SolidSpecificHeatCapacity solid_specific_heatcapacity;
-                const HeatConductivity heat_conductivity;
+                const HeatConductivity medium_heat_conductivity;
                 const SolidVolumetricHeatCapacity solid_vol_heatcapacity;
                 const MediumHeatVolumetricCapacity medium_vol_heatcapacity;
 
@@ -174,7 +181,7 @@ namespace GPN
                     const cptr<Grid2D_t> grid2D)
                     : medium_vol_heatcapacity{
                           FieldFactory::create(medium_vol_heatcapacity, grid2D)},
-                      heat_conductivity{FieldFactory::create(heat_conductivity, grid2D)}
+                      medium_heat_conductivity{FieldFactory::create(heat_conductivity, grid2D)}
                 {
                 }
 
@@ -183,7 +190,7 @@ namespace GPN
                     const cptr<Grid2D_t> grid2D)
                     : medium_vol_heatcapacity{
                           FieldFactory::create(logs.medium_vol_heatcapacity, grid2D)},
-                      heat_conductivity{FieldFactory::create(logs.heat_conductivity, grid2D)}
+                      medium_heat_conductivity{FieldFactory::create(logs.medium_heat_conductivity, grid2D)}
                 {
                 }
 
@@ -193,7 +200,7 @@ namespace GPN
                     medium_vol_heatcapacity.col(0ll) = fluid.volumetric_heat_capacity; // MeshNodesContainer::Constant(medium_vol_heatcapacity.rows(), fluid.volumetric_heat_capacity);
                 }
 
-                HeatConductivity<Grid2D_t> heat_conductivity;
+                MediumHeatConductivity<Grid2D_t> medium_heat_conductivity;
                 MediumHeatVolumetricCapacity<Grid2D_t> medium_vol_heatcapacity;
             };
         } // Rocks
@@ -209,14 +216,14 @@ namespace GPN
                 HeatFaceProps(
                     const Properties::Rocks::HeatProps<Grid2D_t> &props,
                     const cptr<Grid2D_t> grid2D)
-                    : heat_conductivity{
+                    : medium_heat_conductivity{
                           FaceInterpolatedFieldFactory::create(
-                              props.heat_conductivity,
+                              props.medium_heat_conductivity,
                               grid2D)}
                 {
                 }
 
-                const HeatConductivity<Grid2D_t> heat_conductivity;
+                const MediumHeatConductivity<Grid2D_t> medium_heat_conductivity;
             };
         } // Rocks
 

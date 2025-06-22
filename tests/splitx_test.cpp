@@ -28,7 +28,7 @@ const auto z_stencils{
 const auto r_stencils{
     Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 11)};
 // heat logs
-const auto heatconductivity_stencils{
+const auto solid_heatconductivity_stencils{
     Logs::RawDataFactory::generate_conductivity(z_stencils)};
 
 TEST_CASE("Solver", "splitX")
@@ -38,7 +38,7 @@ TEST_CASE("Solver", "splitX")
 
   const auto conductivity{
       Logs::HeatConductivityFactory::create(
-        heatconductivity_stencils, grid)};
+        solid_heatconductivity_stencils, grid)};
 
   const Properties::HeatConductivity conductivity_field{
       Properties::FieldFactory::create(
