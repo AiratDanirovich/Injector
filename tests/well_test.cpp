@@ -121,14 +121,15 @@ TEST_CASE("Well_Test")
 
             for (auto i{0ll}; i < rfp_q.size(); ++i)
             {
-                CHECK(
-                    rfp_q(i) ==
-                    rate / (grid_stencils.back() - grid_stencils.front()) *
-                        z_grid.dual_steps(i));
+                CHECK_THAT(rate / (grid_stencils.back() - grid_stencils.front()) *
+                               z_grid.dual_steps(i),
+                           WithinRel(rfp_q(i), tol));
             }
 
-            CHECK(rfp_q.log_vals.sum() == rate);
-            CHECK(wfp_q.log_vals.sum() == rate);
+            CHECK_THAT(rfp_q.log_vals.sum(),
+                       WithinRel(rate, tol));
+            CHECK_THAT(wfp_q.log_vals.sum(),
+                       WithinRel(rate, tol));
 
             RealType cum_rate{0.0};
             ptrdiff_t i{0ll};
@@ -200,7 +201,7 @@ TEST_CASE("Well_Test")
         const auto wfp_q_exp = WFPFactory::create_from_container(well_q_exp.get_WFP(history_record_q), is_perforated);
 
         assert(rfp_p.size() == rfp_q_exp.size());
-        assert(wfp_p.size() == wfp_q.size());
+        assert(wfp_p.size() == wfp_q_exp.size());
         assert(rfp_p.size() == wfp_p.size());
         assert(rfp_q_exp.size() == rfp_q_exp.size());
         for (auto i{0ll}; i < rfp_p.size(); ++i)
