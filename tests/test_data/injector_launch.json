@@ -14,7 +14,7 @@
     "rate_division_types": ["KH", "explicit"],
     "rate_division_type": "KH",
     "explicit":{
-      "weights": [0.0, 0.0,  0.5,  0.0, 0.07,  0.0, 0.2, 0.15, 0.0]
+      "weights": [0.0, 0.0,  0.5,  0.0, 0.15,  0.0, 0.2, 0.15, 0.0]
     },
     "KH":{
     },
