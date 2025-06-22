@@ -322,7 +322,7 @@ Wrapper::Wrapper(
 
         {
             ofstream f{std::string{"output/data.txt"}};
-            f << "top collector height: " << grid.mesh_nodes(well.top_collector_cell_id) << " m" << endl;
+            f << "top collector height: " << grid.mesh_nodes(well.top_collector_cell_id()) << " m" << endl;
             f.close();
         }
     }
