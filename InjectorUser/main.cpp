@@ -39,11 +39,11 @@ int main()
     /*START*/
     // input parameters
     /*fluid*/
-     RealType
-         viscosity{data["fluid"]["viscosity"]},
-         density{data["fluid"]["density"]},
-         capacity{data["fluid"]["specificHeatCapacity"]},
-         heat_conductivity{data["fluid"]["heatConductivity"]};
+    RealType
+        viscosity{data["fluid"]["viscosity"]},
+        density{data["fluid"]["density"]},
+        capacity{data["fluid"]["specificHeatCapacity"]},
+        heat_conductivity{data["fluid"]["heatConductivity"]};
     /*collector*/
     const VR thickness = data["collector"]["thickness"];
     //  const ptrdiff_t nLayers{thickness.size()};
