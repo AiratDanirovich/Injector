@@ -64,18 +64,28 @@ int main()
         r_max_step{data["grid"]["r_log_grid"]["r_max_step"]},
         z_minor_step{data["grid"]["z_minor_step"]}; // m
     /*history*/
+    const std::string t_unit = data["history"]["t_unit"];
+    RealType factor{1.0};
+    if (t_unit == "d")
+        factor = 24 * 60 * 60;
+    else if (t_unit == "h")
+        factor = 60 * 60;
+    else if (t_unit == "m")
+        factor = 60;
+    else if (t_unit == "s")
+        factor = 1;
+    else
+        throw std::runtime_error("Incorrect unit of time.");
+
     const RealType
-        t0{data["history"]["t_start"]},
-        t1{data["history"]["t_end"]};
-    RealType t_major_step{data["history"]["t_major_step"]};
-    RealType t_minor_step{data["history"]["t_minor_step"]};
-    t_major_step = std::min(t1 - t0, t_major_step);
-    t_minor_step = std::min(t_minor_step, t_major_step);
-    const VR t_stencils{generate_stencils(t0, t1, t_major_step)};
-    const VR time_steps{generate_steps(t_stencils)};
+        t0{data["history"]["start_time"] * factor};
+    RealType t_minor_step{data["history"]["t_minor_step"] * factor};
+    VR t_major_steps = data["history"]["history_type"]["t_major_step"];
+    for (auto &v : t_major_steps)
+        v *= factor;
     /*temperatures*/
-    const RealType well_rate{data["history"]["wellRate"]}; // m^3/s
-    const RealType inlet_temperature{data["history"]["inletTemperature"]};
+    const VR well_rates{data["history"]["dynamic"]["well_rate"]}; // m^3/s
+    const VR inlet_temperatures{data["history"]["dynamic"]["inlet_temperature"]};
     /*well*/
     const RealType sandface_radius{data["well"]["sandface_radius"]};
     const RealType tube_radius{data["well"]["tube_radius"]};
@@ -85,7 +95,6 @@ int main()
     const VR geotherma_nodes = data2["z_nodes"];
     const VR geotherma_vals = data2["t_vals"];
     const RealType z_top = data2["z_top"];
-    
 
     cout << "Simulation is started." << endl;
     cout << "Please wait..." << endl;
@@ -118,13 +127,13 @@ int main()
         geotherma_vals,  // K, /* reference vals for interpolation */
         // temporal grid
         t0,           // s, start time in seconds
-        time_steps,   // s, in seconds
+        t_major_steps,   // s, in seconds
         t_minor_step, // s, time step used for numerical integration
         // well
         tube_radius,      // m
         sandface_radius,  // m
-        well_rate,        // ~1.1E-3 m^3/s
-        inlet_temperature // K
+        well_rates,        // ~1.1E-3 m^3/s
+        inlet_temperatures // K
     );
 
     // cout << "After call to DLL\nPress Enter to continue" << endl;

@@ -52,8 +52,8 @@ public:
         // well
         const RealType tube_radius,      // m
         const RealType sandface_radius,  // m
-        const RealType well_rate,        // ~1.1E-3 m^3/s
-        const RealType inlet_temperature // K
+        const VR well_rates,        // ~1.1E-3 m^3/s
+        const VR inlet_temperatures // K
     );
     ~Wrapper();
 

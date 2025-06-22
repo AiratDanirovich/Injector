@@ -145,8 +145,8 @@ Wrapper::Wrapper(
     // well
     const RealType tube_radius,      // m
     const RealType sandface_radius,  // m
-    const RealType well_rate,        // ~1.1E-3 m^3/s
-    const RealType inlet_temperature // K
+    const VR well_rates,        // ~1.1E-3 m^3/s
+    const VR inlet_temperatures // K
 )
 {
     // adapt stl container to Eigen container
@@ -209,10 +209,8 @@ Wrapper::Wrapper(
     const FaceProperties::Rocks::HeatFaceProps heat_face_props{
         heat_props, grid2D};
     // history
-    const std::vector<RealType> rates(time_intervals.size(), well_rate);
-    const std::vector<RealType> inlet_temperature_set(time_intervals.size(), inlet_temperature);
     const History history{
-        HistoryFactory::createFixedRate(time_intervals, rates, inlet_temperature_set)};
+        HistoryFactory::createFixedRate(time_intervals, well_rates, inlet_temperatures)};
     // rates field factory
     FaceProperties::RatesFactory rates_factory{
         grid2D, well, history, water};
