@@ -246,7 +246,7 @@ namespace GPN
             RateWeights(
                 const StepPropertyGrid &weights,
                 const IsPermeable &is_permeable)
-                : StepPropertyGrid{weights},
+                : StepPropertyGrid{normalize(weights)},
                   AssertNonNegative{weights}
             {
                 assert(weights.size() == is_permeable.size());
@@ -254,6 +254,15 @@ namespace GPN
                     assert(
                         ((is_permeable(id) == 1.0) && (weights(id) > 0.0)) ||
                         ((is_permeable(id) == 0.0) && (weights(id) == 0.0)));
+
+                assert(std::abs(weights.log_vals.sum() - 1.0) < 1E-12);
+            }
+
+        private:
+            static StepPropertyGrid normalize(const StepPropertyGrid &weights)
+            {
+                const RealType sum{weights.log_vals.sum()};
+                return StepPropertyGrid{weights.log_vals / sum, weights.grid};
             }
         };
 
