@@ -209,13 +209,6 @@ namespace GPN
             assert(permeability.size() == is_permeable.grid.dual_steps.size());
         }
 
-        // void set_P_top(RealType rate)
-        // {
-        //     RealType factor{TwoPi / fluid.viscosity};
-        //     RealType P_top = (rate / factor - (permeability * cell_volumes * (fluid.density * Gravity::value() * mesh_nodes - ext_pressure) * is_permeable.log_vals).sum() / std::log(R_ext / r_col)) /
-        //                      ((permeability * cell_volumes * is_permeable.log_vals).sum() / std::log(R_ext / r_col));
-        // }
-
         template <typename HistoryRecord_t>
         auto get_RFP(const HistoryRecord_t &history_record) const
         {
@@ -245,16 +238,8 @@ namespace GPN
             else
                 assert("Incorrect injector regime!");
 
-            // assert(pressure >= 0.0);
-            // assert(rate >= 0.0);
-
             assert(((pressure == 0.0) && (rate == 0.0)) || ((pressure > 0.0) && (rate > 0.0)));
             return ((rate / weights_sum) * RFP_weights).eval();
-            //  {
-            //     Logs::StepPropertyGrid{
-            //         Logs::StepProperty{(RFP_weights * (rate / RFP_weights.sum())).eval()},
-            //         grid},
-            //     is_permeable};
         }
 
         StepPropertyContainer get_WFP(
@@ -274,8 +259,6 @@ namespace GPN
             else
                 assert("Incorrect injector regime!");
 
-            // assert(pressure >= 0.0);
-            // assert(rate >= 0.0);
             assert(((pressure == 0.0) && (rate == 0.0)) || ((pressure > 0.0) && (rate > 0.0)));
 
             return ((rate / weights_sum) * WFP_weights).eval();
@@ -283,5 +266,74 @@ namespace GPN
 
     private:
         const RealType log_dist;
+    };
+
+    struct Well_Explicit
+        : public IWellDesign
+    {
+        Well_Explicit(
+            //    const RealType tube_depth,
+            const PhaseProperties &fluid,
+            const Logs::IsPermeable &is_permeable,
+            const Logs::IsPerforated &is_perforated,
+            const StepPropertyContainer &permeability,
+            const WellHoles &holes,
+            const RealType Rext)
+            : IWellDesign{
+                  fluid,
+                  is_permeable,
+                  is_perforated,
+                  /*RFP_weights*/ permeability * is_permeable.grid.dual_steps * (StepPropertyContainer)is_permeable}
+        {
+            assert(permeability.size() == is_permeable.grid.dual_steps.size());
+        }
+
+        template <typename HistoryRecord_t>
+        auto get_RFP(const HistoryRecord_t &history_record) const
+        {
+            return get_RFP(history_record.rate, history_record.pressure);
+        }
+        template <typename HistoryRecord_t>
+        auto get_WFP(const HistoryRecord_t &history_record) const
+        {
+            return get_WFP(history_record.rate, history_record.pressure);
+        }
+
+    protected:
+        StepPropertyContainer get_RFP(
+            RealType rate,
+            RealType pressure) const
+        {
+            if (std::isnan(rate))
+            { // define rate from pressure
+                throw std::invalid_argument("RFP: Rate must be set");
+            }
+            else if (std::isnan(pressure))
+            { // define pressure from rate
+                assert(!std::isnan(rate));
+                assert(rate >= 0.0);
+                return ((rate / weights_sum) * RFP_weights).eval();
+            }
+            else
+                throw std::invalid_argument("RFP: Either rate or pressure must be set, but not both.");
+        }
+
+        StepPropertyContainer get_WFP(
+            RealType rate,
+            RealType pressure) const
+        {
+            if (std::isnan(rate))
+            { // define rate from pressure
+                throw std::invalid_argument("WFP: Rate must be set");
+            }
+            else if (std::isnan(pressure))
+            { // define pressure from rate
+                assert(!std::isnan(rate));
+                assert(rate >= 0.0);
+                return ((rate / weights_sum) * WFP_weights).eval();
+            }
+            else
+                throw std::invalid_argument("WFP: Either rate or pressure must be set, but not both.");
+        }
     };
 } // GPN
