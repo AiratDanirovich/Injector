@@ -73,12 +73,10 @@ struct FunctorBC : public GPN::BoundaryConditions::BCFunctorBase
             Grid2D_t, Well_KH, PhaseProperties>;
 
     FunctorBC(
-        RealType inlet_temp,
         const Logs::IsPermeable &is_permeable,
         const ConvectionFieldFactory_t &flow_field, // volumetric flow rate
         const cptr<const Grid2D_t> grid_ptr)
-        : inlet_temp{inlet_temp},
-          flow_field{flow_field},
+        : flow_field{flow_field},
           is_permeable{is_permeable},
           grid_ptr{grid_ptr}
     {
@@ -109,7 +107,6 @@ struct FunctorBC : public GPN::BoundaryConditions::BCFunctorBase
     }
 
 protected:
-    RealType inlet_temp;
     const ConvectionFieldFactory_t &flow_field;
     const Logs::IsPermeable &is_permeable;
     const cptr<const Grid2D_t> grid_ptr;
@@ -231,7 +228,7 @@ Wrapper::Wrapper(
     const GPN::BoundaryConditions::BoundaryConditions bc{
         *grid2D,
         std::make_shared<FunctorBC>(
-            inlet_temperature, core_data.is_permeable, rates_factory, grid2D),
+            core_data.is_permeable, rates_factory, grid2D),
         BoundaryConditions::BoundaryCondition::second};
     // solver
     using Solver_t = decltype(Solver{
