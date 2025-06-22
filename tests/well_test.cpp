@@ -91,24 +91,26 @@ TEST_CASE("Well_Test")
 
     cout << "thickness profile:\n"
          << transfer_to_eigen(grid_thickness).transpose();
+
+    struct Record
+    {
+        const RealType rate, pressure;
+    } history_record_q{rate, std::numeric_limits<double>::quiet_NaN()},
+        history_record_p{std::numeric_limits<double>::quiet_NaN(), pressure};
+
+    const Well_KH well_q{
+        water, is_permeable, is_perforated, permeability, well_holes, rMax};
+
+    const auto rfp_q = RFPFactory::create_from_container(well_q.get_RFP(history_record_q), is_permeable);
+    const auto wfp_q = WFPFactory::create_from_container(well_q.get_WFP(history_record_q), is_perforated);
+
+    const Well_KH well_p{
+        water, is_permeable, is_perforated, permeability, well_holes, rMax};
+
+    const auto rfp_p = RFPFactory::create_from_container(well_p.get_RFP(history_record_p), is_permeable);
+    const auto wfp_p = WFPFactory::create_from_container(well_p.get_WFP(history_record_p), is_perforated);
+
     { // check Well_KH
-        struct Record
-        {
-            const RealType rate, pressure;
-        } history_record_q{rate, std::numeric_limits<double>::quiet_NaN()},
-            history_record_p{std::numeric_limits<double>::quiet_NaN(), pressure};
-
-        const Well_KH well_q{
-            water, is_permeable, is_perforated, permeability, well_holes, rMax};
-
-        const auto rfp_q = RFPFactory::create_from_container(well_q.get_RFP(history_record_q), is_permeable);
-        const auto wfp_q = WFPFactory::create_from_container(well_q.get_WFP(history_record_q), is_perforated);
-
-        const Well_KH well_p{
-            water, is_permeable, is_perforated, permeability, well_holes, rMax};
-
-        const auto rfp_p = RFPFactory::create_from_container(well_p.get_RFP(history_record_p), is_permeable);
-        const auto wfp_p = WFPFactory::create_from_container(well_p.get_WFP(history_record_p), is_perforated);
 
         { // check well_kh at fixed rate
 
@@ -186,13 +188,25 @@ TEST_CASE("Well_Test")
     }
 
     { // check Well_explicit
-
-        std::vector<RealType> weights;
+        vector<RealType> weights;
         weights.reserve(grid_thickness.size());
         for (auto i{0ull}; i < grid_thickness.size(); ++i)
             weights.push_back(grid_thickness[i] * permeability_stencils[i]);
 
-        const Well_Explicit well_explicit{
+        const Well_Explicit well_q_exp{
             water, is_permeable, is_perforated, transfer_to_eigen(weights)};
+
+        const auto rfp_q_exp = RFPFactory::create_from_container(well_q_exp.get_RFP(history_record_q), is_permeable);
+        const auto wfp_q_exp = WFPFactory::create_from_container(well_q_exp.get_WFP(history_record_q), is_perforated);
+
+        assert(rfp_p.size() == rfp_q_exp.size());
+        assert(wfp_p.size() == wfp_q.size());
+        assert(rfp_p.size() == wfp_p.size());
+        assert(rfp_q_exp.size() == rfp_q_exp.size());
+        for (auto i{0ll}; i < rfp_p.size(); ++i)
+        {
+            CHECK_THAT(rfp_p.log_vals(i), WithinRel(rfp_q_exp.log_vals(i), tol));
+            CHECK_THAT(wfp_p.log_vals(i), WithinRel(wfp_q_exp.log_vals(i), tol));
+        }
     }
 }

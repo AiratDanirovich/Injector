@@ -188,8 +188,74 @@ namespace GPN
         const ptrdiff_t its_top_collector_cell_id{-1ll};
     };
 
-    struct Well_KH
+        struct Well_Explicit
         : public IWellDesign
+    {
+        Well_Explicit(
+            //    const RealType tube_depth,
+            const PhaseProperties &fluid,
+            const Logs::IsPermeable &is_permeable,
+            const Logs::IsPerforated &is_perforated,
+            const StepPropertyContainer &weights)
+            : IWellDesign{
+                  fluid,
+                  is_permeable,
+                  is_perforated,
+                  /*RFP_weights*/ weights}
+        {
+        }
+
+        template <typename HistoryRecord_t>
+        auto get_RFP(const HistoryRecord_t &history_record) const
+        {
+            return get_RFP(history_record.rate, history_record.pressure);
+        }
+        template <typename HistoryRecord_t>
+        auto get_WFP(const HistoryRecord_t &history_record) const
+        {
+            return get_WFP(history_record.rate, history_record.pressure);
+        }
+
+    protected:
+        StepPropertyContainer get_RFP(
+            RealType rate,
+            RealType pressure) const
+        {
+            if (std::isnan(rate))
+            { // define rate from pressure
+                throw std::invalid_argument("RFP: Rate must be set");
+            }
+            else if (std::isnan(pressure))
+            { // define pressure from rate
+                assert(!std::isnan(rate));
+                assert(rate >= 0.0);
+                return ((rate / weights_sum) * RFP_weights).eval();
+            }
+            else
+                throw std::invalid_argument("RFP: Either rate or pressure must be set, but not both.");
+        }
+
+        StepPropertyContainer get_WFP(
+            RealType rate,
+            RealType pressure) const
+        {
+            if (std::isnan(rate))
+            { // define rate from pressure
+                throw std::invalid_argument("WFP: Rate must be set");
+            }
+            else if (std::isnan(pressure))
+            { // define pressure from rate
+                assert(!std::isnan(rate));
+                assert(rate >= 0.0);
+                return ((rate / weights_sum) * WFP_weights).eval();
+            }
+            else
+                throw std::invalid_argument("WFP: Either rate or pressure must be set, but not both.");
+        }
+    };
+
+    struct Well_KH
+        : public Well_Explicit
     {
         Well_KH(
             //    const RealType tube_depth,
@@ -199,7 +265,7 @@ namespace GPN
             const StepPropertyContainer &permeability,
             const WellHoles &holes,
             const RealType Rext)
-            : IWellDesign{
+            : Well_Explicit{
                   fluid,
                   is_permeable,
                   is_perforated,
@@ -266,71 +332,5 @@ namespace GPN
 
     private:
         const RealType log_dist;
-    };
-
-    struct Well_Explicit
-        : public IWellDesign
-    {
-        Well_Explicit(
-            //    const RealType tube_depth,
-            const PhaseProperties &fluid,
-            const Logs::IsPermeable &is_permeable,
-            const Logs::IsPerforated &is_perforated,
-            const StepPropertyContainer &weights)
-            : IWellDesign{
-                  fluid,
-                  is_permeable,
-                  is_perforated,
-                  /*RFP_weights*/ weights}
-        {
-        }
-
-        template <typename HistoryRecord_t>
-        auto get_RFP(const HistoryRecord_t &history_record) const
-        {
-            return get_RFP(history_record.rate, history_record.pressure);
-        }
-        template <typename HistoryRecord_t>
-        auto get_WFP(const HistoryRecord_t &history_record) const
-        {
-            return get_WFP(history_record.rate, history_record.pressure);
-        }
-
-    protected:
-        StepPropertyContainer get_RFP(
-            RealType rate,
-            RealType pressure) const
-        {
-            if (std::isnan(rate))
-            { // define rate from pressure
-                throw std::invalid_argument("RFP: Rate must be set");
-            }
-            else if (std::isnan(pressure))
-            { // define pressure from rate
-                assert(!std::isnan(rate));
-                assert(rate >= 0.0);
-                return ((rate / weights_sum) * RFP_weights).eval();
-            }
-            else
-                throw std::invalid_argument("RFP: Either rate or pressure must be set, but not both.");
-        }
-
-        StepPropertyContainer get_WFP(
-            RealType rate,
-            RealType pressure) const
-        {
-            if (std::isnan(rate))
-            { // define rate from pressure
-                throw std::invalid_argument("WFP: Rate must be set");
-            }
-            else if (std::isnan(pressure))
-            { // define pressure from rate
-                assert(!std::isnan(rate));
-                assert(rate >= 0.0);
-                return ((rate / weights_sum) * WFP_weights).eval();
-            }
-            else
-                throw std::invalid_argument("WFP: Either rate or pressure must be set, but not both.");
-        }
     };
 } // GPN
