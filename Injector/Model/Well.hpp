@@ -37,7 +37,7 @@ namespace GPN
             assert(tube_radius < sandface_radius);
         }
 
-        std::vector<RealType> generate_uniform_radial_grid(const RealType r_min, const RealType r_max, const ptrdiff_t r_nodes)
+        std::vector<RealType> generate_uniform_radial_grid(const RealType r_min, const RealType r_max, const ptrdiff_t r_nodes) const
         {
             assert(r_min < tube_radius);
             assert(r_max > sandface_radius);
@@ -67,6 +67,7 @@ namespace GPN
             const RealType r_min, const RealType r_max,
             const RealType q,        // ratio of adjascent steps
             const RealType max_step) // max allowed step
+            const
         {
             assert(r_min < tube_radius);
             assert(r_max > sandface_radius);
