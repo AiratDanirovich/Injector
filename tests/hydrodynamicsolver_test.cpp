@@ -13,6 +13,8 @@ const auto r_stencils{Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 
 // hydrodynamic logs
 const auto is_permeable_stencils{
     Logs::RawDataFactory::generate_is_permeable(z_stencils)};
+auto is_perforated_stencils{
+    Logs::RawDataFactory::generate_is_permeable(z_stencils)};
 const auto porosity_stencils{
     Logs::RawDataFactory::generate_porosity(z_stencils, is_permeable_stencils)};
 const auto permeability_stencils{
@@ -22,16 +24,23 @@ const auto solid_density_stencils{
     Logs::RawDataFactory::generate_solid_density(z_stencils)};
 const auto solid_specific_heatcapacity_stencils{
     Logs::RawDataFactory::generate_solid_specific_heatcapacity(z_stencils)};
-const auto heatconductivity_stencils{
+const auto solid_heatconductivity_stencils{
     Logs::RawDataFactory::generate_conductivity(z_stencils)};
 
 TEST_CASE("HydrodynamicsSolverTest")
 {
+    auto it = std::ranges::find_if(
+        is_perforated_stencils,
+        [](RealType v)
+        { return v == 1.0; });
+    (*it) = 0.0;
+
     const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
     const auto &grid{grid2D->first_coord};
 
     const Logs::Rocks::CoreSampleLogs core_data{
         is_permeable_stencils,
+        is_perforated_stencils,
         porosity_stencils,
         permeability_stencils,
         grid};
@@ -42,7 +51,7 @@ TEST_CASE("HydrodynamicsSolverTest")
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
         solid_specific_heatcapacity_stencils,
-        heatconductivity_stencils,
+        solid_heatconductivity_stencils,
         porosity_stencils,
         Phases::FluidFactory::create_water(1.0, 1.0),
         grid};

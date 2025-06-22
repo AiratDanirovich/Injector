@@ -57,6 +57,10 @@ namespace GPN
             {
                 return its_values.rows();
             }
+            auto cols() const
+            {
+                return its_values.cols();
+            }
 
             using Grid_type = Grid_t;
 
@@ -138,6 +142,9 @@ namespace GPN
 
         template <typename Grid2D_t>
         using HeatConductivity = Field<Grid2D_t>;
+        
+        template <typename Grid2D_t>
+        using MediumHeatConductivity = HeatConductivity<Grid2D_t>;
 
         template <typename Grid2D_t>
         struct ThermalDiffusivity

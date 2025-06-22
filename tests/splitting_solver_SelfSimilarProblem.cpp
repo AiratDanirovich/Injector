@@ -5,9 +5,9 @@
 
 #include <Injector/Grids/Grids2D.hpp>
 
-#include <Injector/Properties/Logs.hpp>
 #include <Injector/History/RatesFactory.hpp>
-#include <Injector/Properties/FieldsFactory.hpp>
+
+#include <Injector/Properties/Logs.hpp>
 #include <Injector/Properties/FlowField.hpp>
 
 #include <Injector/Model/Phases/FluidFactory.hpp>
@@ -57,21 +57,23 @@ struct ExactSolution
     return (*this)(zv, rv, t);
   }
 
+  const Grid2D_t &grid;
 protected:
   const Properties::ThermalDiffusivity<Grid2D_t> kappa;
   const Properties::HeatConductivity<Grid2D_t> &heat_conductivity;
   const RealType q;
-  const Grid2D_t &grid;
 };
 
-struct FunctorIC
+struct FunctorIC : public InitialConditions::ICFunctorBase
 {
   FunctorIC(const ExactSolution &es)
       : es{es}
   {
   }
-  RealType operator()(RealType z, RealType r, RealType t0) const
+  RealType operator()(ptrdiff_t z_id, ptrdiff_t r_id, RealType t0) const override
   {
+    const RealType z = es.grid.first_coord.mesh_nodes(z_id);
+    const RealType r = es.grid.second_coord.mesh_nodes(r_id);
     return es(z, r, t0);
   }
 
@@ -96,7 +98,7 @@ struct AFunctorBC : public GPN::BoundaryConditions::BCFunctorBase
   {
   }
 
-  RealType operator()(ptrdiff_t z_id, RealType r, RealType t) const override
+  RealType operator()(const ptrdiff_t z_id, RealType r, const RealType t) const override
   {
     RealType z{grid2D->first_coord.mesh_nodes(z_id)};
     if (r == grid2D->second_coord.dual_front())
@@ -109,7 +111,7 @@ struct AFunctorBC : public GPN::BoundaryConditions::BCFunctorBase
     return es(z, r, t);
   }
 
-  RealType operator()(RealType z, ptrdiff_t r_id, RealType t) const override
+  RealType operator()(RealType z, const ptrdiff_t r_id, const RealType t) const override
   {
     RealType r{grid2D->second_coord.mesh_nodes(r_id)};
     if (z == grid2D->first_coord.dual_front())
@@ -143,11 +145,11 @@ const VR thickness(nLayers, 0.01); // each layer is 1m thick
 const VR is_permeable_stencils(nLayers, 1.0);
 const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 0.0)};
 
-const VR heatconductivity_stencils(nLayers, 3.9);
+const LogValuesContainer solid_heatconductivity_stencils{LogValuesContainer::Constant(nLayers, 3.9)};
 const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 3.9 /*should be 2600 in SI*/)};
 const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
 /*temporal grid*/
-const std::ptrdiff_t time_steps_nmbr{501ull};
+const std::ptrdiff_t time_steps_nmbr{51ull};
 const RealType t0{1.0}; // initial time moment
 const RealType t1{t0 + 1.0};
 const RealType time_step{(t1 - t0) / time_steps_nmbr};
@@ -167,7 +169,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
   const auto &grid{grid2D->first_coord};
   // make fluid
-  const Water water{
+  const PhaseProperties water{
       FluidFactory::create_water(
           Viscosity{viscosity},
           Density{density},
@@ -189,7 +191,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
       solid_specific_heatcapacity_stencils,
-      heatconductivity_stencils,
+      solid_heatconductivity_stencils,
       porosity_stencils,
       Phases::FluidFactory::create_water(1.0, 1.0),
       grid};
@@ -202,7 +204,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
   // exact solution
   ExactSolution es{heat_props.medium_vol_heatcapacity,
-                   heat_props.heat_conductivity, q};
+                   heat_props.medium_heat_conductivity, q};
   // initial conditions
   const auto initial_state{initialcondition_factory(t0, grid2D, es)};
   // boundary conditions
@@ -214,7 +216,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       grid2D, core_data.is_permeable};
 
   Solver solver{
-      heat_face_props.heat_conductivity,
+      heat_face_props.medium_heat_conductivity,
       grid2D,
       heat_props.medium_vol_heatcapacity,
       rates_factory, initial_state,
