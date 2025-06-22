@@ -82,7 +82,6 @@ namespace GPN
                             (is_permeable.log_vals - is_perforated.log_vals).eval()},
                         is_permeable.grid}};
             }
-
         };
 
         struct IsPerforatedFactory
@@ -116,7 +115,8 @@ namespace GPN
                 assert(predicate <= 1ull);
 
                 // at least one perforated layer must exist
-                assert(std::any_of(is_perforated.cbegin(), is_perforated.cend(), [](const RealType v){return v == 1.0;}));
+                assert(std::any_of(is_perforated.cbegin(), is_perforated.cend(), [](const RealType v)
+                                   { return v == 1.0; }));
 
                 return IsPerforated{
                     StepPropertyGrid{
@@ -235,7 +235,7 @@ namespace GPN
         {
             static RateWeights create(
                 const auto &weights,
-                const IsPermeable& is_permeable,
+                const IsPermeable &is_permeable,
                 const auto &grid)
             {
                 return {
@@ -290,6 +290,16 @@ namespace GPN
                         StepProperty{
                             heat_conductivity},
                         grid}};
+            }
+
+            static MediumHeatConductivity create(
+                const auto &porosity,
+                const auto &solid_heat_conductivity,
+                const auto &fluid,
+                const auto &grid)
+            {
+                return create(
+                    porosity * fluid.heat_conductivity + (1.0 - porosity) * solid_heat_conductivity, grid);
             }
         };
 
@@ -367,10 +377,12 @@ namespace GPN
                 const auto &fluid,
                 const auto &grid)
             {
-                return {StepPropertyGrid{StepProperty{
-                                             porosity * fluid.volumetric_heat_capacity +
-                                             (1.0 - porosity) * solid_vol_heatcapacity},
-                                         grid}};
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            porosity * fluid.volumetric_heat_capacity +
+                            (1.0 - porosity) * solid_vol_heatcapacity},
+                        grid}};
             }
 
             static MediumHeatVolumetricCapacity create(
@@ -398,7 +410,7 @@ namespace GPN
 
             template <typename Record_t, typename Well_t>
             static auto create_from_well(
-                const Record_t& history_record,
+                const Record_t &history_record,
                 const Well_t &well)
             {
                 return RFP{

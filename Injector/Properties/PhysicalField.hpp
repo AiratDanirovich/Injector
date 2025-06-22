@@ -142,6 +142,9 @@ namespace GPN
 
         template <typename Grid2D_t>
         using HeatConductivity = Field<Grid2D_t>;
+        
+        template <typename Grid2D_t>
+        using MediumHeatConductivity = HeatConductivity<Grid2D_t>;
 
         template <typename Grid2D_t>
         struct ThermalDiffusivity

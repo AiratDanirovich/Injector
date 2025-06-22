@@ -447,6 +447,8 @@ namespace GPN
             }
         };
 
+        using MediumHeatConductivity = HeatConductivity;
+
         struct ThermalDiffusivity
             : public StepPropertyGrid,
               private AssertNonNegative

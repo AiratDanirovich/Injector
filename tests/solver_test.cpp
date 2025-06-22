@@ -58,7 +58,7 @@ const auto solid_density_stencils{
     Logs::RawDataFactory::generate_solid_density(z_stencils)};
 const auto solid_specific_heatcapacity_stencils{
     Logs::RawDataFactory::generate_solid_specific_heatcapacity(z_stencils)};
-const auto heatconductivity_stencils{
+const auto solid_heatconductivity_stencils{
     Logs::RawDataFactory::generate_conductivity(z_stencils)};
 
 TEST_CASE("Solver")
@@ -75,7 +75,7 @@ TEST_CASE("Solver")
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
         solid_specific_heatcapacity_stencils,
-        heatconductivity_stencils,
+        solid_heatconductivity_stencils,
         porosity_stencils,
         Phases::FluidFactory::create_water(1.0, 1.0),
         grid};
@@ -106,7 +106,7 @@ TEST_CASE("Solver")
         grid2D, core_data.is_permeable};
 
     Solver solver{
-        heat_face_props.heat_conductivity,
+        heat_face_props.medium_heat_conductivity,
         grid2D,
         heat_props.medium_vol_heatcapacity,
         rates_factory, initial_state,

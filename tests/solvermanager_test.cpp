@@ -173,11 +173,10 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
   const std::ptrdiff_t nLayers{11ull};
   const VR thickness(nLayers, 0.01); // each layer is 1m thick
 
-  const VR conductivity(nLayers, 3.9);
   const VR porosity(nLayers, 1e-16);
   const VR is_permeable_stencils(nLayers, 1.0);
   const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 0.0)};
-  const VR heatconductivity_stencils(nLayers, 3.9);
+  const LogValuesContainer solid_heatconductivity_stencils{LogValuesContainer::Constant(nLayers, 3.9)};
   const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 3.9 /*should be 2600 in SI*/)};
   const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
   /*temporal grid*/
@@ -225,7 +224,7 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
       solid_specific_heatcapacity_stencils,
-      heatconductivity_stencils,
+      solid_heatconductivity_stencils,
       porosity_stencils,
       water,
       grid};
@@ -243,7 +242,7 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
 
   // exact solution
   ExactSolution es{heat_props.medium_vol_heatcapacity,
-                   heat_props.heat_conductivity, q};
+                   heat_props.medium_heat_conductivity, q};
   // initial conditions
   const auto initial_state{initialcondition_factory(t0, grid2D, es)};
   // boundary conditions
@@ -255,14 +254,14 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
 
   // solver
   using Solver_t = decltype(Solver{
-      heat_face_props.heat_conductivity,
+      heat_face_props.medium_heat_conductivity,
       grid2D,
       heat_props.medium_vol_heatcapacity,
       rates_factory, initial_state,
       bc, t0});
 
   const cptr<Solver_t> solver{std::make_shared<Solver_t>(
-      heat_face_props.heat_conductivity,
+      heat_face_props.medium_heat_conductivity,
       grid2D,
       heat_props.medium_vol_heatcapacity,
       rates_factory, initial_state,
