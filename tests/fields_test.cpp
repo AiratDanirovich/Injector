@@ -48,7 +48,7 @@ const auto solid_density_stencils{
     Logs::RawDataFactory::generate_solid_density(grid_stencils)};
 const auto solid_specific_heatcapacity_stencils{
     Logs::RawDataFactory::generate_solid_specific_heatcapacity(grid_stencils)};
-const auto heatconductivity_stencils{
+const auto solid_heatconductivity_stencils{
     Logs::RawDataFactory::generate_conductivity(grid_stencils)};
 
 TEST_CASE("FieldsTest")
@@ -80,7 +80,7 @@ TEST_CASE("FieldsTest")
         const Logs::Rocks::HeatLogs heat_logs{
             solid_density_stencils,
             solid_specific_heatcapacity_stencils,
-            heatconductivity_stencils,
+            solid_heatconductivity_stencils,
             porosity_stencils,
             Phases::FluidFactory::create_water(1.0, 1.0),
             grid};
@@ -128,7 +128,7 @@ TEST_CASE("FieldsTest")
         const Logs::Rocks::HeatLogs heat_logs{
             solid_density_stencils,
             solid_specific_heatcapacity_stencils,
-            heatconductivity_stencils,
+            solid_heatconductivity_stencils,
             porosity_stencils,
             Phases::FluidFactory::create_water(1.0, 1.0),
             grid};

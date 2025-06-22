@@ -261,7 +261,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"], 1e-12)};
   const auto weights_stencils{transfer_to_eigen(data["collector"]["explicit"]["weights"])};
   // heat logs
-  const VR heatconductivity_stencils = data["collector"]["heatConductivity"];
+  const auto solid_heatconductivity_stencils{transfer_to_eigen(data["collector"]["heatConductivity"])};
   const auto solid_density_stencils{transfer_to_eigen(data["collector"]["solidDensity"])};
   const auto solid_specific_heatcapacity_stencils{transfer_to_eigen(data["collector"]["solidSpecificHeatCapacity"])};
   /*grid*/
@@ -341,7 +341,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
       solid_specific_heatcapacity_stencils,
-      heatconductivity_stencils,
+      solid_heatconductivity_stencils,
       porosity_stencils,
       water,
       grid2D->first_coord};
@@ -372,14 +372,14 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       BoundaryConditions::BoundaryCondition::second};
   // solver
   using Solver_t = decltype(Solver{
-      heat_face_props.heat_conductivity,
+      heat_face_props.medium_heat_conductivity,
       grid2D,
       heat_props.medium_vol_heatcapacity,
       rates_factory, initial_state,
       bc, start_time});
 
   auto solver_ptr = std::make_shared<Solver_t>(
-      heat_face_props.heat_conductivity,
+      heat_face_props.medium_heat_conductivity,
       grid2D,
       heat_props.medium_vol_heatcapacity,
       rates_factory, initial_state,
