@@ -62,12 +62,13 @@ auto ICFactory(RealType t0, const Grid_t_ptr grid, const Logs::Geotherma &geothe
   return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{geotherma}, t0)};
 }
 
+template <typename Well_t>
 struct FunctorBC : public BoundaryConditions::BCFunctorBase
 {
   using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
   using ConvectionFieldFactory_t =
       GPN::FaceProperties::RatesFactory<
-          Grid2D_t, Well_KH, PhaseProperties>;
+          Grid2D_t, Well_t, PhaseProperties>;
   FunctorBC(
       const Logs::IsPermeable &is_permeable,
       const ConvectionFieldFactory_t &flow_field, // volumetric heat flow rate
@@ -258,6 +259,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"])};
   const auto porosity_stencils{transfer_to_eigen(data["collector"]["porosity"])};
   const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"], 1e-12)};
+  const auto weights_stencils{transfer_to_eigen(data["collector"]["explicit"]["weights"])};
   // heat logs
   const VR heatconductivity_stencils = data["collector"]["heatConductivity"];
   const auto solid_density_stencils{transfer_to_eigen(data["collector"]["solidDensity"])};
@@ -326,8 +328,15 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           SpecificHeatCapacity{capacity},
           GPN::HeatConductivity{heat_conductivity})};
   // well
-  const Well_KH well{
-      water, core_data.is_permeable, core_data.is_perforated, core_data.permeability, well_holes, rMax};
+  // const Well_KH well{
+  //     water, core_data.is_permeable, core_data.is_perforated, core_data.permeability, well_holes, rMax};
+  const auto weights{
+      RateWeightsFactory::create(
+          weights_stencils,
+          core_data.is_permeable,
+          grid)};
+  const Well_Explicit well{
+      water, core_data.is_permeable, core_data.is_perforated, weights};
 
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
@@ -358,7 +367,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // boundary conditions
   const GPN::BoundaryConditions::BoundaryConditions bc{
       *grid2D,
-      std::make_shared<FunctorBC>(
+      std::make_shared<FunctorBC<std::remove_const<decltype(well)>::type>>(
           core_data.is_permeable, rates_factory, grid2D),
       BoundaryConditions::BoundaryCondition::second};
   // solver

@@ -112,7 +112,7 @@ TEST_CASE("RFP_reservoir")
         cout << "rfp:\n"
              << rfp.log_vals.transpose() << endl;
         cout << "top_collector_cell_id:\n"
-             << well.top_collector_cell_id << endl;
+             << well.top_collector_cell_id() << endl;
              
 
         for (auto i{0ll}; i < rfp.size(); ++i)

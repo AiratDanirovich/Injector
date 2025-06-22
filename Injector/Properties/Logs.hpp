@@ -39,7 +39,7 @@ namespace GPN
                           adata.end())}
             {
             }
- 
+
             StepProperty(
                 const std::vector<RealType> &adata)
                 : data(adata.size())
@@ -228,13 +228,33 @@ namespace GPN
         {
             using IndicatorProperty::IndicatorProperty;
         };
-        
+
         /// @brief Indicator of perforated cells,
         /// so the liquid can leave the tube-column,
         /// to further flow along the cement
         struct IsGhostLayer : public IndicatorProperty
         {
             using IndicatorProperty::IndicatorProperty;
+        };
+
+        /// @brief Rate distribution along the
+        /// layers
+        struct RateWeights
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            RateWeights(
+                const StepPropertyGrid &weights,
+                const IsPermeable &is_permeable)
+                : StepPropertyGrid{weights},
+                  AssertNonNegative{weights}
+            {
+                assert(weights.size() == is_permeable.size());
+                for (std::ptrdiff_t id{0ll}; id < weights.size(); ++id)
+                    assert(
+                        ((is_permeable(id) == 1.0) && (weights(id) > 0.0)) ||
+                        ((is_permeable(id) == 0.0) && (weights(id) == 0.0)));
+            }
         };
 
         struct ExternalPressure

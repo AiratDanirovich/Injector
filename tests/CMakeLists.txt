@@ -39,7 +39,7 @@ add_catch2_test(splitx_test)
 add_catch2_test(splity_test)
 add_catch2_test(solver_test)
 
-add_catch2_test(well_kh_test)
+add_catch2_test(well_test)
 add_catch2_test(flowfield_test)
 add_catch2_test(hydrodynamicsolver_test)
 
