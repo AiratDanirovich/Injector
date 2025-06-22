@@ -235,7 +235,7 @@ namespace GPN
         {
             static RateWeights create(
                 const auto &weights,
-                const auto &is_permeable,
+                const IsPermeable& is_permeable,
                 const auto &grid)
             {
                 return {
@@ -243,7 +243,7 @@ namespace GPN
                         StepProperty{
                             weights},
                         grid},
-                    IsPermeableFactory::create(is_permeable, grid)};
+                    is_permeable};
             }
         };
 
