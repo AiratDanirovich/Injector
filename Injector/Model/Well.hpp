@@ -213,8 +213,10 @@ namespace GPN
             else
                 assert("Incorrect injector regime!");
 
-            assert(pressure > 0.0);
-            assert(rate > 0.0);
+            // assert(pressure >= 0.0);
+            // assert(rate >= 0.0);
+
+            assert(((pressure == 0.0) && (rate == 0.0)) || ((pressure > 0.0) && (rate > 0.0)));
             return ((rate / weights_sum) * RFP_weights).eval();
             //  {
             //     Logs::StepPropertyGrid{
@@ -240,8 +242,9 @@ namespace GPN
             else
                 assert("Incorrect injector regime!");
 
-            assert(pressure > 0.0);
-            assert(rate > 0.0);
+            // assert(pressure >= 0.0);
+            // assert(rate >= 0.0);
+            assert(((pressure == 0.0) && (rate == 0.0)) || ((pressure > 0.0) && (rate > 0.0)));
 
             return ((rate / weights_sum) * WFP_weights).eval();
         }
