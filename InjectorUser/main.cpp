@@ -80,12 +80,12 @@ int main()
     const RealType
         t0{data["history"]["start_time"] * factor};
     RealType t_minor_step{data["history"]["t_minor_step"] * factor};
-    VR t_major_steps = data["history"]["history_type"]["t_major_step"];
+    VR t_major_steps = data["history"]["dynamic"]["t_major_step"];
     for (auto &v : t_major_steps)
         v *= factor;
     /*temperatures*/
-    const VR well_rates{data["history"]["dynamic"]["well_rate"]}; // m^3/s
-    const VR inlet_temperatures{data["history"]["dynamic"]["inlet_temperature"]};
+    const VR well_rates = data["history"]["dynamic"]["well_rate"]; // m^3/s
+    const VR inlet_temperatures = data["history"]["dynamic"]["inlet_temperature"];
     /*well*/
     const RealType sandface_radius{data["well"]["sandface_radius"]};
     const RealType tube_radius{data["well"]["tube_radius"]};
