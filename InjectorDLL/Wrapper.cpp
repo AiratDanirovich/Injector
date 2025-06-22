@@ -128,7 +128,7 @@ Wrapper::Wrapper(
     // eight vectors of the same size
     // values are in SI
     const VR &thickness,                   // meter
-    const VR &heatconductivity_stencils,   // Watt/(m*K)
+    const VR &solid_heatconductivity,   // Watt/(m*K)
     const VR &porosity,                    // 0.0 < porosity <= 1.0, --
     const VR &permeability_stencils,       // m^2
     const VR &weights_stencils,            // -- /*rate distribution between layers*/
@@ -162,6 +162,8 @@ Wrapper::Wrapper(
     std::copy(solid_specific_heatcapacity.begin(), solid_specific_heatcapacity.end(), solid_specific_heatcapacity_stencils.begin());
     LogValuesContainer porosity_stencils(porosity.size());
     std::copy(porosity.begin(), porosity.end(), porosity_stencils.begin());
+    LogValuesContainer solid_heatconductivity_stencils(solid_heatconductivity.size());
+    std::copy(solid_heatconductivity.begin(), solid_heatconductivity.end(), solid_heatconductivity_stencils.begin());
 
     // r_stencils
     GPN::WellHoles well_holes{tube_radius, sandface_radius};
@@ -205,7 +207,7 @@ Wrapper::Wrapper(
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
         solid_specific_heatcapacity_stencils,
-        heatconductivity_stencils,
+        solid_heatconductivity_stencils,
         porosity_stencils,
         water,
         grid2D->first_coord};
@@ -237,14 +239,14 @@ Wrapper::Wrapper(
         BoundaryConditions::BoundaryCondition::second};
     // solver
     using Solver_t = decltype(Solver{
-        heat_face_props.heat_conductivity,
+        heat_face_props.medium_heat_conductivity,
         grid2D,
         heat_props.medium_vol_heatcapacity,
         rates_factory, initial_state,
         bc, t_start});
 
     auto solver_ptr = std::make_shared<Solver_t>(
-        heat_face_props.heat_conductivity,
+        heat_face_props.medium_heat_conductivity,
         grid2D,
         heat_props.medium_vol_heatcapacity,
         rates_factory, initial_state,
