@@ -237,7 +237,7 @@ namespace GPN
             using IndicatorProperty::IndicatorProperty;
         };
 
-        /// @brief Rate distribution along the 
+        /// @brief Rate distribution along the
         /// layers
         struct RateWeights
             : public StepPropertyGrid,
