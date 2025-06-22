@@ -4,7 +4,7 @@
 #include <Injector/Grids/Defines.h>
 #include <Injector/Properties/FaceProperties.hpp>
 
-#include <Injector/Properties/FlowField.hpp>
+#include <Injector/History/RatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 
@@ -18,16 +18,15 @@ struct ABCFunctor : public GPN::BoundaryConditions::BCFunctorBase
 {
     ABCFunctor(RealType val) : val{val} {}
 
+    RealType operator()(const ptrdiff_t, const RealType, const RealType) const override
+    {
+        return val;
+    }
 
-  RealType operator()(ptrdiff_t, RealType, RealType) const override
-  {
-    return val;
-  }
-
-  RealType operator()(RealType, ptrdiff_t, RealType) const override
-  {
-    return val;
-  }
+    RealType operator()(const RealType, const ptrdiff_t, const RealType) const override
+    {
+        return val;
+    }
 
 protected:
     RealType val;
@@ -48,6 +47,8 @@ const auto r_stencils{
 // hydrodynamic logs
 const auto is_permeable_stencils{
     Logs::RawDataFactory::generate_is_permeable(z_stencils)};
+auto is_perforated_stencils{
+    Logs::RawDataFactory::generate_is_permeable(z_stencils)};
 const auto porosity_stencils{
     Logs::RawDataFactory::generate_porosity(z_stencils, is_permeable_stencils)};
 const auto permeability_stencils{
@@ -62,6 +63,12 @@ const auto heatconductivity_stencils{
 
 TEST_CASE("Solver")
 {
+    auto it = std::ranges::find_if(
+        is_perforated_stencils,
+        [](RealType v)
+        { return v == 1.0; });
+    (*it) = 0.0;
+
     const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
     const auto &grid{grid2D->first_coord};
 
@@ -89,19 +96,20 @@ TEST_CASE("Solver")
 
     const Logs::Rocks::CoreSampleLogs core_data{
         is_permeable_stencils,
+        is_perforated_stencils,
         porosity_stencils,
         permeability_stencils,
         grid};
 
-    const auto flow_field{
-        FaceProperties::FlowFactory::zero_flow(
-            core_data.is_permeable, *grid2D)};
+    // rates field factory
+    FaceProperties::ZeroRatesFactory rates_factory{
+        grid2D, core_data.is_permeable};
 
     Solver solver{
         heat_face_props.heat_conductivity,
-        flow_field, grid2D,
+        grid2D,
         heat_props.medium_vol_heatcapacity,
-        initial_state,
+        rates_factory, initial_state,
         bc, 0.0};
 
     solver.advance(0.005);

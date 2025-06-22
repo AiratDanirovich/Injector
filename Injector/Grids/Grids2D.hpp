@@ -82,7 +82,7 @@ namespace GPN
             /// @brief cell volume at node ids {id1, id2}
             auto volume(auto id1, auto id2) const
             {
-                return first_coord.cell_volumes(id1) * second_coord.cell_volumes(id2);
+                return its_volumes(id1, id2);
             }
 
             const auto &volumes() const
@@ -150,13 +150,21 @@ namespace GPN
                 return create_cylinder_grid_2D_ptr(
                     z_stencils, r_stencils);
             }
+            
+            template<typename Refiner_t>
+            static auto create(Refiner_t&& refiner, const auto &z_stencils, const auto &r_stencils)
+            {
+                return create_cylinder_grid_2D_ptr(
+                    refiner,
+                    z_stencils, r_stencils);
+            }
 
         protected:
             static auto create_cartesian_grid_2D_ptr(ptrdiff_t n)
             {
                 auto stencils{Factory::generate_dual_grid_stencils_uniform(0, 1, n)};
 
-                auto nodes{GridDual{stencils}};
+                auto nodes{GridDual{stencils, CoordinateTypes::X{}}};
 
                 auto x_grid{
                     AxesGrid<CoordinateTypes::X>{nodes}};
@@ -177,6 +185,15 @@ namespace GPN
             static auto create_cylinder_grid_2D_ptr(const auto &z_stencils, const auto &r_stencils)
             {
                 auto z_grid{Factory::create_axes<CoordinateTypes::Z>(z_stencils)};
+                auto r_grid{Factory::create_axes<CoordinateTypes::R_CylCoord>(r_stencils)};
+
+                return std::make_shared<StructuredCylinderGrid2DAxisymmetric>(z_grid, r_grid);
+            }
+            
+            template<typename Refiner_t>
+            static auto create_cylinder_grid_2D_ptr(Refiner_t&& refiner, const auto &z_stencils, const auto &r_stencils)
+            {
+                auto z_grid{Factory::create_axes<CoordinateTypes::Z>(refiner, z_stencils)};
                 auto r_grid{Factory::create_axes<CoordinateTypes::R_CylCoord>(r_stencils)};
 
                 return std::make_shared<StructuredCylinderGrid2DAxisymmetric>(z_grid, r_grid);

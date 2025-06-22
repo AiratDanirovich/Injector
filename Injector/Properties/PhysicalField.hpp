@@ -44,7 +44,7 @@ namespace GPN
             const auto &values() const { return its_values; }
             RealType value(auto first, auto second) const { return values()(first, second); }
 
-            auto &col(auto i)
+            auto col(auto i)
             {
                 return its_values.col(i);
             }
@@ -52,10 +52,19 @@ namespace GPN
             {
                 return its_values.col(i);
             }
+            
+            auto rows() const
+            {
+                return its_values.rows();
+            }
+            auto cols() const
+            {
+                return its_values.cols();
+            }
 
             using Grid_type = Grid_t;
 
-            const GridNodeValues2D its_values;
+            GridNodeValues2D its_values;
             const cptr<Grid_type> grid;
         };
 

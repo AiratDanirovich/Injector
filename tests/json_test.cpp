@@ -1,4 +1,7 @@
 #include <fstream>
+#include <iostream>
+#include <vector>
+#include <filesystem>
 #include <nlohmann/json.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -8,10 +11,20 @@ using namespace std;
 // Tests Cylinder grid, (r; z)
 TEST_CASE("BaseSplitTest")
 {
-    ifstream f("../../../tests/test_data/json_test_data.json");
+    ifstream f("json_test_data.json");
+    if(!f.is_open())
+    {
+        cout << "cwd: " << filesystem::current_path() << endl;
+    }
 
     REQUIRE(f.is_open());
     json data = json::parse(f);
+
+    std::vector<double> v = data["array"];
+
+    CHECK(v[0] == 0.0);
+    CHECK(v[1] == 1.5);
+    CHECK(v[2] == 2.0);
 
     CHECK(data["fluid"]["density"] == 1.0);
     CHECK(data["fluid"]["viscosity"] == 1.0);

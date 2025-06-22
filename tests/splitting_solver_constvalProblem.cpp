@@ -4,6 +4,7 @@
 #include <Injector/Grids/Defines.h>
 
 #include <Injector/Properties/FlowField.hpp>
+#include <Injector/History/RatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 
@@ -18,13 +19,13 @@ struct ABCFunctor : public GPN::BoundaryConditions::BCFunctorBase
 {
   ABCFunctor(RealType val) : val{val} {}
 
-  RealType operator()(ptrdiff_t z, RealType r, RealType t) const override
+  RealType operator()(const ptrdiff_t z, const RealType r, const RealType t) const override
   {
 
     return val;
   }
 
-  RealType operator()(RealType z, ptrdiff_t r, RealType t) const override
+  RealType operator()(const RealType z, const ptrdiff_t r, const RealType t) const override
   {
     return val;
   }
@@ -90,12 +91,15 @@ TEST_CASE("Solver")
 
   const FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
+    // rates field factory
+    FaceProperties::ZeroRatesFactory rates_factory{
+        grid2D, core_data.is_permeable};
 
   Solver solver{
       heat_face_props.heat_conductivity,
-      flow_field, grid2D,
+      grid2D,
       heat_props.medium_vol_heatcapacity,
-      initial_state,
+      rates_factory, initial_state,
       bc, 0.0};
 
   RealType step{1.0};
@@ -103,6 +107,7 @@ TEST_CASE("Solver")
   for (ptrdiff_t t{0ll}; t < nT; ++t)
   {
     solver.advance(step);
+    solver.save_state();
     std::cout << "time: " << t * step << std::endl;
   }
 
