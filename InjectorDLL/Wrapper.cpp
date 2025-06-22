@@ -65,12 +65,13 @@ auto ICFactory(RealType t_start, const Grid_t_ptr grid, const Logs::Geotherma &g
     return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{geotherma}, t_start)};
 }
 
+template<typename Well_t>
 struct FunctorBC : public GPN::BoundaryConditions::BCFunctorBase
 {
     using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
     using ConvectionFieldFactory_t =
         GPN::FaceProperties::RatesFactory<
-            Grid2D_t, Well_KH, PhaseProperties>;
+            Grid2D_t, Well_t, PhaseProperties>;
 
     FunctorBC(
         const Logs::IsPermeable &is_permeable,
@@ -130,6 +131,7 @@ Wrapper::Wrapper(
     const VR &heatconductivity_stencils,   // Watt/(m*K)
     const VR &porosity,                    // 0.0 < porosity <= 1.0, --
     const VR &permeability_stencils,       // m^2
+    const VR &weights_stencils,            // -- /*rate distribution between layers*/
     const VR &is_permeable,                // {0, 1}, --
     const VR &is_perforated,               // {0, 1}, --
     const VR &solid_density,               // kg/(m^3)
@@ -143,10 +145,10 @@ Wrapper::Wrapper(
     const VR &time_intervals,    // intervals of const rates)
     const RealType t_minor_step, // time step used for numerical integration
     // well
-    const RealType tube_radius,      // m
-    const RealType sandface_radius,  // m
-    const VR well_rates,        // ~1.1E-3 m^3/s
-    const VR inlet_temperatures // K
+    const RealType tube_radius,     // m
+    const RealType sandface_radius, // m
+    const VR well_rates,            // ~1.1E-3 m^3/s
+    const VR inlet_temperatures     // K
 )
 {
     // adapt stl container to Eigen container
@@ -190,10 +192,15 @@ Wrapper::Wrapper(
             SpecificHeatCapacity{capacity},
             HeatConductivity{heat_conductivity_fluid})};
 
-    const Well_KH well{
-        water, core_data.is_permeable, 
-        core_data.is_perforated, core_data.permeability, 
-        well_holes, rMax};
+    const auto weights{
+        Logs::RateWeightsFactory::create(
+            weights_stencils,
+            core_data.is_permeable,
+            grid)};
+
+    const Well_Explicit well{
+        water, core_data.is_permeable,
+        core_data.is_perforated, weights};
 
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
@@ -225,7 +232,7 @@ Wrapper::Wrapper(
     // boundary conditions
     const GPN::BoundaryConditions::BoundaryConditions bc{
         *grid2D,
-        std::make_shared<FunctorBC>(
+        std::make_shared<FunctorBC<std::remove_const<decltype(well)>::type>>(
             core_data.is_permeable, rates_factory, grid2D),
         BoundaryConditions::BoundaryCondition::second};
     // solver

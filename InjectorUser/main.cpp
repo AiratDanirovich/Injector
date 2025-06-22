@@ -52,6 +52,7 @@ int main()
     const VR is_perforated_stencils = data["collector"]["is_perforated"];
     const VR porosity_stencils = data["collector"]["porosity"];
     const VR permeability_stencils = data["collector"]["permeability"];
+    const VR weights_stencils = data["collector"]["explicit"]["weights"];
     // heat logs
     const VR heatconductivity_stencils = data["collector"]["heatConductivity"];
     const VR solid_density_stencils = data["collector"]["solidDensity"];
@@ -117,6 +118,7 @@ int main()
         heatconductivity_stencils,            // Watt/(m*K)
         porosity_stencils,                    // --
         permeability_stencils,                // m^2
+        weights_stencils,                     // -- /*rate distribution between layers*/
         is_permeable_stencils,                // {0, 1}, --
         is_perforated_stencils,               // {0, 1}, --
         solid_density_stencils,               // kg/(m^3)

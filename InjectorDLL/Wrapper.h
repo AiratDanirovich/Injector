@@ -37,6 +37,7 @@ public:
         const VR &conductivity,                // W/(m*K)
         const VR &porosity,                    // --
         const VR &permeability,                // m^2
+        const VR &weights_stencils,            // -- /*rate distribution between layers*/
         const VR &is_permeable,                // {0, 1}, --
         const VR &is_perforated,               // {0, 1}, --
         const VR &solid_density,               // kg/(m^3)
@@ -50,10 +51,10 @@ public:
         const VR &time_intervals,    // time intervals (in seconds) of const rates
         const RealType t_minor_step, // time step used for numerical integration
         // well
-        const RealType tube_radius,      // m
-        const RealType sandface_radius,  // m
-        const VR well_rates,        // ~1.1E-3 m^3/s
-        const VR inlet_temperatures // K
+        const RealType tube_radius,     // m
+        const RealType sandface_radius, // m
+        const VR well_rates,            // ~1.1E-3 m^3/s
+        const VR inlet_temperatures     // K
     );
     ~Wrapper();
 
