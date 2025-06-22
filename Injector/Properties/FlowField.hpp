@@ -150,7 +150,7 @@ namespace GPN
                     const auto &rfp_vals{rfp.log_vals};
                     // cumsum of rfp flow rates
                     LogValuesContainer cum_sum{LogValuesContainer::Zero(grid2D.first_coord.dual_size())};
-                    std::partial_sum(rfp_vals.cbegin(), rfp_vals.cbegin() + well.top_collector_cell_id, cum_sum.begin() + 1ll, std::plus<RealType>());
+                    std::partial_sum(rfp_vals.cbegin(), rfp_vals.cbegin() + well.top_collector_cell_id(), cum_sum.begin() + 1ll, std::plus<RealType>());
 
                     // leftover flowrate along the well
                     const LogValuesContainer& z_flow{cum_sum};

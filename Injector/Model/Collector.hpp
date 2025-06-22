@@ -46,7 +46,7 @@ namespace GPN
                     {
                         assert(
                             (is_permeable(i) == 1.0) ||
-                            ((is_permeable(i) == 0.0) && (porosity(i) == 0.0) && (permeability(i) == 0.0)));
+                            ((is_permeable(i) == 0.0) && (is_perforated(i) == 0.0) && (porosity(i) == 0.0) && (permeability(i) == 0.0)));
                     }
                 }
 
