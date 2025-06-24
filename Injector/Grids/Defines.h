@@ -198,6 +198,14 @@ namespace GPN
         Step_Z step_z;
     };
 
+    namespace InitialConditions
+    {
+        struct ICFunctorBase
+        {
+            virtual RealType operator()(const ptrdiff_t, const ptrdiff_t, const RealType) const = 0;
+        };
+    } // InitialConditions
+
     // x-axis goes up-down, South-North
     // y-axis goes left-right, East-West
     namespace BoundaryConditions
@@ -257,8 +265,8 @@ namespace GPN
 
         struct BCFunctorBase
         {
-            virtual RealType operator()(ptrdiff_t x, RealType y, RealType t) const = 0;
-            virtual RealType operator()(RealType x, ptrdiff_t y, RealType t) const = 0;
+            virtual RealType operator()(const ptrdiff_t x, RealType y, const RealType t) const = 0;
+            virtual RealType operator()(RealType x, const ptrdiff_t y, const RealType t) const = 0;
         };
     } // BoundaryConditions
 } // EqSolver

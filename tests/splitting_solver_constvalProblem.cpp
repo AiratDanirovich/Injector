@@ -19,13 +19,13 @@ struct ABCFunctor : public GPN::BoundaryConditions::BCFunctorBase
 {
   ABCFunctor(RealType val) : val{val} {}
 
-  RealType operator()(ptrdiff_t z, RealType r, RealType t) const override
+  RealType operator()(const ptrdiff_t z, const RealType r, const RealType t) const override
   {
 
     return val;
   }
 
-  RealType operator()(RealType z, ptrdiff_t r, RealType t) const override
+  RealType operator()(const RealType z, const ptrdiff_t r, const RealType t) const override
   {
     return val;
   }
@@ -49,7 +49,7 @@ const auto nLayers{31ll}, nR{51ll};
 const VR is_permeable_stencils(nLayers-1ll, 1.0);
 const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers-1ll, 1e-16)};
 
-const VR heatconductivity_stencils(nLayers-1ll, 3.9);
+const LogValuesContainer solid_heatconductivity_stencils(LogValuesContainer::Constant(nLayers-1ll,3.9));
 const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers-1ll,3.9 /*should be 2600 in SI*/)};
 const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers-1ll, 1.0 /*should be 770 in SI*/)};
 
@@ -81,7 +81,7 @@ TEST_CASE("Solver")
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
       solid_specific_heatcapacity_stencils,
-      heatconductivity_stencils,
+      solid_heatconductivity_stencils,
       porosity_stencils,
       Phases::FluidFactory::create_water(1.0, 1.0),
       grid};
@@ -96,14 +96,14 @@ TEST_CASE("Solver")
         grid2D, core_data.is_permeable};
 
   Solver solver{
-      heat_face_props.heat_conductivity,
+      heat_face_props.medium_heat_conductivity,
       grid2D,
       heat_props.medium_vol_heatcapacity,
       rates_factory, initial_state,
       bc, 0.0};
 
-  RealType step{1.0};
-  ptrdiff_t nT{3};
+  const RealType step{1.0};
+  const ptrdiff_t nT{3};
   for (ptrdiff_t t{0ll}; t < nT; ++t)
   {
     solver.advance(step);

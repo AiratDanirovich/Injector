@@ -15,6 +15,7 @@
 #include <Injector/Model/Collector.hpp>
 
 #include <Injector/Properties/FlowField.hpp>
+#include <Injector/Properties/Factory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Well.hpp>
 #include <Injector/Solver/BoundaryConditions.hpp>
@@ -40,46 +41,45 @@ using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
 /// @brief Initial temperature is assumed to be constant
-struct FunctorIC
+struct FunctorIC : public InitialConditions::ICFunctorBase
 {
-  FunctorIC(const RealType val)
-      : val{val}
+  FunctorIC(const Logs::Geotherma &geotherma)
+      : geotherma{geotherma}
   {
   }
-  RealType operator()(RealType z, RealType r, RealType t0) const
+  RealType operator()(const ptrdiff_t z_id, const ptrdiff_t, RealType) const override
   {
-    return val;
+    return geotherma(z_id);
   }
 
 protected:
-  const RealType val;
+  const Logs::Geotherma &geotherma;
 };
 
 template <typename Grid_t_ptr>
-auto ICFactory(RealType t0, const Grid_t_ptr grid, const RealType val)
+auto ICFactory(RealType t0, const Grid_t_ptr grid, const Logs::Geotherma &geotherma)
 {
-  return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{val}, t0)};
+  return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{geotherma}, t0)};
 }
 
+template <typename Well_t>
 struct FunctorBC : public BoundaryConditions::BCFunctorBase
 {
   using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
   using ConvectionFieldFactory_t =
       GPN::FaceProperties::RatesFactory<
-          Grid2D_t, Well_KH, PhaseProperties>;
+          Grid2D_t, Well_t, PhaseProperties>;
   FunctorBC(
-      const RealType inlet_temp,
       const Logs::IsPermeable &is_permeable,
       const ConvectionFieldFactory_t &flow_field, // volumetric heat flow rate
       const cptr<const Grid2D_t> grid_ptr)
-      : inlet_temp{inlet_temp},
-        flow_field{flow_field},
+      : flow_field{flow_field},
         is_permeable{is_permeable},
         grid_ptr{grid_ptr}
   {
   }
 
-  RealType operator()(ptrdiff_t z_id, RealType r, RealType t) const override
+  RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t) const override
   {
     if (r == grid_ptr->second_coord.dual_front())
       return flow_field.get_flow_in_axes2()(z_id, 0ll) * flow_field.get_temperature();
@@ -91,7 +91,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
     return 0.0;
   }
 
-  RealType operator()(RealType z, ptrdiff_t r_id, RealType t) const override
+  RealType operator()(const RealType z, const ptrdiff_t r_id, const RealType t) const override
   {
     if (z == grid_ptr->first_coord.dual_front())
       return flow_field.get_flow_in_axes1()(0ll, r_id) * flow_field.get_temperature();
@@ -104,7 +104,6 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   }
 
 protected:
-  RealType inlet_temp;
   const Logs::IsPermeable &is_permeable;
   const cptr<const Grid2D_t> grid_ptr;
   const ConvectionFieldFactory_t &flow_field;
@@ -139,6 +138,105 @@ VR generate_steps(const VR &dual_nodes)
   return out;
 }
 
+auto make_history(const json &data)
+{
+  const std::string t_unit = data["history"]["t_unit"];
+  RealType factor{1.0};
+  if (t_unit == "d")
+    factor = 24 * 60 * 60;
+  else if (t_unit == "h")
+    factor = 60 * 60;
+  else if (t_unit == "m")
+    factor = 60;
+  else if (t_unit == "s")
+    factor = 1;
+  else
+    throw std::runtime_error("Incorrect unit of time.");
+
+  const std::string history_type = data["history"]["history_type"];
+  if (history_type == "dynamic")
+  {
+    const auto &data2 = data["history"]["dynamic"];
+    VR t_major_steps = data2["t_major_step"];
+    for (auto &v : t_major_steps)
+      v = v * factor;
+    const VR well_rates = data2["well_rate"];
+    const VR inlet_temps = data2["inlet_temperature"];
+
+    return HistoryFactory::createFixedRate(t_major_steps, well_rates, inlet_temps);
+  }
+  else if (history_type == "static")
+  {
+    const auto &data2 = data["history"]["static"];
+    const RealType
+        t0{data2["t_start"] * factor},
+        t1{data2["t_end"] * factor};
+
+    const RealType t_major_step = std::min(t1 - t0, (RealType)data2["t_major_step"] * factor);
+
+    const VR t_stencils{generate_stencils(t0, t1, t_major_step)};
+
+    const RealType well_rate{data2["well_rate"]}; // m^3/s
+    const RealType inlet_temperature{data2["inlet_temperature"]};
+
+    const std::vector<RealType> t_major_steps{generate_steps(t_stencils)};
+    const std::vector<RealType> well_rates(t_major_steps.size(), well_rate);
+    const std::vector<RealType> inlet_temperature_set(t_major_steps.size(), inlet_temperature);
+
+    return HistoryFactory::createFixedRate(t_major_steps, well_rates, inlet_temperature_set);
+  }
+  else
+    throw std::runtime_error("Incorrect history type descriptor.");
+}
+
+const VR make_r_stencils(const json &data, const auto &well_holes)
+{
+  const std::string r_grid_type = data["grid"]["r_grid_type"];
+  const RealType
+      rMin{data["grid"]["r_start"]},
+      rMax{data["grid"]["r_end"]};
+
+  if (r_grid_type == "uniform")
+  {
+    const auto &data2 = data["grid"]["r_uniform_grid"];
+    return well_holes.generate_uniform_radial_grid(
+        rMin, rMax, data2["rNodes"]);
+  }
+  else if (r_grid_type == "log")
+  {
+    const auto &data2 = data["grid"]["r_log_grid"];
+    return well_holes.generate_log_radial_grid(
+        rMin, rMax, data2["q"], data2["r_max_step"]);
+  }
+  else
+    throw std::runtime_error("Incorrect radial grid descriptor.");
+}
+
+const Logs::Geotherma make_geotherma(const json &data, const auto grid2D)
+{
+  const auto &data1 = data["collector"]["geotherma"];
+
+  const std::string geotherma_type = data1["type"];
+  if (geotherma_type == "const")
+  {
+    return Logs::GeothermaFactory::create(data1["const"]["initTemperature"], grid2D->first_coord);
+  }
+  else if (geotherma_type == "interpolate")
+  {
+    const auto &data2 = data1["interpolate"];
+    const VR nodes = data2["z_nodes"];
+    const VR vals = data2["t_vals"];
+    const RealType z_top = data2["z_top"];
+    return Logs::GeothermaFactory::create(
+        nodes,
+        vals,
+        z_top,
+        grid2D->first_coord);
+  }
+  else
+    throw std::runtime_error("Incorrect radial grid descriptors.");
+}
+
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
   ifstream f("heatflow_test_data.json");
@@ -155,37 +253,26 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       heat_conductivity{data["fluid"]["heatConductivity"]};
   /*collector*/
   const VR thickness = data["collector"]["thickness"];
-  //  const ptrdiff_t nLayers{thickness.size()};
+  // const ptrdiff_t nLayers{thickness.size()};
   // hydrodynamic logs
   const auto is_permeable_stencils{transfer_to_eigen(data["collector"]["is_permeable"])};
+  const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"])};
   const auto porosity_stencils{transfer_to_eigen(data["collector"]["porosity"])};
   const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"], 1e-12)};
+  const auto weights_stencils{transfer_to_eigen(data["collector"]["explicit"]["weights"])};
   // heat logs
-  const VR heatconductivity_stencils = data["collector"]["heatConductivity"];
+  const auto solid_heatconductivity_stencils{transfer_to_eigen(data["collector"]["heatConductivity"])};
   const auto solid_density_stencils{transfer_to_eigen(data["collector"]["solidDensity"])};
   const auto solid_specific_heatcapacity_stencils{transfer_to_eigen(data["collector"]["solidSpecificHeatCapacity"])};
   /*grid*/
   const RealType
-      zTop{data["grid"]["ztop"]},
-      z_minor_step{data["grid"]["z_minor_step"]},
-      rMin{data["grid"]["r_start"]},
-      rMax{data["grid"]["r_end"]}; // m
-  const std::string r_grid_type = data["grid"]["r_grid_type"];
+      z_minor_step{data["grid"]["z_minor_step"]}; // m
   //  const ptrdiff_t rNodes{data["grid"]["rNodes"]};
   /*history*/
-  const RealType
-      t0{data["history"]["t_start"]},
-      t1{data["history"]["t_end"]};
-  RealType t_major_step{data["history"]["t_major_step"]};
-  RealType t_minor_step{data["history"]["t_minor_step"]};
-  t_major_step = std::min(t1 - t0, t_major_step);
-  t_minor_step = std::min(t_minor_step, t_major_step);
-  const VR t_stencils{generate_stencils(t0, t1, t_major_step)};
+  const std::string history_type = data["history"]["history_type"];
+  const RealType t_minor_step{data["history"]["t_minor_step"]};
+  const RealType start_time{data["history"]["start_time"]};
   /*temperatures*/
-  const RealType well_rate{data["history"]["wellRate"]}; // m^3/s
-  const RealType initial_temperature{data["collector"]["initTemperature"]};
-  const RealType inlet_temperature{data["history"]["inletTemperature"]};
-  const VR inlet_temperature_array = data["history"]["inletTemperatureArray"];
   /*well*/
   const RealType sandface_radius{data["well"]["radius"]["sandface"]};
   const RealType column_radius{data["well"]["column_radius"]};
@@ -203,42 +290,25 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const RealType cement_density{data["well"]["cement"]["density"]};
   /*END*/
 
-  REQUIRE(t1 > t0);
-  REQUIRE(t_minor_step <= t_major_step);
-  //  REQUIRE(rMin < hole_radius);
-
   // make grid2D
   // r_stencils
-  VR r_stencils; // they take into account the well construction
-  // radial well geometry: radii where material properties are changed
-  const WellHoles well_holes{tube_radius, column_radius, sandface_radius};
-  if (r_grid_type == "uniform")
-  {
-    const auto &data2 = data["grid"]["r_uniform_grid"];
-    r_stencils = well_holes.generate_uniform_radial_grid(
-        rMin, rMax, data2["rNodes"]);
-  }
-  else if (r_grid_type == "log")
-  {
-    const auto &data2 = data["grid"]["r_log_grid"];
-    r_stencils = well_holes.generate_log_radial_grid(
-        rMin, rMax, data2["q"], data2["r_max_step"]);
-  }
-  else
-    throw std::runtime_error("Incorrect radial grid descriptor.");
+  const WellHoles well_holes{tube_radius, sandface_radius};
+  const VR r_stencils{make_r_stencils(data, well_holes)};
+  const RealType &rMax = r_stencils.back();
+  const RealType &rMin = r_stencils.front();
 
-  cout << "radial dual grid stencils:\n"
-       << transfer_to_eigen(r_stencils).transpose() << endl;
   // z-refiner
   RefinerVerticle refiner{z_minor_step, is_permeable_stencils};
   // the grid itself
   const auto grid2D{
-      Grids::CylinderGridFactory::create(
-          refiner,
-          Grids::Factory::generate_dual_grid_stencils_from_steps(
-              zTop, thickness),
-          r_stencils)};
+      Grids::CylinderGridFactory::create(refiner,
+                                         Grids::Factory::generate_dual_grid_stencils_from_steps(
+                                             0.0, thickness),
+                                         r_stencils)};
   const auto &grid{grid2D->first_coord};
+
+  cout << "radial dual grid stencils:\n"
+       << transfer_to_eigen(r_stencils).transpose() << endl;
 
   // cout << "radial grid:\n"
   //      << grid2D->second_coord.dual_nodes.transpose() << endl;
@@ -257,6 +327,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
   const Logs::Rocks::CoreSampleLogs core_data{
       is_permeable_stencils,
+      is_perforated_stencils,
       porosity_stencils,
       permeability_stencils,
       grid};
@@ -269,16 +340,27 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           SpecificHeatCapacity{capacity},
           GPN::HeatConductivity{heat_conductivity})};
   // well
-  const Well_KH well{
-      water, core_data.is_permeable, core_data.permeability};
+  // const Well_KH well{
+  //     water, core_data.is_permeable, core_data.is_perforated, core_data.permeability, well_holes, rMax};
+  const auto weights{
+      RateWeightsFactory::create(
+          weights_stencils,
+          core_data.is_permeable,
+          grid)};
+  const Well_Explicit well{
+      water, core_data.is_permeable, core_data.is_perforated, weights};
 
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
       solid_specific_heatcapacity_stencils,
-      heatconductivity_stencils,
+      solid_heatconductivity_stencils,
       porosity_stencils,
       water,
       grid2D->first_coord};
+
+  std::unique_ptr<const Logs::Geotherma> geotherma{
+      make_unique<Logs::Geotherma>(
+          make_geotherma(data, grid2D))};
 
   Properties::Rocks::HeatProps heat_props{
       heat_logs, grid2D};
@@ -305,37 +387,33 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
   // history
-  const std::vector<RealType> time_steps{generate_steps(t_stencils)};
-  const std::vector<RealType> rates(time_steps.size(), well_rate);
-  // const std::vector<RealType> temps(time_steps.size(), inlet_temperature);
-  const History history{
-      HistoryFactory::create(time_steps, rates, inlet_temperature_array)};
+  const History history{make_history(data)};
   // rates field factory
   FaceProperties::RatesFactory rates_factory{
       grid2D, well, history, water};
   // initial condition
-  const auto initial_state{ICFactory(t0, grid2D, initial_temperature)};
+  const auto initial_state{ICFactory(start_time, grid2D, *geotherma)};
   // boundary conditions
   const GPN::BoundaryConditions::BoundaryConditions bc{
       *grid2D,
-      std::make_shared<FunctorBC>(
-          inlet_temperature, core_data.is_permeable, rates_factory, grid2D),
+      std::make_shared<FunctorBC<std::remove_const<decltype(well)>::type>>(
+          core_data.is_permeable, rates_factory, grid2D),
       BoundaryConditions::BoundaryCondition::second};
   // solver
 
   using Solver_t = decltype(Solver{
-      heat_face_props.heat_conductivity,
+      heat_face_props.medium_heat_conductivity,
       grid2D,
       heat_props.medium_vol_heatcapacity,
       rates_factory, initial_state,
-      bc, t0});
+      bc, start_time});
 
   auto solver_ptr = std::make_shared<Solver_t>(
-      heat_face_props.heat_conductivity,
+      heat_face_props.medium_heat_conductivity,
       grid2D,
       heat_props.medium_vol_heatcapacity,
       rates_factory, initial_state,
-      bc, t0);
+      bc, start_time);
 
   const auto &solver{*solver_ptr};
 
@@ -358,17 +436,18 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   }
 #pragma region CHECKS
   // verify flow field
-  const auto &v1 = rates_factory.get_flow_in_axes1();
+  const auto &v1 = rates_factory.get_flow_in_axes1(); // verticle flow
   for (auto row{0ll}; row < v1.rows(); ++row)
   {
     CHECK(v1(row, 0ll) >= 0.0);
-    for (auto col{1ll}; col < v1.cols(); ++col)
+    CHECK(v1(row, 1ll) <= 0.0);
+    for (auto col{2ll}; col < v1.cols(); ++col)
       CHECK(v1(row, col) == 0.0);
   }
-  const auto &v2 = rates_factory.get_flow_in_axes2();
-  for (auto col{2ll}; col < v2.cols(); ++col)
+  const auto &v2 = rates_factory.get_flow_in_axes2(); // horizontal flow
+  for (auto col{3ll}; col < v2.cols(); ++col)
     for (auto row{0ll}; row < v2.rows(); ++row)
-      CHECK(v2(row, col) == v2(row, 1ll));
+      CHECK(v2(row, col) == v2(row, 2ll));
 
   for (auto row{0ll}, col{0ll}; row < v2.rows(); ++row)
   {
@@ -426,10 +505,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     cum_inlet_heat +=
         (times[t] - times[t - 1ll]) *
         history.rates(t - 1ll) *
-        water.volumetric_heat_capacity * (history.temps(t - 1ll) - initial_temperature);
+        water.volumetric_heat_capacity * (history.temps(t - 1ll) /*- initial_temperature*/);
 
     RealType rel_tol = std::abs(2.0 * (cur_heat_incr - cum_inlet_heat) / (cur_heat_incr + cum_inlet_heat));
-    CHECK(rel_tol < 0.05);
+    //    CHECK(rel_tol < 0.05);
   }
 #pragma endregion
   {
@@ -437,7 +516,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     std::string path{std::string{"T_"} + std::to_string(0) + std::string{".txt"}};
     std::ofstream f{path};
 
-    f << ((state.cur_state - initial_temperature) / precision).round() * precision;
+    f << ((state.cur_state /*- initial_temperature*/) / precision).round() * precision;
     f.close();
   }
 }

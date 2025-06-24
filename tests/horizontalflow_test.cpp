@@ -32,13 +32,13 @@ using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
 /// @brief Initial temperature is assumed to be constant
-struct FunctorIC
+struct FunctorIC : public InitialConditions::ICFunctorBase
 {
   FunctorIC(const RealType val)
       : val{val}
   {
   }
-  RealType operator()(RealType z, RealType r, RealType t0) const
+  RealType operator()(const ptrdiff_t, const ptrdiff_t, const RealType) const override
   {
     return val;
   }
@@ -72,7 +72,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   {
   }
 
-  RealType operator()(ptrdiff_t z_id, RealType r, RealType t) const override
+  RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t) const override
   {
     if (r == grid_ptr->second_coord.dual_front())
     {
@@ -82,7 +82,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
     return 0.0;
   }
 
-  RealType operator()(RealType z, ptrdiff_t r, RealType t) const override
+  RealType operator()(const RealType z, const ptrdiff_t r, const RealType t) const override
   {
     return 0.0;
   }
@@ -112,7 +112,7 @@ LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 1.0)}
 const VR permeability_stencils(nLayers, 0.5);
 
 // heat logs
-const VR heatconductivity_stencils(nLayers, 0.0);
+const LogValuesContainer solid_heatconductivity_stencils{LogValuesContainer::Constant(nLayers, 0.0)};
 const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 3.9 /*should be 2600 in SI*/)};
 const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
 /*temporal grid*/
@@ -162,7 +162,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
       solid_specific_heatcapacity_stencils,
-      heatconductivity_stencils,
+      solid_heatconductivity_stencils,
       porosity.log_vals,
       water,
       grid2D->first_coord};
@@ -188,7 +188,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       BoundaryConditions::BoundaryCondition::second};
   // solver
   Solver solver{
-      heat_face_props.heat_conductivity,
+      heat_face_props.medium_heat_conductivity,
       grid2D,
       heat_props.medium_vol_heatcapacity,
       rates_factory, initial_state,

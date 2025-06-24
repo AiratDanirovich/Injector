@@ -48,7 +48,7 @@ namespace GPN
                 assert(data.size() > (decltype(data.size()))0);
                 for (auto idx{adata.cbegin()}; idx != adata.cend(); ++idx)
                     // all properties are non-negative
-                    assert(*idx >= 0.0);
+                    assert((*idx >= 0.0) || std::isnan(*idx));
 #pragma endregion
                 std::copy(adata.cbegin(), adata.cend(), data.begin());
             }
@@ -228,6 +228,51 @@ namespace GPN
             using IndicatorProperty::IndicatorProperty;
         };
 
+        /// @brief Indicator of perforated cells,
+        /// so the liquid can leave the tube-column,
+        /// to further flow along the cement
+        struct IsPerforated : public IndicatorProperty
+        {
+            using IndicatorProperty::IndicatorProperty;
+        };
+
+        /// @brief Indicator of perforated cells,
+        /// so the liquid can leave the tube-column,
+        /// to further flow along the cement
+        struct IsGhostLayer : public IndicatorProperty
+        {
+            using IndicatorProperty::IndicatorProperty;
+        };
+
+        /// @brief Rate distribution along the
+        /// layers
+        struct RateWeights
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            RateWeights(
+                const StepPropertyGrid &weights,
+                const IsPermeable &is_permeable)
+                : StepPropertyGrid{normalize(weights)},
+                  AssertNonNegative{weights}
+            {
+                assert(weights.size() == is_permeable.size());
+                for (std::ptrdiff_t id{0ll}; id < weights.size(); ++id)
+                    assert(
+                        ((is_permeable(id) == 1.0) && (weights(id) > 0.0)) ||
+                        ((is_permeable(id) == 0.0) && (weights(id) == 0.0)));
+
+                assert(std::abs(weights.log_vals.sum() - 1.0) < 1E-12);
+            }
+
+        private:
+            static StepPropertyGrid normalize(const StepPropertyGrid &weights)
+            {
+                const RealType sum{weights.log_vals.sum()};
+                return StepPropertyGrid{weights.log_vals / sum, weights.grid};
+            }
+        };
+
         struct ExternalPressure
             : public StepPropertyGrid,
               private AssertNonNegative
@@ -260,6 +305,23 @@ namespace GPN
                     assert(
                         ((is_permeable(id) == 1.0)) ||
                         ((is_permeable(id) == 0.0) && (rfp(id) == 0.0)));
+            }
+        };
+
+        struct WFP
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            WFP(const StepPropertyGrid &wfp,
+                const IsPerforated &is_perforated)
+                : StepPropertyGrid{wfp},
+                  AssertNonNegative{wfp}
+            {
+                assert(wfp.size() == is_perforated.size());
+                for (std::ptrdiff_t id{0ll}; id < wfp.size(); ++id)
+                    assert(
+                        ((is_perforated(id) == 1.0)) ||
+                        ((is_perforated(id) == 0.0) && (wfp(id) == 0.0)));
             }
         };
 
@@ -301,7 +363,21 @@ namespace GPN
                 }
             }
         };
-        struct SkinFactor : public StepPropertyGrid
+
+        struct Geotherma
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            Geotherma(
+                const StepPropertyGrid &temperature)
+                : StepPropertyGrid{temperature},
+                  AssertNonNegative{temperature}
+            {
+            }
+        };
+
+        struct SkinFactor
+            : public StepPropertyGrid
         {
             SkinFactor(
                 const StepPropertyGrid &skin,
@@ -377,6 +453,8 @@ namespace GPN
             {
             }
         };
+
+        using MediumHeatConductivity = HeatConductivity;
 
         struct ThermalDiffusivity
             : public StepPropertyGrid,

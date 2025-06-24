@@ -8,7 +8,7 @@ namespace GPN
     {
         struct RawDataFactory
         {
-    //        using Grid_t = Grids::AxesGrid<CoordinateTypes::Z>;
+            //        using Grid_t = Grids::AxesGrid<CoordinateTypes::Z>;
 #pragma region HYDRODYNAMIC-LOGS
 
             static auto generate_is_permeable_const(
@@ -122,7 +122,7 @@ namespace GPN
                 const Container_t &dual_stencils)
             {
                 auto size{dual_stencils.size() - 1};
-                std::vector<RealType> vals(size);
+                LogValuesContainer vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
                     vals[id] = (id % 2 == 1) ? 200 : 1000;
@@ -137,10 +137,21 @@ namespace GPN
                 std::vector<RealType> vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
-                    vals[id] = (id % 2 == 1) ? 50.0 : 0.0;
+                    vals[id] = (id % 2 == 1) ? 50.0 : 10.0;
                 return vals;
             }
             
+            static auto generate_pressures(
+                const auto &dual_stencils)
+            {
+                auto size{dual_stencils.size() - 1};
+                std::vector<RealType> vals(size);
+
+                for (auto id{size - size}; id < size; ++id)
+                    vals[id] = (30/*atm*/)*1e5/*Pa*/;
+                return vals;
+            }
+
             static auto generate_temperatures(
                 const auto &dual_stencils)
             {
@@ -150,6 +161,44 @@ namespace GPN
                 for (auto id{size - size}; id < size; ++id)
                     vals[id] = (id % 2 == 1) ? 293.0 : 273.0;
                 return vals;
+            }
+
+            static auto generate_temperatures_periodic(
+                const auto &dual_stencils,
+                const auto &periodic_data)
+            {
+                auto size{dual_stencils.size() - 1};
+                std::vector<RealType> vals(size);
+
+                for (auto id{size - size}; id < size; ++id)
+                    vals[id] = periodic_data[id % periodic_data.size()];
+                return vals;
+            }
+
+            static auto generate_geotherma_nodes(
+                const RealType begin,
+                const RealType end,
+                const ptrdiff_t amount)
+            {
+                std::vector<RealType> out(amount);
+                const RealType step{(end - begin) / (amount - 1ll)};
+
+                for (auto id{0ll}; id < amount; ++id)
+                    out[id] = begin + id * step;
+                return out;
+            }
+
+            static auto generate_geotherma_vals_linear(
+                const auto &nodes,
+                const RealType ref_node,
+                const RealType ref_val,
+                const RealType slope)
+            {
+                std::vector<RealType> out(nodes.size());
+
+                for (auto id{0ull}; id < nodes.size(); ++id)
+                    out[id] = ref_val + slope * (nodes[id] - ref_node);
+                return out;
             }
         };
     }

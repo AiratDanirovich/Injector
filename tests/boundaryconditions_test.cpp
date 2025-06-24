@@ -10,12 +10,12 @@ using namespace GPN::Grids;
 
 struct BCFunctor : public BoundaryConditions::BCFunctorBase
 {
-  RealType operator()(ptrdiff_t z, RealType r, RealType t) const override
+  RealType operator()(const ptrdiff_t, const RealType, const RealType) const override
   {
     return 1.0;
   }
 
-  RealType operator()(RealType z, ptrdiff_t r, RealType t) const override
+  RealType operator()(const RealType, const ptrdiff_t, const RealType) const override
   {
     return 1.0;
   }
