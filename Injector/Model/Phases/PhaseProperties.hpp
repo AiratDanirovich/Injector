@@ -24,6 +24,7 @@ namespace GPN
 
     struct StationaryPhaseProperties
     {
+        StationaryPhaseProperties(const StationaryPhaseProperties&) = default;
         StationaryPhaseProperties(
             Density density,
             SpecificHeatCapacity mass_heat_capacity,

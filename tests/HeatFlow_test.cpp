@@ -17,7 +17,7 @@
 #include <Injector/Properties/FlowField.hpp>
 #include <Injector/Properties/Factory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
-#include <Injector/Model/Well.hpp>
+#include <Injector/Model/WellFactory.hpp>
 #include <Injector/Solver/BoundaryConditions.hpp>
 #include <Injector/Solver/State2D.hpp>
 #include <Injector/Solver/InitialCondition.hpp>
@@ -37,6 +37,7 @@ using namespace GPN;
 using namespace GPN::Logs;
 using namespace GPN::Grids;
 using namespace GPN::Phases;
+using namespace GPN::Completion;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
@@ -237,6 +238,99 @@ const Logs::Geotherma make_geotherma(const json &data, const auto grid2D)
     throw std::runtime_error("Incorrect radial grid descriptors.");
 }
 
+const auto get_completion(const json &data)
+{
+  using namespace GPN::Completion;
+
+  std::vector<Ring> out;
+  out.reserve(6);
+
+  { // flowing fluid
+    const auto &data2 = data["fluid"];
+    out.push_back(
+        Ring{
+            Flow{
+                Density{data2["density"]},
+                SpecificHeatCapacity{data2["specific_heat_capacity"]},
+                GPN::HeatConductivity{data2["heat_conductivity"]}},
+            Thickness{data["completion"]["tube"]["inner_radius"]},
+            InnerRadius{0.0},
+            Depth{std::numeric_limits<RealType>::max()}});
+  }
+
+  { // tube
+    const auto &data2 = data["completion"]["tube"];
+
+    out.push_back(
+        Ring{
+            Tube{
+                Density{data2["density"]},
+                SpecificHeatCapacity{data2["specific_heat_capacity"]},
+                GPN::HeatConductivity{data2["heat_conductivity"]}},
+            Thickness{data2["thickness"]},
+            InnerRadius{out.back().outer_radius},
+            Depth{data2["depth"]}});
+  }
+  
+  { // annulus
+    const auto &data2 = data["completion"]["annulus"];
+
+    out.push_back(
+        Ring{
+            Annulus{
+                Density{data2["density"]},
+                SpecificHeatCapacity{data2["specific_heat_capacity"]},
+                GPN::HeatConductivity{data2["heat_conductivity"]}},
+            Thickness{data2["thickness"]},
+            InnerRadius{out.back().outer_radius},
+            Depth{data2["depth"]}});
+  }
+    
+  { // column
+    const auto &data2 = data["completion"]["column"];
+
+    out.push_back(
+        Ring{
+            Annulus{
+                Density{data2["density"]},
+                SpecificHeatCapacity{data2["specific_heat_capacity"]},
+                GPN::HeatConductivity{data2["heat_conductivity"]}},
+            Thickness{data2["thickness"]},
+            InnerRadius{out.back().outer_radius},
+            Depth{data2["depth"]}});
+  }
+      
+  { // cement_1
+    const auto &data2 = data["completion"]["cement"]["inner"];
+
+    out.push_back(
+        Ring{
+            Cement{
+                Density{data2["density"]},
+                SpecificHeatCapacity{data2["specific_heat_capacity"]},
+                GPN::HeatConductivity{data2["heat_conductivity"]}},
+            Thickness{data2["thickness"]},
+            InnerRadius{out.back().outer_radius},
+            Depth{data2["depth"]}});
+  }
+      
+  { // cement_2
+    const auto &data2 = data["completion"]["cement"]["outer"];
+
+    out.push_back(
+        Ring{
+            Cement{
+                Density{data2["density"]},
+                SpecificHeatCapacity{data2["specific_heat_capacity"]},
+                GPN::HeatConductivity{data2["heat_conductivity"]}},
+            Thickness{data2["thickness"]},
+            InnerRadius{out.back().outer_radius},
+            Depth{data2["depth"]}});
+  }
+
+  return out;
+}
+
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
   ifstream f("heatflow_test_data.json");
@@ -273,26 +367,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const RealType t_minor_step{data["history"]["t_minor_step"]};
   const RealType start_time{data["history"]["start_time"]};
   /*temperatures*/
-  /*well*/
-  const RealType sandface_radius{data["well"]["radius"]["sandface"]};
-  const RealType column_radius{data["well"]["radius"]["column"]};
-  const RealType tube_radius{data["well"]["radius"]["tube"]};
-
-  const RealType tube_depth{data["well"]["tube"]["depth"]};
-  const RealType tube_lambda{data["well"]["tube"]["lambda"]};
-
-  const RealType annulus_lambda{data["well"]["annulus"]["lambda"]};
-  const RealType annulus_c{data["well"]["annulus"]["lambda"]};
-  const RealType annulus_density{data["well"]["annulus"]["density"]};
-
-  const RealType cement_lambda{data["well"]["cement"]["lambda"]};
-  const RealType cement_c{data["well"]["cement"]["lambda"]};
-  const RealType cement_density{data["well"]["cement"]["density"]};
+  /*completion*/
+  const Isolation completion{get_completion(data)};
   /*END*/
 
   // make grid2D
   // r_stencils
-  const WellHoles well_holes{tube_radius, column_radius, sandface_radius};
+  const WellHoles well_holes{WellHolesFactory::create(completion)};
   const VR r_stencils{make_r_stencils(data, well_holes)};
   const RealType &rMax = r_stencils.back();
   const RealType &rMin = r_stencils.front();
@@ -366,23 +447,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       heat_logs, grid2D};
 
   // properties of material that fills the well up to the sandface
-  const StationaryPhaseProperties cement{
-          Density{cement_density},
-          SpecificHeatCapacity{cement_c},
-          GPN::HeatConductivity{cement_lambda}};
-
-  const StationaryPhaseProperties annulus{
-          Density{annulus_density},
-          SpecificHeatCapacity{annulus_c},
-          GPN::HeatConductivity{annulus_lambda}};
-
-  const WellMaterial well_material{
-      well_holes, tube_depth,
-      tube_lambda,
-      annulus, cement};
-
-
-  heat_props.apply_well(well_material, well, water);
+  heat_props.apply_well(completion, well, water);
 
   const FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};

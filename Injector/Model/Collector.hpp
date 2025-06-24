@@ -196,27 +196,26 @@ namespace GPN
                 }
 
                 template <
-                    typename WellMaterial_t,
+                    typename Completion_t,
                     typename Well_t,
                     typename Fluid_t>
                 void apply_well(
-                    const WellMaterial_t &well_material,
+                    const Completion_t &completion,
                     const Well_t &well,
                     const Fluid_t &fluid)
                 {
-
                     // last row with the tube
                     const auto &mesh = grid2D->first_coord.mesh_nodes;
-                    const auto it = std::upper_bound(mesh.cbegin(), mesh.cend(), well_material.tube_depth);
+                    const auto it = std::upper_bound(mesh.cbegin(), mesh.cend(), completion.tube_depth);
                     const ptrdiff_t tube_end{std::distance(mesh.cbegin(), it) - 1ll};
                     
                     // second column -- contains annulus + cement
                     const RealType
-                        c_annulus = well_material.annulus.volumetric_heat_capacity,
-                        c_cement = well_material.cement.volumetric_heat_capacity,
-                        r_tube = well_material.well_holes.tube_radius,
-                        r_column = well_material.well_holes.column_radius,
-                        r_sandface = well_material.well_holes.sandface_radius;
+                        c_annulus = completion.annulus.volumetric_heat_capacity,
+                        c_cement = completion.cement.volumetric_heat_capacity,
+                        r_tube = completion.well_holes.tube_radius,
+                        r_column = completion.well_holes.column_radius,
+                        r_sandface = completion.well_holes.sandface_radius;
                     
                     medium_vol_heatcapacity.col(0ll).head(tube_end) =
                         fluid.volumetric_heat_capacity;

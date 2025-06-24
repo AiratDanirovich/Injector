@@ -15,6 +15,13 @@
 
 namespace GPN
 {
+    struct TubeInnerRadius : public SomeProperty
+    {
+    };
+    struct SandfaceRadius : public SomeProperty
+    {
+    };
+
     struct Friction
     {
     public:
@@ -32,19 +39,17 @@ namespace GPN
     struct WellHoles
     {
         WellHoles(
-            const RealType tube_radius,
-            const RealType column_radius,
-            const RealType sandface_radius)
+            const TubeInnerRadius tube_radius,
+            const SandfaceRadius sandface_radius)
             : tube_radius{tube_radius},
-              column_radius{column_radius},
               sandface_radius{sandface_radius}
         {
             assert(tube_radius < sandface_radius);
         }
 
         std::vector<RealType> generate_uniform_radial_grid(
-            const RealType r_min, 
-            const RealType r_max, 
+            const RealType r_min,
+            const RealType r_max,
             const ptrdiff_t r_nodes) const
         {
             assert(r_min < tube_radius);
@@ -134,7 +139,6 @@ namespace GPN
         }
 
         const RealType tube_radius;
-        const RealType column_radius;
         const RealType sandface_radius;
     };
 
@@ -226,7 +230,7 @@ namespace GPN
         const ptrdiff_t its_top_collector_cell_id{-1ll};
     };
 
-        struct Well_Explicit
+    struct Well_Explicit
         : public IWellDesign
     {
         Well_Explicit(
