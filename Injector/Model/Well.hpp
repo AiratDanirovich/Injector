@@ -37,7 +37,10 @@ namespace GPN
             assert(tube_radius < sandface_radius);
         }
 
-        std::vector<RealType> generate_uniform_radial_grid(const RealType r_min, const RealType r_max, const ptrdiff_t r_nodes) const
+        std::vector<RealType> generate_uniform_radial_grid(
+            const RealType r_min, 
+            const RealType r_max, 
+            const ptrdiff_t r_nodes) const
         {
             assert(r_min < tube_radius);
             assert(r_max > sandface_radius);
