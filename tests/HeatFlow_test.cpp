@@ -275,8 +275,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   /*temperatures*/
   /*well*/
   const RealType sandface_radius{data["well"]["radius"]["sandface"]};
-  const RealType column_radius{data["well"]["column_radius"]};
-  const RealType tube_radius{data["well"]["tube_radius"]};
+  const RealType column_radius{data["well"]["radius"]["column"]};
+  const RealType tube_radius{data["well"]["radius"]["tube"]};
 
   const RealType tube_depth{data["well"]["tube"]["depth"]};
   const RealType tube_lambda{data["well"]["tube"]["lambda"]};
@@ -292,7 +292,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
   // make grid2D
   // r_stencils
-  const WellHoles well_holes{tube_radius, sandface_radius};
+  const WellHoles well_holes{tube_radius, column_radius, sandface_radius};
   const VR r_stencils{make_r_stencils(data, well_holes)};
   const RealType &rMax = r_stencils.back();
   const RealType &rMin = r_stencils.front();

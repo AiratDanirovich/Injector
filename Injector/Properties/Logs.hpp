@@ -222,13 +222,6 @@ namespace GPN
         };
         
         /// @brief Indicator of perforated cells,
-        /// so the liquid can leave the tube-column
-        struct IsPerforated : public IndicatorProperty
-        {
-            using IndicatorProperty::IndicatorProperty;
-        };
-
-        /// @brief Indicator of perforated cells,
         /// so the liquid can leave the tube-column,
         /// to further flow along the cement
         struct IsPerforated : public IndicatorProperty

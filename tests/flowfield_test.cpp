@@ -52,6 +52,7 @@ const RealType well_rate{1.0};
 const RealType rMax{300.0}; // m
 /*well*/
 const RealType sandface_radius{0.3}; // m
+const RealType column_radius{0.2}; // m
 const RealType tube_radius{0.1};     // m
 
 struct Record
@@ -99,7 +100,7 @@ TEST_CASE("RFP_reservoir")
 
     const auto water{FluidFactory::create_water(1.0, 1.0)};
 
-    WellHoles well_holes{tube_radius, sandface_radius};
+    WellHoles well_holes{tube_radius, column_radius, sandface_radius};
 
     const Well_KH well{
         water, is_permeable, is_perforated, permeability, well_holes, rMax};

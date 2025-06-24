@@ -52,6 +52,7 @@ const RealType pressure{1.0 / (2.0 * std::numbers::pi * permeability_stencils.ba
 const RealType rMax{std::numbers::e}; // m
 /*well*/
 const RealType sandface_radius{1.0}; // m
+const RealType column_radius{0.5}; // m
 const RealType tube_radius{0.1};     // m
 
 const RealType tol{1e-12};
@@ -87,7 +88,7 @@ TEST_CASE("Well_Test")
         SpecificHeatCapacity{1.0},
         GPN::HeatConductivity{1.0})};
 
-    WellHoles well_holes{tube_radius, sandface_radius};
+    WellHoles well_holes{tube_radius, column_radius, sandface_radius};
 
     cout << "thickness profile:\n"
          << transfer_to_eigen(grid_thickness).transpose();
