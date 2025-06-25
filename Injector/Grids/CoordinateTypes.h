@@ -131,12 +131,17 @@ namespace GPN
 
                 return out;
             }
-            
+
             /// @brief Interpolate heat conductivity (factor at Laplace term)
+            /// @param xL left cell center
+            /// @param xR right cell center
+            /// @param xMid face coordinate
+            /// @param valL value at left cell
+            /// @param valR value at right cell
             /// @return Heat conductivity at cell face
             static auto face_interpolator(
-                RealType xL, RealType xR, 
-                RealType xMid,
+                RealType xL, RealType xR, // cell centers
+                RealType xMid, // face
                 RealType valL, RealType valR)
             {
                 // coordinates must be monotonous

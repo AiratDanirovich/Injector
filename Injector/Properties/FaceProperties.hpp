@@ -129,6 +129,8 @@ namespace GPN
                     grid.coordinate<typename Grid2D_t::Axes2>().dual_size() - 2ll);
 
                 for (auto id{0ll}; id < out.rows(); ++id)
+                // take a row of mesh-node values
+                // and interpolate at faces to get dual-node values
                     out.row(id) = Logs::FaceInterpolator::interpolate1D_r(
                         prop.row(id),
                         grid.coordinate<typename Grid2D_t::Axes2>());

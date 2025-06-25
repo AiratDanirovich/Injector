@@ -368,7 +368,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const RealType start_time{data["history"]["start_time"]};
   /*temperatures*/
   /*completion*/
-  const Isolation completion{get_completion(data)};
+  const Casing completion{get_completion(data)};
   /*END*/
 
   // make grid2D

@@ -57,8 +57,6 @@ namespace GPN
         {
         }
         const RealType viscosity;
-        //    RealType temperature;
-        //    RealType pressure;
     };
 
     struct Water : public PhaseProperties
