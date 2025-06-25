@@ -88,7 +88,7 @@ TEST_CASE("Well_Test")
         SpecificHeatCapacity{1.0},
         GPN::HeatConductivity{1.0})};
 
-    WellHoles well_holes{tube_radius, column_radius, sandface_radius};
+    WellHoles well_holes{TubeInnerRadius{tube_radius}, SandfaceRadius{sandface_radius}};
 
     cout << "thickness profile:\n"
          << transfer_to_eigen(grid_thickness).transpose();
