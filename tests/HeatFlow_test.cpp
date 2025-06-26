@@ -343,8 +343,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   RealType
       viscosity{data["fluid"]["viscosity"]},
       density{data["fluid"]["density"]},
-      capacity{data["fluid"]["specificHeatCapacity"]},
-      heat_conductivity{data["fluid"]["heatConductivity"]};
+      capacity{data["fluid"]["specific_heat_capacity"]},
+      heat_conductivity{data["fluid"]["heat_conductivity"]};
   /*collector*/
   const VR thickness = data["collector"]["thickness"];
   // const ptrdiff_t nLayers{thickness.size()};
