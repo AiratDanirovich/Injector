@@ -169,63 +169,49 @@ namespace GPN
             template <typename Grid2D_t>
             struct HeatProps
             {
-                template <typename Fluid_t>
                 HeatProps(
                     const Logs::Rocks::HeatLogs &logs,
-                    const Fluid_t &fluid,
                     const cptr<Grid2D_t> grid2D)
                     : HeatProps{
                           logs.medium_vol_heatcapacity,
                           logs.medium_heat_conductivity,
-                          fluid, grid2D}
+                          grid2D}
                 {
                 }
 
-                template <typename Fluid_t>
                 HeatProps(
                     const Logs::MediumHeatVolumetricCapacity &medium_vol_heatcapacity,
                     const Logs::HeatConductivity &heat_conductivity,
-                    const Fluid_t &fluid,
                     const cptr<Grid2D_t> grid2D)
                     : HeatProps{
                           FieldFactory::create(medium_vol_heatcapacity, grid2D),
                           FieldFactory::create(heat_conductivity, grid2D),
-                          fluid, grid2D}
+                          grid2D}
                 {
                 }
 
-                template <typename Fluid_t>
                 HeatProps(
                     const MediumHeatVolumetricCapacity<Grid2D_t> &a_medium_vol_heatcapacity,
                     const MediumHeatConductivity<Grid2D_t> &a_medium_heat_conductivity,
-                    const Fluid_t &fluid,
                     const cptr<Grid2D_t> grid2D)
                     : medium_vol_heatcapacity{a_medium_vol_heatcapacity},
                       medium_heat_conductivity_axes1{a_medium_heat_conductivity},
                       medium_heat_conductivity_axes2{a_medium_heat_conductivity},
                       grid2D{grid2D}
                 {
-                    // take fluid flow into account
-                    this->medium_vol_heatcapacity.col(0ll) = fluid.volumetric_heat_capacity;
-                    // for interpolation along z-direction
-                    this->medium_heat_conductivity_axes1.col(0ll) = fluid.heat_conductivity;
-                    // for interpolation along r-direction
-                    this->medium_heat_conductivity_axes2.col(0ll) = std::numeric_limits<RealType>::infinity();
                 }
 
                 template <
                     typename Completion_t,
-                    typename Well_t,
-                    typename Fluid_t>
+                    typename Well_t>
                 void apply_well(
                     const Completion_t &completion,
-                    const Well_t &well,
-                    const Fluid_t &fluid)
+                    const Well_t &well)
                 {
 #pragma region SET-HEAT-CAPACITY
                     // first column -- inside the tube, contains only water
                     medium_vol_heatcapacity.col(0ll) /*.head(tube_end)*/ =
-                        fluid.volumetric_heat_capacity;
+                        completion.front().volumetric_heat_capacity;
                     // second column -- from tube inner radius to sandface radius
                     medium_vol_heatcapacity.col(1ll) /*.head(tube_end)*/ =
                         completion.volumetric_heat_capacity();
@@ -239,6 +225,9 @@ namespace GPN
                     //     lower_annulus_capacity;
 #pragma endregion
 #pragma region SET-HEAT-CONDUCTIVITY
+                    // heat conductivity of flowing water in r-direction is infinite
+                    this->medium_heat_conductivity_axes2.col(0ll) = 
+                    std::numeric_limits<RealType>::infinity();
                     // put values for cementOuter at medium_vol_heatcapacity.col(1ll).
                     // CementOuter is a part of col(1ll)
                     const auto &grid = grid2D->first_coord;
@@ -251,15 +240,15 @@ namespace GPN
                     // r_{1/2} is fixed at HeatFaceProps container
 
                     // interpolate verticle heat conductivity:
-                    // (1) modify water heat conductivity in col(0ll) 
+                    // (1) modify water heat conductivity in col(0ll)
                     const auto &flow = completion.front();
                     medium_heat_conductivity_axes1.col(0ll) =
                         flow.heat_conductivity * flow.area() / grid2D->face_area_axes1(0ll);
                     for (const auto v : grid2D->face_area_axes1)
                         assert(flow.area() <= v + 1e-12);
-                    // (2) set sandwich heat conductivity in col(1ll) 
+                    // (2) set sandwich heat conductivity in col(1ll)
                     medium_heat_conductivity_axes1.col(1ll) =
-                        completion.integral_vertical_heat_conductivity()/ grid2D->face_area_axes1(1ll);
+                        completion.integral_vertical_heat_conductivity() / grid2D->face_area_axes1(1ll);
 #pragma endregion
                 }
 

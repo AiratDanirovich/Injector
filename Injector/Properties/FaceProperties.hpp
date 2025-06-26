@@ -129,8 +129,8 @@ namespace GPN
                     grid.coordinate<typename Grid2D_t::Axes2>().dual_size() - 2ll);
 
                 for (auto id{0ll}; id < out.rows(); ++id)
-                // take a row of mesh-node values
-                // and interpolate at faces to get dual-node values
+                    // take a row of mesh-node values
+                    // and interpolate at faces to get dual-node values
                     out.row(id) = Logs::FaceInterpolator::interpolate1D_r(
                         prop.row(id),
                         grid.coordinate<typename Grid2D_t::Axes2>());
@@ -160,6 +160,16 @@ namespace GPN
 
         struct FaceInterpolatedFieldFactory
         {
+            // isotropic medium
+            template <typename Grid_t>
+            static auto create(
+                const Properties::Field<Grid_t> &property,
+                const cptr<Grid_t> grid)
+            {
+                return create(property, property, grid);
+            }
+
+            // anisotropic medium
             template <typename Grid_t>
             static auto create(
                 const Properties::Field<Grid_t> &property_axes1,
@@ -181,7 +191,7 @@ namespace GPN
 
         template <typename Grid_t>
         using HeatConductivity = FaceInterpolatedField<Grid_t>;
-        
+
         template <typename Grid_t>
         using MediumHeatConductivity = HeatConductivity<Grid_t>;
 
