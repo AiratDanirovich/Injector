@@ -68,38 +68,31 @@ namespace GPN
                     const auto &grid)
                     : solid_density{
                           SolidDensityFactory::create(solid_density, grid)},
-                      solid_specific_heatcapacity{SolidSpecificHeatCapacityFactory::create(solid_specific_heatcapacity, grid)}, medium_heat_conductivity{HeatConductivityFactory::create(porosity, solid_heat_conductivity, fluid, grid)}, solid_vol_heatcapacity{SolidVolumetricHeatCapacityFactory::create(solid_density, solid_specific_heatcapacity, grid)}, medium_vol_heatcapacity{MediumHeatVolumetricCapacityFactory::create(porosity, solid_density, solid_specific_heatcapacity, fluid, grid)}
+                      solid_specific_heatcapacity{SolidSpecificHeatCapacityFactory::create(solid_specific_heatcapacity, grid)}, 
+                      medium_heat_conductivity{HeatConductivityFactory::create(porosity, solid_heat_conductivity, fluid, grid)}, 
+                      solid_heat_conductivity{HeatConductivityFactory::create(solid_heat_conductivity, grid)},
+                      solid_vol_heatcapacity{SolidVolumetricHeatCapacityFactory::create(solid_density, solid_specific_heatcapacity, grid)}, 
+                      medium_vol_heatcapacity{MediumHeatVolumetricCapacityFactory::create(porosity, solid_density, solid_specific_heatcapacity, fluid, grid)}
                 {
                     assert(solid_density.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
                     assert(solid_specific_heatcapacity.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
-                    assert(heat_conductivity.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
+                    assert(solid_heat_conductivity.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
                     assert(porosity.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
 
                     assert(this->solid_density.size() == grid.dual_nodes.size() - 1ll);
                     assert(this->solid_specific_heatcapacity.size() == grid.dual_nodes.size() - 1ll);
-                    assert(this->heat_conductivity.size() == grid.dual_nodes.size() - 1ll);
+                    assert(this->medium_heat_conductivity.size() == grid.dual_nodes.size() - 1ll);
                     assert(this->solid_vol_heatcapacity.size() == grid.dual_nodes.size() - 1ll);
                     assert(this->medium_vol_heatcapacity.size() == grid.dual_nodes.size() - 1ll);
                 }
 
                 const SolidDensity solid_density;
                 const SolidSpecificHeatCapacity solid_specific_heatcapacity;
-                const HeatConductivity medium_heat_conductivity;
+                const HeatConductivity solid_heat_conductivity;
                 const SolidVolumetricHeatCapacity solid_vol_heatcapacity;
+
+                const HeatConductivity medium_heat_conductivity;
                 const MediumHeatVolumetricCapacity medium_vol_heatcapacity;
-
-                // private:
-                //     template <typename T>
-                //     static T multiply(
-                //         const T &lhs,
-                //         const T &rhs)
-                //     {
-                //         T out(lhs.size(), 0.0);
-                //         for (auto i{0ll}; i < lhs.size(); ++i)
-                //             out[i] = lhs[i] * rhs[i];
-
-                //         return out;
-                //     }
             };
         } // Rocks
 
@@ -227,16 +220,16 @@ namespace GPN
 #pragma region SET-HEAT-CONDUCTIVITY
                     // heat conductivity of flowing water in r-direction is infinite
                     this->medium_heat_conductivity_axes2.col(0ll) = 
-                    std::numeric_limits<RealType>::infinity();
+                        std::numeric_limits<RealType>::infinity();
                     // put values for cementOuter at medium_vol_heatcapacity.col(1ll).
                     // CementOuter is a part of col(1ll)
-                    const auto &grid = grid2D->first_coord;
+                    const auto &grid_r = grid2D->second_coord;
                     const auto &sandface = completion.back();
                     const ptrdiff_t id{1ll};
                     medium_heat_conductivity_axes2.col(1ll) =
                         sandface.heat_conductivity /
                         std::log(sandface.outer_radius / sandface.inner_radius) *
-                        std::log(grid.dual_nodes(id + 1ll) / grid.mesh_nodes(id));
+                        std::log(grid_r.dual_nodes(id + 1ll) / grid_r.mesh_nodes(id));
                     // r_{1/2} is fixed at HeatFaceProps container
 
                     // interpolate verticle heat conductivity:

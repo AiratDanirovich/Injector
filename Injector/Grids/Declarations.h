@@ -5,10 +5,10 @@
 #include <concepts>
 #include <Eigen/Core>
 
-using RealType = double;
-
 namespace GPN
 {
+    using RealType = double;
+
     template <typename Axes1_t, typename Axes2_t>
     struct CoordinateSystem2D;
 
@@ -58,7 +58,7 @@ namespace GPN
         struct TemporalGridDual;
 
         template <typename CoordinateType_t>
-//            requires CoordinateTypes::ICoordinate<CoordinateType_t>
+        //            requires CoordinateTypes::ICoordinate<CoordinateType_t>
         struct AxesGrid;
 
         struct RGrid;

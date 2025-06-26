@@ -36,7 +36,7 @@
     }
   },
   "grid": {
-    "z_minor_step": 0.3,
+    "z_minor_step": 3,
     "r_start": 0.0,
     "r_end": 10.11,
     "r_grid_type": "log",
@@ -45,7 +45,7 @@
       "rNodes": 451
     },
     "r_log_grid": {
-      "r_max_step": 0.1,
+      "r_max_step": 1.0,
       "q": 1.05
     }
   },

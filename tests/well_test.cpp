@@ -196,7 +196,7 @@ TEST_CASE("Well_Test")
             weights.push_back(grid_thickness[i] * permeability_stencils[i]);
 
         const Well_Explicit well_q_exp{
-            water, is_permeable, is_perforated, transfer_to_eigen(weights)};
+            is_permeable, is_perforated, transfer_to_eigen(weights)};
 
         const auto rfp_q_exp = RFPFactory::create_from_container(well_q_exp.get_RFP(history_record_q), is_permeable);
         const auto wfp_q_exp = WFPFactory::create_from_container(well_q_exp.get_WFP(history_record_q), is_perforated);
