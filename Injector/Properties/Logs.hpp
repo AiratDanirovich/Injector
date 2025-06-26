@@ -98,6 +98,7 @@ namespace GPN
                       interpolate(property_vals, grid),
                       grid}
             {
+                assert(property_vals.size() == grid.dual_stencils.size()-1ll);
             }
 
             auto operator()(auto id) const
@@ -160,29 +161,29 @@ namespace GPN
 
         auto operator-(const StepPropertyGrid &lhs, RealType c)
         {
-            return StepPropertyGrid{StepProperty{lhs.log_vals - c}, lhs.grid};
+            return StepPropertyGrid{StepPropertyContainer{lhs.log_vals - c}, lhs.grid};
         }
         auto operator*(const StepPropertyGrid &lhs, RealType c)
         {
-            return StepPropertyGrid{StepProperty{lhs.log_vals * c}, lhs.grid};
+            return StepPropertyGrid{StepPropertyContainer{lhs.log_vals * c}, lhs.grid};
         }
         auto operator*(const StepPropertyGrid &lhs, const StepPropertyGrid &rhs)
         {
-            return StepPropertyGrid{StepProperty{lhs.log_vals * rhs.log_vals}, lhs.grid};
+            return StepPropertyGrid{StepPropertyContainer{lhs.log_vals * rhs.log_vals}, lhs.grid};
         }
         auto operator/(const StepPropertyGrid &lhs, const StepPropertyGrid &rhs)
         {
-            return StepPropertyGrid{StepProperty{lhs.log_vals / rhs.log_vals}, lhs.grid};
+            return StepPropertyGrid{StepPropertyContainer{lhs.log_vals / rhs.log_vals}, lhs.grid};
         }
 
         auto operator+(const StepPropertyGrid &lhs, const StepPropertyGrid &rhs)
         {
-            return StepPropertyGrid{StepProperty{(lhs.log_vals + rhs.log_vals)}, lhs.grid};
+            return StepPropertyGrid{StepPropertyContainer{(lhs.log_vals + rhs.log_vals)}, lhs.grid};
         }
 
         auto operator-(RealType c, const StepPropertyGrid &rhs)
         {
-            return StepPropertyGrid{StepProperty{c - rhs.log_vals}, rhs.grid};
+            return StepPropertyGrid{StepPropertyContainer{c - rhs.log_vals}, rhs.grid};
         }
 
         struct AssertNonNegative
