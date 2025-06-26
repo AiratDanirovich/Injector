@@ -283,12 +283,10 @@ namespace GPN
 
                 template <
                     typename Completion_t,
-                    typename Well_t,
-                    typename Fluid_t>
+                    typename Well_t>
                 void apply_well(
                     const Completion_t &completion,
-                    const Well_t &well,
-                    const Fluid_t &fluid)
+                    const Well_t &well)
                 {
                     // last row with the tube
                     const auto &mesh = grid2D->first_coord.mesh_nodes;

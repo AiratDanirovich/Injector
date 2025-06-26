@@ -174,7 +174,6 @@ namespace GPN
     struct IWellDesign
     {
         IWellDesign(
-            const PhaseProperties &fluid,
             const Logs::IsPermeable &is_permeable,
             const Logs::IsPerforated &is_perforated,
             const StepPropertyContainer &RFP_weights)
@@ -182,7 +181,6 @@ namespace GPN
               is_perforated{is_perforated},
               RFP_weights{RFP_weights},
               WFP_weights{wfp_weights(Logs::IsGhostLayerFactory::create(is_permeable, is_perforated), RFP_weights, layer_id(is_perforated))},
-              fluid{fluid},
               weights_sum{RFP_weights.sum()},
               its_top_collector_cell_id{layer_id(is_perforated)}
         {
@@ -201,7 +199,6 @@ namespace GPN
         const StepPropertyContainer RFP_weights;
         const StepPropertyContainer WFP_weights;
         const RealType weights_sum;
-        const PhaseProperties fluid;
 
         ptrdiff_t top_collector_cell_id() const
         {
@@ -234,13 +231,10 @@ namespace GPN
         : public IWellDesign
     {
         Well_Explicit(
-            //    const RealType tube_depth,
-            const PhaseProperties &fluid,
             const Logs::IsPermeable &is_permeable,
             const Logs::IsPerforated &is_perforated,
             const StepPropertyContainer &weights)
             : IWellDesign{
-                  fluid,
                   is_permeable,
                   is_perforated,
                   /*RFP_weights*/ weights}
@@ -300,7 +294,6 @@ namespace GPN
         : public Well_Explicit
     {
         Well_KH(
-            //    const RealType tube_depth,
             const PhaseProperties &fluid,
             const Logs::IsPermeable &is_permeable,
             const Logs::IsPerforated &is_perforated,
@@ -308,10 +301,10 @@ namespace GPN
             const WellHoles &holes,
             const RealType Rext)
             : Well_Explicit{
-                  fluid,
                   is_permeable,
                   is_perforated,
                   /*RFP_weights*/ permeability * is_permeable.grid.dual_steps * (StepPropertyContainer)is_permeable},
+              fluid{fluid},
               log_dist{std::log(Rext / holes.sandface_radius)}
         {
             assert(permeability.size() == is_permeable.grid.dual_steps.size());
@@ -374,5 +367,8 @@ namespace GPN
 
     private:
         const RealType log_dist;
+        const PhaseProperties fluid;
+
+
     };
 } // GPN

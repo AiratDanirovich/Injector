@@ -4,6 +4,7 @@
 #include <string>
 #include <numbers>
 #include <cmath>
+#include <vector>
 
 #include <Injector/Grids/Defines.h>
 
@@ -13,11 +14,10 @@
 #include <Injector/History/RatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
+#include <Injector/Model/WellFactory.hpp>
 
 #include <Injector/Properties/FlowField.hpp>
 #include <Injector/Properties/Factory.hpp>
-#include <Injector/Model/Phases/FluidFactory.hpp>
-#include <Injector/Model/WellFactory.hpp>
 #include <Injector/Solver/BoundaryConditions.hpp>
 #include <Injector/Solver/State2D.hpp>
 #include <Injector/Solver/InitialCondition.hpp>
@@ -429,7 +429,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           core_data.is_permeable,
           grid)};
   const Well_Explicit well{
-      water, core_data.is_permeable, core_data.is_perforated, weights};
+      core_data.is_permeable, core_data.is_perforated, weights};
 
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
@@ -449,8 +449,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // properties of material that fills the well up to the sandface
   heat_props.apply_well(completion, well);
 
-  const FaceProperties::Rocks::HeatFaceProps heat_face_props{
+  FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
+  heat_face_props.apply_well(completion, well);
   // history
   const History history{make_history(data)};
   // rates field factory
