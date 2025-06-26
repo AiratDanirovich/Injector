@@ -162,27 +162,19 @@ namespace GPN
         {
             template <typename Grid_t>
             static auto create(
-                const Properties::Field<Grid_t> &property,
+                const Properties::Field<Grid_t> &property_axes1,
+                const Properties::Field<Grid_t> &property_axes2,
                 const cptr<Grid_t> grid)
             {
-                // FaceValuesContainer face_vals_axes1{
-                //     FaceInterpolator::interpolate2D_z(
-                //         property.values(),
-                //         *grid)};
-
-                // FaceValuesContainer face_vals_axes2{
-                //     FaceInterpolator::interpolate2D_r(
-                //         property.values(),
-                //         *grid)};
 
                 return FaceInterpolatedField<Grid_t>{
                     FaceValuesContainer{
                         FaceInterpolator::interpolate2D_z(
-                            property.values(),
+                            property_axes1.values(),
                             *grid)},
                     FaceValuesContainer{
                         FaceInterpolator::interpolate2D_r(
-                            property.values(),
+                            property_axes2.values(),
                             *grid)}};
             }
         };

@@ -169,23 +169,48 @@ namespace GPN
             template <typename Grid2D_t>
             struct HeatProps
             {
+                template <typename Fluid_t>
                 HeatProps(
-                    const Logs::MediumHeatVolumetricCapacity &medium_vol_heatcapacity,
-                    const Logs::HeatConductivity &heat_conductivity,
+                    const Logs::Rocks::HeatLogs &logs,
+                    const Fluid_t &fluid,
                     const cptr<Grid2D_t> grid2D)
-                    : medium_vol_heatcapacity{
-                          FieldFactory::create(medium_vol_heatcapacity, grid2D)},
-                      medium_heat_conductivity{FieldFactory::create(heat_conductivity, grid2D)}
+                    : HeatProps{
+                          logs.medium_vol_heatcapacity,
+                          logs.medium_heat_conductivity,
+                          fluid, grid2D}
                 {
                 }
 
+                template <typename Fluid_t>
                 HeatProps(
-                    const Logs::Rocks::HeatLogs &logs,
+                    const Logs::MediumHeatVolumetricCapacity &medium_vol_heatcapacity,
+                    const Logs::HeatConductivity &heat_conductivity,
+                    const Fluid_t &fluid,
                     const cptr<Grid2D_t> grid2D)
-                    : medium_vol_heatcapacity{
-                          FieldFactory::create(logs.medium_vol_heatcapacity, grid2D)},
-                      medium_heat_conductivity{FieldFactory::create(logs.medium_heat_conductivity, grid2D)}
+                    : HeatProps{
+                          FieldFactory::create(medium_vol_heatcapacity, grid2D),
+                          FieldFactory::create(heat_conductivity, grid2D),
+                          fluid, grid2D}
                 {
+                }
+
+                template <typename Fluid_t>
+                HeatProps(
+                    const MediumHeatVolumetricCapacity<Grid2D_t> &a_medium_vol_heatcapacity,
+                    const MediumHeatConductivity<Grid2D_t> &a_medium_heat_conductivity,
+                    const Fluid_t &fluid,
+                    const cptr<Grid2D_t> grid2D)
+                    : medium_vol_heatcapacity{a_medium_vol_heatcapacity},
+                      medium_heat_conductivity_axes1{a_medium_heat_conductivity},
+                      medium_heat_conductivity_axes2{a_medium_heat_conductivity},
+                      grid2D{grid2D}
+                {
+                    // take fluid flow into account
+                    this->medium_vol_heatcapacity.col(0ll) = fluid.volumetric_heat_capacity;
+                    // for interpolation along z-direction
+                    this->medium_heat_conductivity_axes1.col(0ll) = fluid.heat_conductivity;
+                    // for interpolation along r-direction
+                    this->medium_heat_conductivity_axes2.col(0ll) = std::numeric_limits<RealType>::infinity();
                 }
 
                 template <
@@ -201,7 +226,7 @@ namespace GPN
                     // first column -- inside the tube, contains only water
                     medium_vol_heatcapacity.col(0ll) /*.head(tube_end)*/ =
                         fluid.volumetric_heat_capacity;
-                    // second column -- from tune inner radius to sandface radius
+                    // second column -- from tube inner radius to sandface radius
                     medium_vol_heatcapacity.col(1ll) /*.head(tube_end)*/ =
                         completion.volumetric_heat_capacity();
 
@@ -219,16 +244,30 @@ namespace GPN
                     const auto &grid = grid2D->first_coord;
                     const auto &sandface = completion.back();
                     const ptrdiff_t id{1ll};
-                    medium_heat_conductivity.col(1ll) =
+                    medium_heat_conductivity_axes2.col(1ll) =
                         sandface.heat_conductivity /
                         std::log(sandface.outer_radius / sandface.inner_radius) *
                         std::log(grid.dual_nodes(id + 1ll) / grid.mesh_nodes(id));
                     // r_{1/2} is fixed at HeatFaceProps container
+
+                    // interpolate verticle heat conductivity:
+                    // (1) modify water heat conductivity in col(0ll) 
+                    const auto &flow = completion.front();
+                    medium_heat_conductivity_axes1.col(0ll) =
+                        flow.heat_conductivity * flow.area() / grid2D->face_area_axes1(0ll);
+                    for (const auto v : grid2D->face_area_axes1)
+                        assert(flow.area() <= v + 1e-12);
+                    // (2) set sandwich heat conductivity in col(1ll) 
+                    medium_heat_conductivity_axes1.col(1ll) =
+                        completion.integral_vertical_heat_conductivity()/ grid2D->face_area_axes1(1ll);
 #pragma endregion
                 }
 
-                MediumHeatConductivity<Grid2D_t> medium_heat_conductivity;
                 MediumHeatVolumetricCapacity<Grid2D_t> medium_vol_heatcapacity;
+                // orthotropic medium
+                MediumHeatConductivity<Grid2D_t>
+                    medium_heat_conductivity_axes1,
+                    medium_heat_conductivity_axes2;
                 const cptr<Grid2D_t> grid2D;
             };
         } // Rocks
@@ -246,7 +285,8 @@ namespace GPN
                     const cptr<Grid2D_t> grid2D)
                     : medium_heat_conductivity{
                           FaceInterpolatedFieldFactory::create(
-                              props.medium_heat_conductivity,
+                              props.medium_heat_conductivity_axes1,
+                              props.medium_heat_conductivity_axes2,
                               grid2D)},
                       grid2D{grid2D}, props{props}
                 {

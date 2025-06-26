@@ -444,7 +444,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           make_geotherma(data, grid2D))};
 
   Properties::Rocks::HeatProps heat_props{
-      heat_logs, grid2D};
+      heat_logs, water, grid2D};
 
   // properties of material that fills the well up to the sandface
   heat_props.apply_well(completion, well, water);

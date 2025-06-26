@@ -84,9 +84,17 @@ namespace GPN
             const RealType thickness, depth;
             const RealType inner_radius, outer_radius;
 
+            // lambda
             const RealType linear_heat_capacity;
             // lambda/log(r_o/r_i)
             const RealType radial_heat_conductivity;
+
+            const RealType area() const
+            {
+                return std::numbers::pi *
+                       (outer_radius - inner_radius) *
+                       (outer_radius + inner_radius);
+            }
 
         private:
             template <typename PhaseProperties_t>
@@ -102,7 +110,8 @@ namespace GPN
             }
 
             template <typename PhaseProperties_t>
-            static RealType radial_heat_conductivity_calc(
+            static RealType 
+            radial_heat_conductivity_calc(
                 InnerRadius inner_radius,
                 Thickness thickness,
                 const PhaseProperties_t &props)
@@ -126,6 +135,7 @@ namespace GPN
             }
 
             const auto& back() const{return sandwich.back();}
+            const auto& front() const{return sandwich.front();}
 
             const RealType volumetric_heat_capacity() const
             {
@@ -152,6 +162,20 @@ namespace GPN
                     L += 1.0 / m.radial_heat_conductivity;
                 }
                 return 1.0 / L;
+            }
+            
+            const RealType integral_vertical_heat_conductivity() const
+            {
+                // exclude "flow" at "i = 0"
+                // as well as "cement2" at "i = end-1"
+                // from summation!
+                RealType L{0.0};
+                for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::CementOuter; ++i)
+                {
+                    const auto &m = sandwich[i];
+                    L += m.radial_heat_conductivity*m.area();
+                }
+                return L;
             }
 
             const std::vector<Ring> sandwich;
