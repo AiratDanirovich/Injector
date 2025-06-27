@@ -93,8 +93,8 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
   const auto &grid{grid2D->first_coord};
   const auto &grid_r{grid2D->second_coord};
 
-  cout << "radial dual grid stencils:\n"
-       << transfer_to_eigen(r_stencils).transpose() << endl;
+  // cout << "radial dual grid stencils:\n"
+  //      << transfer_to_eigen(r_stencils).transpose() << endl;
 
   const Logs::Rocks::CoreSampleLogs core_data{
       is_permeable_stencils,
@@ -235,8 +235,18 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
     }
   }
 
-  // properties of material that fills the well up to the sandface
+  // properties of material that fills the well up to the Sandface
   heat_props.apply_well(completion, well);
+
+  const auto &Tube{completion[MaterialType::Tube]};
+  const auto &Annulus{completion[MaterialType::Annulus]};
+  const auto &Column{completion[MaterialType::Column]};
+  const auto &CementInner{completion[MaterialType::CementInner]};
+  const auto &Sandface{completion[MaterialType::CementOuter]};
+
+  const auto casing_vert_cond{std::numbers::pi * (Tube.heat_conductivity * Tube.thickness * (Tube.inner_radius + Tube.outer_radius) + Annulus.heat_conductivity * Annulus.thickness * (Annulus.inner_radius + Annulus.outer_radius) + Column.heat_conductivity * Column.thickness * (Column.inner_radius + Column.outer_radius) + CementInner.heat_conductivity * CementInner.thickness * (CementInner.inner_radius + CementInner.outer_radius) + Sandface.heat_conductivity * Sandface.thickness * (Sandface.inner_radius + Sandface.outer_radius)) /
+                              (std::numbers::pi * (completion.sandface_radius + completion.flow_radius) * completion.thickness)};
+  CHECK_THAT(casing_vert_cond, WithinRel(completion.integral_vertical_heat_conductivity(), tol));
 
   // CHECK heat_props --- after "apply_well"
   {
@@ -263,29 +273,30 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
       }
       { // col == 1
         const ptrdiff_t col = 1ll;
-        const auto &sandface = completion[MaterialType::CementOuter];
         CHECK_THAT(capacity(row, col),
                    WithinRel(
-                       (completion[MaterialType::Tube].linear_heat_capacity +
-                        completion[MaterialType::Annulus].linear_heat_capacity +
-                        completion[MaterialType::Column].linear_heat_capacity +
-                        completion[MaterialType::CementInner].linear_heat_capacity +
-                        sandface.linear_heat_capacity) /
+                       (Tube.linear_heat_capacity +
+                        Annulus.linear_heat_capacity +
+                        Column.linear_heat_capacity +
+                        CementInner.linear_heat_capacity +
+                        Sandface.linear_heat_capacity) /
                            completion.area(),
                        tol));
         CHECK_THAT(heat_conductivity_1(row, col),
                    WithinRel(
-                       (completion[MaterialType::Tube].integral_vertical_heat_conductivity +
-                        completion[MaterialType::Annulus].integral_vertical_heat_conductivity +
-                        completion[MaterialType::Column].integral_vertical_heat_conductivity +
-                        completion[MaterialType::CementInner].integral_vertical_heat_conductivity +
-                        sandface.integral_vertical_heat_conductivity) /
-                           completion.area(),
+                       casing_vert_cond
+                       //  (Tube.integral_vertical_heat_conductivity +
+                       //   Annulus.integral_vertical_heat_conductivity +
+                       //   Column.integral_vertical_heat_conductivity +
+                       //   CementInner.integral_vertical_heat_conductivity +
+                       //   Sandface.integral_vertical_heat_conductivity) /
+                       //      completion.area()
+                       ,
                        tol));
         CHECK_THAT(heat_conductivity_2(row, col),
                    WithinRel(
-                       sandface.heat_conductivity /
-                           std::log(sandface.outer_radius / sandface.inner_radius) *
+                       Sandface.heat_conductivity /
+                           std::log(Sandface.outer_radius / Sandface.inner_radius) *
                            std::log(grid_r.dual_nodes(2ll) / grid_r.mesh_nodes(1ll)),
                        tol));
       }
@@ -308,21 +319,13 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
   FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
 
-  cout << endl
-       << "heat_conductivity_axes1:\n"
-       << heat_props.medium_heat_conductivity_axes1.values() << endl
-       << endl
-       << "heat_conductivity_axes2:\n"
-       << heat_props.medium_heat_conductivity_axes2.values()
-       << endl;
-
   // CHECK heat_face_props
   {
     const auto &f_conductivity_1 = heat_face_props.medium_heat_conductivity.face_vals_axes1;
     const auto &f_conductivity_2 = heat_face_props.medium_heat_conductivity.face_vals_axes2;
-    for (auto row{0ll}; row < f_conductivity_1.rows(); ++row)
+    for (auto col{0ll}; col < f_conductivity_1.cols(); ++col)
     {
-      for (auto col{0ll}; col < f_conductivity_1.cols(); ++col)
+      for (auto row{0ll}; row < f_conductivity_1.rows(); ++row)
       {
         CHECK_THAT(f_conductivity_1(row, col),
                    WithinRel(
@@ -337,14 +340,17 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
 
     { // col == 0
       const ptrdiff_t col = 0ll;
+      const auto &Sandface = completion[MaterialType::CementOuter];
       const auto &CementOuter = completion[MaterialType::CementOuter];
       for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
       {
         INFO("mesh_node: " << grid_r.mesh_nodes(col + 1ll) << ", dual_node: " << grid_r.dual_nodes(col + 1ll) << ", cement_conductivity: " << CementOuter.heat_conductivity);
         CHECK_THAT(f_conductivity_2(row, col),
                    WithinRel(
-                       1.0 /
-                           (std::log(grid_r.mesh_nodes(col + 1ll) / grid_r.dual_nodes(col + 1ll)) / CementOuter.heat_conductivity),
+                       Sandface.heat_conductivity /
+                           std::log(Sandface.outer_radius / Sandface.inner_radius) *
+                           std::log(grid_r.dual_nodes(2ll) / grid_r.mesh_nodes(1ll)) /
+                           std::log(grid_r.mesh_nodes(1ll) / grid_r.dual_nodes(1ll)),
                        tol));
       }
     }
@@ -380,19 +386,91 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
 
   heat_face_props.apply_well(completion, well);
 
-  // CHECK heat_props
-  // {
-  //   const RealType tol = 1e-12;
-  //   // volumetric_heat_capacity
-  //   const auto &capacity = heat_props.medium_vol_heatcapacity.values();
-  //   const auto &porosity = core_data.porosity.log_vals;
-  //   for (auto row{0ll}; row < capacity.rows(); ++row)
-  //   {
-  //     for(auto col{2ll}; col < capacity.cols(); ++ col)
-  //     {
-  //       CHECK_THAT(capacity(row, col),
-  //       WithinRel(porosity(row)*water.volumetric_heat_capacity + (1-porosity(row))*heat_logs.solid_vol_heatcapacity(row), tol));
-  //     }
-  //   }
-  // }
+  // CHECK heat_face_props --- after "apply_well"
+  {
+    const RealType tol = 1e-12;
+    // volumetric_heat_capacity
+    //  const auto &capacity = heat_props.medium_vol_heatcapacity.values();
+    //  const auto &porosity = core_data.porosity.log_vals;
+    const auto &heat_conductivity = heat_logs.medium_heat_conductivity.log_vals;
+    const auto &f_conductivity_1 = heat_face_props.medium_heat_conductivity.face_vals_axes1;
+    const auto &f_conductivity_2 = heat_face_props.medium_heat_conductivity.face_vals_axes2;
+
+    {
+      const auto col{0ll}; // flow in the tube
+      for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
+      {
+        CHECK_THAT(f_conductivity_2(row, col),
+                   WithinRel(
+                       1.0 /
+                           (std::log(Tube.outer_radius / Tube.inner_radius) / Tube.heat_conductivity +
+                            std::log(Annulus.outer_radius / Annulus.inner_radius) / Annulus.heat_conductivity +
+                            std::log(Column.outer_radius / Column.inner_radius) / Column.heat_conductivity +
+                            std::log(CementInner.outer_radius / CementInner.inner_radius) / CementInner.heat_conductivity),
+                       tol));
+      }
+    }
+
+    {
+      const auto col{1ll}; // flow in the tube
+      for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
+      {
+        CHECK_THAT(f_conductivity_2(row, col),
+                   WithinRel(
+                       1.0 /
+                           (std::log(Sandface.outer_radius / Sandface.inner_radius) / Sandface.heat_conductivity +
+                            std::log(grid_r.mesh_nodes(col + 1ll) / grid_r.dual_nodes(col + 1ll)) / heat_conductivity(row)),
+                       tol));
+      }
+    }
+
+    for (auto col{2ll}; col < f_conductivity_2.cols(); ++col)
+    {
+      for (auto row{0ll}; row < heat_conductivity.rows(); ++row)
+      {
+        CHECK_THAT(f_conductivity_2(row, col),
+                   WithinRel(
+                       heat_conductivity(row) /
+                           std::log(grid_r.dual_nodes(col + 1ll) /
+                                    grid_r.dual_nodes(col)),
+                       tol));
+      }
+    }
+
+    {
+      const auto col{0ll}; // flow in the tube
+      for (auto row{0ll}; row < f_conductivity_1.rows(); ++row)
+      {
+        CHECK_THAT(f_conductivity_1(row, col),
+                   WithinRel(
+                       water.heat_conductivity / (grid.mesh_nodes(row + 1ll) - grid.mesh_nodes(row)),
+                       tol));
+      }
+    }
+
+    {
+      const auto col{1ll}; // flow in the tube
+      for (auto row{0ll}; row < f_conductivity_1.rows(); ++row)
+      {
+        CHECK_THAT(f_conductivity_1(row, col),
+                   WithinRel(
+                       casing_vert_cond / (grid.mesh_nodes(row + 1ll) - grid.mesh_nodes(row)),
+                       tol));
+      }
+    }
+
+    for (auto col{2ll}; col < f_conductivity_1.cols(); ++col)
+    {
+      for (auto row{0ll}; row < f_conductivity_1.rows(); ++row)
+      {
+        CHECK_THAT(f_conductivity_1(row, col),
+                   WithinRel(
+                       1.0 / ((grid.dual_nodes(row+1ll) - grid.mesh_nodes(row)) /
+                                  heat_logs.medium_heat_conductivity(row) +
+                              (grid.mesh_nodes(row + 1ll) - grid.dual_nodes(row+1ll)) /
+                                  heat_logs.medium_heat_conductivity(row+1ll)),
+                       tol));
+      }
+    }
+  }
 }

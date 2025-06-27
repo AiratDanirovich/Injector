@@ -45,7 +45,7 @@
       "rNodes": 451
     },
     "r_log_grid": {
-      "r_max_step": 0.1,
+      "r_max_step": 1.0,
       "q": 1.05
     }
   },

@@ -198,8 +198,7 @@ namespace GPN
             {
                 return {
                     StepPropertyGrid{
-                        StepProperty{
-                            std::vector<RealType>(q_grid.mesh_nodes.size(), val)},
+                        StepPropertyContainer::Constant(q_grid.mesh_nodes.size(), val),
                         q_grid}};
             }
 
@@ -379,7 +378,7 @@ namespace GPN
             {
                 return {
                     StepPropertyGrid{
-                        StepProperty{
+                        StepPropertyContainer{
                             porosity * fluid.volumetric_heat_capacity +
                             (1.0 - porosity) * solid_vol_heatcapacity},
                         grid}};

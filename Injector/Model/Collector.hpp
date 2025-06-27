@@ -241,7 +241,7 @@ namespace GPN
                         assert(flow.area() <= v + 1e-12);
                     // (2) set sandwich heat conductivity in col(1ll)
                     medium_heat_conductivity_axes1.col(1ll) =
-                        completion.integral_vertical_heat_conductivity() / grid2D->face_area_axes1(1ll);
+                        completion.integral_vertical_heat_conductivity();
 #pragma endregion
                 }
 
@@ -270,7 +270,7 @@ namespace GPN
                               props.medium_heat_conductivity_axes1,
                               props.medium_heat_conductivity_axes2,
                               grid2D)},
-                      grid2D{grid2D}, props{props}
+                      grid2D{grid2D}
                 {
                 }
 
@@ -281,11 +281,6 @@ namespace GPN
                     const Completion_t &completion,
                     const Well_t &well)
                 {
-                    // last row with the tube
-                    const auto &mesh = grid2D->first_coord.mesh_nodes;
-                    // const auto it = std::upper_bound(mesh.cbegin(), mesh.cend(), completion.tube_depth);
-                    // const ptrdiff_t tube_end{std::distance(mesh.cbegin(), it) - 1ll};
-
 #pragma region SET-HEAT-CONDUCTIVITY
                     medium_heat_conductivity.face_vals_axes2.col(0ll) /*.head(tube_end)*/ =
                         completion.integral_inner_radial_heat_conductivity();
@@ -293,7 +288,6 @@ namespace GPN
                 }
 
                 MediumHeatConductivity<Grid2D_t> medium_heat_conductivity;
-                const Properties::Rocks::HeatProps<Grid2D_t> &props;
                 const cptr<Grid2D_t> grid2D;
             };
         } // Rocks

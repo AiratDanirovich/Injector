@@ -82,6 +82,7 @@ namespace GPN
                       props.heat_conductivity * std::numbers::pi *
                       thickness * (thickness + 2.0*inner_radius)}
             {
+                assert(std::abs(outer_radius - inner_radius - thickness) < 1e-12);
             }
 
             const RealType thickness, depth;
@@ -130,12 +131,15 @@ namespace GPN
             Casing(const std::vector<Ring> &completion)
                 : sandwich{completion},
                   sandface_radius{completion.back().outer_radius},
-                  flow_radius{completion.front().outer_radius}
+                  flow_radius{completion.front().outer_radius},
+                  thickness{completion.back().outer_radius - completion.front().outer_radius}
             {
                 for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::CementOuter; ++i)
                 {
                     assert(std::abs(completion[i].inner_radius - completion[i - 1ll].outer_radius) < 1e-12);
                 }
+
+                assert(std::abs(thickness - sandface_radius + flow_radius) < 1e-12);
             }
 
             const auto &back() const { return sandwich.back(); }
@@ -182,18 +186,18 @@ namespace GPN
                 for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::CementOuter; ++i)
                 {
                     const auto &m = sandwich[i];
-                    L += m.heat_conductivity * m.area();
+                    L += m.integral_vertical_heat_conductivity;//heat_conductivity * m.area();
                 }
-                return L;
+                return L / area();
             }
 
             const std::vector<Ring> sandwich;
-            const RealType sandface_radius, flow_radius;
+            const RealType sandface_radius, flow_radius, thickness;
 
             const RealType area() const
             {
                 return std::numbers::pi *
-                       (sandface_radius - flow_radius) *
+                       thickness *
                        (sandface_radius + flow_radius);
             }
 
