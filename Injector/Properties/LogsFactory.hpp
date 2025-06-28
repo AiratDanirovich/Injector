@@ -378,7 +378,7 @@ namespace GPN
             {
                 return {
                     StepPropertyGrid{
-                        StepPropertyContainer{
+                        StepProperty{
                             porosity * fluid.volumetric_heat_capacity +
                             (1.0 - porosity) * solid_vol_heatcapacity},
                         grid}};
