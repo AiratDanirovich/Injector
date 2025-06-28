@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <array>
 
 #ifdef MYLIBRARY_EXPORT
 #define LIBRARY_API __declspec(dllexport)
@@ -18,6 +19,10 @@ class CustomVector;
 #pragma warning(disable : 4251)
 class LIBRARY_API Wrapper
 {
+
+    // {density, specific_heat_capacity, het_conductivity, thickness, inner_radius, depth}
+    using MaterialProps = std::array<RealType, 6>;
+
 public:
     Wrapper(
         // fluid params in SI
@@ -44,8 +49,8 @@ public:
         const VR &solid_specific_heatcapacity, // J/(kg*K)
         // geotherma
         const RealType z_top,     // m, /* z-coordinate of the top */
-        const VR geotherma_nodes, // m, /* nodes for geotherma interpolation */
-        const VR geotherma_vals,  // K, /* reference vals for interpolation */
+        const VR &geotherma_nodes, // m, /* nodes for geotherma interpolation */
+        const VR &geotherma_vals,  // K, /* reference vals for interpolation */
         // temporal grid
         const RealType t_start,      // start time in seconds
         const VR &time_intervals,    // time intervals (in seconds) of const rates
@@ -53,8 +58,11 @@ public:
         // well
         const RealType tube_radius,     // m
         const RealType sandface_radius, // m
-        const VR well_rates,            // ~1.1E-3 m^3/s
-        const VR inlet_temperatures     // K
+        const VR &well_rates,            // ~1.1E-3 m^3/s
+        const VR &inlet_temperatures,     // K
+        // casing
+        // {fluid, tube, annulus, column, cementInner, cementOuter}
+        const std::array<MaterialProps, 6> &casing_data
     );
     ~Wrapper();
 

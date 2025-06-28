@@ -2,8 +2,8 @@
   "fluid": {
     "density": 1000,
     "viscosity": 6e-4,
-    "specificHeatCapacity": 4200,
-    "heatConductivity": 0.0
+    "specific_heat_capacity": 4200,
+    "heat_conductivity": 0.0
   },
   "collector": {
     "thickness": [   7,   3,    3,    15,  3,     3,   3,   3,    35],
@@ -42,13 +42,53 @@
     "r_grid_type": "log",
     "r_grid_types": ["log", "uniform"],
     "r_log_grid": {
-      "r_max_step": 0.1,
+      "r_max_step": 1.0,
       "q": 1.05
     }
   },
   "well": {
     "tube_radius": 0.05,
     "sandface_radius": 0.11
+  },
+   "completion": {
+    "tube":{
+      "inner_radius": 0.04,
+      "thickness": 0.04,
+      "heat_conductivity": 1.2,
+      "density": 1000,
+      "specific_heat_capacity": 4200,
+      "depth": 25
+    },
+    "annulus":{
+      "thickness": 0.04,
+      "heat_conductivity": 1.2,
+      "density": 90,
+      "specific_heat_capacity": 1000,
+      "depth": 25
+    },
+    "column":{
+      "thickness": 0.04,
+      "heat_conductivity": 1.2,
+      "density": 90,
+      "specific_heat_capacity": 1000,
+      "depth": 25
+    },
+    "cement":{
+      "inner":{
+        "thickness": 0.04,
+        "heat_conductivity": 1.2,
+        "specific_heat_capacity": 900,
+        "density": 3500,
+        "depth": 25
+      },
+      "outer":{
+        "thickness": 0.04,
+        "heat_conductivity": 1.2,
+        "specific_heat_capacity": 900,
+        "density": 3500,
+        "depth": 25
+      }
+    }
   },
   "history": {
     "start_time": 0.0,

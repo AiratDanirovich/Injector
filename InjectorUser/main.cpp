@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <array>
 
 #include <InjectorDLL/Defines.h>
 #include <InjectorDLL/Wrapper.h>
@@ -31,6 +32,77 @@ VR generate_steps(const VR &dual_nodes)
     return out;
 }
 
+const std::array<std::array<RealType, 6>, 6> parse_completion(const json &data)
+{
+    std::array<std::array<RealType, 6>, 6> out;
+
+    { // flowing fluid
+        const auto &data2 = data["fluid"];
+        out[0ull] = {data2["density"],
+                     data2["specific_heat_capacity"],
+                     data2["heat_conductivity"],
+                     data["completion"]["tube"]["inner_radius"],
+                     0.0,
+                     std::numeric_limits<RealType>::max()};
+    }
+
+    { // tube
+        const auto &data2 = data["completion"]["tube"];
+        out[1ull] = {data2["density"],
+                     data2["specific_heat_capacity"],
+                     data2["heat_conductivity"],
+                     data2["thickness"],
+                     data2["inner_radius"],
+                     data2["depth"]};
+    }
+
+    { // annulus
+        const auto &data2 = data["completion"]["annulus"];
+        out[2ull] = {data2["density"],
+                     data2["specific_heat_capacity"],
+                     data2["heat_conductivity"],
+                     data2["thickness"],
+                     // tube inner_radius + tube wall thickness
+                     out[1ull][4ull]+out[1ull][3ull],
+                     data2["depth"]};
+    }
+
+    { // column
+        const auto &data2 = data["completion"]["column"];
+        out[3ull] = {data2["density"],
+                     data2["specific_heat_capacity"],
+                     data2["heat_conductivity"],
+                     data2["thickness"],
+                     // annulus inner_radius + annulus wall thickness
+                     out[2ull][4ull]+out[2ull][3ull],
+                     data2["depth"]};
+    }
+
+    { // cementInner
+        const auto &data2 = data["completion"]["cement"]["inner"];
+        out[4ull] = {data2["density"],
+                     data2["specific_heat_capacity"],
+                     data2["heat_conductivity"],
+                     data2["thickness"],
+                     // column inner_radius + column wall thickness
+                     out[3ull][4ull]+out[3ull][3ull],
+                     data2["depth"]};
+    }
+
+    { // cementOuter
+        const auto &data2 = data["completion"]["cement"]["outer"];
+        out[5ull] = {data2["density"],
+                     data2["specific_heat_capacity"],
+                     data2["heat_conductivity"],
+                     data2["thickness"],
+                     // cementInner inner_radius + cementInner wall thickness
+                     out[4ull][4ull]+out[4ull][3ull],
+                     data2["depth"]};
+    }
+
+    return out;
+}
+
 int main()
 {
     ifstream f("injector_launch.json");
@@ -42,8 +114,8 @@ int main()
     RealType
         viscosity{data["fluid"]["viscosity"]},
         density{data["fluid"]["density"]},
-        capacity{data["fluid"]["specificHeatCapacity"]},
-        heat_conductivity{data["fluid"]["heatConductivity"]};
+        capacity{data["fluid"]["specific_heat_capacity"]},
+        heat_conductivity{data["fluid"]["heat_conductivity"]};
     /*collector*/
     const VR thickness = data["collector"]["thickness"];
     //  const ptrdiff_t nLayers{thickness.size()};
@@ -90,6 +162,7 @@ int main()
     /*well*/
     const RealType sandface_radius{data["well"]["sandface_radius"]};
     const RealType tube_radius{data["well"]["tube_radius"]};
+    const auto casing{parse_completion(data)};
     /*END*/
 
     const auto &data2 = data["collector"]["geotherma"]["interpolate"];
@@ -128,14 +201,15 @@ int main()
         geotherma_nodes, // m, /* nodes for geotherma interpolation */
         geotherma_vals,  // K, /* reference vals for interpolation */
         // temporal grid
-        t0,           // s, start time in seconds
-        t_major_steps,   // s, in seconds
-        t_minor_step, // s, time step used for numerical integration
+        t0,            // s, start time in seconds
+        t_major_steps, // s, in seconds
+        t_minor_step,  // s, time step used for numerical integration
         // well
-        tube_radius,      // m
-        sandface_radius,  // m
+        tube_radius,       // m
+        sandface_radius,   // m
         well_rates,        // ~1.1E-3 m^3/s
-        inlet_temperatures // K
+        inlet_temperatures, // K
+        casing
     );
 
     // cout << "After call to DLL\nPress Enter to continue" << endl;

@@ -18,6 +18,7 @@
 #include <Injector/History/RatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
+#include <Injector/Model/WellFactory.hpp>
 
 #include <Injector/Properties/FlowField.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
@@ -38,6 +39,7 @@ using json = nlohmann::json;
 
 using namespace GPN;
 using namespace GPN::Phases;
+using namespace GPN::Completion;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
@@ -65,7 +67,7 @@ auto ICFactory(RealType t_start, const Grid_t_ptr grid, const Logs::Geotherma &g
     return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{geotherma}, t_start)};
 }
 
-template<typename Well_t>
+template <typename Well_t>
 struct FunctorBC : public GPN::BoundaryConditions::BCFunctorBase
 {
     using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
@@ -113,6 +115,94 @@ protected:
     const cptr<const Grid2D_t> grid_ptr;
 };
 
+const auto make_completion(const std::array<std::array<RealType, 6>, 6> &data)
+{
+  using namespace GPN::Completion;
+
+  std::vector<Ring> out;
+  out.reserve(6);
+
+  { // flowing fluid
+    const auto &data2 = data[0ull];
+    out.push_back(
+        Ring{
+            Flow{
+                Density{data2[0ull]},
+                SpecificHeatCapacity{data2[1ull]},
+                GPN::HeatConductivity{data2[2ull]}},
+            Thickness{data2[3ull]},
+            InnerRadius{data2[4ull]},
+            Depth{data2[5ull]}});
+  }
+
+  { // tube
+    const auto &data2 = data[1ull];
+    out.push_back(
+        Ring{
+            Tube{
+                Density{data2[0ull]},
+                SpecificHeatCapacity{data2[1ull]},
+                GPN::HeatConductivity{data2[2ull]}},
+            Thickness{data2[3ull]},
+            InnerRadius{data2[4ull]},
+            Depth{data2[5ull]}});
+  }
+  
+  { // annulus
+    const auto &data2 = data[2ull];
+    out.push_back(
+        Ring{
+            Annulus{
+                Density{data2[0ull]},
+                SpecificHeatCapacity{data2[1ull]},
+                GPN::HeatConductivity{data2[2ull]}},
+            Thickness{data2[3ull]},
+            InnerRadius{data2[4ull]},
+            Depth{data2[5ull]}});
+  }
+    
+  { // column
+    const auto &data2 = data[3ull];
+    out.push_back(
+        Ring{
+            Column{
+                Density{data2[0ull]},
+                SpecificHeatCapacity{data2[1ull]},
+                GPN::HeatConductivity{data2[2ull]}},
+            Thickness{data2[3ull]},
+            InnerRadius{data2[4ull]},
+            Depth{data2[5ull]}});
+  }
+      
+  { // cement_1
+    const auto &data2 = data[4ull];
+    out.push_back(
+        Ring{
+            Cement{
+                Density{data2[0ull]},
+                SpecificHeatCapacity{data2[1ull]},
+                GPN::HeatConductivity{data2[2ull]}},
+            Thickness{data2[3ull]},
+            InnerRadius{data2[4ull]},
+            Depth{data2[5ull]}});
+  }
+      
+  { // cement_2
+    const auto &data2 = data[5ull];
+    out.push_back(
+        Ring{
+            Cement{
+                Density{data2[0ull]},
+                SpecificHeatCapacity{data2[1ull]},
+                GPN::HeatConductivity{data2[2ull]}},
+            Thickness{data2[3ull]},
+            InnerRadius{data2[4ull]},
+            Depth{data2[5ull]}});
+  }
+
+  return out;
+}
+
 Wrapper::Wrapper(
     // fluid params in SI
     const RealType density,                 // kg/(m^3)
@@ -128,7 +218,7 @@ Wrapper::Wrapper(
     // eight vectors of the same size
     // values are in SI
     const VR &thickness,                   // meter
-    const VR &solid_heatconductivity,   // Watt/(m*K)
+    const VR &solid_heatconductivity,      // Watt/(m*K)
     const VR &porosity,                    // 0.0 < porosity <= 1.0, --
     const VR &permeability_stencils,       // m^2
     const VR &weights_stencils,            // -- /*rate distribution between layers*/
@@ -138,8 +228,8 @@ Wrapper::Wrapper(
     const VR &solid_specific_heatcapacity, // J/(kg*K)
     // geotherma
     const RealType z_top,     // m, /* z-coordinate of the top */
-    const VR geotherma_nodes, // m, /* nodes for geotherma interpolation */
-    const VR geotherma_vals,  // K, /* reference vals for interpolation */
+    const VR& geotherma_nodes, // m, /* nodes for geotherma interpolation */
+    const VR& geotherma_vals,  // K, /* reference vals for interpolation */
     // temporal grid
     const RealType t_start,      // start time in seconds
     const VR &time_intervals,    // intervals of const rates)
@@ -147,9 +237,11 @@ Wrapper::Wrapper(
     // well
     const RealType tube_radius,     // m
     const RealType sandface_radius, // m
-    const VR well_rates,            // ~1.1E-3 m^3/s
-    const VR inlet_temperatures     // K
-)
+    const VR &well_rates,            // ~1.1E-3 m^3/s
+    const VR& inlet_temperatures,    // K
+    // casing
+    // {fluid, tube, annulus, column, cementInner, cementOuter}
+    const std::array<MaterialProps, 6>& casing_data)
 {
     // adapt stl container to Eigen container
     LogValuesContainer is_permeable_stencils(is_permeable.size());
@@ -165,8 +257,10 @@ Wrapper::Wrapper(
     LogValuesContainer solid_heatconductivity_stencils(solid_heatconductivity.size());
     std::copy(solid_heatconductivity.begin(), solid_heatconductivity.end(), solid_heatconductivity_stencils.begin());
 
+    const Casing completion{make_completion(casing_data)};
+
     // r_stencils
-    GPN::WellHoles well_holes{tube_radius, sandface_radius};
+    GPN::WellHoles well_holes{WellHolesFactory::create(completion)};
     VR r_stencils = well_holes.generate_log_radial_grid(
         rMin, rMax, q, r_max_step);
     // z-refiner
@@ -201,7 +295,7 @@ Wrapper::Wrapper(
             grid)};
 
     const Well_Explicit well{
-        water, core_data.is_permeable,
+        core_data.is_permeable,
         core_data.is_perforated, weights};
 
     const Logs::Rocks::HeatLogs heat_logs{
@@ -211,12 +305,15 @@ Wrapper::Wrapper(
         porosity_stencils,
         water,
         grid2D->first_coord};
+        
     Properties::Rocks::HeatProps heat_props{
         heat_logs, grid2D};
-    heat_props.apply_well(well, water);
+    heat_props.apply_well(completion, well);
 
-    const FaceProperties::Rocks::HeatFaceProps heat_face_props{
+    FaceProperties::Rocks::HeatFaceProps heat_face_props{
         heat_props, grid2D};
+    heat_face_props.apply_well(completion, well);
+
     // history
     const History history{
         HistoryFactory::createFixedRate(time_intervals, well_rates, inlet_temperatures)};
