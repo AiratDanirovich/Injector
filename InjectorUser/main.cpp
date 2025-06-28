@@ -63,7 +63,7 @@ const std::array<std::array<RealType, 6>, 6> parse_completion(const json &data)
                      data2["heat_conductivity"],
                      data2["thickness"],
                      // tube inner_radius + tube wall thickness
-                     out[1ull][4ull]+out[1ull][3ull],
+                     out[1ull][4ull] + out[1ull][3ull],
                      data2["depth"]};
     }
 
@@ -74,7 +74,7 @@ const std::array<std::array<RealType, 6>, 6> parse_completion(const json &data)
                      data2["heat_conductivity"],
                      data2["thickness"],
                      // annulus inner_radius + annulus wall thickness
-                     out[2ull][4ull]+out[2ull][3ull],
+                     out[2ull][4ull] + out[2ull][3ull],
                      data2["depth"]};
     }
 
@@ -85,7 +85,7 @@ const std::array<std::array<RealType, 6>, 6> parse_completion(const json &data)
                      data2["heat_conductivity"],
                      data2["thickness"],
                      // column inner_radius + column wall thickness
-                     out[3ull][4ull]+out[3ull][3ull],
+                     out[3ull][4ull] + out[3ull][3ull],
                      data2["depth"]};
     }
 
@@ -96,7 +96,7 @@ const std::array<std::array<RealType, 6>, 6> parse_completion(const json &data)
                      data2["heat_conductivity"],
                      data2["thickness"],
                      // cementInner inner_radius + cementInner wall thickness
-                     out[4ull][4ull]+out[4ull][3ull],
+                     out[4ull][4ull] + out[4ull][3ull],
                      data2["depth"]};
     }
 
@@ -150,9 +150,9 @@ int main()
     else
         throw std::runtime_error("Incorrect unit of time.");
 
-    const RealType
-        t0{data["history"]["start_time"] * factor};
-    RealType t_minor_step{data["history"]["t_minor_step"] * factor};
+    RealType
+        t0{factor * (RealType)data["history"]["start_time"]};
+    RealType t_minor_step = factor * (RealType)data["history"]["t_minor_step"];
     VR t_major_steps = data["history"]["dynamic"]["t_major_step"];
     for (auto &v : t_major_steps)
         v *= factor;
@@ -205,8 +205,7 @@ int main()
         // well
         well_rates,         // ~1.1E-3 m^3/s
         inlet_temperatures, // K
-        casing
-    );
+        casing);
 
     // cout << "After call to DLL\nPress Enter to continue" << endl;
     // getchar();
