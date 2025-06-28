@@ -37,7 +37,7 @@ namespace GPN
                     history.time_moments.cend(),
                     t + t_step / 2.0)};
                 // corresponding position in history.rates
-                const auto pos_new{std::distance(history.time_moments.begin(), it) - 1ll};
+                const auto pos_new{std::distance(history.time_moments.cbegin(), it) - 1ll};
                 if (pos_new > pos)
                 { // the filed is only updated if a new history interval is set
                     pos = pos_new;

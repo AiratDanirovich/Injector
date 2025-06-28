@@ -242,7 +242,7 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
 
   // exact solution
   ExactSolution es{heat_props.medium_vol_heatcapacity,
-                   heat_props.medium_heat_conductivity, q};
+                   heat_props.medium_heat_conductivity_axes1, q};
   // initial conditions
   const auto initial_state{initialcondition_factory(t0, grid2D, es)};
   // boundary conditions

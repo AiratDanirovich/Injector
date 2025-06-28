@@ -14,6 +14,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+using namespace GPN;
+
 struct ABCFunctor : public GPN::BoundaryConditions::BCFunctorBase
 {
     ABCFunctor(RealType val) : val{val} {}
@@ -33,7 +35,6 @@ protected:
 };
 
 using namespace std;
-using namespace GPN;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
