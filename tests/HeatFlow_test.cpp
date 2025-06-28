@@ -291,7 +291,7 @@ const auto get_completion(const json &data)
 
     out.push_back(
         Ring{
-            Annulus{
+            Column{
                 Density{data2["density"]},
                 SpecificHeatCapacity{data2["specific_heat_capacity"]},
                 GPN::HeatConductivity{data2["heat_conductivity"]}},
