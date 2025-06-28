@@ -56,8 +56,6 @@ public:
         const VR &time_intervals,    // time intervals (in seconds) of const rates
         const RealType t_minor_step, // time step used for numerical integration
         // well
-        const RealType tube_radius,     // m
-        const RealType sandface_radius, // m
         const VR &well_rates,            // ~1.1E-3 m^3/s
         const VR &inlet_temperatures,     // K
         // casing

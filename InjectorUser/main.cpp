@@ -160,8 +160,6 @@ int main()
     const VR well_rates = data["history"]["dynamic"]["well_rate"]; // m^3/s
     const VR inlet_temperatures = data["history"]["dynamic"]["inlet_temperature"];
     /*well*/
-    const RealType sandface_radius{data["well"]["sandface_radius"]};
-    const RealType tube_radius{data["well"]["tube_radius"]};
     const auto casing{parse_completion(data)};
     /*END*/
 
@@ -205,9 +203,7 @@ int main()
         t_major_steps, // s, in seconds
         t_minor_step,  // s, time step used for numerical integration
         // well
-        tube_radius,       // m
-        sandface_radius,   // m
-        well_rates,        // ~1.1E-3 m^3/s
+        well_rates,         // ~1.1E-3 m^3/s
         inlet_temperatures, // K
         casing
     );
