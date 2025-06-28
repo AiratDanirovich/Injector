@@ -42,6 +42,7 @@ namespace GPN
             }
 
             const auto &values() const { return its_values; }
+            auto &values() { return its_values; }
             RealType value(auto first, auto second) const { return values()(first, second); }
 
             auto col(auto i)

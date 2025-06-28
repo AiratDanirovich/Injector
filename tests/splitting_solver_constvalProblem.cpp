@@ -15,6 +15,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
+using namespace GPN;
+
 struct ABCFunctor : public GPN::BoundaryConditions::BCFunctorBase
 {
   ABCFunctor(RealType val) : val{val} {}
@@ -37,7 +39,6 @@ protected:
 using namespace Catch;
 using namespace Catch::Matchers;
 
-using namespace GPN;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 

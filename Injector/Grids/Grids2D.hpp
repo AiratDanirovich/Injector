@@ -36,7 +36,7 @@ namespace GPN
 
         public:
             using FaceAreaAxes1 = Eigen::ArrayX<RealType>;
-            using FaceAreaAxes2 = Eigen::ArrayX<RealType>;
+            using FaceAreaAxes2 = Eigen::Array<RealType, 1, -1>;
             struct Point
             {
                 RealType x, y;
@@ -100,8 +100,6 @@ namespace GPN
         {
             using StructuredGrid2D<CylinderCoordinates>::coordinate;
 
-
-
             constexpr static auto TwoPI()
             {
                 return static_cast<RealType>(2.0 * std::numbers::pi);
@@ -126,7 +124,7 @@ namespace GPN
             {
                 return FaceAreaAxes1{second_coord.volumes() * TwoPI()};
             }
-            FaceAreaAxes1 set_axes2_area() const
+            FaceAreaAxes2 set_axes2_area() const
             {
                 return FaceAreaAxes1{first_coord.volumes() * TwoPI()};
             }

@@ -4,6 +4,7 @@
 #include <string>
 #include <numbers>
 #include <cmath>
+#include <vector>
 
 #include <Injector/Grids/Defines.h>
 
@@ -13,11 +14,10 @@
 #include <Injector/History/RatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
+#include <Injector/Model/WellFactory.hpp>
 
 #include <Injector/Properties/FlowField.hpp>
 #include <Injector/Properties/Factory.hpp>
-#include <Injector/Model/Phases/FluidFactory.hpp>
-#include <Injector/Model/Well.hpp>
 #include <Injector/Solver/BoundaryConditions.hpp>
 #include <Injector/Solver/State2D.hpp>
 #include <Injector/Solver/InitialCondition.hpp>
@@ -37,6 +37,7 @@ using namespace GPN;
 using namespace GPN::Logs;
 using namespace GPN::Grids;
 using namespace GPN::Phases;
+using namespace GPN::Completion;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
@@ -237,6 +238,99 @@ const Logs::Geotherma make_geotherma(const json &data, const auto grid2D)
     throw std::runtime_error("Incorrect radial grid descriptors.");
 }
 
+const auto get_completion(const json &data)
+{
+  using namespace GPN::Completion;
+
+  std::vector<Ring> out;
+  out.reserve(6);
+
+  { // flowing fluid
+    const auto &data2 = data["fluid"];
+    out.push_back(
+        Ring{
+            Flow{
+                Density{data2["density"]},
+                SpecificHeatCapacity{data2["specific_heat_capacity"]},
+                GPN::HeatConductivity{data2["heat_conductivity"]}},
+            Thickness{data["completion"]["tube"]["inner_radius"]},
+            InnerRadius{0.0},
+            Depth{std::numeric_limits<RealType>::max()}});
+  }
+
+  { // tube
+    const auto &data2 = data["completion"]["tube"];
+
+    out.push_back(
+        Ring{
+            Tube{
+                Density{data2["density"]},
+                SpecificHeatCapacity{data2["specific_heat_capacity"]},
+                GPN::HeatConductivity{data2["heat_conductivity"]}},
+            Thickness{data2["thickness"]},
+            InnerRadius{out.back().outer_radius},
+            Depth{data2["depth"]}});
+  }
+  
+  { // annulus
+    const auto &data2 = data["completion"]["annulus"];
+
+    out.push_back(
+        Ring{
+            Annulus{
+                Density{data2["density"]},
+                SpecificHeatCapacity{data2["specific_heat_capacity"]},
+                GPN::HeatConductivity{data2["heat_conductivity"]}},
+            Thickness{data2["thickness"]},
+            InnerRadius{out.back().outer_radius},
+            Depth{data2["depth"]}});
+  }
+    
+  { // column
+    const auto &data2 = data["completion"]["column"];
+
+    out.push_back(
+        Ring{
+            Annulus{
+                Density{data2["density"]},
+                SpecificHeatCapacity{data2["specific_heat_capacity"]},
+                GPN::HeatConductivity{data2["heat_conductivity"]}},
+            Thickness{data2["thickness"]},
+            InnerRadius{out.back().outer_radius},
+            Depth{data2["depth"]}});
+  }
+      
+  { // cement_1
+    const auto &data2 = data["completion"]["cement"]["inner"];
+
+    out.push_back(
+        Ring{
+            Cement{
+                Density{data2["density"]},
+                SpecificHeatCapacity{data2["specific_heat_capacity"]},
+                GPN::HeatConductivity{data2["heat_conductivity"]}},
+            Thickness{data2["thickness"]},
+            InnerRadius{out.back().outer_radius},
+            Depth{data2["depth"]}});
+  }
+      
+  { // cement_2
+    const auto &data2 = data["completion"]["cement"]["outer"];
+
+    out.push_back(
+        Ring{
+            Cement{
+                Density{data2["density"]},
+                SpecificHeatCapacity{data2["specific_heat_capacity"]},
+                GPN::HeatConductivity{data2["heat_conductivity"]}},
+            Thickness{data2["thickness"]},
+            InnerRadius{out.back().outer_radius},
+            Depth{data2["depth"]}});
+  }
+
+  return out;
+}
+
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
   ifstream f("heatflow_test_data.json");
@@ -249,8 +343,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   RealType
       viscosity{data["fluid"]["viscosity"]},
       density{data["fluid"]["density"]},
-      capacity{data["fluid"]["specificHeatCapacity"]},
-      heat_conductivity{data["fluid"]["heatConductivity"]};
+      capacity{data["fluid"]["specific_heat_capacity"]},
+      heat_conductivity{data["fluid"]["heat_conductivity"]};
   /*collector*/
   const VR thickness = data["collector"]["thickness"];
   // const ptrdiff_t nLayers{thickness.size()};
@@ -273,14 +367,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const RealType t_minor_step{data["history"]["t_minor_step"]};
   const RealType start_time{data["history"]["start_time"]};
   /*temperatures*/
-  /*well*/
-  const RealType sandface_radius{data["well"]["sandface_radius"]};
-  const RealType tube_radius{data["well"]["tube_radius"]};
+  /*completion*/
+  const Casing completion{get_completion(data)};
   /*END*/
 
   // make grid2D
   // r_stencils
-  const WellHoles well_holes{tube_radius, sandface_radius};
+  const WellHoles well_holes{WellHolesFactory::create(completion)};
   const VR r_stencils{make_r_stencils(data, well_holes)};
   const RealType &rMax = r_stencils.back();
   const RealType &rMin = r_stencils.front();
@@ -336,7 +429,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           core_data.is_permeable,
           grid)};
   const Well_Explicit well{
-      water, core_data.is_permeable, core_data.is_perforated, weights};
+      core_data.is_permeable, core_data.is_perforated, weights};
 
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
@@ -353,10 +446,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   Properties::Rocks::HeatProps heat_props{
       heat_logs, grid2D};
 
-  heat_props.apply_well(well, water);
+  // properties of material that fills the well up to the sandface
+  heat_props.apply_well(completion, well);
 
-  const FaceProperties::Rocks::HeatFaceProps heat_face_props{
+  FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
+  heat_face_props.apply_well(completion, well);
   // history
   const History history{make_history(data)};
   // rates field factory

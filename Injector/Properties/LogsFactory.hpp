@@ -198,8 +198,7 @@ namespace GPN
             {
                 return {
                     StepPropertyGrid{
-                        StepProperty{
-                            std::vector<RealType>(q_grid.mesh_nodes.size(), val)},
+                        StepPropertyContainer::Constant(q_grid.mesh_nodes.size(), val),
                         q_grid}};
             }
 

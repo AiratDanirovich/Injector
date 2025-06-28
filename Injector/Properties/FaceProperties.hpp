@@ -129,6 +129,8 @@ namespace GPN
                     grid.coordinate<typename Grid2D_t::Axes2>().dual_size() - 2ll);
 
                 for (auto id{0ll}; id < out.rows(); ++id)
+                    // take a row of mesh-node values
+                    // and interpolate at faces to get dual-node values
                     out.row(id) = Logs::FaceInterpolator::interpolate1D_r(
                         prop.row(id),
                         grid.coordinate<typename Grid2D_t::Axes2>());
@@ -158,36 +160,38 @@ namespace GPN
 
         struct FaceInterpolatedFieldFactory
         {
+            // isotropic medium
             template <typename Grid_t>
             static auto create(
                 const Properties::Field<Grid_t> &property,
                 const cptr<Grid_t> grid)
             {
-                // FaceValuesContainer face_vals_axes1{
-                //     FaceInterpolator::interpolate2D_z(
-                //         property.values(),
-                //         *grid)};
+                return create(property, property, grid);
+            }
 
-                // FaceValuesContainer face_vals_axes2{
-                //     FaceInterpolator::interpolate2D_r(
-                //         property.values(),
-                //         *grid)};
+            // anisotropic medium
+            template <typename Grid_t>
+            static auto create(
+                const Properties::Field<Grid_t> &property_axes1,
+                const Properties::Field<Grid_t> &property_axes2,
+                const cptr<Grid_t> grid)
+            {
 
                 return FaceInterpolatedField<Grid_t>{
                     FaceValuesContainer{
                         FaceInterpolator::interpolate2D_z(
-                            property.values(),
+                            property_axes1.values(),
                             *grid)},
                     FaceValuesContainer{
                         FaceInterpolator::interpolate2D_r(
-                            property.values(),
+                            property_axes2.values(),
                             *grid)}};
             }
         };
 
         template <typename Grid_t>
         using HeatConductivity = FaceInterpolatedField<Grid_t>;
-        
+
         template <typename Grid_t>
         using MediumHeatConductivity = HeatConductivity<Grid_t>;
 
