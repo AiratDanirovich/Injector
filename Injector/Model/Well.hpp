@@ -15,6 +15,13 @@
 
 namespace GPN
 {
+    struct TubeInnerRadius : public SomeProperty
+    {
+    };
+    struct SandfaceRadius : public SomeProperty
+    {
+    };
+
     struct Friction
     {
     public:
@@ -26,18 +33,24 @@ namespace GPN
         RealType f_factor;
     };
 
+    /// @brief Descriptor for the well circular desing,
+    /// contains radii of tube < column < sandface.
+    /// Cement is between column and sandface
     struct WellHoles
     {
         WellHoles(
-            const RealType tube_radius,
-            const RealType sandface_radius)
+            const TubeInnerRadius tube_radius,
+            const SandfaceRadius sandface_radius)
             : tube_radius{tube_radius},
               sandface_radius{sandface_radius}
         {
             assert(tube_radius < sandface_radius);
         }
 
-        std::vector<RealType> generate_uniform_radial_grid(const RealType r_min, const RealType r_max, const ptrdiff_t r_nodes) const
+        std::vector<RealType> generate_uniform_radial_grid(
+            const RealType r_min,
+            const RealType r_max,
+            const ptrdiff_t r_nodes) const
         {
             assert(r_min < tube_radius);
             assert(r_max > sandface_radius);
@@ -129,10 +142,38 @@ namespace GPN
         const RealType sandface_radius;
     };
 
+    /// @brief Descriptor of materials that fill the
+    /// rings that form the well up to sandface.
+    /// There is a variation along the verticle direction.
+    /// Tube ends at the depth tube_depth.
+    struct WellMaterial
+    {
+        WellMaterial(
+            const WellHoles &well_holes,
+            const RealType tube_depth,
+            const RealType tube_lambda,
+            const StationaryPhaseProperties &annulus,
+            const StationaryPhaseProperties &cement)
+            : well_holes{well_holes},
+              tube_lambda{tube_lambda},
+              tube_depth{tube_depth},
+              annulus{annulus},
+              cement{cement}
+        {
+        }
+
+        /// @brief Depth of the tube
+        const RealType tube_depth;
+        /// @brief well concentric geometry
+        const WellHoles well_holes;
+        const RealType tube_lambda;
+
+        const StationaryPhaseProperties annulus, cement;
+    };
+
     struct IWellDesign
     {
         IWellDesign(
-            const PhaseProperties &fluid,
             const Logs::IsPermeable &is_permeable,
             const Logs::IsPerforated &is_perforated,
             const StepPropertyContainer &RFP_weights)
@@ -140,7 +181,6 @@ namespace GPN
               is_perforated{is_perforated},
               RFP_weights{RFP_weights},
               WFP_weights{wfp_weights(Logs::IsGhostLayerFactory::create(is_permeable, is_perforated), RFP_weights, layer_id(is_perforated))},
-              fluid{fluid},
               weights_sum{RFP_weights.sum()},
               its_top_collector_cell_id{layer_id(is_perforated)}
         {
@@ -159,7 +199,6 @@ namespace GPN
         const StepPropertyContainer RFP_weights;
         const StepPropertyContainer WFP_weights;
         const RealType weights_sum;
-        const PhaseProperties fluid;
 
         ptrdiff_t top_collector_cell_id() const
         {
@@ -188,17 +227,14 @@ namespace GPN
         const ptrdiff_t its_top_collector_cell_id{-1ll};
     };
 
-        struct Well_Explicit
+    struct Well_Explicit
         : public IWellDesign
     {
         Well_Explicit(
-            //    const RealType tube_depth,
-            const PhaseProperties &fluid,
             const Logs::IsPermeable &is_permeable,
             const Logs::IsPerforated &is_perforated,
             const StepPropertyContainer &weights)
             : IWellDesign{
-                  fluid,
                   is_permeable,
                   is_perforated,
                   /*RFP_weights*/ weights}
@@ -258,7 +294,6 @@ namespace GPN
         : public Well_Explicit
     {
         Well_KH(
-            //    const RealType tube_depth,
             const PhaseProperties &fluid,
             const Logs::IsPermeable &is_permeable,
             const Logs::IsPerforated &is_perforated,
@@ -266,10 +301,10 @@ namespace GPN
             const WellHoles &holes,
             const RealType Rext)
             : Well_Explicit{
-                  fluid,
                   is_permeable,
                   is_perforated,
                   /*RFP_weights*/ permeability * is_permeable.grid.dual_steps * (StepPropertyContainer)is_permeable},
+              fluid{fluid},
               log_dist{std::log(Rext / holes.sandface_radius)}
         {
             assert(permeability.size() == is_permeable.grid.dual_steps.size());
@@ -332,5 +367,8 @@ namespace GPN
 
     private:
         const RealType log_dist;
+        const PhaseProperties fluid;
+
+
     };
 } // GPN

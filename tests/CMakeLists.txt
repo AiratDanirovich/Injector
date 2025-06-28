@@ -40,6 +40,7 @@ add_catch2_test(splity_test)
 add_catch2_test(solver_test)
 
 add_catch2_test(well_test)
+add_catch2_test(apply_well_test)
 add_catch2_test(flowfield_test)
 add_catch2_test(hydrodynamicsolver_test)
 
@@ -66,6 +67,12 @@ install(FILES ${PROJECT_SOURCE_DIR}/test_data/json_test_data.json
 install(FILES ${PROJECT_SOURCE_DIR}/test_data/heatflow_test_data.json
     DESTINATION $<TARGET_FILE_DIR:HeatFlow_test>)
 install(FILES ${PROJECT_SOURCE_DIR}/test_data/heatflow_test_data.json
+    DESTINATION ${PROJECT_BINARY_DIR})
+    
+
+install(FILES ${PROJECT_SOURCE_DIR}/test_data/apply_well_test_data.json
+    DESTINATION $<TARGET_FILE_DIR:apply_well_test>)
+install(FILES ${PROJECT_SOURCE_DIR}/test_data/apply_well_test_data.json
     DESTINATION ${PROJECT_BINARY_DIR})
 
 

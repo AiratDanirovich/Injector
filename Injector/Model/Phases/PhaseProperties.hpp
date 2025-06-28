@@ -22,29 +22,41 @@ namespace GPN
     {
     };
 
-    struct PhaseProperties
+    struct StationaryPhaseProperties
+    {
+        StationaryPhaseProperties(const StationaryPhaseProperties&) = default;
+        StationaryPhaseProperties(
+            Density density,
+            SpecificHeatCapacity mass_heat_capacity,
+            HeatConductivity heat_conductivity) noexcept
+            : density{density},
+              mass_heat_capacity{mass_heat_capacity},
+              heat_conductivity{heat_conductivity},
+              volumetric_heat_capacity{
+                  mass_heat_capacity *
+                  density}
+        {
+        }
+        const RealType density;
+        const RealType mass_heat_capacity;
+        const RealType heat_conductivity;
+        const RealType volumetric_heat_capacity;
+    };
+
+    struct PhaseProperties : public StationaryPhaseProperties
     {
         PhaseProperties(
             Viscosity viscosity,
             Density density,
             SpecificHeatCapacity mass_heat_capacity,
             HeatConductivity heat_conductivity) noexcept
-            : viscosity{viscosity}, 
-            density{density}, 
-            mass_heat_capacity{mass_heat_capacity},
-            heat_conductivity{heat_conductivity}
+            : StationaryPhaseProperties{
+                  density, mass_heat_capacity,
+                  heat_conductivity},
+              viscosity{viscosity}
         {
-            volumetric_heat_capacity =
-                mass_heat_capacity *
-                density;
         }
-        Viscosity viscosity;
-        Density density;
-        SpecificHeatCapacity mass_heat_capacity;
-        HeatConductivity heat_conductivity;
-        RealType volumetric_heat_capacity;
-        //    RealType temperature;
-        //    RealType pressure;
+        const RealType viscosity;
     };
 
     struct Water : public PhaseProperties

@@ -132,8 +132,6 @@ namespace GPN
                       policy.refine(dual_nodes_stencils), // nodes of dual mesh --- refined from stencils
                       ct}
             {
-                // define refinement policy
-            //    assert(false);
             }
 
             auto dual_size() const { return dual_nodes.size(); }

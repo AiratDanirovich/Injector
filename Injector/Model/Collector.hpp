@@ -1,5 +1,6 @@
 #pragma once
 #include <cassert>
+#include <iterator>
 
 #include <Injector/Properties/LogsFactory.hpp>
 #include <Injector/Properties/FaceProperties.hpp>
@@ -67,45 +68,31 @@ namespace GPN
                     const auto &grid)
                     : solid_density{
                           SolidDensityFactory::create(solid_density, grid)},
-                      solid_specific_heatcapacity{
-                        SolidSpecificHeatCapacityFactory::create(solid_specific_heatcapacity, grid)}, 
-                      medium_heat_conductivity{
-                        HeatConductivityFactory::create(porosity, solid_heat_conductivity, fluid, grid)}, 
-                      solid_vol_heatcapacity{
-                        SolidVolumetricHeatCapacityFactory::create(solid_density, solid_specific_heatcapacity, grid)}, 
-                      medium_vol_heatcapacity{
-                        MediumHeatVolumetricCapacityFactory::create(porosity, solid_density, solid_specific_heatcapacity, fluid, grid)}
+                      solid_specific_heatcapacity{SolidSpecificHeatCapacityFactory::create(solid_specific_heatcapacity, grid)}, 
+                      medium_heat_conductivity{HeatConductivityFactory::create(porosity, solid_heat_conductivity, fluid, grid)}, 
+                      solid_heat_conductivity{HeatConductivityFactory::create(solid_heat_conductivity, grid)},
+                      solid_vol_heatcapacity{SolidVolumetricHeatCapacityFactory::create(solid_density, solid_specific_heatcapacity, grid)}, 
+                      medium_vol_heatcapacity{MediumHeatVolumetricCapacityFactory::create(porosity, solid_density, solid_specific_heatcapacity, fluid, grid)}
                 {
                     assert(solid_density.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
                     assert(solid_specific_heatcapacity.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
-                    assert(heat_conductivity.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
+                    assert(solid_heat_conductivity.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
                     assert(porosity.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
 
                     assert(this->solid_density.size() == grid.dual_nodes.size() - 1ll);
                     assert(this->solid_specific_heatcapacity.size() == grid.dual_nodes.size() - 1ll);
-                    assert(this->heat_conductivity.size() == grid.dual_nodes.size() - 1ll);
+                    assert(this->medium_heat_conductivity.size() == grid.dual_nodes.size() - 1ll);
                     assert(this->solid_vol_heatcapacity.size() == grid.dual_nodes.size() - 1ll);
                     assert(this->medium_vol_heatcapacity.size() == grid.dual_nodes.size() - 1ll);
                 }
 
                 const SolidDensity solid_density;
                 const SolidSpecificHeatCapacity solid_specific_heatcapacity;
-                const HeatConductivity medium_heat_conductivity;
+                const HeatConductivity solid_heat_conductivity;
                 const SolidVolumetricHeatCapacity solid_vol_heatcapacity;
+
+                const HeatConductivity medium_heat_conductivity;
                 const MediumHeatVolumetricCapacity medium_vol_heatcapacity;
-
-                // private:
-                //     template <typename T>
-                //     static T multiply(
-                //         const T &lhs,
-                //         const T &rhs)
-                //     {
-                //         T out(lhs.size(), 0.0);
-                //         for (auto i{0ll}; i < lhs.size(); ++i)
-                //             out[i] = lhs[i] * rhs[i];
-
-                //         return out;
-                //     }
             };
         } // Rocks
 
@@ -176,32 +163,94 @@ namespace GPN
             struct HeatProps
             {
                 HeatProps(
-                    const Logs::MediumHeatVolumetricCapacity &medium_vol_heatcapacity,
-                    const Logs::HeatConductivity &heat_conductivity,
+                    const Logs::Rocks::HeatLogs &logs,
                     const cptr<Grid2D_t> grid2D)
-                    : medium_vol_heatcapacity{
-                          FieldFactory::create(medium_vol_heatcapacity, grid2D)},
-                      medium_heat_conductivity{FieldFactory::create(heat_conductivity, grid2D)}
+                    : HeatProps{
+                          logs.medium_vol_heatcapacity,
+                          logs.medium_heat_conductivity,
+                          grid2D}
                 {
                 }
 
                 HeatProps(
-                    const Logs::Rocks::HeatLogs &logs,
+                    const Logs::MediumHeatVolumetricCapacity &medium_vol_heatcapacity,
+                    const Logs::HeatConductivity &heat_conductivity,
                     const cptr<Grid2D_t> grid2D)
-                    : medium_vol_heatcapacity{
-                          FieldFactory::create(logs.medium_vol_heatcapacity, grid2D)},
-                      medium_heat_conductivity{FieldFactory::create(logs.medium_heat_conductivity, grid2D)}
+                    : HeatProps{
+                          FieldFactory::create(medium_vol_heatcapacity, grid2D),
+                          FieldFactory::create(heat_conductivity, grid2D),
+                          grid2D}
                 {
                 }
 
-                template <typename Well_t, typename Fluid_t>
-                void apply_well(const Well_t &well, const Fluid_t &fluid)
+                HeatProps(
+                    const MediumHeatVolumetricCapacity<Grid2D_t> &a_medium_vol_heatcapacity,
+                    const MediumHeatConductivity<Grid2D_t> &a_medium_heat_conductivity,
+                    const cptr<Grid2D_t> grid2D)
+                    : medium_vol_heatcapacity{a_medium_vol_heatcapacity},
+                      medium_heat_conductivity_axes1{a_medium_heat_conductivity},
+                      medium_heat_conductivity_axes2{a_medium_heat_conductivity},
+                      grid2D{grid2D}
                 {
-                    medium_vol_heatcapacity.col(0ll) = fluid.volumetric_heat_capacity; // MeshNodesContainer::Constant(medium_vol_heatcapacity.rows(), fluid.volumetric_heat_capacity);
                 }
 
-                MediumHeatConductivity<Grid2D_t> medium_heat_conductivity;
+                template <
+                    typename Completion_t,
+                    typename Well_t>
+                void apply_well(
+                    const Completion_t &completion,
+                    const Well_t &well)
+                {
+#pragma region SET-HEAT-CAPACITY
+                    // first column -- inside the tube, contains only water
+                    medium_vol_heatcapacity.col(0ll) /*.head(tube_end)*/ =
+                        completion.front().volumetric_heat_capacity;
+                    // second column -- from tube inner radius to sandface radius
+                    medium_vol_heatcapacity.col(1ll) /*.head(tube_end)*/ =
+                        completion.volumetric_heat_capacity();
+
+                    // medium_vol_heatcapacity.col(0ll).tail(medium_vol_heatcapacity.rows() - tube_end) =
+                    //     fluid.volumetric_heat_capacity*(r_column*r_column)/(r_tube*r_tube);
+
+                    // medium_vol_heatcapacity.col(1ll).head(tube_end) =
+                    //     upper_annulus_capacity;
+                    // medium_vol_heatcapacity.col(1ll).tail(medium_vol_heatcapacity.rows() - tube_end) =
+                    //     lower_annulus_capacity;
+#pragma endregion
+#pragma region SET-HEAT-CONDUCTIVITY
+                    // heat conductivity of flowing water in r-direction is infinite
+                    this->medium_heat_conductivity_axes2.col(0ll) = 
+                        std::numeric_limits<RealType>::infinity();
+                    // put values for cementOuter at medium_vol_heatcapacity.col(1ll).
+                    // CementOuter is a part of col(1ll)
+                    const auto &grid_r = grid2D->second_coord;
+                    const auto &sandface = completion.back();
+                    const ptrdiff_t id{1ll};
+                    medium_heat_conductivity_axes2.col(1ll) =
+                        sandface.heat_conductivity /
+                        std::log(sandface.outer_radius / sandface.inner_radius) *
+                        std::log(grid_r.dual_nodes(id + 1ll) / grid_r.mesh_nodes(id));
+                    // r_{1/2} is fixed at HeatFaceProps container
+
+                    // interpolate verticle heat conductivity:
+                    // (1) modify water heat conductivity in col(0ll)
+                    const auto &flow = completion.front();
+                    medium_heat_conductivity_axes1.col(0ll) =
+                        flow.heat_conductivity * flow.area() / grid2D->face_area_axes1(0ll);
+                    for (const auto v : grid2D->face_area_axes1)
+                        assert(flow.area() <= v + 1e-12);
+                    // (2) set sandwich heat conductivity in col(1ll)
+                    medium_heat_conductivity_axes1.col(1ll) =
+                        completion.integral_vertical_heat_conductivity();
+#pragma endregion
+                }
+
                 MediumHeatVolumetricCapacity<Grid2D_t> medium_vol_heatcapacity;
+                // orthotropic medium
+                MediumHeatConductivity<Grid2D_t>
+                    medium_heat_conductivity_axes1,
+                    medium_heat_conductivity_axes2;
+                const cptr<Grid2D_t> grid2D;
             };
         } // Rocks
     } // Properties
@@ -218,12 +267,28 @@ namespace GPN
                     const cptr<Grid2D_t> grid2D)
                     : medium_heat_conductivity{
                           FaceInterpolatedFieldFactory::create(
-                              props.medium_heat_conductivity,
-                              grid2D)}
+                              props.medium_heat_conductivity_axes1,
+                              props.medium_heat_conductivity_axes2,
+                              grid2D)},
+                      grid2D{grid2D}
                 {
                 }
 
-                const MediumHeatConductivity<Grid2D_t> medium_heat_conductivity;
+                template <
+                    typename Completion_t,
+                    typename Well_t>
+                void apply_well(
+                    const Completion_t &completion,
+                    const Well_t &well)
+                {
+#pragma region SET-HEAT-CONDUCTIVITY
+                    medium_heat_conductivity.face_vals_axes2.col(0ll) /*.head(tube_end)*/ =
+                        completion.integral_inner_radial_heat_conductivity();
+#pragma endregion
+                }
+
+                MediumHeatConductivity<Grid2D_t> medium_heat_conductivity;
+                const cptr<Grid2D_t> grid2D;
             };
         } // Rocks
 
