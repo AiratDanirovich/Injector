@@ -45,6 +45,11 @@ namespace GPN
             const AxesGrid<Axes1> first_coord;
             const AxesGrid<Axes2> second_coord;
 
+            auto mesh_size() const
+            {
+                return first_coord.mesh_size() * second_coord.mesh_size();
+            }
+
             template <typename Axes_t>
             const auto &coordinate() const
             {
