@@ -245,13 +245,13 @@ namespace GPN
                         // negative flow values
                         const auto flow_plus{(temp_flow.array() + temp_flow.array().abs()) / 2.0};
                         assert(flow_plus.rows() == first_coord_size+1ll);
-                        assert(std::any_of(flow_plus.cbegin(), flow_plus.cend(), [](const RealType v){return v >= 0.0;}));
+                        assert(std::all_of(flow_plus.cbegin(), flow_plus.cend(), [](const RealType v){return v >= 0.0;}));
                         // positive flow values
                         const auto flow_minus{(temp_flow.array() - temp_flow.array().abs()) / 2.0};
                         assert(flow_minus.rows() == first_coord_size+1ll);
-                        assert(std::any_of(flow_minus.cbegin(), flow_minus.cend(), [](const RealType v){return v <= 0.0;}));
+                        assert(std::all_of(flow_minus.cbegin(), flow_minus.cend(), [](const RealType v){return v <= 0.0;}));
 
-                        const auto &flow{split_flow_field.col(j).head(first_coord_size).matrix()};
+                //        const auto &flow{split_flow_field.col(j).head(first_coord_size).matrix()};
                         // exclude leftmost edge
 
                         A.diagonal() = A.diagonal() + flow_plus.matrix().head(first_coord_size) - flow_minus.matrix().tail(first_coord_size);
