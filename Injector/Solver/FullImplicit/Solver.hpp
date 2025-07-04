@@ -142,60 +142,94 @@ namespace GPN
                     const auto &split_flow_field{
                         convection_factory.get_flow_in_axes2()};
 
-                    //   take every line along x-direction. A line per y-node
+                    //  Take every line for a fixed x node.
                     //  It is a row of 2D grid representation
-                    for (std::ptrdiff_t i = 0; i < first_coord_size; ++i)
+                    for (std::ptrdiff_t row = 0; row < first_coord_size; ++row)
                     {
-                        // Laplace term
-                        // SpMatrix A{splitX.LaplaceTerm(i)};
-                        // // cumulative term
-                        // A.diagonal() = A.diagonal() + time_factor;
-                        // // convection term
-                        // const auto &flow{split_flow_field.row(i).head(second_coord_size).matrix().transpose()};
-                        // // exclude rightmost edge
-                        // A.diagonal() = A.diagonal() + flow;
-                        // // exclude leftmost and rightmost edges
-                        // for (auto idx{1ll}; idx < A.rows(); ++idx)
-                        //     A.coeffRef(idx, idx - 1ll) -= flow(idx - 0ll);
+                        // copy Laplace term in y-direction for a fixed x
+                        const SpMatrix &A{splitX.LaplaceTerm(row)};
+                        // convection term
+                        // exclude rightmost edge
+                        const auto &flow{split_flow_field.row(row).head(second_coord_size).matrix().transpose()};
+
+                        // upper diagonal
+                        for (std::ptrdiff_t col{1ll}; col < second_coord_size; ++col)
+                        {
+                            const auto node_id{};
+                            const auto l{grid->to_linear(row, col)};
+                            tripletList.emplace_back(l, l + first_coord_size, A.coeff(col - 1ll, col));
+                        }
+
+                        // main diagonal
+                        const auto diag{(A.diagonal() + flow).eval()};
+                        for (std::ptrdiff_t col{0ll}; col < second_coord_size; ++col)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            tripletList.emplace_back(l, l, diag(col));
+                        }
+
+                        // lower diagonal
+                        for (std::ptrdiff_t col{0ll}; col < second_coord_size - 1ll; ++col)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            tripletList.emplace_back(
+                                l, l - first_coord_size,
+                                A.coeff(col + 1ll, col) - flow(col + 1ll));
+                        }
                     }
                 }
 
-                void solve_split_y(auto &tripletList)
+                void assemble_y(auto &tripletList)
                 {
                     const auto &split_flow_field{
                         convection_factory.get_flow_in_axes1()};
 
-                    // take every line along x-direction. A line per y-node.
+                    // take every line for a fixed y-node.
                     // It is a col of 2D grid representation
-                    for (std::ptrdiff_t j = 0; j < second_coord_size; ++j)
+                    for (std::ptrdiff_t col = 0; col < second_coord_size; ++col)
                     {
                         // Laplace term
-                        // SpMatrix A{splitY.LaplaceTerm(j)};
-                        // // cumulative term
-                        // A.diagonal() = A.diagonal() + time_factor.matrix();
-                        // // convection term
-                        // const auto &temp_flow{split_flow_field.col(j).matrix()};
-                        // // negative flow values
-                        // const auto flow_plus{(temp_flow.array() + temp_flow.array().abs()) / 2.0};
-                        // assert(flow_plus.rows() == first_coord_size + 1ll);
-                        // assert(std::any_of(flow_plus.cbegin(), flow_plus.cend(), [](const RealType v)
-                        //                    { return v >= 0.0; }));
-                        // // positive flow values
-                        // const auto flow_minus{(temp_flow.array() - temp_flow.array().abs()) / 2.0};
-                        // assert(flow_minus.rows() == first_coord_size + 1ll);
-                        // assert(std::any_of(flow_minus.cbegin(), flow_minus.cend(), [](const RealType v)
-                        //                    { return v <= 0.0; }));
+                        const SpMatrix& A{splitY.LaplaceTerm(col)};
+                        // convection term
+                        const auto &temp_flow{split_flow_field.col(col).matrix()};
+                        // positive flow values
+                        const auto flow_plus{(temp_flow.array() + temp_flow.array().abs()) / 2.0};
+                        assert(flow_plus.rows() == first_coord_size + 1ll);
+                        assert(std::all_of(flow_plus.cbegin(), flow_plus.cend(), [](const RealType v)
+                                           { return v >= 0.0; }));
+                        // negative flow values
+                        const auto flow_minus{(temp_flow.array() - temp_flow.array().abs()) / 2.0};
+                        assert(flow_minus.rows() == first_coord_size + 1ll);
+                        assert(std::all_of(flow_minus.cbegin(), flow_minus.cend(), [](const RealType v)
+                                           { return v <= 0.0; }));
 
-                        // const auto &flow{split_flow_field.col(j).head(first_coord_size).matrix()};
-                        // // exclude leftmost edge
+                        // upper diagonal
+                        for (std::ptrdiff_t row{1ll}; row < second_coord_size; ++row)
+                        {
+                            const auto node_id{};
+                            const auto l{grid->to_linear(row, col)};
+                            tripletList.emplace_back(l, l + 1ll, A.coeff(col - 1ll, col) + flow_minus(col) );
+                        }
 
-                        // A.diagonal() = A.diagonal() + flow_plus.matrix().head(first_coord_size) - flow_minus.matrix().tail(first_coord_size);
-                        // // exclude leftmost and rightmost edges
-                        // for (auto idx{1ll}; idx < A.rows(); ++idx)
-                        //     A.coeffRef(idx, idx - 1ll) -= flow_plus(idx);
-                        // // exclude leftmost and rightmost edges
-                        // for (auto idx{0ll}; idx < A.rows() - 1ll; ++idx)
-                        //     A.coeffRef(idx, idx + 1ll) += flow_minus(idx + 1ll);
+                        // main diagonal
+                        const auto diag{(
+                            A.diagonal() + 
+                            flow_plus.matrix().head(first_coord_size) - 
+                            flow_minus.matrix().tail(first_coord_size)).eval()};
+                        for (std::ptrdiff_t row{0ll}; row < second_coord_size; ++row)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            tripletList.emplace_back(l, l, diag(col));
+                        }
+
+                        // lower diagonal
+                        for (std::ptrdiff_t row{0ll}; row < second_coord_size - 1ll; ++row)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            tripletList.emplace_back(
+                                l, l - 1ll,
+                                A.coeff(col + 1ll, col) - flow_plus(col + 1ll));
+                        }
                     }
                 }
 
