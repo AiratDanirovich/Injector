@@ -208,7 +208,7 @@ namespace GPN
                         {
                             const auto node_id{};
                             const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l + 1ll, A.coeff(col - 1ll, col) + flow_minus(col) );
+                            tripletList.emplace_back(l, l + 1ll, A.coeff(row - 1ll, row) + flow_minus(row) );
                         }
 
                         // main diagonal
@@ -219,7 +219,7 @@ namespace GPN
                         for (std::ptrdiff_t row{0ll}; row < second_coord_size; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l, diag(col));
+                            tripletList.emplace_back(l, l, diag(row));
                         }
 
                         // lower diagonal
@@ -228,7 +228,7 @@ namespace GPN
                             const auto l{grid->to_linear(row, col)};
                             tripletList.emplace_back(
                                 l, l - 1ll,
-                                A.coeff(col + 1ll, col) - flow_plus(col + 1ll));
+                                A.coeff(row + 1ll, row) - flow_plus(row + 1ll));
                         }
                     }
                 }
