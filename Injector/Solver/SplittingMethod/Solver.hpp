@@ -12,8 +12,8 @@
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/Grids1D.hpp>
 #include <Injector/Properties/PhysicalField.hpp>
-// #include <Injector/Solver/BoundaryConditions.hpp>
 
+#include <Injector/Solver/CapacityTerm.hpp>
 #include <Injector/Solver/SplittingMethod/SplitX.hpp>
 #include <Injector/Solver/SplittingMethod/SplitY.hpp>
 
@@ -23,33 +23,6 @@ namespace GPN
     {
         namespace SplittingMethod
         {
-            struct TemporalTerm
-            {
-                template <typename Capacity_t, typename Grid_t>
-                TemporalTerm(
-                    const Capacity_t &factor,
-                    const Grid_t &grid)
-                    : capacity{grid.volumes() * factor.values()} // volumes are taken into account
-                {
-                    for (auto j{0ll}; j < this->capacity.cols(); ++j)
-                        for (auto i{0ll}; i < this->capacity.rows(); ++i)
-                        {
-                            assert(!std::isinf(this->capacity(i, j)));
-                            assert(!std::isnan(this->capacity(i, j)));
-                        }
-                }
-
-                auto Divide(RealType tau) const
-                {
-                    assert(tau != 0.0);
-                    return (static_cast<RealType>(1.0) / tau) * capacity;
-                }
-
-            protected:
-                // multiplied by cell volume
-                const Eigen::ArrayXX<RealType> capacity;
-            };
-
             template <
                 typename Grid_t,
                 typename Capacity_t,
