@@ -26,7 +26,7 @@ namespace GPN
 
                 auto Divide(RealType tau) const
                 {
-                    assert(tau != 0.0);
+                    assert(tau > 0.0);
                     return (static_cast<RealType>(1.0) / tau) * capacity;
                 }
 

@@ -70,6 +70,40 @@ namespace GPN
                     states.emplace_back(state);
                 }
 
+                struct EquationView
+                {
+                    using MatrixRow_t = Eigen::Block<Eigen::SparseMatrix<RealType>, 1, -1, false>;
+                    EquationView(MatrixRow_t A,
+                               RealType &rhs,
+                               std::ptrdiff_t diag,
+                               std::ptrdiff_t neib)
+                        : matrix{A}, rhs{rhs},
+                          diag{diag}, neib{neib}
+                    {
+                    }
+
+                    MatrixRow_t matrix;
+                    RealType &rhs;
+                    std::ptrdiff_t diag, neib;
+
+                    void set_diag(const RealType val)
+                    {
+                        matrix.coeffRef(diag) = val;
+                    }
+                    void set_neib(const RealType val)
+                    {
+                        matrix.coeffRef(neib) = val;
+                    }
+                    void set_rhs(const RealType val)
+                    {
+                        rhs = val;
+                    }
+                    void add_rhs(const RealType val)
+                    {
+                        rhs += val;
+                    }
+                };
+
                 void advance(RealType tau)
                 {
                     // update convection field
@@ -89,8 +123,8 @@ namespace GPN
 
                     // tau_factor multiplies Delta_u at different time moments,
                     // i.e., t and t+tau
-                    const auto tau_factor{
-                        time_factor.Divide(tau).eval()};
+                    const Eigen::ArrayX<RealType> tau_factor{
+                        time_factor.Divide(tau).reshaped(A_size, 1ll).eval()};
 
                     assert(A_size == tau_factor.size());
 
@@ -101,12 +135,12 @@ namespace GPN
                     const RHS_t capacity_term(tau_factor.data(), A_size, 1ll);
                     A.diagonal() = A.diagonal() + capacity_term;
 
-                    Eigen::Map<Eigen::MatrixXf> rhs{
-                        (state.cur_state.array() * time_factor.array()).matrix()};
+                    Eigen::VectorX<RealType> rhs{
+                        (state.cur_state.reshaped(A_size, 1ll).array() * tau_factor).matrix()};
 
                     // BC
-                    applyBC_split_x(A, rhs, 0ll);
-                    applyBC_split_y(A, rhs, 0ll);
+                    applyBC_x(A, rhs);
+                    //    applyBC_y(A, rhs_vect);
 
                     const auto val{solve_linear_problem(A, rhs)};
 
@@ -189,7 +223,7 @@ namespace GPN
                     for (std::ptrdiff_t col = 0; col < second_coord_size; ++col)
                     {
                         // Laplace term
-                        const SpMatrix& A{splitY.LaplaceTerm(col)};
+                        const SpMatrix &A{splitY.LaplaceTerm(col)};
                         // convection term
                         const auto &temp_flow{split_flow_field.col(col).matrix()};
                         // positive flow values
@@ -208,14 +242,15 @@ namespace GPN
                         {
                             const auto node_id{};
                             const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l + 1ll, A.coeff(row - 1ll, row) + flow_minus(row) );
+                            tripletList.emplace_back(l, l + 1ll, A.coeff(row - 1ll, row) + flow_minus(row));
                         }
 
                         // main diagonal
                         const auto diag{(
-                            A.diagonal() + 
-                            flow_plus.matrix().head(first_coord_size) - 
-                            flow_minus.matrix().tail(first_coord_size)).eval()};
+                                            A.diagonal() +
+                                            flow_plus.matrix().head(first_coord_size) -
+                                            flow_minus.matrix().tail(first_coord_size))
+                                            .eval()};
                         for (std::ptrdiff_t row{0ll}; row < second_coord_size; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
@@ -263,29 +298,43 @@ namespace GPN
                     return lu.solve(b);
                 }
 
-                void applyBC_split_x(SpMatrix &A, RHS_t &b, ptrdiff_t i)
+                void applyBC_x(SpMatrix &A, Eigen::VectorX<RealType> &b)
                 {
+                    // for(auto row{0ll}; row < first_coord_size; ++row)
+                    // {
+                    //     const auto col{0ll};
+                    //     const auto l{grid->to_linear(row, col)};
+                    //     EquationView view{A.row(l), b(l), 0ll, 1ll};
+                    // //    bc.set_west_val(view, i);
+                    // }
+                    for (auto row{0ll}; row < first_coord_size; ++row)
                     {
-                        BoundaryConditions::MatrixView view{A.row(0ll), b.row(0ll), 0ll, 1ll};
-                        bc.set_west_val(view, i);
-                    }
-                    {
+                        const auto col{second_coord_size - 1ll};
+                        const auto l{grid->to_linear(row, col)};
                         std::ptrdiff_t n = A.outerSize() - 1;
-                        BoundaryConditions::MatrixView view{A.row(n), b.row(n), n, n - 1};
-                        bc.set_east_val(view, i);
+                        auto temp = b.row(l);
+                       EquationView view{A.row(n), b(l),
+                                                            n, n - 1};
+                        //    bc.set_east_val(view, i);
                     }
                 }
 
-                void applyBC_split_y(SpMatrix &A, RHS_t &b, ptrdiff_t j)
+                void applyBC_y(SpMatrix &A, Eigen::VectorX<RealType> &b)
                 {
+                    for (auto col{0ll}; col < second_coord_size; ++col)
                     {
-                        BoundaryConditions::MatrixView view{A.row(0ll), b.row(0ll), 0ll, 1ll};
-                        bc.set_south_val(view, j);
+                        const auto row{0ll};
+                        const auto l{grid->to_linear(row, col)};
+                        EquationView view{A.row(l), b(l), 0ll, 1ll};
+                        //    bc.set_south_val(view, j);
                     }
+                    for (auto col{0ll}; col < second_coord_size; ++col)
                     {
+                        const auto row{first_coord_size - 1ll};
+                        const auto l{grid->to_linear(row, col)};
                         std::ptrdiff_t n = A.outerSize() - 1;
-                        BoundaryConditions::MatrixView view{A.row(n), b.row(n), n, n - 1};
-                        bc.set_north_val(view, j);
+                        EquationView view{A.row(l), b(l), n, n - 1};
+                        //    bc.set_north_val(view, j);
                     }
                 }
             };
