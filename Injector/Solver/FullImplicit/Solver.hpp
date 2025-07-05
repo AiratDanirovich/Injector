@@ -2,7 +2,9 @@
 
 #include <vector>
 #include <tuple>
+#include <string>
 #include <cassert>
+#include <fstream>
 
 #include <Eigen/Dense>
 #include <Eigen/Core>
@@ -32,7 +34,8 @@ namespace GPN
             {
                 using SpMatrix = SplittingMethod::SpMatrix;
 
-                using RHS_t = Eigen::Map<const Eigen::VectorX<RealType>>;
+                using cRHS_t = const Eigen::VectorX<RealType>;
+                using RHS_t = Eigen::VectorX<RealType>;
 
                 template <
                     typename LaplaceFactor_t>
@@ -104,6 +107,17 @@ namespace GPN
                     }
                 };
 
+                void print_A(const auto& fname, const auto& A) const
+                {
+                    using namespace std;
+
+                    ofstream f{fname};
+                    f << A;
+                    f.close();
+                }
+
+
+
                 void advance(RealType tau)
                 {
                     // update convection field
@@ -116,6 +130,7 @@ namespace GPN
                     Eigen::SparseMatrix<RealType> A{// ctor per matrix
                                                     A_size,
                                                     A_size};
+
                     A.reserve(A_size * 5ll);
 
                     std::vector<Eigen::Triplet<RealType, ptrdiff_t>> tripletList;
@@ -128,19 +143,21 @@ namespace GPN
 
                     assert(A_size == tau_factor.size());
 
-                    //        assemble_y(tripletList);
-                    //        assemble_x(tripletList);
+                    assemble_y(tripletList);
+                    assemble_x(tripletList);
 
                     A.setFromTriplets(tripletList.begin(), tripletList.end());
-                    const RHS_t capacity_term(tau_factor.data(), A_size, 1ll);
-                    A.diagonal() = A.diagonal() + capacity_term;
+                    A.diagonal() = A.diagonal() + tau_factor.matrix();
 
-                    Eigen::VectorX<RealType> rhs{
+                    print_A("full_A.txt", A);
+
+
+                    RHS_t rhs{
                         (state.cur_state.reshaped(A_size, 1ll).array() * tau_factor).matrix()};
 
                     // BC
                     applyBC_x(A, rhs);
-                    //    applyBC_y(A, rhs_vect);
+                    applyBC_y(A, rhs);
 
                     const auto val{solve_linear_problem(A, rhs)};
 
@@ -189,7 +206,6 @@ namespace GPN
                         // upper diagonal
                         for (std::ptrdiff_t col{1ll}; col < second_coord_size; ++col)
                         {
-                            const auto node_id{};
                             const auto l{grid->to_linear(row, col)};
                             tripletList.emplace_back(l, l + first_coord_size, A.coeff(col - 1ll, col));
                         }
@@ -238,9 +254,8 @@ namespace GPN
                                            { return v <= 0.0; }));
 
                         // upper diagonal
-                        for (std::ptrdiff_t row{1ll}; row < second_coord_size; ++row)
+                        for (std::ptrdiff_t row{1ll}; row < first_coord_size; ++row)
                         {
-                            const auto node_id{};
                             const auto l{grid->to_linear(row, col)};
                             tripletList.emplace_back(l, l + 1ll, A.coeff(row - 1ll, row) + flow_minus(row));
                         }
@@ -251,14 +266,14 @@ namespace GPN
                                             flow_plus.matrix().head(first_coord_size) -
                                             flow_minus.matrix().tail(first_coord_size))
                                             .eval()};
-                        for (std::ptrdiff_t row{0ll}; row < second_coord_size; ++row)
+                        for (std::ptrdiff_t row{0ll}; row < first_coord_size; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
                             tripletList.emplace_back(l, l, diag(row));
                         }
 
                         // lower diagonal
-                        for (std::ptrdiff_t row{0ll}; row < second_coord_size - 1ll; ++row)
+                        for (std::ptrdiff_t row{0ll}; row < first_coord_size - 1ll; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
                             tripletList.emplace_back(
@@ -300,13 +315,13 @@ namespace GPN
 
                 void applyBC_x(SpMatrix &A, Eigen::VectorX<RealType> &b)
                 {
-                    // for(auto row{0ll}; row < first_coord_size; ++row)
-                    // {
-                    //     const auto col{0ll};
-                    //     const auto l{grid->to_linear(row, col)};
-                    //     EquationView view{A.row(l), b(l), 0ll, 1ll};
-                    // //    bc.set_west_val(view, i);
-                    // }
+                    for(auto row{0ll}; row < first_coord_size; ++row)
+                    {
+                        const auto col{0ll};
+                        const auto l{grid->to_linear(row, col)};
+                        EquationView view{A.row(l), b(l), 0ll, 1ll};
+                    //    bc.set_west_val(view, i);
+                    }
                     for (auto row{0ll}; row < first_coord_size; ++row)
                     {
                         const auto col{second_coord_size - 1ll};

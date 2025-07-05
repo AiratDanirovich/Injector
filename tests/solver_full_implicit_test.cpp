@@ -16,9 +16,9 @@
 
 using namespace GPN;
 
-struct ABCFunctor : public GPN::BoundaryConditions::BCFunctorBase
+struct BCFunctor : public GPN::BoundaryConditions::BCFunctorBase
 {
-    ABCFunctor(RealType val) : val{val} {}
+    BCFunctor(RealType val) : val{val} {}
 
     RealType operator()(const ptrdiff_t, const RealType, const RealType) const override
     {
@@ -93,7 +93,7 @@ TEST_CASE("Solver")
 
     const BoundaryConditions::BoundaryConditions bc{
         *grid2D,
-        make_shared<ABCFunctor>(val)};
+        make_shared<BCFunctor>(val)};
 
     const Logs::Rocks::CoreSampleLogs core_data{
         is_permeable_stencils,
