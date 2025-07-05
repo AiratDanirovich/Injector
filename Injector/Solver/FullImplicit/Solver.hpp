@@ -252,10 +252,10 @@ namespace GPN
                                            { return v <= 0.0; }));
 
                         // upper diagonal
-                        for (std::ptrdiff_t row{1ll}; row < first_coord_size; ++row)
+                        for (auto row{0ll}; row < first_coord_size - 1ll; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l + 1ll, A.coeff(row - 1ll, row) + flow_minus(row));
+                            tripletList.emplace_back(l, l + 1ll, A.coeff(row, row) + flow_minus(row + 1ll));
                         }
 
                         // main diagonal
@@ -271,13 +271,13 @@ namespace GPN
                         }
 
                         // lower diagonal
-                        for (std::ptrdiff_t row{0ll}; row < first_coord_size - 1ll; ++row)
+                        for (auto row{1ll}; row < first_coord_size; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
                             assert(l >= 1ll);
                             tripletList.emplace_back(
                                 l, l - 1ll,
-                                A.coeff(row + 1ll, row) - flow_plus(row + 1ll));
+                                A.coeff(row, row - 1ll) - flow_plus(row));
                         }
                     }
                 }
