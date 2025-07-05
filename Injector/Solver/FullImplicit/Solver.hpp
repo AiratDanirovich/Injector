@@ -2,9 +2,7 @@
 
 #include <vector>
 #include <tuple>
-#include <string>
 #include <cassert>
-#include <fstream>
 
 #include <Eigen/Dense>
 #include <Eigen/Core>
@@ -107,16 +105,7 @@ namespace GPN
                     }
                 };
 
-                void print_A(const auto &fname, const auto &A) const
-                {
-                    using namespace std;
-
-                    ofstream f{fname};
-                    f << A;
-                    f.close();
-                }
-
-                void advance(RealType tau)
+                auto advance(RealType tau)
                 {
                     // update convection field
                     convection_factory.set_flow_field(cur_time, tau);
@@ -147,8 +136,6 @@ namespace GPN
                     A.setFromTriplets(tripletList.begin(), tripletList.end());
                     A.diagonal() = A.diagonal() + tau_factor.matrix();
 
-                    print_A("full_A.txt", A);
-
                     RHS_t rhs{
                         (state.cur_state.reshaped(A_size, 1ll).array() * tau_factor).matrix()};
 
@@ -159,6 +146,8 @@ namespace GPN
                     const auto val{solve_linear_problem(A, rhs)};
 
                     cur_time += tau;
+
+                    return A;
                 }
 
                 struct Solution

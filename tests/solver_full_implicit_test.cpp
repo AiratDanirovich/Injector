@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <fstream>
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Properties/FaceProperties.hpp>
@@ -38,12 +39,21 @@ using namespace std;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::FullImplicit;
 
+void print_A(const auto &fname, const auto &A)
+{
+    Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+    ofstream f{fname};
+    const auto Aa = Eigen::MatrixX<RealType>{A};
+    f << Aa.format(CleanFmt);
+    f.close();
+}
+
 // const RealType well_rate{1.0};
 const RealType val{1.0};
 const auto z_stencils{
-    Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 5)};
+    Grids::Factory::generate_dual_grid_stencils_uniform(0, 4, 5)};
 const auto r_stencils{
-    Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 11)};
+    Grids::Factory::generate_dual_grid_stencils_uniform(0, 3, 4)};
 
 // hydrodynamic logs
 const auto is_permeable_stencils{
@@ -113,5 +123,7 @@ TEST_CASE("Solver")
         rates_factory, initial_state,
         bc, 0.0};
 
-    solver.advance(0.005);
+    const auto A{solver.advance(0.005)};
+
+    print_A("full_A.txt", A);
 }
