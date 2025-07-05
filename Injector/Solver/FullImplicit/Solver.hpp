@@ -201,10 +201,10 @@ namespace GPN
                         const auto &flow{split_flow_field.row(row).head(second_coord_size).matrix().transpose()};
 
                         // upper diagonal
-                        for (auto col{1ll}; col < second_coord_size; ++col)
+                        for (auto col{0ll}; col < second_coord_size-1ll; ++col)
                         {
                             const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l + first_coord_size, A.coeff(col - 1ll, col));
+                            tripletList.emplace_back(l, l + first_coord_size, A.coeff(col, col + 1ll));
                         }
 
                         // main diagonal
@@ -216,13 +216,13 @@ namespace GPN
                         }
 
                         // lower diagonal
-                        for (auto col{0ll}; col < second_coord_size - 1ll; ++col)
+                        for (auto col{1ll}; col < second_coord_size; ++col)
                         {
                             const auto l{grid->to_linear(row, col)};
                             assert(l >= first_coord_size);
                             tripletList.emplace_back(
                                 l, l - first_coord_size,
-                                A.coeff(col + 1ll, col) - flow(col + 1ll));
+                                A.coeff(col, col-1ll) - flow(col));
                         }
                     }
                 }
