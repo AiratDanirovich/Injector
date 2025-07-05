@@ -77,9 +77,9 @@ namespace GPN
                 {
                     using MatrixRow_t = Eigen::Block<Eigen::SparseMatrix<RealType>, 1, -1, false>;
                     EquationView(MatrixRow_t A,
-                               RealType &rhs,
-                               std::ptrdiff_t diag,
-                               std::ptrdiff_t neib)
+                                 RealType &rhs,
+                                 std::ptrdiff_t diag,
+                                 std::ptrdiff_t neib)
                         : matrix{A}, rhs{rhs},
                           diag{diag}, neib{neib}
                     {
@@ -107,7 +107,7 @@ namespace GPN
                     }
                 };
 
-                void print_A(const auto& fname, const auto& A) const
+                void print_A(const auto &fname, const auto &A) const
                 {
                     using namespace std;
 
@@ -115,8 +115,6 @@ namespace GPN
                     f << A;
                     f.close();
                 }
-
-
 
                 void advance(RealType tau)
                 {
@@ -150,7 +148,6 @@ namespace GPN
                     A.diagonal() = A.diagonal() + tau_factor.matrix();
 
                     print_A("full_A.txt", A);
-
 
                     RHS_t rhs{
                         (state.cur_state.reshaped(A_size, 1ll).array() * tau_factor).matrix()};
@@ -195,7 +192,7 @@ namespace GPN
 
                     //  Take every line for a fixed x node.
                     //  It is a row of 2D grid representation
-                    for (std::ptrdiff_t row = 0; row < first_coord_size; ++row)
+                    for (auto row{0ll}; row < first_coord_size; ++row)
                     {
                         // copy Laplace term in y-direction for a fixed x
                         const SpMatrix &A{splitX.LaplaceTerm(row)};
@@ -204,7 +201,7 @@ namespace GPN
                         const auto &flow{split_flow_field.row(row).head(second_coord_size).matrix().transpose()};
 
                         // upper diagonal
-                        for (std::ptrdiff_t col{1ll}; col < second_coord_size; ++col)
+                        for (auto col{1ll}; col < second_coord_size; ++col)
                         {
                             const auto l{grid->to_linear(row, col)};
                             tripletList.emplace_back(l, l + first_coord_size, A.coeff(col - 1ll, col));
@@ -212,14 +209,14 @@ namespace GPN
 
                         // main diagonal
                         const auto diag{(A.diagonal() + flow).eval()};
-                        for (std::ptrdiff_t col{0ll}; col < second_coord_size; ++col)
+                        for (auto col{0ll}; col < second_coord_size; ++col)
                         {
                             const auto l{grid->to_linear(row, col)};
                             tripletList.emplace_back(l, l, diag(col));
                         }
 
                         // lower diagonal
-                        for (std::ptrdiff_t col{0ll}; col < second_coord_size - 1ll; ++col)
+                        for (auto col{0ll}; col < second_coord_size - 1ll; ++col)
                         {
                             const auto l{grid->to_linear(row, col)};
                             assert(l >= first_coord_size);
@@ -237,7 +234,7 @@ namespace GPN
 
                     // take every line for a fixed y-node.
                     // It is a col of 2D grid representation
-                    for (std::ptrdiff_t col = 0; col < second_coord_size; ++col)
+                    for (auto col{0ll}; col < second_coord_size; ++col)
                     {
                         // Laplace term
                         const SpMatrix &A{splitY.LaplaceTerm(col)};
@@ -267,7 +264,7 @@ namespace GPN
                                             flow_plus.matrix().head(first_coord_size) -
                                             flow_minus.matrix().tail(first_coord_size))
                                             .eval()};
-                        for (std::ptrdiff_t row{0ll}; row < first_coord_size; ++row)
+                        for (auto row{0ll}; row < first_coord_size; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
                             tripletList.emplace_back(l, l, diag(row));
@@ -317,12 +314,12 @@ namespace GPN
 
                 void applyBC_x(SpMatrix &A, Eigen::VectorX<RealType> &b)
                 {
-                    for(auto row{0ll}; row < first_coord_size; ++row)
+                    for (auto row{0ll}; row < first_coord_size; ++row)
                     {
                         const auto col{0ll};
                         const auto l{grid->to_linear(row, col)};
                         EquationView view{A.row(l), b(l), 0ll, 1ll};
-                    //    bc.set_west_val(view, i);
+                        //    bc.set_west_val(view, i);
                     }
                     for (auto row{0ll}; row < first_coord_size; ++row)
                     {
@@ -330,8 +327,8 @@ namespace GPN
                         const auto l{grid->to_linear(row, col)};
                         std::ptrdiff_t n = A.outerSize() - 1;
                         auto temp = b.row(l);
-                       EquationView view{A.row(n), b(l),
-                                                            n, n - 1};
+                        EquationView view{A.row(n), b(l),
+                                          n, n - 1};
                         //    bc.set_east_val(view, i);
                     }
                 }
