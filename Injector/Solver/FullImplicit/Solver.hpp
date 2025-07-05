@@ -222,6 +222,7 @@ namespace GPN
                         for (std::ptrdiff_t col{0ll}; col < second_coord_size - 1ll; ++col)
                         {
                             const auto l{grid->to_linear(row, col)};
+                            assert(l >= first_coord_size);
                             tripletList.emplace_back(
                                 l, l - first_coord_size,
                                 A.coeff(col + 1ll, col) - flow(col + 1ll));
@@ -276,6 +277,7 @@ namespace GPN
                         for (std::ptrdiff_t row{0ll}; row < first_coord_size - 1ll; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
+                            assert(l >= 1ll);
                             tripletList.emplace_back(
                                 l, l - 1ll,
                                 A.coeff(row + 1ll, row) - flow_plus(row + 1ll));
