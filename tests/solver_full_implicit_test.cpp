@@ -39,12 +39,14 @@ using namespace std;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::FullImplicit;
 
-void print_A(const auto &fname, const auto &A)
+void print_A(const auto &fname, const auto &A, const auto& b)
 {
     Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
     ofstream f{fname};
-    const auto Aa = Eigen::MatrixX<RealType>{A};
-    f << Aa.format(CleanFmt);
+    Eigen::MatrixX<RealType> problem(A.rows(), A.cols()+1ll);
+    problem.leftCols(A.cols()) = Eigen::MatrixX<RealType>{A};
+    problem.rightCols(1ll) = b;
+    f << problem.format(CleanFmt);
     f.close();
 }
 
@@ -123,7 +125,7 @@ TEST_CASE("Solver")
         rates_factory, initial_state,
         bc, 0.0};
 
-    const auto A{solver.advance(0.005)};
+    const auto [A, b] = solver.advance(0.005);
 
-    print_A("full_A.txt", A);
+    print_A("full_A.txt", A, b);
 }

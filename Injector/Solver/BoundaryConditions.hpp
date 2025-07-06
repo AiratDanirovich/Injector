@@ -138,14 +138,12 @@ namespace GPN
             {
                 if (east_west.west.type == BoundaryCondition::BCType::first)
                 {
-                    view.set_diag((RealType)1.0);
-                    view.set_neib((RealType)0.0);
-                    view.set_rhs(west_vals(i));
+                    view.set_type_I(west_vals(i));
                     return;
                 }
                 else if (east_west.west.type == BoundaryCondition::BCType::second)
                 {
-                    view.add_rhs(west_vals(i));
+                    view.add_rhs_type_II(west_vals(i));
                     return;
                 }
 
@@ -157,14 +155,12 @@ namespace GPN
             {
                 if (east_west.east.type == BoundaryCondition::BCType::first)
                 {
-                    view.set_diag((RealType)1.0);
-                    view.set_neib((RealType)0.0);
-                    view.set_rhs(east_vals(i));
+                    view.set_type_I(east_vals(i));
                     return;
                 }
                 else if (east_west.east.type == BoundaryCondition::BCType::second)
                 {
-                    view.add_rhs(east_vals(i));
+                    view.add_rhs_type_II(east_vals(i));
                     return;
                 }
 
@@ -176,14 +172,12 @@ namespace GPN
             {
                 if (south_north.south.type == BoundaryCondition::BCType::first)
                 {
-                    view.set_diag((RealType)1.0);
-                    view.set_neib((RealType)0.0);
-                    view.set_rhs(south_vals(i));
+                    view.set_type_I(south_vals(i));
                     return;
                 }
                 else if (south_north.south.type == BoundaryCondition::BCType::second)
                 {
-                    view.add_rhs(south_vals(i));
+                    view.add_rhs_type_II(south_vals(i));
                     return;
                 }
 
@@ -195,14 +189,12 @@ namespace GPN
             {
                 if (south_north.north.type == BoundaryCondition::BCType::first)
                 {
-                    view.set_diag((RealType)1.0);
-                    view.set_neib((RealType)0.0);
-                    view.set_rhs(north_vals(i));
+                    view.set_type_I(north_vals(i));
                     return;
                 }
                 else if (south_north.north.type == BoundaryCondition::BCType::second)
                 {
-                    view.add_rhs(north_vals(i));
+                    view.add_rhs_type_II(north_vals(i));
                     return;
                 }
 

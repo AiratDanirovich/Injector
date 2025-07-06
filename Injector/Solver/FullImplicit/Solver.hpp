@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <array>
 #include <tuple>
 #include <cassert>
 
@@ -71,36 +72,42 @@ namespace GPN
                     states.emplace_back(state);
                 }
 
+                template <typename Coefs_t>
                 struct EquationView
                 {
                     using MatrixRow_t = Eigen::Block<Eigen::SparseMatrix<RealType>, 1, -1, false>;
                     EquationView(MatrixRow_t A,
                                  RealType &rhs,
-                                 std::ptrdiff_t diag,
-                                 std::ptrdiff_t neib)
-                        : matrix{A}, rhs{rhs},
-                          diag{diag}, neib{neib}
+                                 const ptrdiff_t diag_id,
+                                 Coefs_t neib_ids)
+                        : matrix_row{A}, rhs{rhs},
+                          diag_id{diag_id},
+                          neib_ids{neib_ids}
                     {
                     }
 
-                    MatrixRow_t matrix;
+                    MatrixRow_t matrix_row;
                     RealType &rhs;
-                    std::ptrdiff_t diag, neib;
+                    const ptrdiff_t diag_id;
+                    const Coefs_t neib_ids;
 
-                    void set_diag(const RealType val)
+                    void set_type_I(const RealType val)
                     {
-                        matrix.coeffRef(diag) = val;
-                    }
-                    void set_neib(const RealType val)
-                    {
-                        matrix.coeffRef(neib) = val;
-                    }
-                    void set_rhs(const RealType val)
-                    {
+                        throw std::exception("Type_I boundary condition is not implemented!");
+                        // set diagonal value = 1.0
+                        matrix_row.coeffRef(diag_id) = 1.0;
+                        // set non-diagonal values = 0.0
+                        for (const auto id : neib_ids)
+                        {
+                            assert(id >= 0ll);
+                            matrix_row.col(id) = 0.0;
+                        }
+                        //  set rhs = val to satisfy: 1.0*T = val
                         rhs = val;
                     }
-                    void add_rhs(const RealType val)
+                    void add_rhs_type_II(const RealType val)
                     {
+                        // add the given flux to the rhs
                         rhs += val;
                     }
                 };
@@ -138,16 +145,14 @@ namespace GPN
 
                     RHS_t rhs{
                         (state.cur_state.reshaped(A_size, 1ll).array() * tau_factor).matrix()};
-
                     // BC
-                    applyBC_x(A, rhs);
-                    applyBC_y(A, rhs);
+                    applyBC(A, rhs);
 
                     const auto val{solve_linear_problem(A, rhs)};
 
                     cur_time += tau;
 
-                    return A;
+                    return std::pair{std::move(A), std::move(rhs)};
                 }
 
                 struct Solution
@@ -190,7 +195,7 @@ namespace GPN
                         const auto &flow{split_flow_field.row(row).head(second_coord_size).matrix().transpose()};
 
                         // upper diagonal
-                        for (auto col{0ll}; col < second_coord_size-1ll; ++col)
+                        for (auto col{0ll}; col < second_coord_size - 1ll; ++col)
                         {
                             const auto l{grid->to_linear(row, col)};
                             tripletList.emplace_back(l, l + first_coord_size, A.coeff(col, col + 1ll));
@@ -211,7 +216,7 @@ namespace GPN
                             assert(l >= first_coord_size);
                             tripletList.emplace_back(
                                 l, l - first_coord_size,
-                                A.coeff(col, col-1ll) - flow(col));
+                                A.coeff(col, col - 1ll) - flow(col));
                         }
                     }
                 }
@@ -244,7 +249,7 @@ namespace GPN
                         for (auto row{0ll}; row < first_coord_size - 1ll; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l + 1ll, A.coeff(row, row+1ll) + flow_minus(row + 1ll));
+                            tripletList.emplace_back(l, l + 1ll, A.coeff(row, row + 1ll) + flow_minus(row + 1ll));
                         }
 
                         // main diagonal
@@ -301,44 +306,129 @@ namespace GPN
                     return lu.solve(b);
                 }
 
-                void applyBC_x(SpMatrix &A, Eigen::VectorX<RealType> &b)
+                void applyBC(SpMatrix &A, Eigen::VectorX<RealType> &b)
                 {
-                    for (auto row{0ll}; row < first_coord_size; ++row)
-                    {
+                    { // west face
                         const auto col{0ll};
-                        const auto l{grid->to_linear(row, col)};
-                        EquationView view{A.row(l), b(l), 0ll, 1ll};
-                        //    bc.set_west_val(view, i);
+                        {
+                            auto row{0ll};
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 2ull>{l + 1, l + first_coord_size}};
+                            bc.set_west_val(view, row);
+                        }
+                        for (auto row{1ll}; row < first_coord_size - 1ll; ++row)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 3ull>{l - 1, l + 1, l + first_coord_size}};
+                            bc.set_west_val(view, row);
+                        }
+                        {
+                            auto row{first_coord_size - 1ll};
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 2ull>{l - 1, l + first_coord_size}};
+                            bc.set_west_val(view, row);
+                        }
                     }
-                    for (auto row{0ll}; row < first_coord_size; ++row)
-                    {
+                    { // east face
                         const auto col{second_coord_size - 1ll};
-                        const auto l{grid->to_linear(row, col)};
-                        std::ptrdiff_t n = A.outerSize() - 1;
-                        auto temp = b.row(l);
-                        EquationView view{A.row(n), b(l),
-                                          n, n - 1};
-                        //    bc.set_east_val(view, i);
+                        {
+                            auto row{0ll};
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 2ull>{l + 1, l - first_coord_size}};
+                            bc.set_east_val(view, row);
+                        }
+                        for (auto row{1ll}; row < first_coord_size - 1ll; ++row)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 3ull>{l - 1, l + 1, l - first_coord_size}};
+                            bc.set_east_val(view, row);
+                        }
+                        {
+                            auto row{first_coord_size - 1ll};
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 2ull>{l - 1, l - first_coord_size}};
+                            bc.set_east_val(view, row);
+                        }
                     }
-                }
 
-                void applyBC_y(SpMatrix &A, Eigen::VectorX<RealType> &b)
-                {
-                    for (auto col{0ll}; col < second_coord_size; ++col)
-                    {
-                        const auto row{0ll};
-                        const auto l{grid->to_linear(row, col)};
-                        EquationView view{A.row(l), b(l), 0ll, 1ll};
-                        //    bc.set_south_val(view, j);
-                    }
-                    for (auto col{0ll}; col < second_coord_size; ++col)
-                    {
-                        const auto row{first_coord_size - 1ll};
-                        const auto l{grid->to_linear(row, col)};
-                        std::ptrdiff_t n = A.outerSize() - 1;
-                        EquationView view{A.row(l), b(l), n, n - 1};
-                        //    bc.set_north_val(view, j);
-                    }
+                    // { // north face
+                    //     const auto row{0ll};
+                    //     {
+                    //         const auto col{0ll};
+                    //         const auto l{grid->to_linear(row, col)};
+                    //         EquationView view{
+                    //             A.row(l), b(l),
+                    //             l,
+                    //             std::array<ptrdiff_t, 2ll>{l + 1, l + first_coord_size}};
+                    //         bc.set_south_val(view, col);
+                    //     }
+                    //     for (auto col{1ll}; col < second_coord_size - 1ll; ++col)
+                    //     {
+                    //         const auto l{grid->to_linear(row, col)};
+                    //         EquationView view{
+                    //             A.row(l), b(l),
+                    //             l,
+                    //             std::array<ptrdiff_t, 3ll>{l - first_coord_size, l + 1, l + first_coord_size}};
+                    //         bc.set_south_val(view, col);
+                    //     }
+                    //     {
+                    //         const auto col{second_coord_size - 1ll};
+                    //         const auto l{grid->to_linear(row, col)};
+                    //         EquationView view{
+                    //             A.row(l), b(l),
+                    //             l,
+                    //             std::array<ptrdiff_t, 2ll>{l - first_coord_size, l + 1}};
+                    //         bc.set_south_val(view, col);
+                    //     }
+                    // }
+                    // { // south face
+                    //     const auto row{first_coord_size - 1ll};
+                    //     {
+                    //         const auto col{0ll};
+                    //         const auto l{grid->to_linear(row, col)};
+                    //         EquationView view{
+                    //             A.row(l), b(l),
+                    //             l,
+                    //             std::array<ptrdiff_t, 2ll>{l - 1, l + first_coord_size}};
+                    //         bc.set_north_val(view, col);
+                    //     }
+                    //     for (auto col{1ll}; col < second_coord_size - 1ll; ++col)
+                    //     {
+                    //         const auto l{grid->to_linear(row, col)};
+                    //         EquationView view{
+                    //             A.row(l), b(l),
+                    //             l,
+                    //             std::array<ptrdiff_t, 3ll>{l - first_coord_size, l - 1, l + first_coord_size}};
+                    //         bc.set_north_val(view, col);
+                    //     }
+                    //     {
+                    //         const auto col{second_coord_size - 1ll};
+                    //         const auto l{grid->to_linear(row, col)};
+                    //         EquationView view{
+                    //             A.row(l), b(l),
+                    //             l,
+                    //             std::array<ptrdiff_t, 3ll>{l - first_coord_size, l - 1}};
+                    //         bc.set_north_val(view, col);
+                    //     }
+                    // }
                 }
             };
         } // SplittingMethod
