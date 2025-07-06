@@ -51,7 +51,7 @@ void print_A(const auto &fname, const auto &A, const auto& b)
 }
 
 // const RealType well_rate{1.0};
-const RealType val{1.0};
+const RealType val{10.0};
 const auto z_stencils{
     Grids::Factory::generate_dual_grid_stencils_uniform(0, 4, 5)};
 const auto r_stencils{

@@ -377,7 +377,7 @@ namespace GPN
                         }
                     }
 
-                    { // north face
+                    { // south face
                         const auto row{0ll};
                         {
                             const auto col{0ll};
@@ -407,7 +407,7 @@ namespace GPN
                             bc.set_south_val(view, col);
                         }
                     }
-                    { // south face
+                    { // north face
                         const auto row{first_coord_size - 1ll};
                         {
                             const auto col{0ll};
