@@ -45,6 +45,11 @@ namespace GPN
             const AxesGrid<Axes1> first_coord;
             const AxesGrid<Axes2> second_coord;
 
+            auto mesh_size() const
+            {
+                return first_coord.mesh_size() * second_coord.mesh_size();
+            }
+
             template <typename Axes_t>
             const auto &coordinate() const
             {
@@ -53,6 +58,29 @@ namespace GPN
 
                 if constexpr (std::is_same<Axes_t, Axes2>::value)
                     return second_coord;
+            }
+
+            /// @brief Rowmajor linear enumeration of mesh nodes
+            /// @param first Node index along the first coordinate
+            /// @param second Node index along the second coordinate
+            /// @return Linear index, continuos numbering of all 2D nodes
+            auto to_linear(const ptrdiff_t first, const ptrdiff_t second) const
+            {
+                assert(first >= 0ll);
+                assert(second >= 0ll);
+                assert(first < first_coord.mesh_size());
+                assert(second < second_coord.mesh_size());
+                return first + second * first_coord.mesh_size();
+            }
+
+            /// @brief Get 2-indexed structured numbering of 2D mesh nodes
+            /// @param linear Linear index of 2D mesh node
+            /// @return A pair of indiceis: id along the first and second coordinate
+            auto to_twin(const ptrdiff_t linear) const
+            {
+                assert(linear >= 0ll);
+                assert(linear < mesh_size());
+                return {linear % first_coord.mesh_size(), linear / first_coord.mesh_size()};
             }
 
             StructuredGrid2D(
@@ -148,9 +176,9 @@ namespace GPN
                 return create_cylinder_grid_2D_ptr(
                     z_stencils, r_stencils);
             }
-            
-            template<typename Refiner_t>
-            static auto create(Refiner_t&& refiner, const auto &z_stencils, const auto &r_stencils)
+
+            template <typename Refiner_t>
+            static auto create(Refiner_t &&refiner, const auto &z_stencils, const auto &r_stencils)
             {
                 return create_cylinder_grid_2D_ptr(
                     refiner,
@@ -179,7 +207,7 @@ namespace GPN
                 auto r_stencils{Factory::generate_dual_grid_stencils_uniform(box.axes2, n2)};
                 return create_cylinder_grid_2D_ptr(z_stencils, r_stencils);
             }
-            
+
             static auto create_cylinder_grid_2D_ptr(const auto &z_stencils, const auto &r_stencils)
             {
                 auto z_grid{Factory::create_axes<CoordinateTypes::Z>(z_stencils)};
@@ -187,9 +215,9 @@ namespace GPN
 
                 return std::make_shared<StructuredCylinderGrid2DAxisymmetric>(z_grid, r_grid);
             }
-            
-            template<typename Refiner_t>
-            static auto create_cylinder_grid_2D_ptr(Refiner_t&& refiner, const auto &z_stencils, const auto &r_stencils)
+
+            template <typename Refiner_t>
+            static auto create_cylinder_grid_2D_ptr(Refiner_t &&refiner, const auto &z_stencils, const auto &r_stencils)
             {
                 auto z_grid{Factory::create_axes<CoordinateTypes::Z>(refiner, z_stencils)};
                 auto r_grid{Factory::create_axes<CoordinateTypes::R_CylCoord>(r_stencils)};

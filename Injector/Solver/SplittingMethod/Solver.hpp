@@ -12,8 +12,8 @@
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/Grids1D.hpp>
 #include <Injector/Properties/PhysicalField.hpp>
-// #include <Injector/Solver/BoundaryConditions.hpp>
 
+#include <Injector/Solver/CapacityTerm.hpp>
 #include <Injector/Solver/SplittingMethod/SplitX.hpp>
 #include <Injector/Solver/SplittingMethod/SplitY.hpp>
 
@@ -23,33 +23,6 @@ namespace GPN
     {
         namespace SplittingMethod
         {
-            struct TemporalTerm
-            {
-                template <typename Capacity_t, typename Grid_t>
-                TemporalTerm(
-                    const Capacity_t &factor,
-                    const Grid_t &grid)
-                    : capacity{grid.volumes() * factor.values()} // volumes are taken into account
-                {
-                    for (auto j{0ll}; j < this->capacity.cols(); ++j)
-                        for (auto i{0ll}; i < this->capacity.rows(); ++i)
-                        {
-                            assert(!std::isinf(this->capacity(i, j)));
-                            assert(!std::isnan(this->capacity(i, j)));
-                        }
-                }
-
-                auto Divide(RealType tau) const
-                {
-                    assert(tau != 0.0);
-                    return (static_cast<RealType>(1.0) / tau) * capacity;
-                }
-
-            protected:
-                // multiplied by cell volume
-                const Eigen::ArrayXX<RealType> capacity;
-            };
-
             template <
                 typename Grid_t,
                 typename Capacity_t,
@@ -126,6 +99,48 @@ namespace GPN
                         factory.initial_state,
                         factory.bc, factory.initial_moment};
                 }
+
+                template <typename Coefs_t>
+                struct EquationView
+                {
+                    using MatrixRow_t = Eigen::Block<Eigen::SparseMatrix<RealType>, 1, -1, false>;
+                    EquationView(MatrixRow_t A,
+                                 RealType &rhs,
+                                 const ptrdiff_t diag_id,
+                                 const Coefs_t &neib_ids)
+                        : matrix_row{A}, rhs{rhs},
+                          diag_id{diag_id},
+                          neib_ids{neib_ids}
+                    {
+                        assert(matrix_row.cols() > 1ll);
+                        for (const auto id : neib_ids)
+                        {
+                            assert(id >= 0ll);
+                            assert(id < matrix_row.cols()*matrix_row.cols());
+                        }
+                    }
+
+                    MatrixRow_t matrix_row;
+                    RealType &rhs;
+                    const ptrdiff_t diag_id;
+                    const Coefs_t &neib_ids;
+
+                    void set_type_I(const RealType val)
+                    {
+                        // set diagonal value = 1.0
+                        matrix_row.coeffRef(diag_id) = 1.0;
+                        // set non-diagonal values = 0.0
+                        for (const auto id : neib_ids)
+                            matrix_row.coeffRef(id) = 0.0;
+                        //  set rhs = val to satisfy: 1.0*T = val
+                        rhs = val;
+                    }
+                    void add_rhs_type_II(const RealType val)
+                    {
+                        // add the given flux to the rhs
+                            rhs += val;
+                    }
+                };
 
                 void advance(RealType tau)
                 {
@@ -329,12 +344,12 @@ namespace GPN
                 void applyBC_split_x(SpMatrix &A, RHS_t &b, ptrdiff_t i)
                 {
                     {
-                        BoundaryConditions::MatrixView view{A.row(0ll), b.row(0ll), 0ll, 1ll};
+                        EquationView view{A.row(0ll), b(0ll), 0ll, std::array<ptrdiff_t, 1ull>{1ll}};
                         bc.set_west_val(view, i);
                     }
                     {
                         std::ptrdiff_t n = A.outerSize() - 1;
-                        BoundaryConditions::MatrixView view{A.row(n), b.row(n), n, n - 1};
+                        EquationView view{A.row(n), b(n), n, std::array<ptrdiff_t, 1ull>{n - 1ll}};
                         bc.set_east_val(view, i);
                     }
                 }
@@ -342,12 +357,12 @@ namespace GPN
                 void applyBC_split_y(SpMatrix &A, RHS_t &b, ptrdiff_t j)
                 {
                     {
-                        BoundaryConditions::MatrixView view{A.row(0ll), b.row(0ll), 0ll, 1ll};
+                        EquationView view{A.row(0ll), b(0ll), 0ll, std::array<ptrdiff_t, 1ull>{1ll}};
                         bc.set_south_val(view, j);
                     }
                     {
                         std::ptrdiff_t n = A.outerSize() - 1;
-                        BoundaryConditions::MatrixView view{A.row(n), b.row(n), n, n - 1};
+                        EquationView view{A.row(n), b(n), n, std::array<ptrdiff_t, 1ull>{n - 1ll}};
                         bc.set_north_val(view, j);
                     }
                 }
