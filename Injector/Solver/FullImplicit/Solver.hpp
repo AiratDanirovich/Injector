@@ -84,9 +84,11 @@ namespace GPN
                           diag_id{diag_id},
                           neib_ids{neib_ids}
                     {
+                        assert(matrix_row.cols() > 1ll);
                         for (const auto id : neib_ids)
                         {
                             assert(id >= 0ll);
+                            assert(id < matrix_row.cols()*matrix_row.cols());
                         }
                     }
 
