@@ -100,7 +100,7 @@ namespace GPN
                         for (const auto id : neib_ids)
                         {
                             assert(id >= 0ll);
-                            matrix_row.col(id) = 0.0;
+                            matrix_row.coeffRef(id) = 0.0;
                         }
                         //  set rhs = val to satisfy: 1.0*T = val
                         rhs = val;
@@ -369,66 +369,66 @@ namespace GPN
                         }
                     }
 
-                    // { // north face
-                    //     const auto row{0ll};
-                    //     {
-                    //         const auto col{0ll};
-                    //         const auto l{grid->to_linear(row, col)};
-                    //         EquationView view{
-                    //             A.row(l), b(l),
-                    //             l,
-                    //             std::array<ptrdiff_t, 2ll>{l + 1, l + first_coord_size}};
-                    //         bc.set_south_val(view, col);
-                    //     }
-                    //     for (auto col{1ll}; col < second_coord_size - 1ll; ++col)
-                    //     {
-                    //         const auto l{grid->to_linear(row, col)};
-                    //         EquationView view{
-                    //             A.row(l), b(l),
-                    //             l,
-                    //             std::array<ptrdiff_t, 3ll>{l - first_coord_size, l + 1, l + first_coord_size}};
-                    //         bc.set_south_val(view, col);
-                    //     }
-                    //     {
-                    //         const auto col{second_coord_size - 1ll};
-                    //         const auto l{grid->to_linear(row, col)};
-                    //         EquationView view{
-                    //             A.row(l), b(l),
-                    //             l,
-                    //             std::array<ptrdiff_t, 2ll>{l - first_coord_size, l + 1}};
-                    //         bc.set_south_val(view, col);
-                    //     }
-                    // }
-                    // { // south face
-                    //     const auto row{first_coord_size - 1ll};
-                    //     {
-                    //         const auto col{0ll};
-                    //         const auto l{grid->to_linear(row, col)};
-                    //         EquationView view{
-                    //             A.row(l), b(l),
-                    //             l,
-                    //             std::array<ptrdiff_t, 2ll>{l - 1, l + first_coord_size}};
-                    //         bc.set_north_val(view, col);
-                    //     }
-                    //     for (auto col{1ll}; col < second_coord_size - 1ll; ++col)
-                    //     {
-                    //         const auto l{grid->to_linear(row, col)};
-                    //         EquationView view{
-                    //             A.row(l), b(l),
-                    //             l,
-                    //             std::array<ptrdiff_t, 3ll>{l - first_coord_size, l - 1, l + first_coord_size}};
-                    //         bc.set_north_val(view, col);
-                    //     }
-                    //     {
-                    //         const auto col{second_coord_size - 1ll};
-                    //         const auto l{grid->to_linear(row, col)};
-                    //         EquationView view{
-                    //             A.row(l), b(l),
-                    //             l,
-                    //             std::array<ptrdiff_t, 3ll>{l - first_coord_size, l - 1}};
-                    //         bc.set_north_val(view, col);
-                    //     }
-                    // }
+                    { // north face
+                        const auto row{0ll};
+                        {
+                            const auto col{0ll};
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 2ll>{l + 1, l + first_coord_size}};
+                            bc.set_south_val(view, col);
+                        }
+                        for (auto col{1ll}; col < second_coord_size - 1ll; ++col)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 3ll>{l - first_coord_size, l + 1, l + first_coord_size}};
+                            bc.set_south_val(view, col);
+                        }
+                        {
+                            const auto col{second_coord_size - 1ll};
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 2ll>{l - first_coord_size, l + 1}};
+                            bc.set_south_val(view, col);
+                        }
+                    }
+                    { // south face
+                        const auto row{first_coord_size - 1ll};
+                        {
+                            const auto col{0ll};
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 2ll>{l - 1, l + first_coord_size}};
+                            bc.set_north_val(view, col);
+                        }
+                        for (auto col{1ll}; col < second_coord_size - 1ll; ++col)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 3ll>{l - first_coord_size, l - 1, l + first_coord_size}};
+                            bc.set_north_val(view, col);
+                        }
+                        {
+                            const auto col{second_coord_size - 1ll};
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 3ll>{l - first_coord_size, l - 1}};
+                            bc.set_north_val(view, col);
+                        }
+                    }
                 }
             };
         } // SplittingMethod
