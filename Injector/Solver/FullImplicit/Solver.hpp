@@ -84,6 +84,10 @@ namespace GPN
                           diag_id{diag_id},
                           neib_ids{neib_ids}
                     {
+                        for (const auto id : neib_ids)
+                        {
+                            assert(id >= 0ll);
+                        }
                     }
 
                     MatrixRow_t matrix_row;
@@ -93,22 +97,24 @@ namespace GPN
 
                     void set_type_I(const RealType val)
                     {
-                        throw std::exception("Type_I boundary condition is not implemented!");
                         // set diagonal value = 1.0
                         matrix_row.coeffRef(diag_id) = 1.0;
                         // set non-diagonal values = 0.0
                         for (const auto id : neib_ids)
-                        {
-                            assert(id >= 0ll);
                             matrix_row.coeffRef(id) = 0.0;
-                        }
                         //  set rhs = val to satisfy: 1.0*T = val
                         rhs = val;
                     }
                     void add_rhs_type_II(const RealType val)
                     {
-                        // add the given flux to the rhs
-                        rhs += val;
+                        bool flag{true};
+                        for (const auto id : neib_ids)
+                            flag = flag && (matrix_row.coeffRef(id) == 0.0);
+                        // add the given flux to the rhs,
+                        // if type_I BC was not applied 
+                        // from the other face
+                        if(flag == false)
+                            rhs += val;
                     }
                 };
 
