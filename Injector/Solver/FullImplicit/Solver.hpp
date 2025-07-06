@@ -79,7 +79,7 @@ namespace GPN
                     EquationView(MatrixRow_t A,
                                  RealType &rhs,
                                  const ptrdiff_t diag_id,
-                                 Coefs_t neib_ids)
+                                 const Coefs_t &neib_ids)
                         : matrix_row{A}, rhs{rhs},
                           diag_id{diag_id},
                           neib_ids{neib_ids}
@@ -95,7 +95,7 @@ namespace GPN
                     MatrixRow_t matrix_row;
                     RealType &rhs;
                     const ptrdiff_t diag_id;
-                    const Coefs_t neib_ids;
+                    const Coefs_t &neib_ids;
 
                     void set_type_I(const RealType val)
                     {
