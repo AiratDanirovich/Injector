@@ -3,25 +3,25 @@
     "density": 1000,
     "viscosity": 6e-4,
     "specific_heat_capacity": 4200,
-    "heat_conductivity": 0.0
+    "heat_conductivity": 1.00000
   },
   "collector": {
-    "thickness": [   7,   3,    3,    15,  3,     3,   3,   3,    35],
-    "is_permeable": [0.0, 0.0,  1.0,  0.0, 1.0,   0.0, 1.0, 1.0,  0.0],
-    "is_perforated": [0.0, 0.0, 0.0,  0.0, 1.0,   0.0, 1.0, 1.0,  0.0],
-    "porosity":     [0.0, 0.0,  0.3,  0.0, 0.2,   0.0, 0.3, 0.25, 0.0],
-    "permeability": [0.0, 0.0,  0.5,  0.0, 0.07,  0.0, 0.2, 0.15, 0.0],
+    "thickness": [   100,  3,   21],
+    "is_permeable": [0.0, 1.0,  0.0],
+    "is_perforated":[0.0, 1.0,  0.0],
+    "porosity":     [0.0, 1.0,  0.0],
+    "permeability": [0.0, 0.07, 0.0],
     "rate_division_types": ["KH", "explicit"],
     "rate_division_type": "KH",
     "explicit":{
-      "weights": [0.0, 0.0,  0.5,  0.0, 0.15,  0.0, 0.2, 0.15, 0.0]
+      "weights": [0.0, 1.0,  0.0]
     },
     "KH":{
     },
     "heatConductivity0": [1.2, 1.2,  1.2,  1.2, 1.2,  1.2, 1.2, 1.2, 1.2],
-    "heatConductivity": [0, 0,  0,  0, 0,  0, 0, 0, 0],
-    "solidDensity": [3200, 3000, 3100, 3000, 3200, 3150, 3150, 3150, 3300],
-    "solidSpecificHeatCapacity": [2700,2700,2700,2700,2700,2700,2700,2700,2700],
+    "heatConductivity": [1.00000, 1.00000, 1.00000],
+    "solidDensity": [1000, 1000, 1000],
+    "solidSpecificHeatCapacity": [4200,4200,4200],
     "geotherma":{
       "type": "const",
       "types": ["const", "interpolate"],
@@ -30,13 +30,13 @@
       },
       "interpolate":{
         "z_top": 0.0,
-        "z_nodes": [0.0, 60.0,  300,  2000, 2503, 2508, 3000],
-        "t_vals":  [293, 273.0, 283,  323,  348,  348,  364]
+        "z_nodes": [0.0, 3000],
+        "t_vals":  [0.0, 0.0]
       }
     }
   },
   "grid": {
-    "z_minor_step": 0.3,
+    "z_minor_step": 1,
     "r_start": 0.0,
     "r_end": 10.11,
     "r_grid_type": "log",
@@ -48,55 +48,55 @@
   },
    "completion": {
     "tube":{
-      "inner_radius": 0.04,
-      "thickness": 0.04,
-      "heat_conductivity": 1.2,
+      "inner_radius": 0.08,
+      "thickness": 0.0,
+      "heat_conductivity": 1.00000,
       "density": 1000,
       "specific_heat_capacity": 4200,
       "depth": 25
     },
     "annulus":{
-      "thickness": 0.04,
-      "heat_conductivity": 1.2,
-      "density": 90,
-      "specific_heat_capacity": 1000,
+      "thickness": 0.0,
+      "heat_conductivity": 1.00000,
+      "density": 1000,
+      "specific_heat_capacity": 4200,
       "depth": 25
     },
     "column":{
-      "thickness": 0.04,
-      "heat_conductivity": 1.2,
-      "density": 90,
-      "specific_heat_capacity": 1000,
+      "thickness": 0.0,
+      "heat_conductivity": 1.00000,
+      "density": 1000,
+      "specific_heat_capacity": 4200,
       "depth": 25
     },
     "cement":{
       "inner":{
         "thickness": 0.04,
-        "heat_conductivity": 1.2,
-        "specific_heat_capacity": 900,
-        "density": 3500,
+        "heat_conductivity": 1.00000,
+        "specific_heat_capacity": 4200,
+        "density": 1000,
         "depth": 25
       },
       "outer":{
         "thickness": 0.04,
-        "heat_conductivity": 1.2,
-        "specific_heat_capacity": 900,
-        "density": 3500,
+        "heat_conductivity": 1.00000,
+        "specific_heat_capacity": 4200,
+        "density": 1000,
         "depth": 25
       }
     }
   },
   "history": {
     "start_time": 0.0,
-    "t_minor_step": 96,
+    "t_minor_step": 0.1,
     "t_unit": "h",
     "t_units": ["d", "h", "m", "s"],
     "history_type": "dynamic",
     "history_types": ["static", "dynamic"],
     "dynamic": {
-      "t_major_step": [1.0, 1.0, 1.0],
-      "well_rate": [0.002, 0.002, 0.0],
-      "inlet_temperature": [293, 293, 293]
+      "t_major_step": [0.1, 1.0, 1.0],
+      "well_rate": [0.005, 0.005, 0.005],
+      "inlet_temperature": [20, 20, 20]
     }
   }
 }
