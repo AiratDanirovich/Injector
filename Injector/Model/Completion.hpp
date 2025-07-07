@@ -122,7 +122,11 @@ namespace GPN
                 const PhaseProperties_t &props)
             {
                 const RealType temp{std::log((1.0 + (RealType)thickness / (RealType)inner_radius))};
-                return props.heat_conductivity / temp;
+                const auto out{props.heat_conductivity / temp};
+                if(props.heat_conductivity == 0.0)
+                    return std::numeric_limits<RealType>::infinity();
+                else
+                    return props.heat_conductivity / temp;
             }
         };
 
