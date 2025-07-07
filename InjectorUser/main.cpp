@@ -2,6 +2,7 @@
 #include <fstream>
 #include <vector>
 #include <array>
+#include <chrono>
 
 #include <InjectorDLL/Defines.h>
 #include <InjectorDLL/Wrapper.h>
@@ -171,6 +172,8 @@ int main()
     cout << "Simulation is started." << endl;
     cout << "Please wait..." << endl;
 
+    const auto t_start{chrono::high_resolution_clock::now()};
+
     Wrapper *instance = new Wrapper(
         // fluid params in SI
         density,           // kg/(m^3)
@@ -206,6 +209,9 @@ int main()
         well_rates,         // ~1.1E-3 m^3/s
         inlet_temperatures, // K
         casing);
+
+    const auto t_end{chrono::high_resolution_clock::now()};
+    cout << "Elapsed time:                       " << (t_end - t_start).count() * 1E-9 << " seconds\n";
 
     // cout << "After call to DLL\nPress Enter to continue" << endl;
     // getchar();
