@@ -3,7 +3,6 @@
 #include <limits>
 
 #include <Injector/History/History.hpp>
-#include <Injector/Solver/SplittingMethod/Solver.hpp>
 
 namespace GPN
 {
