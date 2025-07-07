@@ -117,90 +117,90 @@ protected:
 
 const auto make_completion(const std::array<std::array<RealType, 6>, 6> &data)
 {
-  using namespace GPN::Completion;
+    using namespace GPN::Completion;
 
-  std::vector<Ring> out;
-  out.reserve(6);
+    std::vector<Ring> out;
+    out.reserve(6);
 
-  { // flowing fluid
-    const auto &data2 = data[0ull];
-    out.push_back(
-        Ring{
-            Flow{
-                Density{data2[0ull]},
-                SpecificHeatCapacity{data2[1ull]},
-                GPN::HeatConductivity{data2[2ull]}},
-            Thickness{data2[3ull]},
-            InnerRadius{data2[4ull]},
-            Depth{data2[5ull]}});
-  }
+    { // flowing fluid
+        const auto &data2 = data[0ull];
+        out.push_back(
+            Ring{
+                Flow{
+                    Density{data2[0ull]},
+                    SpecificHeatCapacity{data2[1ull]},
+                    GPN::HeatConductivity{data2[2ull]}},
+                Thickness{data2[3ull]},
+                InnerRadius{data2[4ull]},
+                Depth{data2[5ull]}});
+    }
 
-  { // tube
-    const auto &data2 = data[1ull];
-    out.push_back(
-        Ring{
-            Tube{
-                Density{data2[0ull]},
-                SpecificHeatCapacity{data2[1ull]},
-                GPN::HeatConductivity{data2[2ull]}},
-            Thickness{data2[3ull]},
-            InnerRadius{data2[4ull]},
-            Depth{data2[5ull]}});
-  }
-  
-  { // annulus
-    const auto &data2 = data[2ull];
-    out.push_back(
-        Ring{
-            Annulus{
-                Density{data2[0ull]},
-                SpecificHeatCapacity{data2[1ull]},
-                GPN::HeatConductivity{data2[2ull]}},
-            Thickness{data2[3ull]},
-            InnerRadius{data2[4ull]},
-            Depth{data2[5ull]}});
-  }
-    
-  { // column
-    const auto &data2 = data[3ull];
-    out.push_back(
-        Ring{
-            Column{
-                Density{data2[0ull]},
-                SpecificHeatCapacity{data2[1ull]},
-                GPN::HeatConductivity{data2[2ull]}},
-            Thickness{data2[3ull]},
-            InnerRadius{data2[4ull]},
-            Depth{data2[5ull]}});
-  }
-      
-  { // cement_1
-    const auto &data2 = data[4ull];
-    out.push_back(
-        Ring{
-            Cement{
-                Density{data2[0ull]},
-                SpecificHeatCapacity{data2[1ull]},
-                GPN::HeatConductivity{data2[2ull]}},
-            Thickness{data2[3ull]},
-            InnerRadius{data2[4ull]},
-            Depth{data2[5ull]}});
-  }
-      
-  { // cement_2
-    const auto &data2 = data[5ull];
-    out.push_back(
-        Ring{
-            Cement{
-                Density{data2[0ull]},
-                SpecificHeatCapacity{data2[1ull]},
-                GPN::HeatConductivity{data2[2ull]}},
-            Thickness{data2[3ull]},
-            InnerRadius{data2[4ull]},
-            Depth{data2[5ull]}});
-  }
+    { // tube
+        const auto &data2 = data[1ull];
+        out.push_back(
+            Ring{
+                Tube{
+                    Density{data2[0ull]},
+                    SpecificHeatCapacity{data2[1ull]},
+                    GPN::HeatConductivity{data2[2ull]}},
+                Thickness{data2[3ull]},
+                InnerRadius{data2[4ull]},
+                Depth{data2[5ull]}});
+    }
 
-  return out;
+    { // annulus
+        const auto &data2 = data[2ull];
+        out.push_back(
+            Ring{
+                Annulus{
+                    Density{data2[0ull]},
+                    SpecificHeatCapacity{data2[1ull]},
+                    GPN::HeatConductivity{data2[2ull]}},
+                Thickness{data2[3ull]},
+                InnerRadius{data2[4ull]},
+                Depth{data2[5ull]}});
+    }
+
+    { // column
+        const auto &data2 = data[3ull];
+        out.push_back(
+            Ring{
+                Column{
+                    Density{data2[0ull]},
+                    SpecificHeatCapacity{data2[1ull]},
+                    GPN::HeatConductivity{data2[2ull]}},
+                Thickness{data2[3ull]},
+                InnerRadius{data2[4ull]},
+                Depth{data2[5ull]}});
+    }
+
+    { // cement_1
+        const auto &data2 = data[4ull];
+        out.push_back(
+            Ring{
+                Cement{
+                    Density{data2[0ull]},
+                    SpecificHeatCapacity{data2[1ull]},
+                    GPN::HeatConductivity{data2[2ull]}},
+                Thickness{data2[3ull]},
+                InnerRadius{data2[4ull]},
+                Depth{data2[5ull]}});
+    }
+
+    { // cement_2
+        const auto &data2 = data[5ull];
+        out.push_back(
+            Ring{
+                Cement{
+                    Density{data2[0ull]},
+                    SpecificHeatCapacity{data2[1ull]},
+                    GPN::HeatConductivity{data2[2ull]}},
+                Thickness{data2[3ull]},
+                InnerRadius{data2[4ull]},
+                Depth{data2[5ull]}});
+    }
+
+    return out;
 }
 
 Wrapper::Wrapper(
@@ -227,19 +227,19 @@ Wrapper::Wrapper(
     const VR &solid_density,               // kg/(m^3)
     const VR &solid_specific_heatcapacity, // J/(kg*K)
     // geotherma
-    const RealType z_top,     // m, /* z-coordinate of the top */
-    const VR& geotherma_nodes, // m, /* nodes for geotherma interpolation */
-    const VR& geotherma_vals,  // K, /* reference vals for interpolation */
+    const RealType z_top,      // m, /* z-coordinate of the top */
+    const VR &geotherma_nodes, // m, /* nodes for geotherma interpolation */
+    const VR &geotherma_vals,  // K, /* reference vals for interpolation */
     // temporal grid
     const RealType t_start,      // start time in seconds
     const VR &time_intervals,    // intervals of const rates)
     const RealType t_minor_step, // time step used for numerical integration
     // well
-    const VR &well_rates,            // ~1.1E-3 m^3/s
-    const VR& inlet_temperatures,    // K
+    const VR &well_rates,         // ~1.1E-3 m^3/s
+    const VR &inlet_temperatures, // K
     // casing
     // {fluid, tube, annulus, column, cementInner, cementOuter}
-    const std::array<MaterialProps, 6>& casing_data)
+    const std::array<MaterialProps, 6> &casing_data)
 {
     // adapt stl container to Eigen container
     LogValuesContainer is_permeable_stencils(is_permeable.size());
@@ -270,14 +270,15 @@ Wrapper::Wrapper(
             Grids::Factory::generate_dual_grid_stencils_from_steps(
                 0.0, thickness),
             r_stencils)};
-    const auto &grid{grid2D->first_coord};
+    const auto &grid_r{grid2D->second_coord};
+    const auto &grid_z{grid2D->first_coord};
     // collector
     const Logs::Rocks::CoreSampleLogs core_data{
         is_permeable_stencils,
         is_perforated_stencils,
         porosity_stencils,
         permeability_stencils,
-        grid};
+        grid_z};
     // make fluid
     const PhaseProperties water{
         FluidFactory::create_water(
@@ -290,7 +291,7 @@ Wrapper::Wrapper(
         Logs::RateWeightsFactory::create(
             weights_stencils,
             core_data.is_permeable,
-            grid)};
+            grid_z)};
 
     const Well_Explicit well{
         core_data.is_permeable,
@@ -303,7 +304,7 @@ Wrapper::Wrapper(
         porosity_stencils,
         water,
         grid2D->first_coord};
-        
+
     Properties::Rocks::HeatProps heat_props{
         heat_logs, grid2D};
     heat_props.apply_well(completion, well);
@@ -368,6 +369,9 @@ Wrapper::Wrapper(
 
         const std::string sep = data["coeff_sep"];
 
+        auto grid{grid2D->second_coord.mesh_nodes};
+        grid(0ll) = grid_r.dual_nodes(1ll);
+
         const Eigen::IOFormat commaFmt(Eigen::StreamPrecision, Eigen::DontAlignCols, sep, sep, "", "", "", "");
         for (auto z{0ll}, layer_id{0ll}; z < grid2D->first_coord.mesh_nodes.size(); ++z)
         {
@@ -375,7 +379,7 @@ Wrapper::Wrapper(
             {
                 ofstream f{std::string{"output/layer_"} + std::to_string(layer_id) + std::string{".csv"}};
 
-                f << sep << sep << grid2D->second_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
+                f << sep << sep << grid.transpose().format(commaFmt) << '\n';
                 for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
                 {
                     f << t << sep << times[t] << sep << states[t].cur_state.row(z).format(commaFmt) << '\n';
@@ -388,7 +392,7 @@ Wrapper::Wrapper(
 
         {
             ofstream f{std::string{"output/well_temperature.csv"}};
-            f << sep << sep << grid2D->first_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
+            f << sep << sep << grid_z.mesh_nodes.transpose().format(commaFmt) << '\n';
             for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
             {
                 f << t << sep << times[t] << sep << states[t].cur_state.col(0ll).format(commaFmt) << '\n';
@@ -398,7 +402,7 @@ Wrapper::Wrapper(
 
         {
             ofstream f{std::string{"output/cement_temperature.csv"}};
-            f << sep << sep << grid2D->first_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
+            f << sep << sep << grid_z.mesh_nodes.transpose().format(commaFmt) << '\n';
             for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
             {
                 f << t << sep << times[t] << sep << states[t].cur_state.col(1ll).format(commaFmt) << '\n';
@@ -409,24 +413,24 @@ Wrapper::Wrapper(
         // print grids
         {
             ofstream f{std::string{"output/z_grid.csv"}};
-            f << grid2D->first_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
+            f << grid_z.mesh_nodes.transpose().format(commaFmt) << '\n';
             f.close();
         }
         {
             ofstream f{std::string{"output/r_grid.csv"}};
-            f << grid2D->second_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
+            f << grid_r.mesh_nodes.transpose().format(commaFmt) << '\n';
             f.close();
         }
         {
             ofstream f{std::string{"output/geotherma.csv"}};
-            f << grid2D->first_coord.mesh_nodes.transpose().format(commaFmt) << '\n';
+            f << grid_z.mesh_nodes.transpose().format(commaFmt) << '\n';
             f << initial_state.cur_state.col(0ll).transpose().format(commaFmt) << '\n';
             f.close();
         }
 
         {
             ofstream f{std::string{"output/data.txt"}};
-            f << "top collector height: " << grid.mesh_nodes(well.top_collector_cell_id()) << " m" << endl;
+            f << "top collector height: " << grid_z.mesh_nodes(well.top_collector_cell_id()) << " m" << endl;
             f.close();
         }
     }

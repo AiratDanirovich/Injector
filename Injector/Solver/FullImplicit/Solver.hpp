@@ -88,7 +88,7 @@ namespace GPN
                         for (const auto id : neib_ids)
                         {
                             assert(id >= 0ll);
-                            assert(id < matrix_row.cols()*matrix_row.cols());
+                            assert(id < matrix_row.cols() * matrix_row.cols());
                         }
                     }
 
@@ -113,9 +113,9 @@ namespace GPN
                         for (const auto id : neib_ids)
                             flag = flag && (matrix_row.coeffRef(id) == 0.0);
                         // add the given flux to the rhs,
-                        // if type_I BC was not applied 
+                        // if type_I BC was not applied
                         // from the other face
-                        if(flag == false)
+                        if (flag == false)
                             rhs += val;
                     }
                 };
