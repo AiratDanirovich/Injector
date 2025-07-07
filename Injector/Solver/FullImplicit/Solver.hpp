@@ -109,7 +109,7 @@ namespace GPN
                     }
                     void add_rhs_type_II(const RealType val)
                     {
-                        bool flag{true};
+                        bool flag{matrix_row.coeffRef(diag_id) == 1.0};
                         for (const auto id : neib_ids)
                             flag = flag && (matrix_row.coeffRef(id) == 0.0);
                         // add the given flux to the rhs,
