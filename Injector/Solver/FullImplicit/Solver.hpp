@@ -109,7 +109,7 @@ namespace GPN
                     }
                     void add_rhs_type_II(const RealType val)
                     {
-                        bool flag{true};
+                        bool flag{matrix_row.coeffRef(diag_id) == 1.0};
                         for (const auto id : neib_ids)
                             flag = flag && (matrix_row.coeffRef(id) == 0.0);
                         // add the given flux to the rhs,
@@ -156,7 +156,7 @@ namespace GPN
                     // BC
                     applyBC(A, rhs);
 
-                    const auto val{solve_linear_problem(A, rhs)};
+                    state.cur_state = solve_linear_problem(A, rhs).array().reshaped(first_coord_size, second_coord_size);
 
                     cur_time += tau;
 
@@ -311,6 +311,10 @@ namespace GPN
                     Eigen::SparseLU<SpMatrix> lu;
                     lu.analyzePattern(A); // this is common for every matrix A. Can be optimized
                     lu.factorize(A);
+                    if (lu.info() != Eigen::Success)
+                    {
+                        throw std::runtime_error("LU decomposition failed!");
+                    }
                     return lu.solve(b);
                 }
 

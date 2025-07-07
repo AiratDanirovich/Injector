@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <memory>
+#include <cassert>
 
 #include <omp.h>
 
@@ -90,6 +91,14 @@ namespace GPN
                             y_face_factor(m_id, end - 1ll) * y_face_area(m_id));
 
                         matrix.setFromTriplets(tripletList.begin(), tripletList.end());
+
+                        for(auto row{0ll}; row < matrix.rows(); ++row)
+                        {
+                            assert(!std::isnan(matrix.coeff(row, row)));
+                            assert(!std::isinf(matrix.coeff(row, row)));
+                        }
+
+
                     }
                 }
             };

@@ -80,7 +80,7 @@ namespace GPN
                           inner_radius, thickness, props)},
                   integral_vertical_heat_conductivity{
                       props.heat_conductivity * std::numbers::pi *
-                      thickness * (thickness + 2.0*inner_radius)}
+                      thickness * (thickness + 2.0 * inner_radius)}
             {
                 assert(std::abs(outer_radius - inner_radius - thickness) < 1e-12);
             }
@@ -121,8 +121,15 @@ namespace GPN
                 Thickness thickness,
                 const PhaseProperties_t &props)
             {
-                const RealType temp{std::log((1.0 + (RealType)thickness / (RealType)inner_radius))};
-                return props.heat_conductivity / temp;
+                if (thickness == 0.0)
+                {
+                    return std::numeric_limits<RealType>::infinity();
+                }
+                else
+                {
+                    const RealType temp{std::log((1.0 + (RealType)thickness / (RealType)inner_radius))};
+                    return props.heat_conductivity / temp;
+                }
             }
         };
 
@@ -174,6 +181,8 @@ namespace GPN
                     const auto &m = sandwich[i];
                     L += 1.0 / m.radial_heat_conductivity;
                 }
+                assert(L > 0.0);
+                assert(!std::isnan(L));
                 return 1.0 / L;
             }
 
@@ -186,7 +195,7 @@ namespace GPN
                 for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::CementOuter; ++i)
                 {
                     const auto &m = sandwich[i];
-                    L += m.integral_vertical_heat_conductivity;//heat_conductivity * m.area();
+                    L += m.integral_vertical_heat_conductivity; // heat_conductivity * m.area();
                 }
                 return L / area();
             }
@@ -196,9 +205,11 @@ namespace GPN
 
             const RealType area() const
             {
-                return std::numbers::pi *
-                       thickness *
-                       (sandface_radius + flow_radius);
+                const auto out{std::numbers::pi *
+                               thickness *
+                               (sandface_radius + flow_radius)};
+                assert(out > 0.0);
+                return out;
             }
 
         private:
