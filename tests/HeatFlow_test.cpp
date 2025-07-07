@@ -39,7 +39,7 @@ using namespace GPN::Grids;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
 using namespace GPN::EqSolver;
-using namespace GPN::EqSolver::SplittingMethod;
+using namespace GPN::EqSolver::FullImplicit;
 
 /// @brief Initial temperature is assumed to be constant
 struct FunctorIC : public InitialConditions::ICFunctorBase
