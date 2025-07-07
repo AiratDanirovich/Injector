@@ -311,6 +311,10 @@ namespace GPN
                     Eigen::SparseLU<SpMatrix> lu;
                     lu.analyzePattern(A); // this is common for every matrix A. Can be optimized
                     lu.factorize(A);
+                    if (lu.info() != Eigen::Success)
+                    {
+                        throw std::runtime_error("LU decomposition failed!");
+                    }
                     return lu.solve(b);
                 }
 
