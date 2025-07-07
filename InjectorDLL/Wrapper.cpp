@@ -26,7 +26,7 @@
 #include <Injector/Solver/BoundaryConditions.hpp>
 #include <Injector/Solver/State2D.hpp>
 #include <Injector/Solver/InitialCondition.hpp>
-#include <Injector/Solver/SplittingMethod/Solver.hpp>
+#include <Injector/Solver/FullImplicit/Solver.hpp>
 #include <Injector/Solver/SolverManager.hpp>
 
 #include <Eigen/Core>
@@ -41,7 +41,7 @@ using namespace GPN;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
 using namespace GPN::EqSolver;
-using namespace GPN::EqSolver::SplittingMethod;
+using namespace GPN::EqSolver::FullImplicit;
 
 namespace fs = std::filesystem;
 
