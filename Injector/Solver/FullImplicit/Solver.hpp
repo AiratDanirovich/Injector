@@ -156,7 +156,7 @@ namespace GPN
                     // BC
                     applyBC(A, rhs);
 
-                    const auto val{solve_linear_problem(A, rhs)};
+                    state.cur_state = solve_linear_problem(A, rhs).array().reshaped(first_coord_size, second_coord_size);
 
                     cur_time += tau;
 
