@@ -21,7 +21,7 @@
 #include <Injector/Solver/BoundaryConditions.hpp>
 #include <Injector/Solver/State2D.hpp>
 #include <Injector/Solver/InitialCondition.hpp>
-#include <Injector/Solver/SplittingMethod/Solver.hpp>
+#include <Injector/Solver/FullImplicit/Solver.hpp>
 #include <Injector/Solver/SolverManager.hpp>
 
 #include <nlohmann/json.hpp>
@@ -39,7 +39,7 @@ using namespace GPN::Grids;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
 using namespace GPN::EqSolver;
-using namespace GPN::EqSolver::SplittingMethod;
+using namespace GPN::EqSolver::FullImplicit;
 
 /// @brief Initial temperature is assumed to be constant
 struct FunctorIC : public InitialConditions::ICFunctorBase
