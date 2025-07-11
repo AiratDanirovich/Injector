@@ -18,6 +18,9 @@ namespace GPN
     struct TubeInnerRadius : public SomeProperty
     {
     };
+    struct ColumnOuterRadius : public SomeProperty
+    {
+    };
     struct SandfaceRadius : public SomeProperty
     {
     };
@@ -56,12 +59,7 @@ namespace GPN
             assert(r_max > sandface_radius);
             assert(r_nodes > 1ll);
 
-            std::vector<RealType> out;
-            out.reserve(r_nodes + 2ll);
-
-            out.push_back(r_min);
-            out.push_back(tube_radius);
-            out.push_back(sandface_radius);
+            std::vector<RealType> out{init_grid(r_min, r_max, r_nodes)};
 
             const RealType step{(r_max - sandface_radius) / (r_nodes - 1ll)};
             for (auto i{2ll}; i < r_nodes; ++i)
@@ -105,16 +103,12 @@ namespace GPN
                         std::log(1.0 + (r_max - sandface_radius) / base_step * (q - 1.0)) /
                         std::log(q))};
 
-                std::vector<RealType> out;
-                out.reserve(nx + 20ll);
-
-                out.push_back(r_min);           // push leftmost boundary
-                out.push_back(tube_radius);     // push tube radius
-                out.push_back(sandface_radius); // push sandface radius
+                std::vector<RealType> out{init_grid(r_min, r_max, nx)};
 
                 // recalculate the base step
                 const RealType hx{base_step}; //{(r_max - sandface_radius) * (q - 1.0) / (std::pow(q, nx) - 1.0)};
                 assert(hx <= base_step);
+                assert(hx > 0.0);
 
                 if (max_step < hx * (std::pow(q, nx - 1ll)))
                 {
@@ -137,8 +131,23 @@ namespace GPN
                 return out;
             }
         }
+        
+        std::vector<RealType> init_grid(
+            const RealType r_min,
+            const RealType r_max,
+            const ptrdiff_t r_nodes) const
+        {
+            std::vector<RealType> out;
+            out.reserve(r_nodes + 3ull);
 
-        const RealType tube_radius;
+            out.push_back(r_min);               // push leftmost boundary
+            out.push_back(tube_inner_radius);   // push tube radius
+            out.push_back(column_outer_radius); // push tube radius
+            out.push_back(sandface_radius);     // push sandface radius
+
+            return out;
+        }
+
         const RealType sandface_radius;
     };
 
