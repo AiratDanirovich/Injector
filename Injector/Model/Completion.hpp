@@ -139,6 +139,7 @@ namespace GPN
                 : sandwich{completion},
                   sandface_radius{completion.back().outer_radius},
                   flow_radius{completion.front().outer_radius},
+                  column_outer_radius{completion[MaterialType::Column].outer_radius},
                   thickness{completion.back().outer_radius - completion.front().outer_radius}
             {
                 for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::CementOuter; ++i)
@@ -201,7 +202,7 @@ namespace GPN
             }
 
             const std::vector<Ring> sandwich;
-            const RealType sandface_radius, flow_radius, thickness;
+            const RealType sandface_radius, column_outer_radius, flow_radius, thickness;
 
             const RealType area() const
             {

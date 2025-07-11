@@ -42,12 +42,15 @@ namespace GPN
     struct WellHoles
     {
         WellHoles(
-            const TubeInnerRadius tube_radius,
+            const TubeInnerRadius tube_inner_radius,
+            const ColumnOuterRadius column_outer_radius,
             const SandfaceRadius sandface_radius)
-            : tube_radius{tube_radius},
-              sandface_radius{sandface_radius}
+            : tube_inner_radius{tube_inner_radius},
+              sandface_radius{sandface_radius},
+              column_outer_radius{column_outer_radius}
         {
-            assert(tube_radius < sandface_radius);
+            assert(tube_inner_radius < column_outer_radius);
+            assert(column_outer_radius < sandface_radius);
         }
 
         std::vector<RealType> generate_uniform_radial_grid(
@@ -55,7 +58,7 @@ namespace GPN
             const RealType r_max,
             const ptrdiff_t r_nodes) const
         {
-            assert(r_min < tube_radius);
+            assert(r_min < tube_inner_radius);
             assert(r_max > sandface_radius);
             assert(r_nodes > 1ll);
 
@@ -80,13 +83,13 @@ namespace GPN
             const RealType max_step) // max allowed step
             const
         {
-            assert(r_min < tube_radius);
+            assert(r_min < tube_inner_radius);
             assert(r_max > sandface_radius);
-            assert(max_step > tube_radius);
-            assert(max_step > sandface_radius - tube_radius);
+            //    assert(max_step > tube_radius);
+            //    assert(max_step > sandface_radius - tube_radius);
             assert(q >= 1.0);
             // base, minimum step for geometric progression
-            const RealType base_step = sandface_radius - tube_radius;
+            const RealType base_step = sandface_radius - column_outer_radius;
 
             if (q == 1.0)
             {
@@ -149,6 +152,8 @@ namespace GPN
         }
 
         const RealType sandface_radius;
+        const RealType tube_inner_radius;
+        const RealType column_outer_radius;
     };
 
     /// @brief Descriptor of materials that fill the
@@ -313,8 +318,7 @@ namespace GPN
                   is_permeable,
                   is_perforated,
                   /*RFP_weights*/ permeability * is_permeable.grid.dual_steps * (StepPropertyContainer)is_permeable},
-              fluid{fluid},
-              log_dist{std::log(Rext / holes.sandface_radius)}
+              fluid{fluid}, log_dist{std::log(Rext / holes.sandface_radius)}
         {
             assert(permeability.size() == is_permeable.grid.dual_steps.size());
         }
@@ -377,7 +381,5 @@ namespace GPN
     private:
         const RealType log_dist;
         const PhaseProperties fluid;
-
-
     };
 } // GPN
