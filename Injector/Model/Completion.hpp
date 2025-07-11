@@ -187,18 +187,32 @@ namespace GPN
                 return 1.0 / L;
             }
 
-            const RealType integral_vertical_heat_conductivity() const
+            const RealType integral_vertical_casing_heat_conductivity() const
             {
                 // exclude "flow" at "i = 0"
                 // as well as "cement2" at "i = end-1"
                 // from summation!
                 RealType L{0.0};
-                for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::CementOuter; ++i)
+                for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Column; ++i)
                 {
                     const auto &m = sandwich[i];
-                    L += m.integral_vertical_heat_conductivity; // heat_conductivity * m.area();
+                    L += m.integral_vertical_heat_conductivity;
                 }
-                return L / area();
+                return L / casing_area();
+            }
+
+            const RealType integral_vertical_cement_heat_conductivity() const
+            {
+                // exclude "flow" at "i = 0"
+                // as well as "cement2" at "i = end-1"
+                // from summation!
+                RealType L{0.0};
+                for (ptrdiff_t i{MaterialType::CementInner}; i <= MaterialType::CementOuter; ++i)
+                {
+                    const auto &m = sandwich[i];
+                    L += m.integral_vertical_heat_conductivity;
+                }
+                return L / cement_area();
             }
 
             const std::vector<Ring> sandwich;
@@ -206,9 +220,25 @@ namespace GPN
 
             const RealType area() const
             {
+                const auto out{cement_area() + casing_area()};
+                assert(out > 0.0);
+                return out;
+            }
+
+            const RealType cement_area() const
+            {
                 const auto out{std::numbers::pi *
-                               thickness *
-                               (sandface_radius + flow_radius)};
+                               (sandwich[MaterialType::CementOuter].outer_radius - sandwich[MaterialType::CementInner].inner_radius) *
+                               (sandwich[MaterialType::CementOuter].outer_radius + sandwich[MaterialType::CementInner].inner_radius)};
+                assert(out > 0.0);
+                return out;
+            }
+            
+            const RealType casing_area() const
+            {
+                const auto out{std::numbers::pi *
+                               (sandwich[MaterialType::Column].outer_radius - sandwich[MaterialType::Tube].inner_radius) *
+                               (sandwich[MaterialType::Column].outer_radius + sandwich[MaterialType::Tube].inner_radius)};
                 assert(out > 0.0);
                 return out;
             }

@@ -78,10 +78,10 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
 
   // CHECK r_stencils
   {
-      CHECK(r_stencils[0ull] == 0.0);
-      CHECK(r_stencils[1ull] == completion.flow_radius);
-      CHECK(r_stencils[2ull] == completion.column_outer_radius);
-      CHECK(r_stencils[3ull] == completion.sandface_radius);
+    CHECK(r_stencils[0ull] == 0.0);
+    CHECK(r_stencils[1ull] == completion.flow_radius);
+    CHECK(r_stencils[2ull] == completion.column_outer_radius);
+    CHECK(r_stencils[3ull] == completion.sandface_radius);
   }
 
   // z-refiner
@@ -246,9 +246,15 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
   const auto &CementInner{completion[MaterialType::CementInner]};
   const auto &Sandface{completion[MaterialType::CementOuter]};
 
-  const auto casing_vert_cond{std::numbers::pi * (Tube.heat_conductivity * Tube.thickness * (Tube.inner_radius + Tube.outer_radius) + Annulus.heat_conductivity * Annulus.thickness * (Annulus.inner_radius + Annulus.outer_radius) + Column.heat_conductivity * Column.thickness * (Column.inner_radius + Column.outer_radius) + CementInner.heat_conductivity * CementInner.thickness * (CementInner.inner_radius + CementInner.outer_radius) + Sandface.heat_conductivity * Sandface.thickness * (Sandface.inner_radius + Sandface.outer_radius)) /
-                              (std::numbers::pi * (completion.sandface_radius + completion.flow_radius) * completion.thickness)};
-  CHECK_THAT(casing_vert_cond, WithinRel(completion.integral_vertical_heat_conductivity(), tol));
+  const auto casing_vert_cond{std::numbers::pi * (Tube.heat_conductivity * Tube.thickness * (Tube.inner_radius + Tube.outer_radius) + Annulus.heat_conductivity * Annulus.thickness * (Annulus.inner_radius + Annulus.outer_radius) + Column.heat_conductivity * Column.thickness * (Column.inner_radius + Column.outer_radius)) /
+                              (std::numbers::pi * (Column.outer_radius + Tube.inner_radius) * (Column.outer_radius - Tube.inner_radius))};
+  CHECK_THAT(casing_vert_cond, WithinRel(completion.integral_vertical_casing_heat_conductivity(), tol));
+  
+  const auto cement_vert_cond{std::numbers::pi * (
+    CementInner.heat_conductivity * CementInner.thickness * (CementInner.inner_radius + CementInner.outer_radius) + 
+    Sandface.heat_conductivity * Sandface.thickness * (Sandface.inner_radius + Sandface.outer_radius)) /
+                              (std::numbers::pi * (Sandface.outer_radius + CementInner.inner_radius) * (Sandface.outer_radius - CementInner.inner_radius))};
+  CHECK_THAT(cement_vert_cond, WithinRel(completion.integral_vertical_cement_heat_conductivity(), tol));
 
   // CHECK heat_props --- after "apply_well"
   {
@@ -467,10 +473,10 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
       {
         CHECK_THAT(f_conductivity_1(row, col),
                    WithinRel(
-                       1.0 / ((grid_z.dual_nodes(row+1ll) - grid_z.mesh_nodes(row)) /
+                       1.0 / ((grid_z.dual_nodes(row + 1ll) - grid_z.mesh_nodes(row)) /
                                   heat_logs.medium_heat_conductivity(row) +
-                              (grid_z.mesh_nodes(row + 1ll) - grid_z.dual_nodes(row+1ll)) /
-                                  heat_logs.medium_heat_conductivity(row+1ll)),
+                              (grid_z.mesh_nodes(row + 1ll) - grid_z.dual_nodes(row + 1ll)) /
+                                  heat_logs.medium_heat_conductivity(row + 1ll)),
                        tol));
       }
     }

@@ -241,7 +241,10 @@ namespace GPN
                         assert(flow.area() <= v + 1e-12);
                     // (2) set sandwich heat conductivity in col(1ll)
                     medium_heat_conductivity_axes1.col(1ll) =
-                        completion.integral_vertical_heat_conductivity();
+                        completion.integral_vertical_casing_heat_conductivity();
+                    // (3) set cement heat conductivity in col(2ll)
+                    medium_heat_conductivity_axes1.col(2ll) =
+                        completion.integral_vertical_cement_heat_conductivity();
 #pragma endregion
                 }
 
