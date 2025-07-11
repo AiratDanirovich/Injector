@@ -67,6 +67,10 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
       z_minor_step{data["grid"]["z_minor_step"]}; // m
   /*completion*/
   const Casing completion{get_completion(data)};
+  const auto &Tube{completion[MaterialType::Tube]};
+  const auto &Annulus{completion[MaterialType::Annulus]};
+  const auto &Column{completion[MaterialType::Column]};
+  const auto &Sandface{completion[MaterialType::Cement]};
   /*END*/
 
   // make grid2D
@@ -240,17 +244,11 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
   // properties of material that fills the well up to the Sandface
   heat_props.apply_well(completion, well);
 
-  const auto &Tube{completion[MaterialType::Tube]};
-  const auto &Annulus{completion[MaterialType::Annulus]};
-  const auto &Column{completion[MaterialType::Column]};
-  const auto &Sandface{completion[MaterialType::Cement]};
-
   const auto casing_vert_cond{std::numbers::pi * (Tube.heat_conductivity * Tube.thickness * (Tube.inner_radius + Tube.outer_radius) + Annulus.heat_conductivity * Annulus.thickness * (Annulus.inner_radius + Annulus.outer_radius) + Column.heat_conductivity * Column.thickness * (Column.inner_radius + Column.outer_radius)) /
                               (std::numbers::pi * (Column.outer_radius + Tube.inner_radius) * (Column.outer_radius - Tube.inner_radius))};
   CHECK_THAT(casing_vert_cond, WithinRel(completion.integral_vertical_casing_heat_conductivity(), tol));
-  
-  const auto cement_vert_cond{std::numbers::pi * (
-    Sandface.heat_conductivity * Sandface.thickness * (Sandface.inner_radius + Sandface.outer_radius)) /
+
+  const auto cement_vert_cond{std::numbers::pi * (Sandface.heat_conductivity * Sandface.thickness * (Sandface.inner_radius + Sandface.outer_radius)) /
                               (std::numbers::pi * (Sandface.outer_radius + Sandface.inner_radius) * (Sandface.thickness))};
   CHECK_THAT(cement_vert_cond, WithinRel(completion.integral_vertical_cement_heat_conductivity(), tol));
 
@@ -289,14 +287,7 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
                        tol));
         CHECK_THAT(heat_conductivity_1(row, col),
                    WithinRel(
-                       casing_vert_cond
-                       //  (Tube.integral_vertical_heat_conductivity +
-                       //   Annulus.integral_vertical_heat_conductivity +
-                       //   Column.integral_vertical_heat_conductivity +
-                       //   CementInner.integral_vertical_heat_conductivity +
-                       //   Sandface.integral_vertical_heat_conductivity) /
-                       //      completion.area()
-                       ,
+                       casing_vert_cond,
                        tol));
         CHECK_THAT(heat_conductivity_2(row, col),
                    WithinRel(
