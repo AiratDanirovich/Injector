@@ -243,17 +243,15 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
   const auto &Tube{completion[MaterialType::Tube]};
   const auto &Annulus{completion[MaterialType::Annulus]};
   const auto &Column{completion[MaterialType::Column]};
-  const auto &CementInner{completion[MaterialType::CementInner]};
-  const auto &Sandface{completion[MaterialType::CementOuter]};
+  const auto &Sandface{completion[MaterialType::Cement]};
 
   const auto casing_vert_cond{std::numbers::pi * (Tube.heat_conductivity * Tube.thickness * (Tube.inner_radius + Tube.outer_radius) + Annulus.heat_conductivity * Annulus.thickness * (Annulus.inner_radius + Annulus.outer_radius) + Column.heat_conductivity * Column.thickness * (Column.inner_radius + Column.outer_radius)) /
                               (std::numbers::pi * (Column.outer_radius + Tube.inner_radius) * (Column.outer_radius - Tube.inner_radius))};
   CHECK_THAT(casing_vert_cond, WithinRel(completion.integral_vertical_casing_heat_conductivity(), tol));
   
   const auto cement_vert_cond{std::numbers::pi * (
-    CementInner.heat_conductivity * CementInner.thickness * (CementInner.inner_radius + CementInner.outer_radius) + 
     Sandface.heat_conductivity * Sandface.thickness * (Sandface.inner_radius + Sandface.outer_radius)) /
-                              (std::numbers::pi * (Sandface.outer_radius + CementInner.inner_radius) * (Sandface.outer_radius - CementInner.inner_radius))};
+                              (std::numbers::pi * (Sandface.outer_radius + Sandface.inner_radius) * (Sandface.thickness))};
   CHECK_THAT(cement_vert_cond, WithinRel(completion.integral_vertical_cement_heat_conductivity(), tol));
 
   // CHECK heat_props --- after "apply_well"
@@ -286,7 +284,6 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
                        (Tube.linear_heat_capacity +
                         Annulus.linear_heat_capacity +
                         Column.linear_heat_capacity +
-                        CementInner.linear_heat_capacity +
                         Sandface.linear_heat_capacity) /
                            completion.area(),
                        tol));
@@ -348,11 +345,9 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
 
     { // col == 0
       const ptrdiff_t col = 0ll;
-      const auto &Sandface = completion[MaterialType::CementOuter];
-      const auto &CementOuter = completion[MaterialType::CementOuter];
       for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
       {
-        INFO("mesh_node: " << grid_r.mesh_nodes(col + 1ll) << ", dual_node: " << grid_r.dual_nodes(col + 1ll) << ", cement_conductivity: " << CementOuter.heat_conductivity);
+        INFO("mesh_node: " << grid_r.mesh_nodes(col + 1ll) << ", dual_node: " << grid_r.dual_nodes(col + 1ll) << ", cement_conductivity: " << Sandface.heat_conductivity);
         CHECK_THAT(f_conductivity_2(row, col),
                    WithinRel(
                        Sandface.heat_conductivity /
@@ -364,13 +359,12 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
     }
     { // col == 1
       const ptrdiff_t col = 1ll;
-      const auto &CementOuter = completion[MaterialType::CementOuter];
       for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
       {
         CHECK_THAT(f_conductivity_2(row, col),
                    WithinRel(
                        1.0 /
-                           (std::log(CementOuter.outer_radius / CementOuter.inner_radius) / CementOuter.heat_conductivity +
+                           (std::log(Sandface.outer_radius / Sandface.inner_radius) / Sandface.heat_conductivity +
                             std::log(grid_r.mesh_nodes(col + 1ll) / grid_r.dual_nodes(col + 1ll)) / heat_props.medium_heat_conductivity_axes1.value(row, 2ll)),
                        tol));
       }
@@ -413,8 +407,7 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
                        1.0 /
                            (std::log(Tube.outer_radius / Tube.inner_radius) / Tube.heat_conductivity +
                             std::log(Annulus.outer_radius / Annulus.inner_radius) / Annulus.heat_conductivity +
-                            std::log(Column.outer_radius / Column.inner_radius) / Column.heat_conductivity +
-                            std::log(CementInner.outer_radius / CementInner.inner_radius) / CementInner.heat_conductivity),
+                            std::log(Column.outer_radius / Column.inner_radius) / Column.heat_conductivity),
                        tol));
       }
     }

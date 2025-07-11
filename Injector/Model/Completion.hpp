@@ -17,8 +17,7 @@ namespace GPN
                 Tube = 1,
                 Annulus = 2,
                 Column = 3,
-                CementInner = 4,
-                CementOuter = 5
+                Cement = 4
             };
         };
         struct Thickness : public SomeProperty
@@ -142,7 +141,7 @@ namespace GPN
                   column_outer_radius{completion[MaterialType::Column].outer_radius},
                   thickness{completion.back().outer_radius - completion.front().outer_radius}
             {
-                for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::CementOuter; ++i)
+                for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Cement; ++i)
                 {
                     assert(std::abs(completion[i].inner_radius - completion[i - 1ll].outer_radius) < 1e-12);
                 }
@@ -162,7 +161,7 @@ namespace GPN
             {
                 // exclude "flow" at "i = 0" from summation!
                 RealType C{0.0};
-                for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::CementOuter; ++i)
+                for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Cement; ++i)
                 {
                     const auto &m = sandwich[i];
                     C += m.linear_heat_capacity;
@@ -177,7 +176,7 @@ namespace GPN
                 // as well as "cement2" at "i = end-1"
                 // from summation!
                 RealType L{0.0};
-                for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::CementInner; ++i)
+                for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Cement; ++i)
                 {
                     const auto &m = sandwich[i];
                     L += 1.0 / m.radial_heat_conductivity;
@@ -207,7 +206,7 @@ namespace GPN
                 // as well as "cement2" at "i = end-1"
                 // from summation!
                 RealType L{0.0};
-                for (ptrdiff_t i{MaterialType::CementInner}; i <= MaterialType::CementOuter; ++i)
+                for (ptrdiff_t i{MaterialType::Cement}; i <= MaterialType::Cement; ++i)
                 {
                     const auto &m = sandwich[i];
                     L += m.integral_vertical_heat_conductivity;
@@ -228,8 +227,8 @@ namespace GPN
             const RealType cement_area() const
             {
                 const auto out{std::numbers::pi *
-                               (sandwich[MaterialType::CementOuter].outer_radius - sandwich[MaterialType::CementInner].inner_radius) *
-                               (sandwich[MaterialType::CementOuter].outer_radius + sandwich[MaterialType::CementInner].inner_radius)};
+                               (sandwich[MaterialType::Cement].thickness) *
+                               (sandwich[MaterialType::Cement].outer_radius + sandwich[MaterialType::Cement].inner_radius)};
                 assert(out > 0.0);
                 return out;
             }
