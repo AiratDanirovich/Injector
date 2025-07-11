@@ -76,6 +76,14 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
   const RealType &rMax = r_stencils.back();
   const RealType &rMin = r_stencils.front();
 
+  // CHECK r_stencils
+  {
+      CHECK(r_stencils[0ull] == 0.0);
+      CHECK(r_stencils[1ull] == completion.flow_radius);
+      CHECK(r_stencils[2ull] == completion.column_outer_radius);
+      CHECK(r_stencils[3ull] == completion.sandface_radius);
+  }
+
   // z-refiner
   RefinerVerticle refiner{z_minor_step, is_permeable_stencils};
   // the grid itself
@@ -84,7 +92,7 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
                                          Grids::Factory::generate_dual_grid_stencils_from_steps(
                                              0.0, thickness),
                                          r_stencils)};
-  const auto &grid{grid2D->first_coord};
+  const auto &grid_z{grid2D->first_coord};
   const auto &grid_r{grid2D->second_coord};
 
   // cout << "radial dual grid stencils:\n"
@@ -95,7 +103,7 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
       is_perforated_stencils,
       porosity_stencils,
       permeability_stencils,
-      grid};
+      grid_z};
 
   // CHECK core_data
   {
@@ -108,8 +116,8 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
       // find val in coarse grid
       const ptrdiff_t idx{
           get_dist(
-              grid.dual_stencils.dual_nodes,
-              grid.mesh_nodes(row))};
+              grid_z.dual_stencils.dual_nodes,
+              grid_z.mesh_nodes(row))};
       // solid density
       CHECK_THAT(is_perm(row), WithinRel(is_permeable_stencils(idx), tol));
       // solid_specific_heatcapacity
@@ -133,7 +141,7 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
       RateWeightsFactory::create(
           weights_stencils,
           core_data.is_permeable,
-          grid)};
+          grid_z)};
 
   // CHECK weights
   {
@@ -143,8 +151,8 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
       // find val in coarse grid
       const ptrdiff_t idx{
           get_dist(
-              grid.dual_stencils.dual_nodes,
-              grid.mesh_nodes(row))};
+              grid_z.dual_stencils.dual_nodes,
+              grid_z.mesh_nodes(row))};
       // solid density
       CHECK_THAT(w(row), WithinRel(weights_stencils(idx), tol));
     }
@@ -193,8 +201,8 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
       // find val in coarse grid
       const ptrdiff_t idx{
           get_dist(
-              grid.dual_stencils.dual_nodes,
-              grid.mesh_nodes(row))};
+              grid_z.dual_stencils.dual_nodes,
+              grid_z.mesh_nodes(row))};
       // solid density
       CHECK_THAT(s_density(row), WithinRel(solid_density_stencils(idx), tol));
       // solid_specific_heatcapacity
@@ -324,9 +332,9 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
         CHECK_THAT(f_conductivity_1(row, col),
                    WithinRel(
                        1.0 /
-                           ((grid.dual_nodes(row + 1ll) - grid.mesh_nodes(row)) /
+                           ((grid_z.dual_nodes(row + 1ll) - grid_z.mesh_nodes(row)) /
                                 heat_props.medium_heat_conductivity_axes1.value(row, col) +
-                            (grid.mesh_nodes(row + 1ll) - grid.dual_nodes(row + 1ll)) /
+                            (grid_z.mesh_nodes(row + 1ll) - grid_z.dual_nodes(row + 1ll)) /
                                 heat_props.medium_heat_conductivity_axes1.value(row + 1ll, col)),
                        tol));
       }
@@ -437,7 +445,7 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
       {
         CHECK_THAT(f_conductivity_1(row, col),
                    WithinRel(
-                       water.heat_conductivity / (grid.mesh_nodes(row + 1ll) - grid.mesh_nodes(row)),
+                       water.heat_conductivity / (grid_z.mesh_nodes(row + 1ll) - grid_z.mesh_nodes(row)),
                        tol));
       }
     }
@@ -448,7 +456,7 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
       {
         CHECK_THAT(f_conductivity_1(row, col),
                    WithinRel(
-                       casing_vert_cond / (grid.mesh_nodes(row + 1ll) - grid.mesh_nodes(row)),
+                       casing_vert_cond / (grid_z.mesh_nodes(row + 1ll) - grid_z.mesh_nodes(row)),
                        tol));
       }
     }
@@ -459,9 +467,9 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
       {
         CHECK_THAT(f_conductivity_1(row, col),
                    WithinRel(
-                       1.0 / ((grid.dual_nodes(row+1ll) - grid.mesh_nodes(row)) /
+                       1.0 / ((grid_z.dual_nodes(row+1ll) - grid_z.mesh_nodes(row)) /
                                   heat_logs.medium_heat_conductivity(row) +
-                              (grid.mesh_nodes(row + 1ll) - grid.dual_nodes(row+1ll)) /
+                              (grid_z.mesh_nodes(row + 1ll) - grid_z.dual_nodes(row+1ll)) /
                                   heat_logs.medium_heat_conductivity(row+1ll)),
                        tol));
       }
