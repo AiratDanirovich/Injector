@@ -169,15 +169,21 @@ namespace GPN
                 return out;
             }
 
-
-                        /// @brief
+            /// @brief
             /// @param nodes Nodes of dual mesh
             /// @return Centers of control volumes
             static auto cell_centers(const auto&& corrector, const DualNodesContainer &nodes)
             {
                 auto size{nodes.size() - 1ll};
                 MeshNodesContainer out(cell_centers(nodes));
+                assert(out.size() > 2ll);
 
+                out[1ll] = corrector.radial_node_position();
+                assert(out[0ll] < out[1ll]);
+                assert(out[1ll] < out[2ll]);
+
+                assert(nodes[1ll] < out[1ll]);
+                assert(out[1ll] < nodes[2ll]);
 
                 return out;
             }
