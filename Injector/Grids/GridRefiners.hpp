@@ -117,6 +117,48 @@ namespace GPN
             const RealType step;
         };
 
+        template<typename WellHoles_t>
+        struct RefinerLogRadial
+        {
+            RefinerLogRadial(
+                const RealType rMin, 
+                const RealType rMax, 
+                const RealType q, 
+                const RealType r_max_step, 
+                const WellHoles_t &well_holes)
+                : rMin{rMin}, rMax{rMax}, q{q}, r_max_step{r_max_step},
+                well_holes{well_holes}
+            {
+            }
+
+            DualNodesContainer refine(
+                const GridDualStencils &dual_nodes_stencils) noexcept
+            {
+                return refine(dual_nodes_stencils.dual_nodes);
+            }
+            DualNodesContainer refine(
+                const DualNodesContainer &dual_nodes) noexcept
+            {
+                std::vector<RealType> buf(dual_nodes.size());
+                std::copy(dual_nodes.cbegin(), dual_nodes.cend(), buf.begin());
+
+                return refine(buf);
+            }
+
+            DualNodesContainer refine(
+                const std::vector<RealType> &nodes) noexcept
+            {
+                return well_holes.generate_log_radial_grid(r_min, r_max, q, max_step);
+            }
+
+        protected:
+            const RealType rMin; 
+            const RealType rMax; 
+            const RealType q; 
+            const RealType r_max_step;
+            const WellHoles_t& well_holes;
+        };
+
     } // Grids
 
 } // GPN
