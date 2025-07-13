@@ -137,6 +137,51 @@ namespace GPN
                 return out;
             }
 
+            /// @brief
+            /// @param nodes Nodes of dual mesh
+            /// @return Centers of control volumes
+            static auto cell_centers(const DualNodesContainer &nodes)
+            {
+                assert(nodes.size() > 2ll);
+
+                auto size{nodes.size() - 1ll};
+                MeshNodesContainer out(size);
+                // centers of boundary cells are moved to the domain boundary
+                for (auto idx{0ll}; idx < size - 0ll; ++idx)
+                    out(idx) =
+                        nodes(idx) *
+                        std::exp(
+                            nodes(idx + 1) * nodes(idx + 1) *
+                                std::log(nodes(idx + 1) / nodes(idx)) /
+                                ((nodes(idx + 1) - nodes(idx)) * (nodes(idx + 1) + nodes(idx))) -
+                            0.5);
+                
+                for (auto idx{0ll}; idx < size - 0ll; ++idx)
+                {
+                    assert(out(idx) > nodes(idx));
+                    assert(out(idx) < nodes(idx+1ll));
+                }
+
+                const RealType tol = 1e-12;
+                out.head(1ll) = nodes.head(1ll) + tol;
+                out.tail(1ll) = nodes.tail(1ll) - tol;
+
+                return out;
+            }
+
+
+                        /// @brief
+            /// @param nodes Nodes of dual mesh
+            /// @return Centers of control volumes
+            static auto cell_centers(const auto&& corrector, const DualNodesContainer &nodes)
+            {
+                auto size{nodes.size() - 1ll};
+                MeshNodesContainer out(cell_centers(nodes));
+
+
+                return out;
+            }
+
             /// @brief Interpolate heat conductivity (factor at Laplace term)
             /// @param xL left cell center
             /// @param xR right cell center
@@ -158,9 +203,8 @@ namespace GPN
                 if ((valL == 0.0) || (valR == 0.0))
                     return 0.0;
 
-                return 1.0 / (
-                    std::log(xMid / xL) / valL + 
-                    std::log(xR / xMid) / valR);
+                return 1.0 / (std::log(xMid / xL) / valL +
+                              std::log(xR / xMid) / valR);
             }
             /// @brief Interpolate const heat conductivity (factor at Laplace term)
             /// @return Heat conductivity at cell face
