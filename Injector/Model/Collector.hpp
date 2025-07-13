@@ -204,18 +204,13 @@ namespace GPN
 #pragma region SET-HEAT-CAPACITY
                     // first column -- inside the tube, contains only water
                     medium_vol_heatcapacity.col(0ll) /*.head(tube_end)*/ =
-                        completion.front().volumetric_heat_capacity;
-                    // second column -- from tube inner radius to sandface radius
+                        completion.flow().volumetric_heat_capacity;
+                    // second column -- from tube inner radius to column outer radius
                     medium_vol_heatcapacity.col(1ll) /*.head(tube_end)*/ =
-                        completion.volumetric_heat_capacity();
-
-                    // medium_vol_heatcapacity.col(0ll).tail(medium_vol_heatcapacity.rows() - tube_end) =
-                    //     fluid.volumetric_heat_capacity*(r_column*r_column)/(r_tube*r_tube);
-
-                    // medium_vol_heatcapacity.col(1ll).head(tube_end) =
-                    //     upper_annulus_capacity;
-                    // medium_vol_heatcapacity.col(1ll).tail(medium_vol_heatcapacity.rows() - tube_end) =
-                    //     lower_annulus_capacity;
+                        completion.casing_volumetric_heat_capacity();
+                    // third column -- cement cross-section
+                    medium_vol_heatcapacity.col(2ll) /*.head(tube_end)*/ =
+                        completion.cement_volumetric_heat_capacity();
 #pragma endregion
 #pragma region SET-HEAT-CONDUCTIVITY
                     // heat conductivity of flowing water in r-direction is infinite

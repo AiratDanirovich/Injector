@@ -252,7 +252,7 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
   const auto cement_vert_cond{std::numbers::pi * (Sandface.heat_conductivity * Sandface.thickness * (Sandface.inner_radius + Sandface.outer_radius)) /
                               (std::numbers::pi * (Sandface.outer_radius + Sandface.inner_radius) * (Sandface.thickness))};
   CHECK_THAT(cement_vert_cond, WithinRel(completion.integral_vertical_cement_heat_conductivity(), tol));
-  CHECK_THAT((std::numbers::pi * (std::numbers::pi * (Sandface.outer_radius + Sandface.inner_radius) * (Sandface.thickness))), WithinRel(completion.cement_area(), tol));
+  CHECK_THAT((std::numbers::pi * (Sandface.outer_radius + Sandface.inner_radius) * Sandface.thickness), WithinRel(completion.cement_area(), tol));
 
   // CHECK heat_props --- after "apply_well"
   {
@@ -269,7 +269,7 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
                        water.volumetric_heat_capacity, tol));
         CHECK_THAT(capacity(row, col),
                    WithinRel(
-                       completion.front().volumetric_heat_capacity, tol));
+                       completion.flow().volumetric_heat_capacity, tol));
         // vertical heat conductivity is equal to water
         CHECK_THAT(heat_conductivity_1(row, col),
                    WithinRel(
@@ -285,6 +285,28 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
                         Annulus.linear_heat_capacity +
                         Column.linear_heat_capacity) /
                            completion.casing_area(),
+                       tol));
+        CHECK_THAT(heat_conductivity_1(row, col),
+                   WithinRel(
+                       casing_vert_cond,
+                       tol));
+        CHECK_THAT(heat_conductivity_2(row, col),
+                   WithinRel(
+                       Sandface.heat_conductivity /
+                           std::log(Sandface.outer_radius / Sandface.inner_radius) *
+                           std::log(grid_r.dual_nodes(2ll) / grid_r.mesh_nodes(1ll)),
+                       tol));
+      }
+      { // col == 2
+        const ptrdiff_t col = 2ll;
+        CHECK_THAT(Sandface.linear_heat_capacity,
+                   WithinRel(
+                       Sandface.area() * Sandface.volumetric_heat_capacity,
+                       tol));
+        CHECK_THAT(capacity(row, col),
+                   WithinRel(
+                       Sandface.linear_heat_capacity /
+                           completion.cement_area(),
                        tol));
         CHECK_THAT(heat_conductivity_1(row, col),
                    WithinRel(

@@ -152,21 +152,36 @@ namespace GPN
             const auto &back() const { return sandwich.back(); }
             const auto &front() const { return sandwich.front(); }
 
+            const auto &flow() const { return front(); }
+
             const auto &operator[](auto i) const
             {
                 return sandwich[i];
             }
 
-            const RealType volumetric_heat_capacity() const
+            const RealType casing_volumetric_heat_capacity() const
             {
                 // exclude "flow" at "i = 0" from summation!
                 RealType C{0.0};
-                for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Cement; ++i)
+                for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Column; ++i)
                 {
                     const auto &m = sandwich[i];
                     C += m.linear_heat_capacity;
                 }
-                C /= area();
+                C /= casing_area();
+                return C;
+            }
+            
+            const RealType cement_volumetric_heat_capacity() const
+            {
+                // exclude "flow" at "i = 0" from summation!
+                RealType C{0.0};
+                for (ptrdiff_t i{MaterialType::Cement}; i <= MaterialType::Cement; ++i)
+                {
+                    const auto &m = sandwich[i];
+                    C += m.linear_heat_capacity;
+                }
+                C /= cement_area();
                 return C;
             }
 
@@ -232,7 +247,7 @@ namespace GPN
                 assert(out > 0.0);
                 return out;
             }
-            
+
             const RealType casing_area() const
             {
                 const auto out{std::numbers::pi *
