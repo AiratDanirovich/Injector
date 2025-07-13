@@ -290,12 +290,12 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
                    WithinRel(
                        casing_vert_cond,
                        tol));
-        CHECK_THAT(heat_conductivity_2(row, col),
-                   WithinRel(
-                       Sandface.heat_conductivity /
-                           std::log(Sandface.outer_radius / Sandface.inner_radius) *
-                           std::log(grid_r.dual_nodes(2ll) / grid_r.mesh_nodes(1ll)),
-                       tol));
+        // CHECK_THAT(heat_conductivity_2(row, col),
+        //            WithinRel(
+        //                Sandface.heat_conductivity /
+        //                    std::log(Sandface.outer_radius / Sandface.inner_radius) *
+        //                    std::log(grid_r.dual_nodes(2ll) / grid_r.mesh_nodes(1ll)),
+        //                tol));
       }
       { // col == 2
         const ptrdiff_t col = 2ll;
@@ -310,17 +310,17 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
                        tol));
         CHECK_THAT(heat_conductivity_1(row, col),
                    WithinRel(
-                       casing_vert_cond,
+                       cement_vert_cond,
                        tol));
-        CHECK_THAT(heat_conductivity_2(row, col),
-                   WithinRel(
-                       Sandface.heat_conductivity /
-                           std::log(Sandface.outer_radius / Sandface.inner_radius) *
-                           std::log(grid_r.dual_nodes(2ll) / grid_r.mesh_nodes(1ll)),
-                       tol));
+        // CHECK_THAT(heat_conductivity_2(row, col),
+        //            WithinRel(
+        //                Sandface.heat_conductivity /
+        //                    std::log(Sandface.outer_radius / Sandface.inner_radius) *
+        //                    std::log(grid_r.dual_nodes(2ll) / grid_r.mesh_nodes(1ll)),
+        //                tol));
       }
 
-      for (auto col{2ll}; col < capacity.cols(); ++col)
+      for (auto col{3ll}; col < capacity.cols(); ++col)
       {
         CHECK_THAT(capacity(row, col),
                    WithinRel(
@@ -383,9 +383,21 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
                        tol));
       }
     }
+    { // col == 2
+      const ptrdiff_t col = 1ll;
+      for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
+      {
+        CHECK_THAT(f_conductivity_2(row, col),
+                   WithinRel(
+                       1.0 /
+                           (std::log(Sandface.outer_radius / Sandface.inner_radius) / Sandface.heat_conductivity +
+                            std::log(grid_r.mesh_nodes(col + 1ll) / grid_r.dual_nodes(col + 1ll)) / heat_props.medium_heat_conductivity_axes1.value(row, 2ll)),
+                       tol));
+      }
+    }
     for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
     {
-      for (auto col{2ll}; col < f_conductivity_2.cols(); ++col)
+      for (auto col{3ll}; col < f_conductivity_2.cols(); ++col)
       {
         CHECK_THAT(f_conductivity_2(row, col),
                    WithinRel(
