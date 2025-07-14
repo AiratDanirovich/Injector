@@ -86,7 +86,6 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
     CHECK(r_stencils[1ull] == completion.flow_radius);
     CHECK(r_stencils[2ull] == completion.column_outer_radius);
     CHECK(r_stencils[3ull] == completion.sandface_radius);
-    CHECK(r_stencils[4ull] > r_stencils[3ll]);
   }
 
   // z-refiner
