@@ -148,42 +148,28 @@ namespace GPN
                 MeshNodesContainer out(size);
                 // centers of boundary cells are moved to the domain boundary
                 for (auto idx{0ll}; idx < size - 0ll; ++idx)
-                    out(idx) =
-                        nodes(idx) *
-                        std::exp(
-                            nodes(idx + 1) * nodes(idx + 1) *
-                                std::log(nodes(idx + 1) / nodes(idx)) /
-                                ((nodes(idx + 1) - nodes(idx)) * (nodes(idx + 1) + nodes(idx))) -
-                            0.5);
-                
+                {
+                    const auto x{nodes(idx) / nodes(idx + 1ll) * nodes(idx) / nodes(idx + 1ll)};
+                    const auto temp{x == 0 ? 0.0 : x * std::log(x)};
+                    out(idx) = nodes(idx + 1ll) *
+                               std::sqrt(std::exp(-temp / (1 - x) - 1.0));
+                }
+
                 for (auto idx{0ll}; idx < size - 0ll; ++idx)
                 {
+                    if (idx > 0ll)
+                    {
+                        const auto x{nodes(idx + 1ll) / nodes(idx)};
+                        const auto result{nodes(idx) * std::exp(std::log(x) / (1 - 1 / (x * x)) - 0.5)};
+                        assert(std::abs(result - out(idx)) < 1e-12 * (result + out(idx)));
+                    }
                     assert(out(idx) > nodes(idx));
-                    assert(out(idx) < nodes(idx+1ll));
+                    assert(out(idx) < nodes(idx + 1ll));
                 }
 
                 const RealType tol = 1e-12;
                 out.head(1ll) = nodes.head(1ll) + tol;
                 out.tail(1ll) = nodes.tail(1ll) - tol;
-
-                return out;
-            }
-
-            /// @brief
-            /// @param nodes Nodes of dual mesh
-            /// @return Centers of control volumes
-            static auto cell_centers(const auto&& corrector, const DualNodesContainer &nodes)
-            {
-                auto size{nodes.size() - 1ll};
-                MeshNodesContainer out(cell_centers(nodes));
-                assert(out.size() > 2ll);
-
-                out[1ll] = corrector.radial_node_position();
-                assert(out[0ll] < out[1ll]);
-                assert(out[1ll] < out[2ll]);
-
-                assert(nodes[1ll] < out[1ll]);
-                assert(out[1ll] < nodes[2ll]);
 
                 return out;
             }
