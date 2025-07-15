@@ -136,22 +136,27 @@ namespace GPN
         struct FlowRing : public Ring
         {
             using Ring::Ring;
+            FlowRing(const Ring &r) : Ring{r} {}
         };
         struct TubeRing : public Ring
         {
             using Ring::Ring;
+            TubeRing(const Ring &r) : Ring{r} {}
         };
         struct AnnulusRing : public Ring
         {
             using Ring::Ring;
+            AnnulusRing(const Ring &r) : Ring{r} {}
         };
         struct ColumnRing : public Ring
         {
             using Ring::Ring;
+            ColumnRing(const Ring &r) : Ring{r} {}
         };
         struct CementRing : public Ring
         {
             using Ring::Ring;
+            CementRing(const Ring &r) : Ring{r} {}
         };
 
         struct Casing
@@ -435,10 +440,10 @@ namespace GPN
 
         private:
             template <typename PhaseProperties_t>
-            static RealType
+            static auto
             linear_heat_capacity_calc(
-                InnerRadius inner_radius,
-                Thickness thickness,
+                const auto &inner_radius,
+                const auto &thickness,
                 const PhaseProperties_t &props)
             {
                 return std::numbers::pi *
@@ -447,21 +452,21 @@ namespace GPN
             }
 
             template <typename PhaseProperties_t>
-            static RealType
+            static auto
             radial_heat_conductivity_calc(
-                InnerRadius inner_radius,
-                Thickness thickness,
+                const auto &inner_radius,
+                const auto &thickness,
                 const PhaseProperties_t &props)
             {
-                if (thickness == 0.0)
+                const auto temp{(1.0 + thickness / inner_radius).log()};
+                Eigen::ArrayX<RealType> out{props.heat_conductivity / temp};
+                for (auto id{0ll}; id < out.size(); ++id)
                 {
-                    return std::numeric_limits<RealType>::infinity();
+                    if (thickness(id) == 0.0)
+                        out(id) = std::numeric_limits<RealType>::infinity();
                 }
-                else
-                {
-                    const RealType temp{std::log((1.0 + (RealType)thickness / (RealType)inner_radius))};
-                    return props.heat_conductivity / temp;
-                }
+
+                return out;
             }
         };
 

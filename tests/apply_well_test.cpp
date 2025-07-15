@@ -121,6 +121,8 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
                                          r_stencils)};
   const auto &grid_z{grid2D->first_coord};
   const auto &grid_r{grid2D->second_coord};
+  
+  const ExtrudedCasing extr_completion{ExtrudedCasingFactory::create(completion, grid_z)};
 
   // cout << "radial dual grid stencils:\n"
   //      << transfer_to_eigen(r_stencils).transpose() << endl;

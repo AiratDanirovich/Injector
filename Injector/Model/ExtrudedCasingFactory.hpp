@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <Injector/Grids/Defines.h>
 #include <Injector/Model/Completion.hpp>
 
@@ -24,7 +26,7 @@ namespace GPN
                 inner_radius = 0.0;
                 for (auto id{0ll}; id < size; ++id)
                 {
-                    thickness(id) = grid_z.mesh_node(id) < tub_ring.depth
+                    thickness(id) = grid_z.mesh_nodes(id) < tub_ring.depth
                                         ? flo_ring.thickness
                                         : col_ring.inner_radius;
                 }
@@ -44,10 +46,10 @@ namespace GPN
                 ArrayX<RealType> thickness(size), inner_radius(size);
                 for (auto id{0ll}; id < size; ++id)
                 {
-                    thickness(id) = grid_z.mesh_node(id) < tub_ring.depth
+                    thickness(id) = grid_z.mesh_nodes(id) < tub_ring.depth
                                         ? tub_ring.thickness
                                         : 0.0;
-                    inner_radius(id) = grid_z.mesh_node(id) < tub_ring.depth
+                    inner_radius(id) = grid_z.mesh_nodes(id) < tub_ring.depth
                                            ? tub_ring.inner_radius
                                            : col_ring.inner_radius;
                 }
@@ -68,10 +70,10 @@ namespace GPN
                 ArrayX<RealType> thickness(size), inner_radius(size);
                 for (auto id{0ll}; id < size; ++id)
                 {
-                    thickness(id) = grid_z.mesh_node(id) < tub_ring.depth
+                    thickness(id) = grid_z.mesh_nodes(id) < tub_ring.depth
                                         ? ann_ring.thickness
                                         : 0.0;
-                    inner_radius(id) = grid_z.mesh_node(id) < tub_ring.depth
+                    inner_radius(id) = grid_z.mesh_nodes(id) < tub_ring.depth
                                            ? ann_ring.inner_radius
                                            : col_ring.inner_radius;
                 }
@@ -159,6 +161,8 @@ namespace GPN
                         assert(std::abs(r.inner_radius(id) + r.thickness(id) - r.outer_radius(id)) < 1e-12);
                     }
                 }
+
+                return ExtrudedCasing{extruded_casing};
             }
         };
 
