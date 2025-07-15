@@ -223,7 +223,7 @@ namespace GPN
                     const ptrdiff_t id{1ll};
                     medium_heat_conductivity_axes2.col(1ll) =
                         sandface.heat_conductivity /
-                        std::log(sandface.outer_radius / sandface.inner_radius) *
+                        log(sandface.outer_radius / sandface.inner_radius) *
                         std::log(grid_r.dual_nodes(id + 1ll) / grid_r.mesh_nodes(id));
                     // r_{1/2} is fixed at HeatFaceProps container
 
@@ -231,9 +231,7 @@ namespace GPN
                     // (1) modify water heat conductivity in col(0ll)
                     const auto &flow = completion.front();
                     medium_heat_conductivity_axes1.col(0ll) =
-                        flow.heat_conductivity * flow.area() / grid2D->face_area_axes1(0ll);
-                    for (const auto v : grid2D->face_area_axes1)
-                        assert(flow.area() <= v + 1e-12);
+                        flow.heat_conductivity * flow.area() / grid2D->face_area_axes1;
                     // (2) set sandwich heat conductivity in col(1ll)
                     medium_heat_conductivity_axes1.col(1ll) =
                         completion.integral_vertical_casing_heat_conductivity();

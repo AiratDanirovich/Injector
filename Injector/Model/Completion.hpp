@@ -674,11 +674,10 @@ namespace GPN
                 Eigen::ArrayX<RealType> out(r1.size());
 
                 for (auto id{0ll}; id < r1.size(); ++id)
-
                     out(id) = r1(id) < Tube.outer_radius(id)
                                   ? log(r1(id) / Tube.inner_radius(id)) / Tube.heat_conductivity
-                              : (r1 < Column.inner_radius(id))
-                                  ? 1 / Tube.radial_heat_conductivity(id) + log(r1 / Tube.outer_radius(id)) / Annulus.heat_conductivity
+                              : (r1(id) < Column.inner_radius(id))
+                                  ? 1 / Tube.radial_heat_conductivity(id) + log(r1(id) / Tube.outer_radius(id)) / Annulus.heat_conductivity
                                   : 1 / Tube.radial_heat_conductivity(id) + 1 / Annulus.radial_heat_conductivity(id) + log(r1(id) / Column.inner_radius(id)) / Column.heat_conductivity;
                 return out;
             }

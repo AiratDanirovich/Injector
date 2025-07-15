@@ -264,7 +264,7 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
   }
 
   // properties of material that fills the well up to the Sandface
-  heat_props.apply_well(completion, well);
+  heat_props.apply_well(extr_completion, well);
   // CHECK heat_props --- after "apply_well"
   {
     const auto &capacity = heat_props.medium_vol_heatcapacity.values();
@@ -347,7 +347,7 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
 
   FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
-  heat_face_props.apply_well(completion, well);
+  heat_face_props.apply_well(extr_completion, well);
 
   // CHECK heat_face_props --- after "apply_well"
   {
