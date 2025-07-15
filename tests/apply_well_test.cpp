@@ -80,6 +80,17 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
   const RealType &rMax = r_stencils.back();
   const RealType &rMin = r_stencils.front();
 
+  const auto casing_vert_cond{std::numbers::pi * (Tube.heat_conductivity * Tube.thickness * (Tube.inner_radius + Tube.outer_radius) + Annulus.heat_conductivity * Annulus.thickness * (Annulus.inner_radius + Annulus.outer_radius) + Column.heat_conductivity * Column.thickness * (Column.inner_radius + Column.outer_radius)) /
+                              (std::numbers::pi * (Column.outer_radius + Tube.inner_radius) * (Column.outer_radius - Tube.inner_radius))};
+  CHECK_THAT(casing_vert_cond, WithinRel(completion.integral_vertical_casing_heat_conductivity(), tol));
+  CHECK_THAT((std::numbers::pi * (Column.outer_radius + Tube.inner_radius) * (Column.outer_radius - Tube.inner_radius)), WithinRel(completion.casing_area(), tol));
+
+  const auto cement_vert_cond{std::numbers::pi * (Sandface.heat_conductivity * Sandface.thickness * (Sandface.inner_radius + Sandface.outer_radius)) /
+                              (std::numbers::pi * (Sandface.outer_radius + Sandface.inner_radius) * (Sandface.thickness))};
+  CHECK_THAT(cement_vert_cond, WithinRel(completion.integral_vertical_cement_heat_conductivity(), tol));
+
+  CHECK_THAT((std::numbers::pi * (Sandface.outer_radius + Sandface.inner_radius) * Sandface.thickness), WithinRel(completion.cement_area(), tol));
+
   // CHECK r_stencils
   {
     CHECK(r_stencils[0ull] == 0.0);
@@ -244,18 +255,6 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
 
   // properties of material that fills the well up to the Sandface
   heat_props.apply_well(completion, well);
-
-  const auto casing_vert_cond{std::numbers::pi * (Tube.heat_conductivity * Tube.thickness * (Tube.inner_radius + Tube.outer_radius) + Annulus.heat_conductivity * Annulus.thickness * (Annulus.inner_radius + Annulus.outer_radius) + Column.heat_conductivity * Column.thickness * (Column.inner_radius + Column.outer_radius)) /
-                              (std::numbers::pi * (Column.outer_radius + Tube.inner_radius) * (Column.outer_radius - Tube.inner_radius))};
-  CHECK_THAT(casing_vert_cond, WithinRel(completion.integral_vertical_casing_heat_conductivity(), tol));
-  CHECK_THAT((std::numbers::pi * (Column.outer_radius + Tube.inner_radius) * (Column.outer_radius - Tube.inner_radius)), WithinRel(completion.casing_area(), tol));
-
-  const auto cement_vert_cond{std::numbers::pi * (Sandface.heat_conductivity * Sandface.thickness * (Sandface.inner_radius + Sandface.outer_radius)) /
-                              (std::numbers::pi * (Sandface.outer_radius + Sandface.inner_radius) * (Sandface.thickness))};
-  CHECK_THAT(cement_vert_cond, WithinRel(completion.integral_vertical_cement_heat_conductivity(), tol));
-
-  CHECK_THAT((std::numbers::pi * (Sandface.outer_radius + Sandface.inner_radius) * Sandface.thickness), WithinRel(completion.cement_area(), tol));
-
   // CHECK heat_props --- after "apply_well"
   {
     const auto &capacity = heat_props.medium_vol_heatcapacity.values();
