@@ -257,7 +257,7 @@ namespace GPN
                 return out;
             }
 
-            RealType radial_node_position() const
+            const RealType radial_node_position() const
             {
                 const auto &tube{sandwich[MaterialType::Tube]};
                 const auto &annulus{sandwich[MaterialType::Annulus]};
@@ -281,20 +281,39 @@ namespace GPN
                         return R;
                     else
                     {
-                        const RealType R
-                        {
+                        const RealType R{
                             column.inner_radius *
-                                std::exp(
-                                    (T - std::log(tube.outer_radius / tube.inner_radius) -
-                                     (tube.heat_conductivity / annulus.heat_conductivity) *
-                                         std::log(annulus.outer_radius / annulus.inner_radius)) /
-                                    (tube.heat_conductivity / column.heat_conductivity))
-                        };
+                            std::exp(
+                                (T - std::log(tube.outer_radius / tube.inner_radius) -
+                                 (tube.heat_conductivity / annulus.heat_conductivity) *
+                                     std::log(annulus.outer_radius / annulus.inner_radius)) /
+                                (tube.heat_conductivity / column.heat_conductivity))};
                         assert(R > column.inner_radius);
                         assert(R < column.outer_radius);
                         return R;
                     }
                 }
+            }
+
+            const RealType zeta_0(const RealType r1) const
+            {
+                const auto &Tube{sandwich[MaterialType::Tube]};
+                const auto &Annulus{sandwich[MaterialType::Annulus]};
+                const auto &Column{sandwich[MaterialType::Column]};
+
+                return r1 < Tube.outer_radius
+                           ? std::log(r1 / Tube.inner_radius) / Tube.heat_conductivity
+                       : (r1 < Column.inner_radius)
+                           ? 1 / Tube.radial_heat_conductivity + std::log(r1 / Tube.outer_radius) / Annulus.heat_conductivity
+                           : 1 / Tube.radial_heat_conductivity + 1 / Annulus.radial_heat_conductivity + std::log(r1 / Column.inner_radius) / Column.heat_conductivity;
+            }
+
+            const RealType zeta_02(const RealType r2) const
+            {
+                const auto &Column{sandwich[MaterialType::Column]};
+                const auto &Sandface{sandwich[MaterialType::Cement]};
+                return 1 / integral_casing_radial_heat_conductivity() +
+                                       std::log(r2 / Column.outer_radius) / Sandface.heat_conductivity;
             }
 
         private:

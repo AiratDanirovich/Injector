@@ -214,7 +214,7 @@ namespace GPN
 #pragma endregion
 #pragma region SET-HEAT-CONDUCTIVITY
                     // heat conductivity of flowing water in r-direction is infinite
-                    this->medium_heat_conductivity_axes2.col(0ll) = 
+                    this->medium_heat_conductivity_axes2.col(0ll) =
                         std::numeric_limits<RealType>::infinity();
                     // put values for cementOuter at medium_vol_heatcapacity.col(1ll).
                     // CementOuter is a part of col(1ll)
@@ -279,11 +279,18 @@ namespace GPN
                     const Completion_t &completion,
                     const Well_t &well)
                 {
+                    const auto &grid_r{grid2D->second_coord};
+                    const auto r1{completion.radial_node_position()};
+                    const auto &grid_z{grid2D->first_coord};
+
 #pragma region SET-HEAT-CONDUCTIVITY
-            //        medium_heat_conductivity.face_vals_axes2.col(0ll) /*.head(tube_end)*/ =
-           //             completion.integral_inner_radial_heat_conductivity();
-           //         medium_heat_conductivity.face_vals_axes2.col(1ll) /*.head(tube_end)*/ =
-            //            completion.integral_inner_radial_heat_conductivity();
+                    const auto zeta_0{completion.zeta_0(r1)};
+                    medium_heat_conductivity.face_vals_axes2.col(0ll) =
+                        1 / zeta_0;
+
+                    const auto zeta_02{completion.zeta_02(grid_r.mesh_nodes(2ll))};
+                    medium_heat_conductivity.face_vals_axes2.col(1ll) =
+                        1 / (zeta_02 - zeta_0);
 #pragma endregion
                 }
 
