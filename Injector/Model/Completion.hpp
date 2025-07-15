@@ -546,7 +546,7 @@ namespace GPN
                 return 1.0 / L;
             }
 
-            const auto integral_vertical_casing_heat_conductivity() const
+            const Eigen::ArrayX<RealType> integral_vertical_casing_heat_conductivity() const
             {
                 // exclude "flow" at "i = 0"
                 // as well as "cement2" at "i = end-1"
@@ -560,7 +560,7 @@ namespace GPN
                 return L / casing_area();
             }
 
-            const auto integral_vertical_cement_heat_conductivity() const
+            const Eigen::ArrayX<RealType> integral_vertical_cement_heat_conductivity() const
             {
                 // exclude "flow" at "i = 0"
                 // as well as "cement2" at "i = end-1"

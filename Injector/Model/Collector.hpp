@@ -203,13 +203,13 @@ namespace GPN
                 {
 #pragma region SET-HEAT-CAPACITY
                     // first column -- inside the tube, contains only water
-                    medium_vol_heatcapacity.col(0ll) /*.head(tube_end)*/ =
+                    medium_vol_heatcapacity.col(0ll) =
                         completion.flow().volumetric_heat_capacity;
                     // second column -- from tube inner radius to column outer radius
-                    medium_vol_heatcapacity.col(1ll) /*.head(tube_end)*/ =
+                    medium_vol_heatcapacity.col(1ll) =
                         completion.casing_volumetric_heat_capacity();
                     // third column -- cement cross-section
-                    medium_vol_heatcapacity.col(2ll) /*.head(tube_end)*/ =
+                    medium_vol_heatcapacity.col(2ll) =
                         completion.cement_volumetric_heat_capacity();
 #pragma endregion
 #pragma region SET-HEAT-CONDUCTIVITY

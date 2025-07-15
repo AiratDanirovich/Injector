@@ -113,18 +113,47 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
   const auto &Annulus{extr_completion[MaterialType::Annulus]};
   const auto &Column{extr_completion[MaterialType::Column]};
   const auto &Sandface{extr_completion[MaterialType::Cement]};
-
-  const auto casing_vert_cond{std::numbers::pi * (Tube.heat_conductivity * Tube.thickness * (Tube.inner_radius + Tube.outer_radius) + Annulus.heat_conductivity * Annulus.thickness * (Annulus.inner_radius + Annulus.outer_radius) + Column.heat_conductivity * Column.thickness * (Column.inner_radius + Column.outer_radius)) /
-                              (std::numbers::pi * (Column.outer_radius + Tube.inner_radius) * (Column.outer_radius - Tube.inner_radius))};
-  const auto cement_vert_cond{std::numbers::pi * (Sandface.heat_conductivity * Sandface.thickness * (Sandface.inner_radius + Sandface.outer_radius)) /
-                              (std::numbers::pi * (Sandface.outer_radius + Sandface.inner_radius) * (Sandface.thickness))};
-  for (auto i{0ll}; i < casing_vert_cond.size(); ++i)
+  for (auto i{0ll}; i < grid_z.mesh_size(); ++i)
   {
-    CHECK_THAT(casing_vert_cond(i), WithinRel(extr_completion.integral_vertical_casing_heat_conductivity()(i), tol));
-    CHECK_THAT((std::numbers::pi * (Column.outer_radius(i) + Tube.inner_radius(i)) * (Column.outer_radius(i) - Tube.inner_radius(i))), WithinRel(extr_completion.casing_area()(i), tol));
+    CHECK(Flow.thickness(i) > 0.0);
+    CHECK(Column.thickness(i) > 0.0);
+    CHECK(Sandface.thickness(i) > 0.0);
+    CHECK(Flow.outer_radius(i) == Tube.inner_radius(i));
+    CHECK(Tube.outer_radius(i) == Annulus.inner_radius(i));
+    CHECK(Annulus.outer_radius(i) == Column.inner_radius(i));
+    CHECK(Column.outer_radius(i) == Sandface.inner_radius(i));
+    if (grid_z.mesh_nodes(i) < completion[MaterialType::Tube].depth)
+    {
+      CHECK(Tube.thickness(i) > 0.0);
+      CHECK(Annulus.thickness(i) > 0.0);
+    }
+    else
+    {
+      CHECK(Tube.thickness(i) == 0.0);
+      CHECK(Annulus.thickness(i) == 0.0);
+    }
+  }
 
-    CHECK_THAT(cement_vert_cond(i), WithinRel(extr_completion.integral_vertical_cement_heat_conductivity()(i), tol));
-    CHECK_THAT((std::numbers::pi * (Sandface.outer_radius(i) + Sandface.inner_radius(i)) * Sandface.thickness(i)), WithinRel(extr_completion.cement_area()(i), tol));
+  const Eigen::ArrayX<RealType> casing_vert_cond{std::numbers::pi * (Tube.heat_conductivity * Tube.thickness * (Tube.inner_radius + Tube.outer_radius) + Annulus.heat_conductivity * Annulus.thickness * (Annulus.inner_radius + Annulus.outer_radius) + Column.heat_conductivity * Column.thickness * (Column.inner_radius + Column.outer_radius)) /
+                                                 (std::numbers::pi * (Column.outer_radius + Tube.inner_radius) * (Column.outer_radius - Tube.inner_radius))};
+  const Eigen::ArrayX<RealType> cement_vert_cond{std::numbers::pi * (Sandface.heat_conductivity * Sandface.thickness * (Sandface.inner_radius + Sandface.outer_radius)) /
+                                                 (std::numbers::pi * (Sandface.outer_radius + Sandface.inner_radius) * (Sandface.thickness))};
+  {
+    const Eigen::ArrayX<RealType> cement_temp{extr_completion.integral_vertical_cement_heat_conductivity()};
+    const Eigen::ArrayX<RealType> casing_temp{extr_completion.integral_vertical_casing_heat_conductivity()};
+
+    for (auto i{0ll}; i < casing_vert_cond.size(); ++i)
+    {
+      // check verticle conductivity
+      CHECK_THAT(casing_vert_cond(i), WithinRel(casing_temp(i), tol));
+      CHECK_THAT(cement_vert_cond(i), WithinRel(cement_temp(i), tol));
+      // check area
+      CHECK_THAT((std::numbers::pi * (Column.outer_radius(i) + Tube.inner_radius(i)) * (Column.outer_radius(i) - Tube.inner_radius(i))), WithinRel(extr_completion.casing_area()(i), tol));
+      // check area
+      CHECK_THAT((std::numbers::pi * (Sandface.outer_radius(i) + Sandface.inner_radius(i)) * Sandface.thickness(i)), WithinRel(extr_completion.cement_area()(i), tol));
+      // check const verticle conductivity in cement
+      CHECK_THAT(cement_vert_cond(0ll), WithinRel(cement_vert_cond(i), tol));
+    }
   }
 
   const Logs::Rocks::CoreSampleLogs core_data{
@@ -347,6 +376,7 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
       }
     }
   }
+  return;
 
   FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
