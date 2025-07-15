@@ -528,7 +528,7 @@ namespace GPN
 
             const auto cement_volumetric_heat_capacity() const
             {
-                return sandwich[MaterialType::Tube].linear_heat_capacity/cement_area();
+                return sandwich[MaterialType::Cement].linear_heat_capacity/cement_area();
             }
 
             const auto integral_casing_radial_heat_conductivity() const
