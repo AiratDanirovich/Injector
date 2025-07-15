@@ -253,6 +253,7 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
   const auto cement_vert_cond{std::numbers::pi * (Sandface.heat_conductivity * Sandface.thickness * (Sandface.inner_radius + Sandface.outer_radius)) /
                               (std::numbers::pi * (Sandface.outer_radius + Sandface.inner_radius) * (Sandface.thickness))};
   CHECK_THAT(cement_vert_cond, WithinRel(completion.integral_vertical_cement_heat_conductivity(), tol));
+
   CHECK_THAT((std::numbers::pi * (Sandface.outer_radius + Sandface.inner_radius) * Sandface.thickness), WithinRel(completion.cement_area(), tol));
 
   // CHECK heat_props --- after "apply_well"
@@ -437,8 +438,19 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
                          tol));
         }
       }
+      
+      {
+        const auto col{2ll}; // flow in the tube
+        for (auto row{0ll}; row < f_conductivity_1.rows(); ++row)
+        {
+          CHECK_THAT(f_conductivity_1(row, col),
+                     WithinRel(
+                         cement_vert_cond / (grid_z.mesh_nodes(row + 1ll) - grid_z.mesh_nodes(row)),
+                         tol));
+        }
+      }
 
-      for (auto col{2ll}; col < f_conductivity_1.cols(); ++col)
+      for (auto col{3ll}; col < f_conductivity_1.cols(); ++col)
       {
         for (auto row{0ll}; row < f_conductivity_1.rows(); ++row)
         {

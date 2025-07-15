@@ -71,21 +71,7 @@ const auto get_completion(const json &data)
     }
 
     { // cement_1
-        const auto &data2 = data["completion"]["cement"]["inner"];
-
-        out.push_back(
-            Ring{
-                Cement{
-                    Density{data2["density"]},
-                    SpecificHeatCapacity{data2["specific_heat_capacity"]},
-                    GPN::HeatConductivity{data2["heat_conductivity"]}},
-                Thickness{data2["thickness"]},
-                InnerRadius{out.back().outer_radius},
-                Depth{data2["depth"]}});
-    }
-
-    { // cement_2
-        const auto &data2 = data["completion"]["cement"]["outer"];
+        const auto &data2 = data["completion"]["cement"];
 
         out.push_back(
             Ring{

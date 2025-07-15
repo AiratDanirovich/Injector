@@ -287,7 +287,6 @@ namespace GPN
                     const auto zeta_0{completion.zeta_0(r1)};
                     medium_heat_conductivity.face_vals_axes2.col(0ll) =
                         1 / zeta_0;
-
                     const auto zeta_02{completion.zeta_02(grid_r.mesh_nodes(2ll))};
                     medium_heat_conductivity.face_vals_axes2.col(1ll) =
                         1 / (zeta_02 - zeta_0);
