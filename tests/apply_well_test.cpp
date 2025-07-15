@@ -124,9 +124,6 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
   
   const ExtrudedCasing extr_completion{ExtrudedCasingFactory::create(completion, grid_z)};
 
-  // cout << "radial dual grid stencils:\n"
-  //      << transfer_to_eigen(r_stencils).transpose() << endl;
-
   const Logs::Rocks::CoreSampleLogs core_data{
       is_permeable_stencils,
       is_perforated_stencils,

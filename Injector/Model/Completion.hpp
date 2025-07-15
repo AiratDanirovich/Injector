@@ -1,6 +1,7 @@
 #pragma once
 
 #include <numbers>
+#include <algorithm>
 
 #include <Injector/Model/Phases/PhaseProperties.hpp>
 #pragma warning(push)
@@ -483,6 +484,218 @@ namespace GPN
             const std::vector<ExtrudedRing> sandwich;
             const Eigen::ArrayX<RealType> sandface_radius, column_outer_radius;
             const Eigen::ArrayX<RealType> flow_radius;
+
+            const auto &back() const { return sandwich.back(); }
+            const auto &front() const { return sandwich.front(); }
+
+            const auto &flow() const { return front(); }
+
+            const auto &operator[](auto i) const
+            {
+                return sandwich[i];
+            }
+            
+            const auto cement_area() const
+            {
+                const auto out{std::numbers::pi *
+                               (sandwich[MaterialType::Cement].thickness) *
+                               (sandwich[MaterialType::Cement].outer_radius + sandwich[MaterialType::Cement].inner_radius)};
+                assert(std::all_of(out.cbegin(), out.cend(), [](const auto v){return v > 0.0;}));
+                return out;
+            }
+
+            const auto casing_area() const
+            {
+                const auto out{std::numbers::pi *
+                               (sandwich[MaterialType::Column].outer_radius - sandwich[MaterialType::Tube].inner_radius) *
+                               (sandwich[MaterialType::Column].outer_radius + sandwich[MaterialType::Tube].inner_radius)};
+                assert(std::all_of(out.cbegin(), out.cend(), [](const auto v){return v > 0.0;}));
+                return out;
+            }
+
+            const auto casing_volumetric_heat_capacity() const
+            {
+                // exclude "flow" at "i = 0" from summation!
+                auto C{sandwich[MaterialType::Tube].linear_heat_capacity};
+                for (ptrdiff_t i{MaterialType::Tube+1ll}; i <= MaterialType::Column; ++i)
+                {
+                    const auto &m = sandwich[i];
+                    C += m.linear_heat_capacity;
+                }
+                C /= casing_area();
+                return C;
+            }
+
+            const auto cement_volumetric_heat_capacity() const
+            {
+                return sandwich[MaterialType::Tube].linear_heat_capacity/cement_area();
+            }
+
+            const auto integral_casing_radial_heat_conductivity() const
+            {
+                // exclude "flow" at "i = 0"
+                // as well as "cement2" at "i = end-1"
+                // from summation!
+                Eigen::ArrayX<RealType> L{1.0/sandwich[MaterialType::Tube].radial_heat_conductivity};
+                for (ptrdiff_t i{MaterialType::Tube+1ll}; i <= MaterialType::Column; ++i)
+                {
+                    const auto &m = sandwich[i];
+                    L += 1.0 / m.radial_heat_conductivity;
+                }
+                assert(std::all_of(L.cbegin(), L.cend(), [](const RealType v){return (v > 0.0) && !std::isnan(v);}));
+                return 1.0 / L;
+            }
+
+            const auto integral_vertical_casing_heat_conductivity() const
+            {
+                // exclude "flow" at "i = 0"
+                // as well as "cement2" at "i = end-1"
+                // from summation!
+                Eigen::ArrayX<RealType> L{sandwich[MaterialType::Tube].integral_vertical_heat_conductivity};
+                for (ptrdiff_t i{MaterialType::Tube+1ll}; i <= MaterialType::Column; ++i)
+                {
+                    const auto &m = sandwich[i];
+                    L += m.integral_vertical_heat_conductivity;
+                }
+                return L / casing_area();
+            }
+
+            const auto integral_vertical_cement_heat_conductivity() const
+            {
+                // exclude "flow" at "i = 0"
+                // as well as "cement2" at "i = end-1"
+                // from summation!
+                Eigen::ArrayX<RealType> L{sandwich[MaterialType::Cement].integral_vertical_heat_conductivity};
+                return L / cement_area();
+            }
+
+            const auto area() const
+            {
+                return cement_area() + casing_area();
+            }
+
+             auto I_tube() const
+            {
+                const auto &tube{sandwich[MaterialType::Tube]};
+                return tube.outer_radius * tube.outer_radius *
+                           log(tube.outer_radius / tube.inner_radius) -
+                       (tube.outer_radius - tube.inner_radius) * (tube.outer_radius + tube.inner_radius) / 2.0;
+            }
+
+            auto I_annulus() const
+            {
+                const auto &tube{sandwich[MaterialType::Tube]};
+                const auto &annulus{sandwich[MaterialType::Annulus]};
+                return (annulus.area() / std::numbers::pi) *
+                           log(tube.outer_radius / tube.inner_radius) +
+                       tube.heat_conductivity / annulus.heat_conductivity *
+                           (annulus.outer_radius * annulus.outer_radius *
+                                log(annulus.outer_radius / tube.outer_radius) -
+                            annulus.area() / 2.0 / std::numbers::pi);
+            }
+
+            auto I_column() const
+            {
+                const auto &tube{sandwich[MaterialType::Tube]};
+                const auto &annulus{sandwich[MaterialType::Annulus]};
+                const auto &column{sandwich[MaterialType::Column]};
+                return (
+                           log(tube.outer_radius / tube.inner_radius) +
+                           tube.heat_conductivity / annulus.heat_conductivity *
+                               log(annulus.outer_radius / annulus.inner_radius)) *
+                           (column.area() / std::numbers::pi) +
+                       tube.heat_conductivity / column.heat_conductivity *
+                           (column.outer_radius * column.outer_radius * log(column.outer_radius / column.inner_radius) -
+                            column.area() / 2.0 / std::numbers::pi);
+            }
+            
+            const auto T_avg() const
+            {
+                const auto &tube{sandwich[MaterialType::Tube]};
+                const auto &annulus{sandwich[MaterialType::Annulus]};
+                const auto &column{sandwich[MaterialType::Column]};
+
+                return (tube.volumetric_heat_capacity * I_tube() +
+                        annulus.volumetric_heat_capacity * I_annulus() +
+                        column.volumetric_heat_capacity * I_column()) /
+                       (casing_area() * casing_volumetric_heat_capacity());
+            }
+
+            const auto radial_node_position() const
+            {
+                const auto &tube{sandwich[MaterialType::Tube]};
+                const auto &annulus{sandwich[MaterialType::Annulus]};
+                const auto &column{sandwich[MaterialType::Column]};
+
+                const auto T{T_avg()};
+
+                Eigen::ArrayX<RealType> out(T.size());
+
+                for (auto id{0ll}; id < T.size(); ++id)
+                {
+                    const auto R{tube.inner_radius(id) * std::exp(T(id))};
+                    assert(R > tube.inner_radius(id));
+                    if (R < tube.outer_radius(id))
+                        out(id) = R;
+                    else
+                    {
+                        const RealType R{
+                            annulus.inner_radius(id) *
+                            exp(
+                                (T(id) - std::log(tube.outer_radius(id) / tube.inner_radius(id))) /
+                                (tube.heat_conductivity / annulus.heat_conductivity))};
+                        assert(R > annulus.inner_radius(id));
+                        if (R < column.inner_radius(id))
+                            out(id) = R;
+                        else
+                        {
+                            const RealType R{
+                                column.inner_radius(id) *
+                                std::exp(
+                                    (T(id) - std::log(tube.outer_radius(id) / tube.inner_radius(id)) -
+                                     (tube.heat_conductivity / annulus.heat_conductivity) *
+                                         std::log(annulus.outer_radius(id) / annulus.inner_radius(id))) /
+                                    (tube.heat_conductivity / column.heat_conductivity))};
+                            assert(R > column.inner_radius(id));
+                            assert(R < column.outer_radius(id));
+                            out(id) = R;
+                        }
+                    }
+                }
+                return out;
+            }
+
+            const auto zeta_0(const auto r1) const
+            {
+                const auto &Tube{sandwich[MaterialType::Tube]};
+                const auto &Annulus{sandwich[MaterialType::Annulus]};
+                const auto &Column{sandwich[MaterialType::Column]};
+
+                Eigen::ArrayX<RealType> out(r1.size());
+
+                for (auto id{0ll}; id < r1.size(); ++id)
+
+                    out(id) = r1(id) < Tube.outer_radius(id)
+                                  ? log(r1(id) / Tube.inner_radius(id)) / Tube.heat_conductivity
+                              : (r1 < Column.inner_radius(id))
+                                  ? 1 / Tube.radial_heat_conductivity(id) + log(r1 / Tube.outer_radius(id)) / Annulus.heat_conductivity
+                                  : 1 / Tube.radial_heat_conductivity(id) + 1 / Annulus.radial_heat_conductivity(id) + log(r1(id) / Column.inner_radius(id)) / Column.heat_conductivity;
+                return out;
+            }
+
+            const auto zeta_02(const RealType r2) const
+            {
+                const auto &Column{sandwich[MaterialType::Column]};
+                const auto &Sandface{sandwich[MaterialType::Cement]};
+                return 1 / integral_casing_radial_heat_conductivity() +
+                       log(r2 / Column.outer_radius) / Sandface.heat_conductivity;
+            }
+
+        private:
+            const size_t size() const
+            {
+                return sandwich.size();
+            }
         };
 
     } // Completion
