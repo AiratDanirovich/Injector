@@ -155,6 +155,18 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
       CHECK_THAT(cement_vert_cond(0ll), WithinRel(cement_vert_cond(i), tol));
     }
   }
+  const Eigen::ArrayX<RealType> cement_heat_cap{
+      completion[MaterialType::Cement].volumetric_heat_capacity * Sandface.area()};
+  {
+    const auto& cement_temp{Sandface.linear_heat_capacity};
+    for (auto i{0ll}; i < casing_vert_cond.size(); ++i)
+    {
+      // check linear heat capacity
+      CHECK_THAT(cement_heat_cap(i), WithinRel(cement_temp(i), tol));
+      // check const linear heat capacity in cement
+      CHECK_THAT(cement_heat_cap(0ll), WithinRel(cement_heat_cap(i), tol));
+    }
+  }
 
   const Logs::Rocks::CoreSampleLogs core_data{
       is_permeable_stencils,
@@ -297,6 +309,7 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
 
   // properties of material that fills the well up to the Sandface
   heat_props.apply_well(extr_completion, well);
+
   // CHECK heat_props --- after "apply_well"
   {
     const auto &capacity = heat_props.medium_vol_heatcapacity.values();
@@ -336,12 +349,6 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
                    WithinRel(
                        casing_vert_cond(row),
                        tol));
-        // CHECK_THAT(heat_conductivity_2(row, col),
-        //            WithinRel(
-        //                Sandface.heat_conductivity /
-        //                    std::log(Sandface.outer_radius / Sandface.inner_radius) *
-        //                    std::log(grid_r.dual_nodes(2ll) / grid_r.mesh_nodes(1ll)),
-        //                tol));
       }
       { // col == 2
         const ptrdiff_t col = 2ll;
@@ -354,12 +361,6 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
                    WithinRel(
                        cement_vert_cond(row),
                        tol));
-        // CHECK_THAT(heat_conductivity_2(row, col),
-        //            WithinRel(
-        //                Sandface.heat_conductivity /
-        //                    std::log(Sandface.outer_radius / Sandface.inner_radius) *
-        //                    std::log(grid_r.dual_nodes(2ll) / grid_r.mesh_nodes(1ll)),
-        //                tol));
       }
 
       for (auto col{3ll}; col < capacity.cols(); ++col)
@@ -376,7 +377,6 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
       }
     }
   }
-  return;
 
   FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
