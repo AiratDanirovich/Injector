@@ -185,13 +185,13 @@ namespace GPN
                 return C;
             }
 
-            const RealType integral_inner_radial_heat_conductivity() const
+            const RealType integral_casing_radial_heat_conductivity() const
             {
                 // exclude "flow" at "i = 0"
                 // as well as "cement2" at "i = end-1"
                 // from summation!
                 RealType L{0.0};
-                for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Cement; ++i)
+                for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Column; ++i)
                 {
                     const auto &m = sandwich[i];
                     L += 1.0 / m.radial_heat_conductivity;

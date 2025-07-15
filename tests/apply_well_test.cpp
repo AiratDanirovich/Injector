@@ -85,7 +85,7 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
     CHECK(r_stencils[0ull] == 0.0);
     CHECK(r_stencils[1ull] == completion.flow_radius);
     CHECK(r_stencils[2ull] == completion.column_outer_radius);
-    CHECK(r_stencils[3ull] == completion.sandface_radius);    
+    CHECK(r_stencils[3ull] == completion.sandface_radius);
     CHECK(r_stencils[4ull] > r_stencils[3ll]);
   }
 
@@ -425,34 +425,56 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
     const auto &f_conductivity_1 = heat_face_props.medium_heat_conductivity.face_vals_axes1;
     const auto &f_conductivity_2 = heat_face_props.medium_heat_conductivity.face_vals_axes2;
 
+    // corrected position of r = r_1 -- inside the casing-sandwich
+    const auto r1{completion.radial_node_position()};
+    // heat resistivity at the face between the flow and the casing-sandwich
+    const auto zeta_0{
+        r1 < Tube.outer_radius
+            ? std::log(r1 / Tube.inner_radius) / Tube.heat_conductivity
+        : r1 < Annulus.outer_radius
+            ? 1 / Tube.radial_heat_conductivity + std::log(r1 / Tube.outer_radius) / Annulus.heat_conductivity
+            : 1 / Tube.radial_heat_conductivity + 1 / Annulus.radial_heat_conductivity + std::log(r1 / Column.inner_radius) / Column.heat_conductivity};
     {
-      const auto col{0ll}; // flow in the tube
+      const auto col{0ll}; // face between flow and tube wall
       for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
       {
         CHECK_THAT(f_conductivity_2(row, col),
-                   WithinRel(
-                       1.0 /
-                           (std::log(Tube.outer_radius / Tube.inner_radius) / Tube.heat_conductivity +
-                            std::log(Annulus.outer_radius / Annulus.inner_radius) / Annulus.heat_conductivity +
-                            std::log(Column.outer_radius / Column.inner_radius) / Column.heat_conductivity),
-                       tol));
+                   WithinRel(1.0 / zeta_0,
+                             tol));
       }
     }
 
+    // heat resistivity at the face between the casing-sandwich and the cement
+    const auto zeta_1{
+        1 / completion.integral_casing_radial_heat_conductivity() +
+        std::log(grid_r.mesh_nodes(2ll) / Column.outer_radius) / Sandface.heat_conductivity -
+        zeta_0};
     {
       const auto col{1ll}; // flow in the tube
       for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
       {
         CHECK_THAT(f_conductivity_2(row, col),
                    WithinRel(
-                       1.0 /
-                           (std::log(Sandface.outer_radius / Sandface.inner_radius) / Sandface.heat_conductivity +
-                            std::log(grid_r.mesh_nodes(col + 1ll) / grid_r.dual_nodes(col + 1ll)) / heat_conductivity(row)),
+                       1.0 / zeta_1,
                        tol));
       }
     }
 
-    for (auto col{2ll}; col < f_conductivity_2.cols(); ++col)
+    {
+      const auto col{2ll}; // flow in the tube
+      for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
+      {
+        const auto zeta_2{
+            std::log(Sandface.outer_radius / grid_r.mesh_nodes(2l)) / Sandface.heat_conductivity +
+            std::log(grid_r.mesh_nodes(3ll) / Sandface.outer_radius) / heat_conductivity(row)};
+        CHECK_THAT(f_conductivity_2(row, col),
+                   WithinRel(
+                       1.0 / zeta_2,
+                       tol));
+      }
+    }
+
+    for (auto col{3ll}; col < f_conductivity_2.cols(); ++col)
     {
       for (auto row{0ll}; row < heat_conductivity.rows(); ++row)
       {

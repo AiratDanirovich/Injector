@@ -280,8 +280,10 @@ namespace GPN
                     const Well_t &well)
                 {
 #pragma region SET-HEAT-CONDUCTIVITY
-                    medium_heat_conductivity.face_vals_axes2.col(0ll) /*.head(tube_end)*/ =
-                        completion.integral_inner_radial_heat_conductivity();
+            //        medium_heat_conductivity.face_vals_axes2.col(0ll) /*.head(tube_end)*/ =
+           //             completion.integral_inner_radial_heat_conductivity();
+           //         medium_heat_conductivity.face_vals_axes2.col(1ll) /*.head(tube_end)*/ =
+            //            completion.integral_inner_radial_heat_conductivity();
 #pragma endregion
                 }
 
