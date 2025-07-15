@@ -231,7 +231,7 @@ namespace GPN
                     // (1) modify water heat conductivity in col(0ll)
                     const auto &flow = completion.front();
                     medium_heat_conductivity_axes1.col(0ll) =
-                        flow.heat_conductivity * flow.area() / grid2D->face_area_axes1;
+                        flow.heat_conductivity * flow.area() / grid2D->face_area_axes1(0ll);
                     // (2) set sandwich heat conductivity in col(1ll)
                     medium_heat_conductivity_axes1.col(1ll) =
                         completion.integral_vertical_casing_heat_conductivity();
