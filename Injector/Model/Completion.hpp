@@ -17,7 +17,8 @@ namespace GPN
                 Tube = 1,
                 Annulus = 2,
                 Column = 3,
-                Cement = 4
+                Cement = 4,
+                Size = 5
             };
         };
         struct Thickness : public SomeProperty
@@ -132,21 +133,41 @@ namespace GPN
             }
         };
 
+        struct FlowRing : public Ring
+        {
+            using Ring::Ring;
+        };
+        struct TubeRing : public Ring
+        {
+            using Ring::Ring;
+        };
+        struct AnnulusRing : public Ring
+        {
+            using Ring::Ring;
+        };
+        struct ColumnRing : public Ring
+        {
+            using Ring::Ring;
+        };
+        struct CementRing : public Ring
+        {
+            using Ring::Ring;
+        };
+
         struct Casing
         {
             Casing(const std::vector<Ring> &completion)
                 : sandwich{completion},
                   sandface_radius{completion.back().outer_radius},
                   flow_radius{completion.front().outer_radius},
-                  column_outer_radius{completion[MaterialType::Column].outer_radius},
-                  thickness{completion.back().outer_radius - completion.front().outer_radius}
+                  column_outer_radius{completion[MaterialType::Column].outer_radius}
+            //,
+            // thickness{completion.back().outer_radius - completion.front().outer_radius}
             {
                 for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Cement; ++i)
                 {
                     assert(std::abs(completion[i].inner_radius - completion[i - 1ll].outer_radius) < 1e-12);
                 }
-
-                assert(std::abs(thickness - sandface_radius + flow_radius) < 1e-12);
             }
 
             const auto &back() const { return sandwich.back(); }
@@ -230,7 +251,8 @@ namespace GPN
             }
 
             const std::vector<Ring> sandwich;
-            const RealType sandface_radius, column_outer_radius, flow_radius, thickness;
+            const RealType sandface_radius, column_outer_radius, flow_radius //, thickness
+                ;
 
             const RealType area() const
             {
@@ -313,7 +335,7 @@ namespace GPN
                 const auto &Column{sandwich[MaterialType::Column]};
                 const auto &Sandface{sandwich[MaterialType::Cement]};
                 return 1 / integral_casing_radial_heat_conductivity() +
-                                       std::log(r2 / Column.outer_radius) / Sandface.heat_conductivity;
+                       std::log(r2 / Column.outer_radius) / Sandface.heat_conductivity;
             }
 
         private:
@@ -368,6 +390,94 @@ namespace GPN
                         column.volumetric_heat_capacity * I_column()) /
                        (casing_area() * casing_volumetric_heat_capacity());
             }
+        };
+
+        struct ExtrudedRing : public StationaryPhaseProperties
+        {
+            template <typename Container_t, typename PhaseProperties_t>
+            ExtrudedRing(
+                const PhaseProperties_t &props,
+                const Container_t &inner_radius,
+                const Container_t &thickness)
+                : StationaryPhaseProperties{props},
+                  thickness{thickness},
+                  inner_radius{inner_radius},
+                  outer_radius{inner_radius + thickness},
+                  linear_heat_capacity{
+                      linear_heat_capacity_calc(
+                          inner_radius, thickness, props)},
+                  radial_heat_conductivity{
+                      radial_heat_conductivity_calc(
+                          inner_radius, thickness, props)},
+                  integral_vertical_heat_conductivity{
+                      props.heat_conductivity * std::numbers::pi *
+                      thickness * (thickness + 2.0 * inner_radius)}
+            {
+                for (auto id{0ll}; id < thickness.size(); ++id)
+                    assert(std::abs(outer_radius(id) - inner_radius(id) - thickness(id)) < 1e-12);
+            }
+
+            const Eigen::ArrayX<RealType> thickness, depth,
+                inner_radius, outer_radius;
+
+            // c
+            const Eigen::ArrayX<RealType> linear_heat_capacity;
+            // lambda/log(r_o/r_i)
+            const Eigen::ArrayX<RealType> radial_heat_conductivity;
+            const Eigen::ArrayX<RealType> integral_vertical_heat_conductivity;
+
+            const Eigen::ArrayX<RealType> area() const
+            {
+                return std::numbers::pi *
+                       (outer_radius - inner_radius) *
+                       (outer_radius + inner_radius);
+            }
+
+        private:
+            template <typename PhaseProperties_t>
+            static RealType
+            linear_heat_capacity_calc(
+                InnerRadius inner_radius,
+                Thickness thickness,
+                const PhaseProperties_t &props)
+            {
+                return std::numbers::pi *
+                       thickness * (2 * inner_radius + thickness) *
+                       props.volumetric_heat_capacity;
+            }
+
+            template <typename PhaseProperties_t>
+            static RealType
+            radial_heat_conductivity_calc(
+                InnerRadius inner_radius,
+                Thickness thickness,
+                const PhaseProperties_t &props)
+            {
+                if (thickness == 0.0)
+                {
+                    return std::numeric_limits<RealType>::infinity();
+                }
+                else
+                {
+                    const RealType temp{std::log((1.0 + (RealType)thickness / (RealType)inner_radius))};
+                    return props.heat_conductivity / temp;
+                }
+            }
+        };
+
+        struct ExtrudedCasing
+        {
+            ExtrudedCasing(const std::vector<ExtrudedRing> &completion)
+                : sandwich{completion},
+                  sandface_radius{completion.back().outer_radius},
+                  flow_radius{completion.front().outer_radius},
+                  column_outer_radius{completion[MaterialType::Column].outer_radius}
+            {
+            }
+
+            const std::vector<ExtrudedRing> sandwich;
+            const Eigen::ArrayX<RealType> sandface_radius, column_outer_radius;
+            const Eigen::ArrayX<RealType> flow_radius;
         };
 
     } // Completion

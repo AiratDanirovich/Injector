@@ -53,7 +53,7 @@ const auto get_completion(const json &data)
                     GPN::HeatConductivity{data2["heat_conductivity"]}},
                 Thickness{data2["thickness"]},
                 InnerRadius{out.back().outer_radius},
-                Depth{data2["depth"]}});
+                Depth{std::numeric_limits<RealType>::max()}});
     }
 
     { // column
@@ -67,10 +67,10 @@ const auto get_completion(const json &data)
                     GPN::HeatConductivity{data2["heat_conductivity"]}},
                 Thickness{data2["thickness"]},
                 InnerRadius{out.back().outer_radius},
-                Depth{data2["depth"]}});
+                Depth{std::numeric_limits<RealType>::max()}});
     }
 
-    { // cement_1
+    { // cement
         const auto &data2 = data["completion"]["cement"];
 
         out.push_back(
@@ -81,7 +81,7 @@ const auto get_completion(const json &data)
                     GPN::HeatConductivity{data2["heat_conductivity"]}},
                 Thickness{data2["thickness"]},
                 InnerRadius{out.back().outer_radius},
-                Depth{data2["depth"]}});
+                Depth{std::numeric_limits<RealType>::max()}});
     }
 
     return out;
