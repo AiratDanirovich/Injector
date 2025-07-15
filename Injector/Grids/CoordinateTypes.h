@@ -27,6 +27,27 @@ namespace GPN
 
             /// @brief
             /// @param nodes Nodes of dual mesh
+            /// @return Steps between centers of control volumes
+            static auto mesh_steps(
+                const DualNodesContainer &nodes,
+                const auto& coord_t)
+            {
+                auto mesh_nodes{coord_t.cell_centers(nodes)};
+
+                assert(mesh_nodes.size() > 1ll);
+                auto size{mesh_nodes.size() - 1ll};
+                MeshStepsContainer out(size);
+                for (auto id{0ll}; id < size; ++id)
+                    out(id) = mesh_nodes(id + 1) - mesh_nodes(id);
+                return out;
+            }
+        };
+
+        /// @brief Calculations associated with Cartesian coordinate
+        struct CartesianCoordinate : public GeneralCoordinate
+        {
+            /// @brief
+            /// @param nodes Nodes of dual mesh
             /// @return Centers of control volumes
             static auto cell_centers(const DualNodesContainer &nodes)
             {
@@ -45,25 +66,6 @@ namespace GPN
                 return out;
             }
 
-            /// @brief
-            /// @param nodes Nodes of dual mesh
-            /// @return Steps between centers of control volumes
-            static auto mesh_steps(const DualNodesContainer &nodes)
-            {
-                auto mesh_nodes{cell_centers(nodes)};
-
-                assert(mesh_nodes.size() > 1ll);
-                auto size{mesh_nodes.size() - 1ll};
-                MeshStepsContainer out(size);
-                for (auto id{0ll}; id < size; ++id)
-                    out(id) = mesh_nodes(id + 1) - mesh_nodes(id);
-                return out;
-            }
-        };
-
-        /// @brief Calculations associated with Cartesian coordinate
-        struct CartesianCoordinate : public GeneralCoordinate
-        {
             /// @brief Generate control volumes from dual mesh
             /// @param nodes Nodes of dual mesh
             /// @return Volumes of control cells

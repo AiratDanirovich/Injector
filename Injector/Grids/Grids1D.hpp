@@ -231,7 +231,7 @@ namespace GPN
                 : GridDual{dual_nodes},
                   dual_stencils{dual_nodes.dual_stencils},                                   // copy nodes of dual mesh
                   control_volumes{CoordinateType_t::control_volumes(dual_nodes.dual_nodes)}, // make volumes of control cells
-                  mesh_steps{CoordinateType_t::mesh_steps(dual_nodes.dual_nodes)}
+                  mesh_steps{CoordinateType_t::mesh_steps(dual_nodes.dual_nodes, Axes{})}
             {
                 assert(dual_nodes.dual_size() > (decltype(dual_nodes.dual_size()))1ull);
                 assert(dual_nodes.dual_size() == (decltype(dual_nodes.dual_size()))(dual_steps.size() + 1ull));
