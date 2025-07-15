@@ -153,13 +153,9 @@ namespace GPN
                 for (auto id{0ll}; id < grid_z.mesh_size(); ++id)
                 {
                     for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Cement; ++i)
-                    {
                         assert(std::abs(extruded_casing[i].inner_radius(id) - extruded_casing[i - 1ll].outer_radius(id)) < 1e-12);
-                    }
                     for (const auto& r : extruded_casing)
-                    {
                         assert(std::abs(r.inner_radius(id) + r.thickness(id) - r.outer_radius(id)) < 1e-12);
-                    }
                 }
 
                 return ExtrudedCasing{extruded_casing};
