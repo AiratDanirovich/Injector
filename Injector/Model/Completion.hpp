@@ -495,7 +495,7 @@ namespace GPN
                 return sandwich[i];
             }
             
-            const auto cement_area() const
+            const Eigen::ArrayX<RealType> cement_area() const
             {
                 const auto out{std::numbers::pi *
                                (sandwich[MaterialType::Cement].thickness) *
@@ -504,7 +504,7 @@ namespace GPN
                 return out;
             }
 
-            const auto casing_area() const
+            const Eigen::ArrayX<RealType> casing_area() const
             {
                 const auto out{std::numbers::pi *
                                (sandwich[MaterialType::Column].outer_radius - sandwich[MaterialType::Tube].inner_radius) *
@@ -513,7 +513,7 @@ namespace GPN
                 return out;
             }
 
-            const auto casing_volumetric_heat_capacity() const
+            const Eigen::ArrayX<RealType> casing_volumetric_heat_capacity() const
             {
                 // exclude "flow" at "i = 0" from summation!
                 auto C{sandwich[MaterialType::Tube].linear_heat_capacity};
@@ -526,12 +526,12 @@ namespace GPN
                 return C;
             }
 
-            const auto cement_volumetric_heat_capacity() const
+            const Eigen::ArrayX<RealType> cement_volumetric_heat_capacity() const
             {
                 return sandwich[MaterialType::Cement].linear_heat_capacity/cement_area();
             }
 
-            const auto integral_casing_radial_heat_conductivity() const
+            const Eigen::ArrayX<RealType> integral_casing_radial_heat_conductivity() const
             {
                 // exclude "flow" at "i = 0"
                 // as well as "cement2" at "i = end-1"
@@ -569,12 +569,12 @@ namespace GPN
                 return L / cement_area();
             }
 
-            const auto area() const
+            const Eigen::ArrayX<RealType> area() const
             {
                 return cement_area() + casing_area();
             }
 
-             auto I_tube() const
+            const Eigen::ArrayX<RealType> I_tube() const
             {
                 const auto &tube{sandwich[MaterialType::Tube]};
                 return tube.outer_radius * tube.outer_radius *
@@ -582,7 +582,7 @@ namespace GPN
                        (tube.outer_radius - tube.inner_radius) * (tube.outer_radius + tube.inner_radius) / 2.0;
             }
 
-            auto I_annulus() const
+            const Eigen::ArrayX<RealType> I_annulus() const
             {
                 const auto &tube{sandwich[MaterialType::Tube]};
                 const auto &annulus{sandwich[MaterialType::Annulus]};
@@ -594,7 +594,7 @@ namespace GPN
                             annulus.area() / 2.0 / std::numbers::pi);
             }
 
-            auto I_column() const
+            const Eigen::ArrayX<RealType> I_column() const
             {
                 const auto &tube{sandwich[MaterialType::Tube]};
                 const auto &annulus{sandwich[MaterialType::Annulus]};
@@ -609,7 +609,7 @@ namespace GPN
                             column.area() / 2.0 / std::numbers::pi);
             }
             
-            const auto T_avg() const
+            const Eigen::ArrayX<RealType> T_avg() const
             {
                 const auto &tube{sandwich[MaterialType::Tube]};
                 const auto &annulus{sandwich[MaterialType::Annulus]};
@@ -621,7 +621,7 @@ namespace GPN
                        (casing_area() * casing_volumetric_heat_capacity());
             }
 
-            const auto radial_node_position() const
+            const Eigen::ArrayX<RealType> radial_node_position() const
             {
                 const auto &tube{sandwich[MaterialType::Tube]};
                 const auto &annulus{sandwich[MaterialType::Annulus]};
@@ -665,7 +665,7 @@ namespace GPN
                 return out;
             }
 
-            const auto zeta_0(const auto r1) const
+            const Eigen::ArrayX<RealType> zeta_0(const auto r1) const
             {
                 const auto &Tube{sandwich[MaterialType::Tube]};
                 const auto &Annulus{sandwich[MaterialType::Annulus]};
@@ -682,7 +682,7 @@ namespace GPN
                 return out;
             }
 
-            const auto zeta_02(const RealType r2) const
+            const Eigen::ArrayX<RealType>  zeta_02(const RealType r2) const
             {
                 const auto &Column{sandwich[MaterialType::Column]};
                 const auto &Sandface{sandwich[MaterialType::Cement]};
