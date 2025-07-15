@@ -425,101 +425,106 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
     const auto &f_conductivity_1 = heat_face_props.medium_heat_conductivity.face_vals_axes1;
     const auto &f_conductivity_2 = heat_face_props.medium_heat_conductivity.face_vals_axes2;
 
-    // corrected position of r = r_1 -- inside the casing-sandwich
-    const auto r1{completion.radial_node_position()};
-    // heat resistivity at the face between the flow and the casing-sandwich
-    const auto zeta_0{
-        r1 < Tube.outer_radius
-            ? std::log(r1 / Tube.inner_radius) / Tube.heat_conductivity
-        : r1 < Annulus.outer_radius
-            ? 1 / Tube.radial_heat_conductivity + std::log(r1 / Tube.outer_radius) / Annulus.heat_conductivity
-            : 1 / Tube.radial_heat_conductivity + 1 / Annulus.radial_heat_conductivity + std::log(r1 / Column.inner_radius) / Column.heat_conductivity};
+    // CHECK f_conductivity_2
     {
-      const auto col{0ll}; // face between flow and tube wall
-      for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
+      // corrected position of r = r_1 -- inside the casing-sandwich
+      const auto r1{completion.radial_node_position()};
+      // heat resistivity at the face between the flow and the casing-sandwich
+      const auto zeta_0{
+          r1 < Tube.outer_radius
+              ? std::log(r1 / Tube.inner_radius) / Tube.heat_conductivity
+          : r1 < Annulus.outer_radius
+              ? 1 / Tube.radial_heat_conductivity + std::log(r1 / Tube.outer_radius) / Annulus.heat_conductivity
+              : 1 / Tube.radial_heat_conductivity + 1 / Annulus.radial_heat_conductivity + std::log(r1 / Column.inner_radius) / Column.heat_conductivity};
       {
-        CHECK_THAT(f_conductivity_2(row, col),
-                   WithinRel(1.0 / zeta_0,
-                             tol));
+        const auto col{0ll}; // face between flow and tube wall
+        for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
+        {
+          CHECK_THAT(f_conductivity_2(row, col),
+                     WithinRel(1.0 / zeta_0,
+                               tol));
+        }
+      }
+
+      // heat resistivity at the face between the casing-sandwich and the cement
+      const auto zeta_1{
+          1 / completion.integral_casing_radial_heat_conductivity() +
+          std::log(grid_r.mesh_nodes(2ll) / Column.outer_radius) / Sandface.heat_conductivity -
+          zeta_0};
+      {
+        const auto col{1ll}; // flow in the tube
+        for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
+        {
+          CHECK_THAT(f_conductivity_2(row, col),
+                     WithinRel(
+                         1.0 / zeta_1,
+                         tol));
+        }
+      }
+
+      {
+        const auto col{2ll}; // flow in the tube
+        for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
+        {
+          const auto zeta_2{
+              std::log(Sandface.outer_radius / grid_r.mesh_nodes(2l)) / Sandface.heat_conductivity +
+              std::log(grid_r.mesh_nodes(3ll) / Sandface.outer_radius) / heat_conductivity(row)};
+          CHECK_THAT(f_conductivity_2(row, col),
+                     WithinRel(
+                         1.0 / zeta_2,
+                         tol));
+        }
+      }
+
+      for (auto col{3ll}; col < f_conductivity_2.cols(); ++col)
+      {
+        for (auto row{0ll}; row < heat_conductivity.rows(); ++row)
+        {
+          CHECK_THAT(f_conductivity_2(row, col),
+                     WithinRel(
+                         heat_conductivity(row) /
+                             std::log(grid_r.dual_nodes(col + 1ll) /
+                                      grid_r.dual_nodes(col)),
+                         tol));
+        }
       }
     }
-
-    // heat resistivity at the face between the casing-sandwich and the cement
-    const auto zeta_1{
-        1 / completion.integral_casing_radial_heat_conductivity() +
-        std::log(grid_r.mesh_nodes(2ll) / Column.outer_radius) / Sandface.heat_conductivity -
-        zeta_0};
+    // CHECK f_conductivity_1
     {
-      const auto col{1ll}; // flow in the tube
-      for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
       {
-        CHECK_THAT(f_conductivity_2(row, col),
-                   WithinRel(
-                       1.0 / zeta_1,
-                       tol));
+        const auto col{0ll}; // flow in the tube
+        for (auto row{0ll}; row < f_conductivity_1.rows(); ++row)
+        {
+          CHECK_THAT(f_conductivity_1(row, col),
+                     WithinRel(
+                         water.heat_conductivity / (grid_z.mesh_nodes(row + 1ll) - grid_z.mesh_nodes(row)),
+                         tol));
+        }
       }
-    }
 
-    {
-      const auto col{2ll}; // flow in the tube
-      for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
       {
-        const auto zeta_2{
-            std::log(Sandface.outer_radius / grid_r.mesh_nodes(2l)) / Sandface.heat_conductivity +
-            std::log(grid_r.mesh_nodes(3ll) / Sandface.outer_radius) / heat_conductivity(row)};
-        CHECK_THAT(f_conductivity_2(row, col),
-                   WithinRel(
-                       1.0 / zeta_2,
-                       tol));
+        const auto col{1ll}; // flow in the tube
+        for (auto row{0ll}; row < f_conductivity_1.rows(); ++row)
+        {
+          CHECK_THAT(f_conductivity_1(row, col),
+                     WithinRel(
+                         casing_vert_cond / (grid_z.mesh_nodes(row + 1ll) - grid_z.mesh_nodes(row)),
+                         tol));
+        }
       }
-    }
 
-    for (auto col{3ll}; col < f_conductivity_2.cols(); ++col)
-    {
-      for (auto row{0ll}; row < heat_conductivity.rows(); ++row)
+      for (auto col{2ll}; col < f_conductivity_1.cols(); ++col)
       {
-        CHECK_THAT(f_conductivity_2(row, col),
-                   WithinRel(
-                       heat_conductivity(row) /
-                           std::log(grid_r.dual_nodes(col + 1ll) /
-                                    grid_r.dual_nodes(col)),
-                       tol));
-      }
-    }
-
-    {
-      const auto col{0ll}; // flow in the tube
-      for (auto row{0ll}; row < f_conductivity_1.rows(); ++row)
-      {
-        CHECK_THAT(f_conductivity_1(row, col),
-                   WithinRel(
-                       water.heat_conductivity / (grid_z.mesh_nodes(row + 1ll) - grid_z.mesh_nodes(row)),
-                       tol));
-      }
-    }
-
-    {
-      const auto col{1ll}; // flow in the tube
-      for (auto row{0ll}; row < f_conductivity_1.rows(); ++row)
-      {
-        CHECK_THAT(f_conductivity_1(row, col),
-                   WithinRel(
-                       casing_vert_cond / (grid_z.mesh_nodes(row + 1ll) - grid_z.mesh_nodes(row)),
-                       tol));
-      }
-    }
-
-    for (auto col{2ll}; col < f_conductivity_1.cols(); ++col)
-    {
-      for (auto row{0ll}; row < f_conductivity_1.rows(); ++row)
-      {
-        CHECK_THAT(f_conductivity_1(row, col),
-                   WithinRel(
-                       1.0 / ((grid_z.dual_nodes(row + 1ll) - grid_z.mesh_nodes(row)) /
-                                  heat_logs.medium_heat_conductivity(row) +
-                              (grid_z.mesh_nodes(row + 1ll) - grid_z.dual_nodes(row + 1ll)) /
-                                  heat_logs.medium_heat_conductivity(row + 1ll)),
-                       tol));
+        for (auto row{0ll}; row < f_conductivity_1.rows(); ++row)
+        {
+          CHECK_THAT(f_conductivity_1(row, col),
+                     WithinRel(
+                         1.0 / ((grid_z.dual_nodes(row + 1ll) - grid_z.mesh_nodes(row)) /
+                                    heat_logs.medium_heat_conductivity(row) +
+                                (grid_z.mesh_nodes(row + 1ll) - grid_z.dual_nodes(row + 1ll)) /
+                                    heat_logs.medium_heat_conductivity(row + 1ll)),
+                         tol));
+        }
       }
     }
   }
