@@ -115,6 +115,5 @@ LogValuesContainer is_permeable(z_dual_size - 1ll);
 is_permeable << 0.0, 1.0 , 0.0;
 
 RefinerVerticle refiner{0.1, std::move(is_permeable)};
-
-cout << refiner.refine(z_stencils);
+refiner.refine(z_stencils);
 }

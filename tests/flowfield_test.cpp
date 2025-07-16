@@ -100,7 +100,10 @@ TEST_CASE("RFP_reservoir")
 
     const auto water{FluidFactory::create_water(1.0, 1.0)};
 
-    WellHoles well_holes{TubeInnerRadius{tube_radius}, SandfaceRadius{sandface_radius}};
+    WellHoles well_holes{
+        TubeInnerRadius{tube_radius}, 
+        ColumnOuterRadius{column_radius}, 
+        SandfaceRadius{sandface_radius}};
 
     const Well_KH well{
         water, is_permeable, is_perforated, permeability, well_holes, rMax};
