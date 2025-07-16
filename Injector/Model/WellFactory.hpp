@@ -11,6 +11,7 @@ namespace GPN
         {
             return WellHoles{
                 TubeInnerRadius{completion.flow_radius}, 
+                ColumnOuterRadius{completion.column_outer_radius},
                 SandfaceRadius{completion.sandface_radius}};
         }
     };

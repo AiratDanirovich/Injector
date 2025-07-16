@@ -99,16 +99,16 @@ namespace GPN
                 return Point{first_coord.mesh_nodes(id1), second_coord.mesh_nodes(id2)};
             }
 
-            // steps in two directions,
-            // between nodes id1 and id1+1 in first direction
-            // and between nodes id2 and id2+1 in second direction
-            auto steps(auto id1, auto id2) const
-            {
-                return {first_coord.mesh_steps(id1), second_coord.mesh_steps(id2)};
-            }
+            // // steps in two directions,
+            // // between nodes id1 and id1+1 in first direction
+            // // and between nodes id2 and id2+1 in second direction
+            // auto steps(const auto id1, const auto id2) const
+            // {
+            //     return {first_coord.mesh_steps(id1), second_coord.mesh_steps(id2)};
+            // }
 
             /// @brief cell volume at node ids {id1, id2}
-            auto volume(auto id1, auto id2) const
+            auto volume(const auto id1, const auto id2) const
             {
                 return its_volumes(id1, id2);
             }
