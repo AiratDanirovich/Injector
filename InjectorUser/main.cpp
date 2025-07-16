@@ -7,6 +7,7 @@
 #include <InjectorDLL/Defines.h>
 #include <InjectorDLL/Wrapper.h>
 
+
 #include <nlohmann/json.hpp>
 
 using VR = std::vector<RealType>;
@@ -65,7 +66,7 @@ const std::array<std::array<RealType, 6>, 6> parse_completion(const json &data)
                      data2["thickness"],
                      // tube inner_radius + tube wall thickness
                      out[1ull][4ull] + out[1ull][3ull],
-                     data2["depth"]};
+                     std::numeric_limits<RealType>::max()};
     }
 
     { // column
@@ -76,29 +77,18 @@ const std::array<std::array<RealType, 6>, 6> parse_completion(const json &data)
                      data2["thickness"],
                      // annulus inner_radius + annulus wall thickness
                      out[2ull][4ull] + out[2ull][3ull],
-                     data2["depth"]};
+                     std::numeric_limits<RealType>::max()};
     }
 
-    { // cementInner
-        const auto &data2 = data["completion"]["cement"]["inner"];
+    { // cement
+        const auto &data2 = data["completion"]["cement"];
         out[4ull] = {data2["density"],
                      data2["specific_heat_capacity"],
                      data2["heat_conductivity"],
                      data2["thickness"],
                      // column inner_radius + column wall thickness
                      out[3ull][4ull] + out[3ull][3ull],
-                     data2["depth"]};
-    }
-
-    { // cementOuter
-        const auto &data2 = data["completion"]["cement"]["outer"];
-        out[5ull] = {data2["density"],
-                     data2["specific_heat_capacity"],
-                     data2["heat_conductivity"],
-                     data2["thickness"],
-                     // cementInner inner_radius + cementInner wall thickness
-                     out[4ull][4ull] + out[4ull][3ull],
-                     data2["depth"]};
+                     std::numeric_limits<RealType>::max()};
     }
 
     return out;

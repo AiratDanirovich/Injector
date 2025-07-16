@@ -297,10 +297,12 @@ Wrapper::Wrapper(
             {
                 ofstream f{std::string{"output/layer_"} + std::to_string(layer_id) + std::string{".csv"}};
 
-                f << sep << sep << grid.transpose().format(commaFmt) << '\n';
+                f << sep << sep
+                  << grid.transpose().format(commaFmt) << '\n';
                 for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
                 {
-                    f << t << sep << times[t] << sep << states[t].cur_state.row(z).format(commaFmt) << '\n';
+                    f << t << sep << times[t] << sep
+                      << states[t].cur_state.row(z).format(commaFmt) << '\n';
                 }
 
                 f.close();
@@ -343,6 +345,12 @@ Wrapper::Wrapper(
             ofstream f{std::string{"output/geotherma.csv"}};
             f << grid_z.mesh_nodes.transpose().format(commaFmt) << '\n';
             f << initial_state.cur_state.col(0ll).transpose().format(commaFmt) << '\n';
+            f.close();
+        }
+        {
+            ofstream f{std::string{"output/casing_radius_pos.csv"}};
+            f << grid_z.mesh_nodes.transpose().format(commaFmt) << '\n';
+            f << extr_completion.radial_node_position().transpose().format(commaFmt) << '\n';
             f.close();
         }
 

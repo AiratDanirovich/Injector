@@ -56,39 +56,30 @@
       "depth": 25
     },
     "annulus":{
-      "thickness": 0.0,
+      "thickness": 0.08,
       "heat_conductivity": 1.00000,
       "density": 1000,
       "specific_heat_capacity": 4200,
       "depth": 25
     },
     "column":{
-      "thickness": 0.0,
+      "thickness": 0.08,
       "heat_conductivity": 1.00000,
       "density": 1000,
       "specific_heat_capacity": 4200,
       "depth": 25
     },
     "cement":{
-      "inner":{
-        "thickness": 0.04,
-        "heat_conductivity": 1.00000,
-        "specific_heat_capacity": 4200,
-        "density": 1000,
-        "depth": 25
-      },
-      "outer":{
-        "thickness": 0.04,
-        "heat_conductivity": 1.00000,
-        "specific_heat_capacity": 4200,
-        "density": 1000,
-        "depth": 25
-      }
+      "thickness": 0.04,
+      "heat_conductivity": 1.00000,
+      "specific_heat_capacity": 4200,
+      "density": 1000,
+      "depth": 25
     }
   },
   "history": {
     "start_time": 0.0,
-    "t_minor_step": 0.1,
+    "t_minor_step": 1200,
     "t_unit": "h",
     "t_units": ["d", "h", "m", "s"],
     "history_type": "dynamic",
