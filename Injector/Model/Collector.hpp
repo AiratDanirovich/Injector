@@ -223,13 +223,10 @@ namespace GPN
                         std::numeric_limits<RealType>::infinity();
                     // put values for cementOuter at medium_vol_heatcapacity.col(1ll).
                     // CementOuter is a part of col(1ll)
-                    const auto &grid_r = grid2D->second_coord;
+                //    const auto &grid_r = grid2D->second_coord;
                     const auto &sandface = completion.back();
-                    const ptrdiff_t id{1ll};
-                    medium_heat_conductivity_axes2.col(1ll) =
-                        sandface.heat_conductivity /
-                        log(sandface.outer_radius / sandface.inner_radius) *
-                        std::log(grid_r.dual_nodes(id + 1ll) / grid_r.mesh_nodes(id));
+                    medium_heat_conductivity_axes2.col(2ll) =
+                        sandface.heat_conductivity ;
                     // r_{1/2} is fixed at HeatFaceProps container
 
                     // interpolate verticle heat conductivity:

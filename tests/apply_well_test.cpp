@@ -53,7 +53,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
       density{data["fluid"]["density"]},
       capacity{data["fluid"]["specific_heat_capacity"]},
       heat_conductivity{data["fluid"]["heat_conductivity"]};
-      REQUIRE(heat_conductivity > 0.0);
+  REQUIRE(heat_conductivity > 0.0);
   /*collector*/
   const VR thickness = data["collector"]["thickness"];
   // hydrodynamic logs
@@ -71,8 +71,8 @@ TEST_CASE("apply_well_test", "apply_well_test")
       z_minor_step{data["grid"]["z_minor_step"]}; // m
   /*completion*/
   const Casing completion{get_completion(data)};
-  for(const auto& r : completion.sandwich)
-      REQUIRE(r.heat_conductivity > 0.0);
+  for (const auto &r : completion.sandwich)
+    REQUIRE(r.heat_conductivity > 0.0);
   /*END*/
 
   // make grid2D
@@ -353,7 +353,6 @@ TEST_CASE("apply_well_test", "apply_well_test")
       { // col == 0
         const ptrdiff_t col = 0ll;
         // flow heat capacity is equal to fluid-water heat capacity
-//        INFO("row:" << row);
         CHECK_THAT(capacity(row, col) * grid2D->volume(row, col),
                    WithinRel(
                        Flow.linear_heat_capacity(row) *
@@ -369,11 +368,11 @@ TEST_CASE("apply_well_test", "apply_well_test")
                    WithinRel(
                        extr_completion.flow().volumetric_heat_capacity * face_ratio(row), tol));
         // vertical heat conductivity is equal to water
-//        INFO("row:" << row);
         CHECK_THAT(heat_conductivity_1(row, col),
                    WithinRel(
-                       water.heat_conductivity * 
-                        flow_area(row) / grid2D->face_area_axes1(col), tol));
+                       water.heat_conductivity *
+                           flow_area(row) / grid2D->face_area_axes1(col),
+                       tol));
         // radial heat conductivity of flowing water is infinity
         CHECK(std::isinf(heat_conductivity_2(row, col)));
       }
@@ -476,16 +475,20 @@ TEST_CASE("apply_well_test", "apply_well_test")
       }
 
       {
-        const auto col{2ll}; // flow in the tube
+        const auto col{2ll}; // face between cement and rocks
         for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
         {
           const auto zeta_2{
-              log(Sandface.outer_radius / grid_r.mesh_nodes(2l)) / Sandface.heat_conductivity +
-              log(grid_r.mesh_nodes(3ll) / Sandface.outer_radius) / heat_conductivity(row)};
+              log(Sandface.outer_radius(row) / grid_r.mesh_nodes(col)) / Sandface.heat_conductivity +
+              log(grid_r.mesh_nodes(col+1ll) / Sandface.outer_radius(row)) / heat_conductivity(row)};
           CHECK_THAT(f_conductivity_2(row, col),
                      WithinRel(
-                         1.0 / zeta_2(row),
+                         1.0 / zeta_2,
                          tol));
+          CHECK_THAT(grid2D->face_area_axes2(row),
+                     WithinRel(2 * numbers::pi *
+                                   (grid_z.dual_nodes(row + 1ll) - grid_z.dual_nodes(row)),
+                               tol));
         }
       }
 
@@ -493,11 +496,12 @@ TEST_CASE("apply_well_test", "apply_well_test")
       {
         for (auto row{0ll}; row < heat_conductivity.rows(); ++row)
         {
+          INFO("row: " << row << ", col: " << col);
           CHECK_THAT(f_conductivity_2(row, col),
                      WithinRel(
                          heat_conductivity(row) /
-                             std::log(grid_r.dual_nodes(col + 1ll) /
-                                      grid_r.dual_nodes(col)),
+                             std::log(grid_r.mesh_nodes(col + 1ll) /
+                                      grid_r.mesh_nodes(col)),
                          tol));
         }
       }
