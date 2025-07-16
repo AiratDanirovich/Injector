@@ -9,19 +9,20 @@
 #include <InjectorDLL/Wrapper.h>
 
 #include <Injector/Grids/Defines.h>
-
 #include <Injector/Grids/Grids2D.hpp>
-
 #include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Grids/GridRefiners.hpp>
+
 #include <Injector/History/History.hpp>
 #include <Injector/History/RatesFactory.hpp>
+
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/WellFactory.hpp>
+#include <Injector/Model/Completion.hpp>
+#include <Injector/Model/ExtrudedCasingFactory.hpp>
 
 #include <Injector/Properties/FlowField.hpp>
-#include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Well.hpp>
 #include <Injector/Solver/BoundaryConditions.hpp>
 #include <Injector/Solver/State2D.hpp>
@@ -186,6 +187,9 @@ Wrapper::Wrapper(
             r_stencils)};
     const auto &grid_r{grid2D->second_coord};
     const auto &grid_z{grid2D->first_coord};
+
+    const ExtrudedCasing extr_completion{
+        ExtrudedCasingFactory::create(completion, grid_z)};
     // collector
     const Logs::Rocks::CoreSampleLogs core_data{
         is_permeable_stencils,
@@ -221,11 +225,11 @@ Wrapper::Wrapper(
 
     Properties::Rocks::HeatProps heat_props{
         heat_logs, grid2D};
-    heat_props.apply_well(completion, well);
+    heat_props.apply_well(extr_completion, well);
 
     FaceProperties::Rocks::HeatFaceProps heat_face_props{
         heat_props, grid2D};
-    heat_face_props.apply_well(completion, well);
+    heat_face_props.apply_well(extr_completion, well);
 
     // history
     const History history{
