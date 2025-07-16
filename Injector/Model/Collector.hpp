@@ -225,7 +225,7 @@ namespace GPN
                 //    const auto &grid_r = grid2D->second_coord;
                     const auto &sandface = completion.back();
                     medium_heat_conductivity_axes2.col(2ll) =
-                        sandface.heat_conductivity ;
+                        sandface.heat_conductivity;
                     // r_{1/2} is fixed at HeatFaceProps container
 
                     // interpolate verticle heat conductivity:
