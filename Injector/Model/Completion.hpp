@@ -167,8 +167,6 @@ namespace GPN
                   sandface_radius{completion.back().outer_radius},
                   flow_radius{completion.front().outer_radius},
                   column_outer_radius{completion[MaterialType::Column].outer_radius}
-            //,
-            // thickness{completion.back().outer_radius - completion.front().outer_radius}
             {
                 for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Cement; ++i)
                 {
@@ -285,116 +283,10 @@ namespace GPN
                 return out;
             }
 
-            const RealType radial_node_position() const
-            {
-                const auto &tube{sandwich[MaterialType::Tube]};
-                const auto &annulus{sandwich[MaterialType::Annulus]};
-                const auto &column{sandwich[MaterialType::Column]};
-
-                const RealType T{T_avg()};
-
-                const RealType R{tube.inner_radius * std::exp(T)};
-                assert(R > tube.inner_radius);
-                if (R < tube.outer_radius)
-                    return R;
-                else
-                {
-                    const RealType R{
-                        annulus.inner_radius *
-                        std::exp(
-                            (T - std::log(tube.outer_radius / tube.inner_radius)) /
-                            (tube.heat_conductivity / annulus.heat_conductivity))};
-                    assert(R > annulus.inner_radius);
-                    if (R < column.inner_radius)
-                        return R;
-                    else
-                    {
-                        const RealType R{
-                            column.inner_radius *
-                            std::exp(
-                                (T - std::log(tube.outer_radius / tube.inner_radius) -
-                                 (tube.heat_conductivity / annulus.heat_conductivity) *
-                                     std::log(annulus.outer_radius / annulus.inner_radius)) /
-                                (tube.heat_conductivity / column.heat_conductivity))};
-                        assert(R > column.inner_radius);
-                        assert(R < column.outer_radius);
-                        return R;
-                    }
-                }
-            }
-
-            const RealType zeta_0(const RealType r1) const
-            {
-                const auto &Tube{sandwich[MaterialType::Tube]};
-                const auto &Annulus{sandwich[MaterialType::Annulus]};
-                const auto &Column{sandwich[MaterialType::Column]};
-
-                return r1 < Tube.outer_radius
-                           ? std::log(r1 / Tube.inner_radius) / Tube.heat_conductivity
-                       : (r1 < Column.inner_radius)
-                           ? 1 / Tube.radial_heat_conductivity + std::log(r1 / Tube.outer_radius) / Annulus.heat_conductivity
-                           : 1 / Tube.radial_heat_conductivity + 1 / Annulus.radial_heat_conductivity + std::log(r1 / Column.inner_radius) / Column.heat_conductivity;
-            }
-
-            const RealType zeta_02(const RealType r2) const
-            {
-                const auto &Column{sandwich[MaterialType::Column]};
-                const auto &Sandface{sandwich[MaterialType::Cement]};
-                return 1 / integral_casing_radial_heat_conductivity() +
-                       std::log(r2 / Column.outer_radius) / Sandface.heat_conductivity;
-            }
-
         private:
             const size_t size() const
             {
                 return sandwich.size();
-            }
-
-            RealType I_tube() const
-            {
-                const auto &tube{sandwich[MaterialType::Tube]};
-                return tube.outer_radius * tube.outer_radius *
-                           std::log(tube.outer_radius / tube.inner_radius) -
-                       (tube.outer_radius - tube.inner_radius) * (tube.outer_radius + tube.inner_radius) / 2.0;
-            }
-
-            RealType I_annulus() const
-            {
-                const auto &tube{sandwich[MaterialType::Tube]};
-                const auto &annulus{sandwich[MaterialType::Annulus]};
-                return (annulus.area() / std::numbers::pi) *
-                           std::log(tube.outer_radius / tube.inner_radius) +
-                       tube.heat_conductivity / annulus.heat_conductivity *
-                           (annulus.outer_radius * annulus.outer_radius *
-                                std::log(annulus.outer_radius / tube.outer_radius) -
-                            annulus.area() / 2.0 / std::numbers::pi);
-            }
-
-            RealType I_column() const
-            {
-                const auto &tube{sandwich[MaterialType::Tube]};
-                const auto &annulus{sandwich[MaterialType::Annulus]};
-                const auto &column{sandwich[MaterialType::Column]};
-                return (
-                           std::log(tube.outer_radius / tube.inner_radius) +
-                           tube.heat_conductivity / annulus.heat_conductivity *
-                               std::log(annulus.outer_radius / annulus.inner_radius)) *
-                           (column.area() / std::numbers::pi) +
-                       tube.heat_conductivity / column.heat_conductivity *
-                           (column.outer_radius * column.outer_radius * std::log(column.outer_radius / column.inner_radius) -
-                            column.area() / 2.0 / std::numbers::pi);
-            }
-
-            RealType T_avg() const
-            {
-                const auto &tube{sandwich[MaterialType::Tube]};
-                const auto &annulus{sandwich[MaterialType::Annulus]};
-                const auto &column{sandwich[MaterialType::Column]};
-
-                return (tube.volumetric_heat_capacity * I_tube() +
-                        annulus.volumetric_heat_capacity * I_annulus() +
-                        column.volumetric_heat_capacity * I_column()) /
-                       (casing_area() * casing_volumetric_heat_capacity());
             }
         };
 
