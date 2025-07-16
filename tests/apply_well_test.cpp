@@ -53,6 +53,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
       density{data["fluid"]["density"]},
       capacity{data["fluid"]["specific_heat_capacity"]},
       heat_conductivity{data["fluid"]["heat_conductivity"]};
+      REQUIRE(heat_conductivity > 0.0);
   /*collector*/
   const VR thickness = data["collector"]["thickness"];
   // hydrodynamic logs
@@ -70,6 +71,8 @@ TEST_CASE("apply_well_test", "apply_well_test")
       z_minor_step{data["grid"]["z_minor_step"]}; // m
   /*completion*/
   const Casing completion{get_completion(data)};
+  for(const auto& r : completion.sandwich)
+      REQUIRE(r.heat_conductivity > 0.0);
   /*END*/
 
   // make grid2D
