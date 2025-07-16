@@ -62,22 +62,19 @@
       "thickness": 0.04,
       "heat_conductivity": 0.04,
       "density": 90,
-      "specific_heat_capacity": 1000,
-      "depth": 25
+      "specific_heat_capacity": 1000
     },
     "column":{
       "thickness": 0.04,
       "heat_conductivity": 0.04,
       "density": 90,
-      "specific_heat_capacity": 1000,
-      "depth": 25
+      "specific_heat_capacity": 1000
     },
     "cement":{
       "thickness": 0.04,
       "heat_conductivity": 1.2,
       "specific_heat_capacity": 900,
-      "density": 3500,
-      "depth": 25
+      "density": 3500
     }
   },
   "history": {

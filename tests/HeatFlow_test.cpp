@@ -14,6 +14,8 @@
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/WellFactory.hpp>
+#include <Injector/Model/Completion.hpp>
+#include <Injector/Model/ExtrudedCasingFactory.hpp>
 
 #include <Injector/Properties/FlowField.hpp>
 #include <Injector/Properties/Factory.hpp>
@@ -171,7 +173,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                                          Grids::Factory::generate_dual_grid_stencils_from_steps(
                                              0.0, thickness),
                                          r_stencils)};
-  const auto &grid{grid2D->first_coord};
+  const auto &grid_z{grid2D->first_coord};
+  const auto &grid_r{grid2D->second_coord};
+  
+  const ExtrudedCasing extr_completion{
+    ExtrudedCasingFactory::create(completion, grid_z)};
 
   cout << "radial dual grid stencils:\n"
        << transfer_to_eigen(r_stencils).transpose() << endl;
@@ -196,7 +202,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       is_perforated_stencils,
       porosity_stencils,
       permeability_stencils,
-      grid};
+      grid_z};
 
   // make fluid
   const PhaseProperties water{
@@ -212,7 +218,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       RateWeightsFactory::create(
           weights_stencils,
           core_data.is_permeable,
-          grid)};
+          grid_z)};
   const Well_Explicit well{
       core_data.is_permeable, core_data.is_perforated, weights};
 
@@ -232,11 +238,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       heat_logs, grid2D};
 
   // properties of material that fills the well up to the sandface
-  heat_props.apply_well(completion, well);
+  heat_props.apply_well(extr_completion, well);
 
   FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
-  heat_face_props.apply_well(completion, well);
+  heat_face_props.apply_well(extr_completion, well);
   // history
   const History history{make_history(data)};
   // rates field factory
