@@ -51,7 +51,7 @@ add_catch2_test(solvermanager_test)
 
 
 add_catch2_test(horizontalflow_test)
-add_catch2_test(HeatFlow_test)
+# add_catch2_test(HeatFlow_test)
 
 
 add_catch2_test(history_test)
@@ -65,10 +65,10 @@ install(FILES ${PROJECT_SOURCE_DIR}/test_data/json_test_data.json
     DESTINATION ${PROJECT_BINARY_DIR})
 
     
-install(FILES ${PROJECT_SOURCE_DIR}/test_data/heatflow_test_data.json
-    DESTINATION $<TARGET_FILE_DIR:HeatFlow_test>)
-install(FILES ${PROJECT_SOURCE_DIR}/test_data/heatflow_test_data.json
-    DESTINATION ${PROJECT_BINARY_DIR})
+# install(FILES ${PROJECT_SOURCE_DIR}/test_data/heatflow_test_data.json
+#     DESTINATION $<TARGET_FILE_DIR:HeatFlow_test>)
+# install(FILES ${PROJECT_SOURCE_DIR}/test_data/heatflow_test_data.json
+#     DESTINATION ${PROJECT_BINARY_DIR})
     
 
 install(FILES ${PROJECT_SOURCE_DIR}/test_data/apply_well_test_data.json

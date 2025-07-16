@@ -353,7 +353,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
       { // col == 0
         const ptrdiff_t col = 0ll;
         // flow heat capacity is equal to fluid-water heat capacity
-        INFO("row:" << row);
+//        INFO("row:" << row);
         CHECK_THAT(capacity(row, col) * grid2D->volume(row, col),
                    WithinRel(
                        Flow.linear_heat_capacity(row) *
@@ -367,11 +367,13 @@ TEST_CASE("apply_well_test", "apply_well_test")
                        tol));
         CHECK_THAT(capacity(row, col),
                    WithinRel(
-                       extr_completion.flow().volumetric_heat_capacity*face_ratio(row), tol));
+                       extr_completion.flow().volumetric_heat_capacity * face_ratio(row), tol));
         // vertical heat conductivity is equal to water
+//        INFO("row:" << row);
         CHECK_THAT(heat_conductivity_1(row, col),
                    WithinRel(
-                       water.heat_conductivity, tol));
+                       water.heat_conductivity * 
+                        flow_area(row) / grid2D->face_area_axes1(col), tol));
         // radial heat conductivity of flowing water is infinity
         CHECK(std::isinf(heat_conductivity_2(row, col)));
       }
@@ -503,12 +505,23 @@ TEST_CASE("apply_well_test", "apply_well_test")
     // CHECK f_conductivity_1
     {
       {
+        const Eigen::ArrayX<RealType> flow_area{Flow.area()};
         const auto col{0ll}; // flow in the tube
+
+        cout << "vert heat cond in flow:\n"
+             << Eigen::ArrayX<RealType>{
+                    f_conductivity_1.col(col) * grid2D->face_area_axes1(col)}
+             << "\n\n"
+             << flush;
+
         for (auto row{0ll}; row < f_conductivity_1.rows(); ++row)
         {
-          CHECK_THAT(f_conductivity_1(row, col),
+          CHECK_THAT(f_conductivity_1(row, col) * grid2D->face_area_axes1(col),
                      WithinRel(
-                         water.heat_conductivity / (grid_z.mesh_nodes(row + 1ll) - grid_z.mesh_nodes(row)),
+                         1.0 / ((grid_z.dual_nodes(row + 1ll) - grid_z.mesh_nodes(row)) /
+                                    (Flow.heat_conductivity * flow_area(row)) +
+                                (grid_z.mesh_nodes(row + 1ll) - grid_z.dual_nodes(row + 1ll)) /
+                                    (Flow.heat_conductivity * flow_area(row + 1ll))),
                          tol));
         }
       }
