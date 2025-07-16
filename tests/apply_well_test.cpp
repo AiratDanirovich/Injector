@@ -419,7 +419,7 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
       }
 
       // heat resistivity at the face between the casing-sandwich and the cement
-      const auto zeta_1{
+      const Eigen::ArrayX<RealType> zeta_1{
           1 / extr_completion.integral_casing_radial_heat_conductivity() +
           log(grid_r.mesh_nodes(2ll) / Column.outer_radius) / Sandface.heat_conductivity -
           zeta_0};
