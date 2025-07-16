@@ -337,21 +337,15 @@ TEST_CASE("apply_well_test", "apply_well_test")
     const Eigen::ArrayX<RealType> temp{Flow.volumetric_heat_capacity *
                                        flow_area *
                                        (grid_z.dual_nodes.tail(capacity.rows()) - grid_z.dual_nodes.head(capacity.rows()))};
-    Eigen::ArrayX<RealType> face_ratio{extr_completion.flow().area() /
-                                       grid2D->face_area_axes1(0ll)};
-    cout << "flow::area:\n"
-         << flow_area << "\n\n"
-         << flush;
-
-    cout << "face area ratio:\n"
-         << face_ratio
-         << "\n\n"
-         << flush;
+    const Eigen::ArrayX<RealType> flow_face_ratio{extr_completion.flow().area() /
+                                            grid2D->face_area_axes1(0ll)};
+    const Eigen::ArrayX<RealType> casing_face_ratio{extr_completion.casing_area() /
+                                             grid2D->face_area_axes1(1ll)};
 
     for (auto row{0ll}; row < capacity.rows(); ++row)
     {
       { // col == 0
-        const ptrdiff_t col = 0ll;
+        const auto col{0ll};
         // flow heat capacity is equal to fluid-water heat capacity
         CHECK_THAT(capacity(row, col) * grid2D->volume(row, col),
                    WithinRel(
@@ -366,7 +360,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
                        tol));
         CHECK_THAT(capacity(row, col),
                    WithinRel(
-                       extr_completion.flow().volumetric_heat_capacity * face_ratio(row), tol));
+                       extr_completion.flow().volumetric_heat_capacity * flow_face_ratio(row), tol));
         // vertical heat conductivity is equal to water
         CHECK_THAT(heat_conductivity_1(row, col),
                    WithinRel(
@@ -377,7 +371,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
         CHECK(std::isinf(heat_conductivity_2(row, col)));
       }
       { // col == 1
-        const ptrdiff_t col = 1ll;
+        const auto col{1ll};
         CHECK_THAT(capacity(row, col) * grid2D->volume(row, col),
                    WithinRel(
                        (grid_z.dual_nodes(row + 1ll) - grid_z.dual_nodes(row)) *
@@ -385,13 +379,14 @@ TEST_CASE("apply_well_test", "apply_well_test")
                             Annulus.linear_heat_capacity(row) +
                             Column.linear_heat_capacity(row)),
                        tol));
+        INFO("row: " << row);
         CHECK_THAT(heat_conductivity_1(row, col),
                    WithinRel(
-                       casing_vert_cond(row),
+                       casing_vert_cond(row)*casing_face_ratio(row),
                        tol));
       }
       { // col == 2
-        const ptrdiff_t col = 2ll;
+        const auto col{2ll};
         CHECK_THAT(capacity(row, col) * grid2D->volume(row, col),
                    WithinRel(
                        (grid_z.dual_nodes(row + 1ll) - grid_z.dual_nodes(row)) *
@@ -480,7 +475,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
         {
           const auto zeta_2{
               log(Sandface.outer_radius(row) / grid_r.mesh_nodes(col)) / Sandface.heat_conductivity +
-              log(grid_r.mesh_nodes(col+1ll) / Sandface.outer_radius(row)) / heat_conductivity(row)};
+              log(grid_r.mesh_nodes(col + 1ll) / Sandface.outer_radius(row)) / heat_conductivity(row)};
           CHECK_THAT(f_conductivity_2(row, col),
                      WithinRel(
                          1.0 / zeta_2,
@@ -511,13 +506,6 @@ TEST_CASE("apply_well_test", "apply_well_test")
       {
         const Eigen::ArrayX<RealType> flow_area{Flow.area()};
         const auto col{0ll}; // flow in the tube
-
-        cout << "vert heat cond in flow:\n"
-             << Eigen::ArrayX<RealType>{
-                    f_conductivity_1.col(col) * grid2D->face_area_axes1(col)}
-             << "\n\n"
-             << flush;
-
         for (auto row{0ll}; row < f_conductivity_1.rows(); ++row)
         {
           CHECK_THAT(f_conductivity_1(row, col) * grid2D->face_area_axes1(col),
@@ -532,11 +520,19 @@ TEST_CASE("apply_well_test", "apply_well_test")
 
       {
         const auto col{1ll}; // conductivity along the casing
+        const Eigen::ArrayX<RealType> temp{
+            extr_completion.integral_vertical_casing_heat_conductivity() *
+            extr_completion.casing_area()};
         for (auto row{0ll}; row < f_conductivity_1.rows(); ++row)
         {
-          CHECK_THAT(f_conductivity_1(row, col),
+          INFO("row: " << row);
+          CHECK_THAT(f_conductivity_1(row, col) * grid2D->face_area_axes1(col),
                      WithinRel(
-                         casing_vert_cond(row) / (grid_z.mesh_nodes(row + 1ll) - grid_z.mesh_nodes(row)),
+                         1.0 /
+                             ((grid_z.dual_nodes(row + 1ll) - grid_z.mesh_nodes(row)) /
+                                  temp(row) +
+                              (grid_z.mesh_nodes(row + 1ll) - grid_z.dual_nodes(row + 1ll)) /
+                                  temp(row + 1ll)),
                          tol));
         }
       }

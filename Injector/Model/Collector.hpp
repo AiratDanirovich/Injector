@@ -1,7 +1,6 @@
 #pragma once
 #include <cassert>
 #include <iterator>
-#include <iostream>
 
 #include <Injector/Properties/LogsFactory.hpp>
 #include <Injector/Properties/FaceProperties.hpp>
@@ -235,12 +234,14 @@ namespace GPN
                     medium_heat_conductivity_axes1.col(0ll) =
                         flow.heat_conductivity * 
                         flow.area() / grid2D->face_area_axes1(0ll);
-                    // (2) set sandwich heat conductivity in col(1ll)
+                    // (2) set casing heat conductivity in col(1ll)
                     medium_heat_conductivity_axes1.col(1ll) =
-                        completion.integral_vertical_casing_heat_conductivity();
+                        completion.integral_vertical_casing_heat_conductivity() * 
+                        completion.casing_area() / grid2D->face_area_axes1(1ll);
                     // (3) set cement heat conductivity in col(2ll)
                     medium_heat_conductivity_axes1.col(2ll) =
-                        completion.integral_vertical_cement_heat_conductivity();
+                        completion.integral_vertical_cement_heat_conductivity() * 
+                        completion.cement_area() / grid2D->face_area_axes1(2ll);
 #pragma endregion
                 }
 
@@ -287,7 +288,6 @@ namespace GPN
 
 #pragma region SET-HEAT-CONDUCTIVITY
                     const Eigen::ArrayX<RealType> zeta_0{completion.zeta_0(r1)};
-                    cout << "zeta_0:\n" << zeta_0 << "\n\n" << flush;
                     medium_heat_conductivity.face_vals_axes2.col(0ll) =
                         1 / zeta_0;
                     const auto zeta_02{completion.zeta_02(grid_r.mesh_nodes(2ll))};
