@@ -39,7 +39,7 @@ using namespace GPN::Completion;
 
 const RealType tol = 1e-12;
 
-TEST_CASE("apply_well_test", "SelfSimilarCyl")
+TEST_CASE("apply_well_test", "apply_well_test")
 {
   ifstream f("apply_well_test_data.json");
   REQUIRE(f.is_open());
@@ -134,13 +134,22 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
     }
   }
 
-  const Eigen::ArrayX<RealType> casing_vert_cond{std::numbers::pi * (Tube.heat_conductivity * Tube.thickness * (Tube.inner_radius + Tube.outer_radius) + Annulus.heat_conductivity * Annulus.thickness * (Annulus.inner_radius + Annulus.outer_radius) + Column.heat_conductivity * Column.thickness * (Column.inner_radius + Column.outer_radius)) /
-                                                 (std::numbers::pi * (Column.outer_radius + Tube.inner_radius) * (Column.outer_radius - Tube.inner_radius))};
-  const Eigen::ArrayX<RealType> cement_vert_cond{std::numbers::pi * (Sandface.heat_conductivity * Sandface.thickness * (Sandface.inner_radius + Sandface.outer_radius)) /
-                                                 (std::numbers::pi * (Sandface.outer_radius + Sandface.inner_radius) * (Sandface.thickness))};
+  const Eigen::ArrayX<RealType> casing_vert_cond{
+      std::numbers::pi *
+      (Tube.heat_conductivity * Tube.thickness * (Tube.inner_radius + Tube.outer_radius) +
+       Annulus.heat_conductivity * Annulus.thickness * (Annulus.inner_radius + Annulus.outer_radius) +
+       Column.heat_conductivity * Column.thickness * (Column.inner_radius + Column.outer_radius)) /
+      (std::numbers::pi *
+       (Column.outer_radius + Tube.inner_radius) *
+       (Column.outer_radius - Tube.inner_radius))};
+  const Eigen::ArrayX<RealType> cement_vert_cond{
+      std::numbers::pi * Sandface.thickness * (Sandface.inner_radius + Sandface.outer_radius) * Sandface.heat_conductivity /
+      (std::numbers::pi * Sandface.thickness * (Sandface.inner_radius + Sandface.outer_radius))};
   {
     const Eigen::ArrayX<RealType> cement_temp{extr_completion.integral_vertical_cement_heat_conductivity()};
     const Eigen::ArrayX<RealType> casing_temp{extr_completion.integral_vertical_casing_heat_conductivity()};
+    const Eigen::ArrayX<RealType> casing_area{extr_completion.casing_area()};
+    const Eigen::ArrayX<RealType> cement_area{extr_completion.cement_area()};
 
     for (auto i{0ll}; i < casing_vert_cond.size(); ++i)
     {
@@ -148,17 +157,22 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
       CHECK_THAT(casing_vert_cond(i), WithinRel(casing_temp(i), tol));
       CHECK_THAT(cement_vert_cond(i), WithinRel(cement_temp(i), tol));
       // check area
-      CHECK_THAT((std::numbers::pi * (Column.outer_radius(i) + Tube.inner_radius(i)) * (Column.outer_radius(i) - Tube.inner_radius(i))), WithinRel(extr_completion.casing_area()(i), tol));
+      CHECK_THAT((std::numbers::pi *
+                  (Column.outer_radius(i) + Tube.inner_radius(i)) * (Column.outer_radius(i) - Tube.inner_radius(i))),
+                 WithinRel(casing_area(i), tol));
       // check area
-      CHECK_THAT((std::numbers::pi * (Sandface.outer_radius(i) + Sandface.inner_radius(i)) * Sandface.thickness(i)), WithinRel(extr_completion.cement_area()(i), tol));
+      CHECK_THAT((std::numbers::pi *
+                  (Sandface.outer_radius(i) + Sandface.inner_radius(i)) * Sandface.thickness(i)),
+                 WithinRel(cement_area(i), tol));
       // check const verticle conductivity in cement
       CHECK_THAT(cement_vert_cond(0ll), WithinRel(cement_vert_cond(i), tol));
     }
   }
+
   const Eigen::ArrayX<RealType> cement_heat_cap{
       completion[MaterialType::Cement].volumetric_heat_capacity * Sandface.area()};
   {
-    const auto& cement_temp{Sandface.linear_heat_capacity};
+    const auto &cement_temp{Sandface.linear_heat_capacity};
     for (auto i{0ll}; i < casing_vert_cond.size(); ++i)
     {
       // check linear heat capacity
@@ -315,20 +329,42 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
     const auto &capacity = heat_props.medium_vol_heatcapacity.values();
     const auto &heat_conductivity_1 = heat_props.medium_heat_conductivity_axes1.values();
     const auto &heat_conductivity_2 = heat_props.medium_heat_conductivity_axes2.values();
+    const auto flow_area{Flow.area()};
+
+    const Eigen::ArrayX<RealType> temp{Flow.volumetric_heat_capacity *
+                                       flow_area *
+                                       (grid_z.dual_nodes.tail(capacity.rows()) - grid_z.dual_nodes.head(capacity.rows()))};
+    Eigen::ArrayX<RealType> face_ratio{extr_completion.flow().area() /
+                                       grid2D->face_area_axes1(0ll)};
+    cout << "flow::area:\n"
+         << flow_area << "\n\n"
+         << flush;
+
+    cout << "face area ratio:\n"
+         << face_ratio
+         << "\n\n"
+         << flush;
+
     for (auto row{0ll}; row < capacity.rows(); ++row)
     {
       { // col == 0
         const ptrdiff_t col = 0ll;
         // flow heat capacity is equal to fluid-water heat capacity
+        INFO("row:" << row);
         CHECK_THAT(capacity(row, col) * grid2D->volume(row, col),
                    WithinRel(
+                       Flow.linear_heat_capacity(row) *
+                           (grid_z.dual_nodes(row + 1ll) - grid_z.dual_nodes(row)),
+                       tol));
+        CHECK_THAT(temp(row),
+                   WithinRel(
                        Flow.volumetric_heat_capacity *
-                           Flow.area()(row) *
+                           flow_area(row) *
                            (grid_z.dual_nodes(row + 1ll) - grid_z.dual_nodes(row)),
                        tol));
         CHECK_THAT(capacity(row, col),
                    WithinRel(
-                       extr_completion.flow().volumetric_heat_capacity, tol));
+                       extr_completion.flow().volumetric_heat_capacity*face_ratio(row), tol));
         // vertical heat conductivity is equal to water
         CHECK_THAT(heat_conductivity_1(row, col),
                    WithinRel(
@@ -475,7 +511,7 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
       }
 
       {
-        const auto col{1ll}; // flow in the tube
+        const auto col{1ll}; // conductivity along the casing
         for (auto row{0ll}; row < f_conductivity_1.rows(); ++row)
         {
           CHECK_THAT(f_conductivity_1(row, col),
@@ -486,7 +522,7 @@ TEST_CASE("apply_well_test", "SelfSimilarCyl")
       }
 
       {
-        const auto col{2ll}; // flow in the tube
+        const auto col{2ll}; // conductivity along the cement
         for (auto row{0ll}; row < f_conductivity_1.rows(); ++row)
         {
           CHECK_THAT(f_conductivity_1(row, col),

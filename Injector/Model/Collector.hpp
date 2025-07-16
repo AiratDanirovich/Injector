@@ -204,10 +204,14 @@ namespace GPN
 #pragma region SET-HEAT-CAPACITY
                     // first column -- inside the tube, contains only water
                     medium_vol_heatcapacity.col(0ll) =
-                        completion.flow().volumetric_heat_capacity;
+                        completion.flow().volumetric_heat_capacity*
+                        completion.flow().area()/
+                        grid2D->face_area_axes1(0ll);
                     // second column -- from tube inner radius to column outer radius
                     medium_vol_heatcapacity.col(1ll) =
-                        completion.casing_volumetric_heat_capacity();
+                        completion.casing_volumetric_heat_capacity()*
+                        completion.casing_area()/
+                        grid2D->face_area_axes1(1ll);
                     // third column -- cement cross-section
                     medium_vol_heatcapacity.col(2ll) =
                         completion.cement_volumetric_heat_capacity();

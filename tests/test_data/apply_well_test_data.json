@@ -6,7 +6,7 @@
     "heat_conductivity": 0.0
   },
   "collector": {
-    "thickness": [   50,   3,    0.3,  3,   0.3,  3,   0.3,  0.3,  3],
+    "thickness": [   60,   3,    3,  3,   3,  3,   3,  3,  3],
     "is_permeable": [0.0, 0.0,  1.0,  0.0, 1.0,   0.0, 1.0, 1.0,  0.0],
     "is_perforated": [0.0, 0.0, 0.0,  0.0, 1.0,   0.0, 1.0, 1.0,  0.0],
     "porosity":     [0.0, 0.0,  0.3,  0.0, 0.2,   0.0, 0.3, 0.25, 0.0],
@@ -56,7 +56,7 @@
       "heat_conductivity": 1.1,
       "density": 1000,
       "specific_heat_capacity": 4200,
-      "depth": 400
+      "depth": 30
     },
     "annulus":{
       "thickness": 0.031,
