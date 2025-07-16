@@ -203,45 +203,45 @@ namespace GPN
                 {
 #pragma region SET-HEAT-CAPACITY
                     // first column -- inside the tube, contains only water
-                    medium_vol_heatcapacity.col(0ll) /*.head(tube_end)*/ =
-                        completion.front().volumetric_heat_capacity;
-                    // second column -- from tube inner radius to sandface radius
-                    medium_vol_heatcapacity.col(1ll) /*.head(tube_end)*/ =
-                        completion.volumetric_heat_capacity();
-
-                    // medium_vol_heatcapacity.col(0ll).tail(medium_vol_heatcapacity.rows() - tube_end) =
-                    //     fluid.volumetric_heat_capacity*(r_column*r_column)/(r_tube*r_tube);
-
-                    // medium_vol_heatcapacity.col(1ll).head(tube_end) =
-                    //     upper_annulus_capacity;
-                    // medium_vol_heatcapacity.col(1ll).tail(medium_vol_heatcapacity.rows() - tube_end) =
-                    //     lower_annulus_capacity;
+                    medium_vol_heatcapacity.col(0ll) =
+                        completion.flow().volumetric_heat_capacity*
+                        completion.flow().area()/
+                        grid2D->face_area_axes1(0ll);
+                    // second column -- from tube inner radius to column outer radius
+                    medium_vol_heatcapacity.col(1ll) =
+                        completion.casing_volumetric_heat_capacity()*
+                        completion.casing_area()/
+                        grid2D->face_area_axes1(1ll);
+                    // third column -- cement cross-section
+                    medium_vol_heatcapacity.col(2ll) =
+                        completion.cement_volumetric_heat_capacity();
 #pragma endregion
 #pragma region SET-HEAT-CONDUCTIVITY
                     // heat conductivity of flowing water in r-direction is infinite
-                    this->medium_heat_conductivity_axes2.col(0ll) = 
+                    this->medium_heat_conductivity_axes2.col(0ll) =
                         std::numeric_limits<RealType>::infinity();
                     // put values for cementOuter at medium_vol_heatcapacity.col(1ll).
                     // CementOuter is a part of col(1ll)
-                    const auto &grid_r = grid2D->second_coord;
+                //    const auto &grid_r = grid2D->second_coord;
                     const auto &sandface = completion.back();
-                    const ptrdiff_t id{1ll};
-                    medium_heat_conductivity_axes2.col(1ll) =
-                        sandface.heat_conductivity /
-                        std::log(sandface.outer_radius / sandface.inner_radius) *
-                        std::log(grid_r.dual_nodes(id + 1ll) / grid_r.mesh_nodes(id));
+                    medium_heat_conductivity_axes2.col(2ll) =
+                        sandface.heat_conductivity;
                     // r_{1/2} is fixed at HeatFaceProps container
 
                     // interpolate verticle heat conductivity:
                     // (1) modify water heat conductivity in col(0ll)
                     const auto &flow = completion.front();
                     medium_heat_conductivity_axes1.col(0ll) =
-                        flow.heat_conductivity * flow.area() / grid2D->face_area_axes1(0ll);
-                    for (const auto v : grid2D->face_area_axes1)
-                        assert(flow.area() <= v + 1e-12);
-                    // (2) set sandwich heat conductivity in col(1ll)
+                        flow.heat_conductivity * 
+                        flow.area() / grid2D->face_area_axes1(0ll);
+                    // (2) set casing heat conductivity in col(1ll)
                     medium_heat_conductivity_axes1.col(1ll) =
-                        completion.integral_vertical_heat_conductivity();
+                        completion.integral_vertical_casing_heat_conductivity() * 
+                        completion.casing_area() / grid2D->face_area_axes1(1ll);
+                    // (3) set cement heat conductivity in col(2ll)
+                    medium_heat_conductivity_axes1.col(2ll) =
+                        completion.integral_vertical_cement_heat_conductivity() * 
+                        completion.cement_area() / grid2D->face_area_axes1(2ll);
 #pragma endregion
                 }
 
@@ -281,9 +281,18 @@ namespace GPN
                     const Completion_t &completion,
                     const Well_t &well)
                 {
+                    using namespace std;
+                    const auto &grid_r{grid2D->second_coord};
+                    const auto r1{completion.radial_node_position()};
+                    const auto &grid_z{grid2D->first_coord};
+
 #pragma region SET-HEAT-CONDUCTIVITY
-                    medium_heat_conductivity.face_vals_axes2.col(0ll) /*.head(tube_end)*/ =
-                        completion.integral_inner_radial_heat_conductivity();
+                    const Eigen::ArrayX<RealType> zeta_0{completion.zeta_0(r1)};
+                    medium_heat_conductivity.face_vals_axes2.col(0ll) =
+                        1 / zeta_0;
+                    const auto zeta_02{completion.zeta_02(grid_r.mesh_nodes(2ll))};
+                    medium_heat_conductivity.face_vals_axes2.col(1ll) =
+                        1 / (zeta_02 - zeta_0);
 #pragma endregion
                 }
 

@@ -3,10 +3,10 @@
     "density": 1000,
     "viscosity": 6e-4,
     "specific_heat_capacity": 4200,
-    "heat_conductivity": 0.0
+    "heat_conductivity": 0.97
   },
   "collector": {
-    "thickness": [   50,   3,    0.3,  3,   0.3,  3,   0.3,  0.3,  3],
+    "thickness": [   60,   3,    3,  3,   3,  3,   3,  3,  3],
     "is_permeable": [0.0, 0.0,  1.0,  0.0, 1.0,   0.0, 1.0, 1.0,  0.0],
     "is_perforated": [0.0, 0.0, 0.0,  0.0, 1.0,   0.0, 1.0, 1.0,  0.0],
     "porosity":     [0.0, 0.0,  0.3,  0.0, 0.2,   0.0, 0.3, 0.25, 0.0],
@@ -51,42 +51,30 @@
   },
   "completion": {
     "tube":{
-      "inner_radius": 0.04,
-      "thickness": 0.04,
-      "heat_conductivity": 1.2,
+      "inner_radius": 0.041,
+      "thickness": 0.023,
+      "heat_conductivity": 1.1,
       "density": 1000,
       "specific_heat_capacity": 4200,
-      "depth": 25
+      "depth": 30
     },
     "annulus":{
-      "thickness": 0.04,
+      "thickness": 0.031,
       "heat_conductivity": 1.2,
       "density": 90,
-      "specific_heat_capacity": 1000,
-      "depth": 25
+      "specific_heat_capacity": 1000
     },
     "column":{
-      "thickness": 0.04,
-      "heat_conductivity": 1.2,
+      "thickness": 0.047,
+      "heat_conductivity": 1.3,
       "density": 90,
-      "specific_heat_capacity": 1000,
-      "depth": 25
+      "specific_heat_capacity": 1000
     },
     "cement":{
-      "inner":{
-        "thickness": 0.04,
-        "heat_conductivity": 1.2,
-        "specific_heat_capacity": 900,
-        "density": 3500,
-        "depth": 25
-      },
-      "outer":{
-        "thickness": 0.04,
-        "heat_conductivity": 1.2,
-        "specific_heat_capacity": 900,
-        "density": 3500,
-        "depth": 25
-      }
+      "thickness": 0.053,
+      "heat_conductivity": 1.4,
+      "density": 3500,
+      "specific_heat_capacity": 900
     }
   },
   "history": {
