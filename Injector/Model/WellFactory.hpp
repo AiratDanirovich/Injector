@@ -7,7 +7,7 @@ namespace GPN
 {
     struct WellHolesFactory
     {
-        static WellHoles create(const Completion::Casing& completion)
+        static WellHoles create(const Completion::Casing<Completion::Ring>& completion)
         {
             return WellHoles{
                 TubeInnerRadius{completion.flow_radius}, 

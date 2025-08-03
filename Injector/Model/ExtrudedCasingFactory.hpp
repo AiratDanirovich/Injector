@@ -114,7 +114,7 @@ namespace GPN
         {
             template <typename Grid_t>
             static ExtrudedCasing create(
-                const Casing &casing,
+                const Casing<Ring> &casing,
                 const Grid_t &grid_z)
             {
                 std::vector<ExtrudedRing> extruded_casing;

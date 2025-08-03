@@ -101,7 +101,8 @@ namespace GPN
                   heat_conductivity{heat_conductivity},
                   volumetric_heat_capacity{
                       (mass_heat_capacity.value *
-                      density.value).data}
+                       density.value)
+                          .data}
             {
             }
 
@@ -147,17 +148,17 @@ namespace GPN
         {
             using VariableStationaryPhaseProperties::VariableStationaryPhaseProperties;
         };
-        
+
         struct VarAnnulus : public VariableStationaryPhaseProperties
         {
             using VariableStationaryPhaseProperties::VariableStationaryPhaseProperties;
         };
-        
+
         struct VarTube : public VariableStationaryPhaseProperties
         {
             using VariableStationaryPhaseProperties::VariableStationaryPhaseProperties;
         };
-        
+
         struct VarFlow : public VariableStationaryPhaseProperties
         {
             using VariableStationaryPhaseProperties::VariableStationaryPhaseProperties;
@@ -166,6 +167,8 @@ namespace GPN
         struct Ring
             : public StationaryPhaseProperties
         {
+            using value_type = RealType;
+
             template <typename PhaseProperties_t>
             Ring(const PhaseProperties_t &props,
                  Thickness thickness,
@@ -240,6 +243,8 @@ namespace GPN
         struct VarRing
             : public VariableStationaryPhaseProperties
         {
+            using value_type = Eigen::ArrayX<RealType>;
+
             VarRing(const VariableStationaryPhaseProperties &props,
                     const VarThickness &thickness,
                     const VarInnerRadius &inner_radius,
@@ -250,32 +255,30 @@ namespace GPN
                   outer_radius{(inner_radius.value + thickness.value).data},
                   depth{depth},
                   linear_heat_capacity{
-                        linear_heat_capacity_calc(
-                            inner_radius, thickness, props)
-                  },
+                      linear_heat_capacity_calc(
+                          inner_radius, thickness, props)},
                   radial_heat_conductivity{
-                        radial_heat_conductivity_calc(
-                            inner_radius, thickness, props)
-                  },
+                      radial_heat_conductivity_calc(
+                          inner_radius, thickness, props)},
                   integral_vertical_heat_conductivity{
-                        props.heat_conductivity * 
-                        std::numbers::pi *
-                       ( thickness.value * (thickness.value + 2.0 * inner_radius.value)).data
-                  }
+                      props.heat_conductivity *
+                      std::numbers::pi *
+                      (thickness.value * (thickness.value + 2.0 * inner_radius.value)).data}
             {
-                   assert(assertion());
+                assert(assertion());
             }
 
-            const Eigen::ArrayX<RealType>
-                thickness, depth, inner_radius, outer_radius;
+            const value_type
+                thickness,
+                depth, inner_radius, outer_radius;
 
             // c
-            const Eigen::ArrayX<RealType> linear_heat_capacity;
+            const value_type linear_heat_capacity;
             // lambda/log(r_o/r_i)
-            const Eigen::ArrayX<RealType> radial_heat_conductivity;
-            const Eigen::ArrayX<RealType> integral_vertical_heat_conductivity;
+            const value_type radial_heat_conductivity;
+            const value_type integral_vertical_heat_conductivity;
 
-            const Eigen::ArrayX<RealType> area() const
+            const value_type area() const
             {
                 return std::numbers::pi *
                        (outer_radius - inner_radius) *
@@ -283,42 +286,43 @@ namespace GPN
             }
 
         private:
-            static Eigen::ArrayX<RealType>
+            static value_type
             linear_heat_capacity_calc(
                 VarInnerRadius inner_radius,
                 VarThickness thickness,
                 const VariableStationaryPhaseProperties &props)
             {
                 return (std::numbers::pi *
-                       thickness.value * (2.0 * inner_radius.value + thickness.value) *
-                       props.volumetric_heat_capacity).data;
+                        thickness.value * (2.0 * inner_radius.value + thickness.value) *
+                        props.volumetric_heat_capacity)
+                    .data;
             }
 
-            static Eigen::ArrayX<RealType>
+            static value_type
             radial_heat_conductivity_calc(
                 VarInnerRadius inner_radius,
                 VarThickness thickness,
                 const VariableStationaryPhaseProperties &props)
             {
                 Eigen::ArrayX<RealType> out(thickness.value.size());
-                for(auto idx{0ll}; idx < out.size(); ++idx)
+                for (auto idx{0ll}; idx < out.size(); ++idx)
 
-                if (thickness.value(idx) == 0.0)
-                {
-                    out[idx] = std::numeric_limits<RealType>::infinity();
-                }
-                else
-                {
-                    const RealType temp{std::log(1.0 + (RealType)thickness.value(idx) / (RealType)inner_radius.value(idx))};
-                    out[idx] = props.heat_conductivity(idx) / temp;
-                }
+                    if (thickness.value(idx) == 0.0)
+                    {
+                        out[idx] = std::numeric_limits<RealType>::infinity();
+                    }
+                    else
+                    {
+                        const RealType temp{std::log(1.0 + (RealType)thickness.value(idx) / (RealType)inner_radius.value(idx))};
+                        out[idx] = props.heat_conductivity(idx) / temp;
+                    }
 
                 return out;
             }
 
             bool assertion()
             {
-                const auto temp{
+                const value_type temp{
                     (outer_radius - inner_radius - thickness)};
 
                 return std::all_of(
@@ -354,18 +358,188 @@ namespace GPN
             CementRing(const Ring &r) : Ring{r} {}
         };
 
+        // struct Casing
+        // {
+        //     Casing(const std::vector<Ring> &completion)
+        //         : sandwich{completion},
+        //           sandface_radius{completion.back().outer_radius},
+        //           flow_radius{completion.front().outer_radius},
+        //           column_outer_radius{completion[MaterialType::Column].outer_radius}
+        //     {
+        //         for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Cement; ++i)
+        //         {
+        //             assert(std::abs(completion[i].inner_radius - completion[i - 1ll].outer_radius) < 1e-12);
+        //         }
+        //     }
+
+        //     const auto &back() const { return sandwich.back(); }
+        //     const auto &front() const { return sandwich.front(); }
+
+        //     const auto &flow() const { return front(); }
+
+        //     const auto &operator[](auto i) const
+        //     {
+        //         return sandwich[i];
+        //     }
+
+        //     const RealType casing_volumetric_heat_capacity() const
+        //     {
+        //         // exclude "flow" at "i = 0" from summation!
+        //         RealType C{0.0};
+        //         for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Column; ++i)
+        //         {
+        //             const auto &m = sandwich[i];
+        //             C += m.linear_heat_capacity;
+        //         }
+        //         C /= casing_area();
+        //         return C;
+        //     }
+
+        //     const RealType cement_volumetric_heat_capacity() const
+        //     {
+        //         // exclude "flow" at "i = 0" from summation!
+        //         RealType C{0.0};
+        //         for (ptrdiff_t i{MaterialType::Cement}; i <= MaterialType::Cement; ++i)
+        //         {
+        //             const auto &m = sandwich[i];
+        //             C += m.linear_heat_capacity;
+        //         }
+        //         C /= cement_area();
+        //         return C;
+        //     }
+
+        //     const RealType integral_casing_radial_heat_conductivity() const
+        //     {
+        //         // exclude "flow" at "i = 0"
+        //         // as well as "cement2" at "i = end-1"
+        //         // from summation!
+        //         RealType L{0.0};
+        //         for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Column; ++i)
+        //         {
+        //             const auto &m = sandwich[i];
+        //             L += 1.0 / m.radial_heat_conductivity;
+        //         }
+        //         assert(L > 0.0);
+        //         assert(!std::isnan(L));
+        //         return 1.0 / L;
+        //     }
+
+        //     const RealType integral_vertical_casing_heat_conductivity() const
+        //     {
+        //         // exclude "flow" at "i = 0"
+        //         // as well as "cement2" at "i = end-1"
+        //         // from summation!
+        //         RealType L{0.0};
+        //         for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Column; ++i)
+        //         {
+        //             const auto &m = sandwich[i];
+        //             L += m.integral_vertical_heat_conductivity;
+        //         }
+        //         return L / casing_area();
+        //     }
+
+        //     const RealType integral_vertical_cement_heat_conductivity() const
+        //     {
+        //         // exclude "flow" at "i = 0"
+        //         // as well as "cement2" at "i = end-1"
+        //         // from summation!
+        //         RealType L{0.0};
+        //         for (ptrdiff_t i{MaterialType::Cement}; i <= MaterialType::Cement; ++i)
+        //         {
+        //             const auto &m = sandwich[i];
+        //             L += m.integral_vertical_heat_conductivity;
+        //         }
+        //         return L / cement_area();
+        //     }
+
+        //     const std::vector<Ring> sandwich;
+        //     const RealType sandface_radius, column_outer_radius, flow_radius //, thickness
+        //         ;
+
+        //     const RealType area() const
+        //     {
+        //         const auto out{cement_area() + casing_area()};
+        //         assert(out > 0.0);
+        //         return out;
+        //     }
+
+        //     const RealType cement_area() const
+        //     {
+        //         const auto out{std::numbers::pi *
+        //                        (sandwich[MaterialType::Cement].thickness) *
+        //                        (sandwich[MaterialType::Cement].outer_radius + sandwich[MaterialType::Cement].inner_radius)};
+        //         assert(out > 0.0);
+        //         return out;
+        //     }
+
+        //     const RealType casing_area() const
+        //     {
+        //         const auto out{std::numbers::pi *
+        //                        (sandwich[MaterialType::Column].outer_radius - sandwich[MaterialType::Tube].inner_radius) *
+        //                        (sandwich[MaterialType::Column].outer_radius + sandwich[MaterialType::Tube].inner_radius)};
+        //         assert(out > 0.0);
+        //         return out;
+        //     }
+
+        // private:
+        //     const size_t size() const
+        //     {
+        //         return sandwich.size();
+        //     }
+        // };
+
+        bool is_tight_casing(
+            const RealType lhs,
+            const RealType rhs)
+        {
+            return std::abs(lhs - rhs) < 1e-12;
+        }
+        bool is_tight_casing(
+            const Eigen::ArrayX<RealType> &lhs,
+            const Eigen::ArrayX<RealType> &rhs)
+        {
+            assert(lhs.size() == rhs.size());
+
+            const Eigen::ArrayX<RealType> temp{(lhs - rhs).abs()};
+            return std::all_of(temp.cbegin(), temp.cend(), [](RealType v)
+                               { return v < 1e-12; });
+        }
+
+        bool is_positive(const RealType v)
+        {
+            return v > 0.0;
+        }
+        bool is_positive(const Eigen::ArrayX<RealType> &v)
+        {
+            return std::all_of(v.cbegin(), v.cend(), [](RealType v)
+                               { return v > 0.0; });
+        }
+
+        bool is_nan(const RealType v)
+        {
+            return std::isnan(v);
+        }
+        bool is_nan(const Eigen::ArrayX<RealType> &v)
+        {
+            return std::any_of(v.cbegin(), v.cend(), [](const RealType v)
+                               { return std::isnan(v); });
+        }
+
+        template <typename Ring_t>
         struct Casing
         {
-            Casing(const std::vector<Ring> &completion)
+            using value_type = Ring_t::value_type;
+            Casing(const std::vector<Ring_t> &completion)
                 : sandwich{completion},
                   sandface_radius{completion.back().outer_radius},
                   flow_radius{completion.front().outer_radius},
                   column_outer_radius{completion[MaterialType::Column].outer_radius}
             {
                 for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Cement; ++i)
-                {
-                    assert(std::abs(completion[i].inner_radius - completion[i - 1ll].outer_radius) < 1e-12);
-                }
+                    assert(
+                        is_tight_casing(
+                            completion[i].inner_radius,
+                            completion[i - 1ll].outer_radius));
             }
 
             const auto &back() const { return sandwich.back(); }
@@ -378,11 +552,12 @@ namespace GPN
                 return sandwich[i];
             }
 
-            const RealType casing_volumetric_heat_capacity() const
+            const value_type casing_volumetric_heat_capacity() const
             {
                 // exclude "flow" at "i = 0" from summation!
-                RealType C{0.0};
-                for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Column; ++i)
+                const auto start{MaterialType::Tube};
+                value_type C{sandwich[start].linear_heat_capacity};
+                for (ptrdiff_t i{start + 1}; i <= MaterialType::Column; ++i)
                 {
                     const auto &m = sandwich[i];
                     C += m.linear_heat_capacity;
@@ -391,89 +566,75 @@ namespace GPN
                 return C;
             }
 
-            const RealType cement_volumetric_heat_capacity() const
+            const value_type cement_volumetric_heat_capacity() const
             {
-                // exclude "flow" at "i = 0" from summation!
-                RealType C{0.0};
-                for (ptrdiff_t i{MaterialType::Cement}; i <= MaterialType::Cement; ++i)
-                {
-                    const auto &m = sandwich[i];
-                    C += m.linear_heat_capacity;
-                }
-                C /= cement_area();
-                return C;
+                return sandwich[MaterialType::Cement].linear_heat_capacity / cement_area();
             }
 
-            const RealType integral_casing_radial_heat_conductivity() const
+            const value_type integral_casing_radial_heat_conductivity() const
             {
                 // exclude "flow" at "i = 0"
                 // as well as "cement2" at "i = end-1"
                 // from summation!
-                RealType L{0.0};
-                for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Column; ++i)
+                const auto start{MaterialType::Tube};
+                value_type L{sandwich[start].radial_heat_conductivity};
+                for (ptrdiff_t i{start + 1}; i <= MaterialType::Column; ++i)
                 {
                     const auto &m = sandwich[i];
                     L += 1.0 / m.radial_heat_conductivity;
                 }
-                assert(L > 0.0);
-                assert(!std::isnan(L));
+                assert(is_positive(L));
+                assert(!is_nan(L));
                 return 1.0 / L;
             }
 
-            const RealType integral_vertical_casing_heat_conductivity() const
+            const value_type integral_vertical_casing_heat_conductivity() const
             {
                 // exclude "flow" at "i = 0"
                 // as well as "cement2" at "i = end-1"
                 // from summation!
-                RealType L{0.0};
-                for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Column; ++i)
+                const auto start{MaterialType::Tube};
+                value_type L{sandwich[start].integral_vertical_heat_conductivity};
+                for (ptrdiff_t i{start + 1}; i <= MaterialType::Column; ++i)
                 {
                     const auto &m = sandwich[i];
                     L += m.integral_vertical_heat_conductivity;
                 }
+                assert(is_positive(L));
+                assert(!is_nan(L));
                 return L / casing_area();
             }
 
-            const RealType integral_vertical_cement_heat_conductivity() const
+            const value_type integral_vertical_cement_heat_conductivity() const
             {
-                // exclude "flow" at "i = 0"
-                // as well as "cement2" at "i = end-1"
-                // from summation!
-                RealType L{0.0};
-                for (ptrdiff_t i{MaterialType::Cement}; i <= MaterialType::Cement; ++i)
-                {
-                    const auto &m = sandwich[i];
-                    L += m.integral_vertical_heat_conductivity;
-                }
-                return L / cement_area();
+                return sandwich[MaterialType::Cement].integral_vertical_heat_conductivity / cement_area();
             }
 
-            const std::vector<Ring> sandwich;
-            const RealType sandface_radius, column_outer_radius, flow_radius //, thickness
+            const std::vector<Ring_t> sandwich;
+            const value_type sandface_radius, column_outer_radius, flow_radius //, thickness
                 ;
 
-            const RealType area() const
+            const value_type area() const
             {
-                const auto out{cement_area() + casing_area()};
-                assert(out > 0.0);
+                const value_type out{cement_area() + casing_area()};
                 return out;
             }
 
-            const RealType cement_area() const
+            const value_type cement_area() const
             {
-                const auto out{std::numbers::pi *
-                               (sandwich[MaterialType::Cement].thickness) *
-                               (sandwich[MaterialType::Cement].outer_radius + sandwich[MaterialType::Cement].inner_radius)};
-                assert(out > 0.0);
+                const value_type out{std::numbers::pi *
+                                     (sandwich[MaterialType::Cement].thickness) *
+                                     (sandwich[MaterialType::Cement].outer_radius + sandwich[MaterialType::Cement].inner_radius)};
+                assert(is_positive(out));
                 return out;
             }
 
-            const RealType casing_area() const
+            const value_type casing_area() const
             {
-                const auto out{std::numbers::pi *
-                               (sandwich[MaterialType::Column].outer_radius - sandwich[MaterialType::Tube].inner_radius) *
-                               (sandwich[MaterialType::Column].outer_radius + sandwich[MaterialType::Tube].inner_radius)};
-                assert(out > 0.0);
+                const value_type out{std::numbers::pi *
+                                     (sandwich[MaterialType::Column].outer_radius - sandwich[MaterialType::Tube].inner_radius) *
+                                     (sandwich[MaterialType::Column].outer_radius + sandwich[MaterialType::Tube].inner_radius)};
+                assert(is_positive(out));
                 return out;
             }
 

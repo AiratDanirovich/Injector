@@ -155,7 +155,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const RealType start_time{data["history"]["start_time"]};
   /*temperatures*/
   /*completion*/
-  const Casing completion{get_completion(data)};
+  const Casing<Ring> completion{get_completion(data)};
   /*END*/
 
   // make grid2D
@@ -208,8 +208,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const PhaseProperties water{
       FluidFactory::create_water(
           Viscosity{viscosity},
-          Density{density},
-          SpecificHeatCapacity{capacity},
+          GPN::Density{density},
+          GPN::SpecificHeatCapacity{capacity},
           GPN::HeatConductivity{heat_conductivity})};
   // well
   // const Well_KH well{

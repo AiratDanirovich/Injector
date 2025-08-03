@@ -20,8 +20,8 @@ const auto get_completion(const json &data)
         out.push_back(
             Ring{
                 Flow{
-                    Density{data2["density"]},
-                    SpecificHeatCapacity{data2["specific_heat_capacity"]},
+                    GPN::Density{data2["density"]},
+                    GPN::SpecificHeatCapacity{data2["specific_heat_capacity"]},
                     GPN::HeatConductivity{data2["heat_conductivity"]}},
                 Thickness{data["completion"]["tube"]["inner_radius"]},
                 InnerRadius{0.0},
@@ -34,8 +34,8 @@ const auto get_completion(const json &data)
         out.push_back(
             Ring{
                 Tube{
-                    Density{data2["density"]},
-                    SpecificHeatCapacity{data2["specific_heat_capacity"]},
+                    GPN::Density{data2["density"]},
+                    GPN::SpecificHeatCapacity{data2["specific_heat_capacity"]},
                     GPN::HeatConductivity{data2["heat_conductivity"]}},
                 Thickness{data2["thickness"]},
                 InnerRadius{out.back().outer_radius},
@@ -48,8 +48,8 @@ const auto get_completion(const json &data)
         out.push_back(
             Ring{
                 Annulus{
-                    Density{data2["density"]},
-                    SpecificHeatCapacity{data2["specific_heat_capacity"]},
+                    GPN::Density{data2["density"]},
+                    GPN::SpecificHeatCapacity{data2["specific_heat_capacity"]},
                     GPN::HeatConductivity{data2["heat_conductivity"]}},
                 Thickness{data2["thickness"]},
                 InnerRadius{out.back().outer_radius},
@@ -62,8 +62,8 @@ const auto get_completion(const json &data)
         out.push_back(
             Ring{
                 Annulus{
-                    Density{data2["density"]},
-                    SpecificHeatCapacity{data2["specific_heat_capacity"]},
+                    GPN::Density{data2["density"]},
+                    GPN::SpecificHeatCapacity{data2["specific_heat_capacity"]},
                     GPN::HeatConductivity{data2["heat_conductivity"]}},
                 Thickness{data2["thickness"]},
                 InnerRadius{out.back().outer_radius},
@@ -76,8 +76,8 @@ const auto get_completion(const json &data)
         out.push_back(
             Ring{
                 Cement{
-                    Density{data2["density"]},
-                    SpecificHeatCapacity{data2["specific_heat_capacity"]},
+                    GPN::Density{data2["density"]},
+                    GPN::SpecificHeatCapacity{data2["specific_heat_capacity"]},
                     GPN::HeatConductivity{data2["heat_conductivity"]}},
                 Thickness{data2["thickness"]},
                 InnerRadius{out.back().outer_radius},

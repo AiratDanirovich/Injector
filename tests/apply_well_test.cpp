@@ -225,8 +225,8 @@ TEST_CASE("apply_well_test", "apply_well_test")
   const PhaseProperties water{
       FluidFactory::create_water(
           Viscosity{viscosity},
-          Density{density},
-          SpecificHeatCapacity{capacity},
+          GPN::Density{density},
+          GPN::SpecificHeatCapacity{capacity},
           GPN::HeatConductivity{heat_conductivity})};
 
   const auto weights{
