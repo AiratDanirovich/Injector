@@ -9,14 +9,13 @@ namespace GPN
 {
     namespace Completion
     {
-
         struct ExtrudedRingFactory
         {
-            template <typename Grid_t>
+            template <typename Grid_t, typename Ring_t>
             static ExtrudedRing create_ring(
-                const FlowRing &flo_ring,
-                const TubeRing &tub_ring,
-                const ColumnRing &col_ring,
+                const FlowRing<Ring_t> &flo_ring,
+                const TubeRing<Ring_t> &tub_ring,
+                const ColumnRing<Ring_t> &col_ring,
                 const Grid_t &grid_z)
             {
                 using namespace Eigen;
@@ -34,10 +33,10 @@ namespace GPN
                 return ExtrudedRing{flo_ring, inner_radius, thickness};
             }
 
-            template <typename Grid_t>
+            template <typename Grid_t, typename Ring_t>
             static ExtrudedRing create_ring(
-                const TubeRing &tub_ring,
-                const ColumnRing &col_ring,
+                const TubeRing<Ring_t> &tub_ring,
+                const ColumnRing<Ring_t> &col_ring,
                 const Grid_t &grid_z)
             {
                 using namespace Eigen;
@@ -57,11 +56,11 @@ namespace GPN
                 return ExtrudedRing{tub_ring, inner_radius, thickness};
             }
 
-            template <typename Grid_t>
+            template <typename Grid_t, typename Ring_t>
             static ExtrudedRing create_ring(
-                const AnnulusRing &ann_ring,
-                const TubeRing &tub_ring,
-                const ColumnRing &col_ring,
+                const AnnulusRing<Ring_t> &ann_ring,
+                const TubeRing<Ring_t> &tub_ring,
+                const ColumnRing<Ring_t> &col_ring,
                 const Grid_t &grid_z)
             {
                 using namespace Eigen;
@@ -81,9 +80,9 @@ namespace GPN
                 return ExtrudedRing{ann_ring, inner_radius, thickness};
             }
 
-            template <typename Grid_t>
+            template <typename Grid_t, typename Ring_t>
             static ExtrudedRing create_ring(
-                const ColumnRing &ring,
+                const ColumnRing<Ring_t> &ring,
                 const Grid_t &grid_z)
             {
                 using namespace Eigen;
@@ -95,9 +94,9 @@ namespace GPN
                 return ExtrudedRing{ring, inner_radius, thickness};
             }
 
-            template <typename Grid_t>
+            template <typename Grid_t, typename Ring_t>
             static ExtrudedRing create_ring(
-                const CementRing &ring,
+                const CementRing<Ring_t> &ring,
                 const Grid_t &grid_z)
             {
                 using namespace Eigen;
@@ -153,9 +152,13 @@ namespace GPN
                 for (auto id{0ll}; id < grid_z.mesh_size(); ++id)
                 {
                     for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Cement; ++i)
-                        assert(std::abs(extruded_casing[i].inner_radius(id) - extruded_casing[i - 1ll].outer_radius(id)) < 1e-12);
+                    {
+                        assert(is_tight_casing(extruded_casing[i].inner_radius(id), extruded_casing[i - 1ll].outer_radius(id)));
+                    }
                     for (const auto& r : extruded_casing)
+                    {
                         assert(std::abs(r.inner_radius(id) + r.thickness(id) - r.outer_radius(id)) < 1e-12);
+                    }
                 }
 
                 return ExtrudedCasing{extruded_casing};
