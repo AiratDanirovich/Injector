@@ -75,6 +75,12 @@
       "heat_conductivity": 1.2,
       "specific_heat_capacity": 900,
       "density": 3500
+    },
+    "var_cement":{
+      "thickness": [0.04],
+      "heat_conductivity": [1.2],
+      "specific_heat_capacity": [900],
+      "density": [3500]
     }
   },
   "history": {

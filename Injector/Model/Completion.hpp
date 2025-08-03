@@ -4,6 +4,8 @@
 #include <algorithm>
 
 #include <Injector/Model/Phases/PhaseProperties.hpp>
+#include <Injector/Properties/Logs.hpp>
+
 #pragma warning(push)
 #pragma warning(disable : 4723)
 namespace GPN
@@ -35,6 +37,82 @@ namespace GPN
         {
         };
 
+        struct SomePropertyVar
+        {
+            operator Eigen::ArrayX<RealType>() const { return value.data; }
+            Logs::StepProperty value;
+        };
+
+        auto operator*(const Logs::StepProperty &lhs, const Logs::StepProperty &rhs)
+        {
+            return Logs::StepProperty{StepPropertyContainer{lhs.data * rhs.data}};
+        }
+        auto operator-(const Logs::StepProperty &lhs, const Logs::StepProperty &rhs)
+        {
+            return Logs::StepProperty{StepPropertyContainer{lhs.data - rhs.data}};
+        }
+        auto operator+(const Logs::StepProperty &lhs, const Logs::StepProperty &rhs)
+        {
+            return Logs::StepProperty{StepPropertyContainer{lhs.data + rhs.data}};
+        }
+        auto operator*(RealType v, const Logs::StepProperty &rhs)
+        {
+            return Logs::StepProperty{StepPropertyContainer{v * rhs.data}};
+        }
+        auto operator*(const Logs::StepProperty &lhs, RealType v)
+        {
+            return v * lhs;
+        }
+
+        struct Density : public SomePropertyVar
+        {
+        };
+        struct SpecificHeatCapacity : public SomePropertyVar
+        {
+        };
+        struct VolumetricHeatCapacity : public SomePropertyVar
+        {
+        };
+        struct HeatConductivity : public SomePropertyVar
+        {
+        };
+
+        struct VarThickness : public SomePropertyVar
+        {
+        };
+        struct VarInnerRadius : public SomePropertyVar
+        {
+        };
+        struct VarDepth : public SomePropertyVar
+        {
+        };
+
+        struct VariableStationaryPhaseProperties
+        {
+            VariableStationaryPhaseProperties(
+                const VariableStationaryPhaseProperties &) = default;
+
+            VariableStationaryPhaseProperties(
+                const Density &density,
+                const SpecificHeatCapacity &mass_heat_capacity,
+                const HeatConductivity &heat_conductivity) noexcept
+                : density{density},
+                  mass_heat_capacity{mass_heat_capacity},
+                  heat_conductivity{heat_conductivity},
+                  volumetric_heat_capacity{
+                      (mass_heat_capacity.value *
+                      density.value).data}
+            {
+            }
+
+            const Eigen::ArrayX<RealType> density;
+            const Eigen::ArrayX<RealType> mass_heat_capacity;
+            const Eigen::ArrayX<RealType> heat_conductivity;
+            const Eigen::ArrayX<RealType> volumetric_heat_capacity;
+
+            //    const Container_t<RealType> depth_grid;
+        };
+
         struct Flow : public StationaryPhaseProperties
         {
             using StationaryPhaseProperties::StationaryPhaseProperties;
@@ -58,6 +136,11 @@ namespace GPN
         struct Cement : public StationaryPhaseProperties
         {
             using StationaryPhaseProperties::StationaryPhaseProperties;
+        };
+
+        struct VarCement : public VariableStationaryPhaseProperties
+        {
+            using VariableStationaryPhaseProperties::VariableStationaryPhaseProperties;
         };
 
         struct Ring
@@ -131,6 +214,97 @@ namespace GPN
                     const RealType temp{std::log((1.0 + (RealType)thickness / (RealType)inner_radius))};
                     return props.heat_conductivity / temp;
                 }
+            }
+        };
+
+        struct VarRing
+            : public VariableStationaryPhaseProperties
+        {
+            VarRing(const VariableStationaryPhaseProperties &props,
+                    const VarThickness &thickness,
+                    const VarInnerRadius &inner_radius,
+                    const VarDepth &depth)
+                : VariableStationaryPhaseProperties{props},
+                  thickness{thickness},
+                  inner_radius{inner_radius},
+                  outer_radius{(inner_radius.value + thickness.value).data},
+                  depth{depth},
+                  linear_heat_capacity{
+                        linear_heat_capacity_calc(
+                            inner_radius, thickness, props)
+                  },
+                  radial_heat_conductivity{
+                        radial_heat_conductivity_calc(
+                            inner_radius, thickness, props)
+                  },
+                  integral_vertical_heat_conductivity{
+                        props.heat_conductivity * 
+                        std::numbers::pi *
+                       ( thickness.value * (thickness.value + 2.0 * inner_radius.value)).data
+                  }
+            {
+                   assert(assertion());
+            }
+
+            const Eigen::ArrayX<RealType>
+                thickness, depth, inner_radius, outer_radius;
+
+            // c
+            const Eigen::ArrayX<RealType> linear_heat_capacity;
+            // lambda/log(r_o/r_i)
+            const Eigen::ArrayX<RealType> radial_heat_conductivity;
+            const Eigen::ArrayX<RealType> integral_vertical_heat_conductivity;
+
+            const Eigen::ArrayX<RealType> area() const
+            {
+                return std::numbers::pi *
+                       (outer_radius - inner_radius) *
+                       (outer_radius + inner_radius);
+            }
+
+        private:
+            static Eigen::ArrayX<RealType>
+            linear_heat_capacity_calc(
+                VarInnerRadius inner_radius,
+                VarThickness thickness,
+                const VariableStationaryPhaseProperties &props)
+            {
+                return (std::numbers::pi *
+                       thickness.value * (2.0 * inner_radius.value + thickness.value) *
+                       props.volumetric_heat_capacity).data;
+            }
+
+            static Eigen::ArrayX<RealType>
+            radial_heat_conductivity_calc(
+                VarInnerRadius inner_radius,
+                VarThickness thickness,
+                const VariableStationaryPhaseProperties &props)
+            {
+                Eigen::ArrayX<RealType> out(thickness.value.size());
+                for(auto idx{0ll}; idx < out.size(); ++idx)
+
+                if (thickness.value(idx) == 0.0)
+                {
+                    out[idx] = std::numeric_limits<RealType>::infinity();
+                }
+                else
+                {
+                    const RealType temp{std::log(1.0 + (RealType)thickness.value(idx) / (RealType)inner_radius.value(idx))};
+                    out[idx] = props.heat_conductivity(idx) / temp;
+                }
+
+                return out;
+            }
+
+            bool assertion()
+            {
+                const auto temp{
+                    (outer_radius - inner_radius - thickness)};
+
+                return std::all_of(
+                    temp.cbegin(), temp.cend(),
+                    [](RealType v)
+                    { return std::abs(v) < 1e-12; });
             }
         };
 
@@ -293,7 +467,7 @@ namespace GPN
         struct ExtrudedRing : public StationaryPhaseProperties
         {
             template <typename Container_t, typename PhaseProperties_t>
-            ExtrudedRing( 
+            ExtrudedRing(
                 const PhaseProperties_t &props,
                 const Container_t &inner_radius,
                 const Container_t &thickness)
@@ -315,7 +489,8 @@ namespace GPN
                     assert(std::abs(outer_radius(id) - inner_radius(id) - thickness(id)) < 1e-12);
             }
 
-            const Eigen::ArrayX<RealType> thickness, depth,
+            const Eigen::ArrayX<RealType>
+                thickness, depth,
                 inner_radius, outer_radius;
 
             // c
@@ -386,13 +561,14 @@ namespace GPN
             {
                 return sandwich[i];
             }
-            
+
             const Eigen::ArrayX<RealType> cement_area() const
             {
                 const auto out{std::numbers::pi *
                                (sandwich[MaterialType::Cement].thickness) *
                                (sandwich[MaterialType::Cement].outer_radius + sandwich[MaterialType::Cement].inner_radius)};
-                assert(std::all_of(out.cbegin(), out.cend(), [](const auto v){return v > 0.0;}));
+                assert(std::all_of(out.cbegin(), out.cend(), [](const auto v)
+                                   { return v > 0.0; }));
                 return out;
             }
 
@@ -401,7 +577,8 @@ namespace GPN
                 const auto out{std::numbers::pi *
                                (sandwich[MaterialType::Column].outer_radius - sandwich[MaterialType::Tube].inner_radius) *
                                (sandwich[MaterialType::Column].outer_radius + sandwich[MaterialType::Tube].inner_radius)};
-                assert(std::all_of(out.cbegin(), out.cend(), [](const auto v){return v > 0.0;}));
+                assert(std::all_of(out.cbegin(), out.cend(), [](const auto v)
+                                   { return v > 0.0; }));
                 return out;
             }
 
@@ -409,7 +586,7 @@ namespace GPN
             {
                 // exclude "flow" at "i = 0" from summation!
                 auto C{sandwich[MaterialType::Tube].linear_heat_capacity};
-                for (ptrdiff_t i{MaterialType::Tube+1ll}; i <= MaterialType::Column; ++i)
+                for (ptrdiff_t i{MaterialType::Tube + 1ll}; i <= MaterialType::Column; ++i)
                 {
                     const auto &m = sandwich[i];
                     C += m.linear_heat_capacity;
@@ -420,7 +597,7 @@ namespace GPN
 
             const Eigen::ArrayX<RealType> cement_volumetric_heat_capacity() const
             {
-                return sandwich[MaterialType::Cement].linear_heat_capacity/cement_area();
+                return sandwich[MaterialType::Cement].linear_heat_capacity / cement_area();
             }
 
             const Eigen::ArrayX<RealType> integral_casing_radial_heat_conductivity() const
@@ -428,13 +605,14 @@ namespace GPN
                 // exclude "flow" at "i = 0"
                 // as well as "cement2" at "i = end-1"
                 // from summation!
-                Eigen::ArrayX<RealType> L{1.0/sandwich[MaterialType::Tube].radial_heat_conductivity};
-                for (ptrdiff_t i{MaterialType::Tube+1ll}; i <= MaterialType::Column; ++i)
+                Eigen::ArrayX<RealType> L{1.0 / sandwich[MaterialType::Tube].radial_heat_conductivity};
+                for (ptrdiff_t i{MaterialType::Tube + 1ll}; i <= MaterialType::Column; ++i)
                 {
                     const auto &m = sandwich[i];
                     L += 1.0 / m.radial_heat_conductivity;
                 }
-                assert(std::all_of(L.cbegin(), L.cend(), [](const RealType v){return (v > 0.0) && !std::isnan(v);}));
+                assert(std::all_of(L.cbegin(), L.cend(), [](const RealType v)
+                                   { return (v > 0.0) && !std::isnan(v); }));
                 return 1.0 / L;
             }
 
@@ -444,7 +622,7 @@ namespace GPN
                 // as well as "cement2" at "i = end-1"
                 // from summation!
                 Eigen::ArrayX<RealType> L{sandwich[MaterialType::Tube].integral_vertical_heat_conductivity};
-                for (ptrdiff_t i{MaterialType::Tube+1ll}; i <= MaterialType::Column; ++i)
+                for (ptrdiff_t i{MaterialType::Tube + 1ll}; i <= MaterialType::Column; ++i)
                 {
                     const auto &m = sandwich[i];
                     L += m.integral_vertical_heat_conductivity;
@@ -500,7 +678,7 @@ namespace GPN
                            (column.outer_radius * column.outer_radius * log(column.outer_radius / column.inner_radius) -
                             column.area() / 2.0 / std::numbers::pi);
             }
-            
+
             const Eigen::ArrayX<RealType> T_avg() const
             {
                 const auto &tube{sandwich[MaterialType::Tube]};
@@ -574,7 +752,7 @@ namespace GPN
                 return out;
             }
 
-            const Eigen::ArrayX<RealType>  zeta_02(const RealType r2) const
+            const Eigen::ArrayX<RealType> zeta_02(const RealType r2) const
             {
                 const auto &Column{sandwich[MaterialType::Column]};
                 const auto &Sandface{sandwich[MaterialType::Cement]};
