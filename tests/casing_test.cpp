@@ -27,7 +27,7 @@ TEST_CASE("Well_Test")
 
     const auto cement_log{
         VarRing{
-            VarCement{
+            VarColumn{
                 Completion::Density{data2["density"].get<vector<RealType>>()},
                 Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<vector<RealType>>()},
                 Completion::HeatConductivity{data2["heat_conductivity"].get<vector<RealType>>()}},
@@ -35,6 +35,16 @@ TEST_CASE("Well_Test")
             Completion::VarInnerRadius{data2["specific_heat_capacity"].get<vector<RealType>>()},
             Completion::VarDepth{data2["heat_conductivity"].get<vector<RealType>>()}}};
 
+    vector<VarRing> casing;
+    casing.push_back(cement_log);
 
-    
+    casing.emplace_back(
+        VarRing {
+            VarCement{
+                Completion::Density{data2["density"].get<vector<RealType>>()},
+                Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<vector<RealType>>()},
+                Completion::HeatConductivity{data2["heat_conductivity"].get<vector<RealType>>()}},
+            Completion::VarThickness{data2["thickness"].get<vector<RealType>>()},
+            Completion::VarInnerRadius{casing.back().outer_radius},
+            Completion::VarDepth{data2["heat_conductivity"].get<vector<RealType>>()} });
 }
