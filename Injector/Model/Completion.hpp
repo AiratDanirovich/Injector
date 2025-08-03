@@ -293,7 +293,7 @@ namespace GPN
         struct ExtrudedRing : public StationaryPhaseProperties
         {
             template <typename Container_t, typename PhaseProperties_t>
-            ExtrudedRing(
+            ExtrudedRing( 
                 const PhaseProperties_t &props,
                 const Container_t &inner_radius,
                 const Container_t &thickness)
