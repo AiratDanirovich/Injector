@@ -50,7 +50,7 @@
     }
   },
   "completion": {
-    "tube":{
+    "tube": {
       "inner_radius": 0.04,
       "thickness": 0.04,
       "heat_conductivity": 1E20,
@@ -58,29 +58,51 @@
       "specific_heat_capacity": 4200,
       "depth": 25
     },
-    "annulus":{
+    "annulus": {
       "thickness": 0.04,
       "heat_conductivity": 0.04,
       "density": 90,
       "specific_heat_capacity": 1000
     },
-    "column":{
+    "column": {
       "thickness": 0.04,
       "heat_conductivity": 0.04,
       "density": 90,
       "specific_heat_capacity": 1000
     },
-    "cement":{
+    "cement": {
       "thickness": 0.04,
       "heat_conductivity": 1.2,
       "specific_heat_capacity": 900,
       "density": 3500
     },
-    "var_cement":{
-      "thickness": [0.04],
-      "heat_conductivity": [1.2],
-      "specific_heat_capacity": [900],
-      "density": [3500]
+    "variable": {
+      "tube": {
+        "inner_radius": [0.04],
+        "thickness": [0.04],
+        "heat_conductivity": [1E20],
+        "density": [1000],
+        "specific_heat_capacity": [4200],
+        "depth_interval": [25]
+      },
+      "annulus": {
+        "thickness": [0.04],
+        "heat_conductivity": [0.04],
+        "density": [90],
+        "specific_heat_capacity": [1000]
+      },
+      "column": {
+        "thickness": [0.04],
+        "heat_conductivity": [0.04],
+        "density": [90],
+        "specific_heat_capacity": [1000]
+      },
+      "cement": {
+        "thickness": [0.04],
+        "heat_conductivity": [1.2],
+        "density": [3500],
+        "specific_heat_capacity": [900]
+      }
     }
   },
   "history": {
