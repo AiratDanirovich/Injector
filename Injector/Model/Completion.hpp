@@ -143,6 +143,26 @@ namespace GPN
             using VariableStationaryPhaseProperties::VariableStationaryPhaseProperties;
         };
 
+        struct VarColumn : public VariableStationaryPhaseProperties
+        {
+            using VariableStationaryPhaseProperties::VariableStationaryPhaseProperties;
+        };
+        
+        struct VarAnnulus : public VariableStationaryPhaseProperties
+        {
+            using VariableStationaryPhaseProperties::VariableStationaryPhaseProperties;
+        };
+        
+        struct VarTube : public VariableStationaryPhaseProperties
+        {
+            using VariableStationaryPhaseProperties::VariableStationaryPhaseProperties;
+        };
+        
+        struct VarFlow : public VariableStationaryPhaseProperties
+        {
+            using VariableStationaryPhaseProperties::VariableStationaryPhaseProperties;
+        };
+
         struct Ring
             : public StationaryPhaseProperties
         {
