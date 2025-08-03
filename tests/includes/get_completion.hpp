@@ -13,7 +13,7 @@ const auto get_completion(const json &data)
     using namespace GPN::Completion;
 
     std::vector<Ring> out;
-    out.reserve(6);
+    out.reserve(5);
 
     { // flowing fluid
         const auto &data2 = data["fluid"];
