@@ -133,24 +133,24 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       capacity{data["fluid"]["specific_heat_capacity"]},
       heat_conductivity{data["fluid"]["heat_conductivity"]};
   /*collector*/
-  const VR thickness = data["collector"]["thickness"];
+  const VR thickness{data["collector"]["thickness"].get<VR>()};
   // const ptrdiff_t nLayers{thickness.size()};
   // hydrodynamic logs
-  const auto is_permeable_stencils{transfer_to_eigen(data["collector"]["is_permeable"])};
-  const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"])};
-  const auto porosity_stencils{transfer_to_eigen(data["collector"]["porosity"])};
-  const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"], 1e-12)};
-  const auto weights_stencils{transfer_to_eigen(data["collector"]["explicit"]["weights"])};
+  const auto is_permeable_stencils{transfer_to_eigen(data["collector"]["is_permeable"].get<VR>())};
+  const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"].get<VR>())};
+  const auto porosity_stencils{transfer_to_eigen(data["collector"]["porosity"].get<VR>())};
+  const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"].get<VR>(), 1e-12)};
+  const auto weights_stencils{transfer_to_eigen(data["collector"]["explicit"]["weights"].get<VR>())};
   // heat logs
-  const auto solid_heatconductivity_stencils{transfer_to_eigen(data["collector"]["heatConductivity"])};
-  const auto solid_density_stencils{transfer_to_eigen(data["collector"]["solidDensity"])};
-  const auto solid_specific_heatcapacity_stencils{transfer_to_eigen(data["collector"]["solidSpecificHeatCapacity"])};
+  const auto solid_heatconductivity_stencils{transfer_to_eigen(data["collector"]["heatConductivity"].get<VR>())};
+  const auto solid_density_stencils{transfer_to_eigen(data["collector"]["solidDensity"].get<VR>())};
+  const auto solid_specific_heatcapacity_stencils{transfer_to_eigen(data["collector"]["solidSpecificHeatCapacity"].get<VR>())};
   /*grid*/
   const RealType
       z_minor_step{data["grid"]["z_minor_step"]}; // m
   //  const ptrdiff_t rNodes{data["grid"]["rNodes"]};
   /*history*/
-  const std::string history_type = data["history"]["history_type"];
+  const std::string history_type{data["history"]["history_type"].get<string>()};
   const RealType t_minor_step{data["history"]["t_minor_step"]};
   const RealType start_time{data["history"]["start_time"]};
   /*temperatures*/
