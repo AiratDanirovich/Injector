@@ -107,6 +107,22 @@ namespace GPN
             {
             }
 
+
+            /// @brief Generate const-value phase properties
+            /// @param density 
+            /// @param specific_heat_capacity 
+            /// @param heat_conductivity 
+            VariableStationaryPhaseProperties(
+                const GPN::Density &density,
+                const GPN::SpecificHeatCapacity &specific_heat_capacity,
+                const GPN::HeatConductivity &heat_conductivity)
+                : VariableStationaryPhaseProperties{
+                      Density{std::vector<RealType>{density}},
+                      SpecificHeatCapacity{std::vector<RealType>{specific_heat_capacity}},
+                      HeatConductivity{std::vector<RealType>{heat_conductivity}}}
+            {
+            }
+
             const Eigen::ArrayX<RealType> density;
             const Eigen::ArrayX<RealType> specific_heat_capacity;
             const Eigen::ArrayX<RealType> heat_conductivity;
@@ -160,15 +176,7 @@ namespace GPN
 
         struct VarFlow : public VariableStationaryPhaseProperties
         {
-            VarFlow(const GPN::Density &density,
-                    const GPN::SpecificHeatCapacity &specific_heat_capacity,
-                    const GPN::HeatConductivity &heat_conductivity)
-                : VariableStationaryPhaseProperties{
-                      Completion::Density{std::vector<RealType>{density}},
-                      Completion::SpecificHeatCapacity{std::vector<RealType>{specific_heat_capacity}},
-                      Completion::HeatConductivity{std::vector<RealType>{heat_conductivity}}}
-            {
-            }
+            using VariableStationaryPhaseProperties::VariableStationaryPhaseProperties;
         };
 
         struct Ring
