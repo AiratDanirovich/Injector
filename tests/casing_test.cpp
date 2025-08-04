@@ -42,7 +42,7 @@ TEST_CASE("Well_Test")
                     GPN::Density{data2["density"].get<RealType>()},
                     GPN::SpecificHeatCapacity{data2["specific_heat_capacity"].get<RealType>()},
                     GPN::HeatConductivity{data2["heat_conductivity"].get<RealType>()}},
-                Completion::VarThickness{data["completion"]["tube"]["inner_radius"].get<VR>()},
+                Completion::VarThickness{data["completion"]["variable"]["tube"]["inner_radius"].get<VR>()},
                 Completion::VarInnerRadius{vector{0.0}},
                 Completion::VarDepth{vector{std::numeric_limits<RealType>::max()}}});
     }
