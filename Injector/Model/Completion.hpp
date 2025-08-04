@@ -194,6 +194,7 @@ namespace GPN
                   inner_radius{inner_radius},
                   outer_radius{inner_radius + thickness},
                   depth{depth},
+                  max_depth{depth},
                   linear_heat_capacity{
                       linear_heat_capacity_calc(
                           inner_radius, thickness, props)},
@@ -207,7 +208,7 @@ namespace GPN
                 assert(std::abs(outer_radius - inner_radius - thickness) < 1e-12);
             }
 
-            const RealType thickness, depth;
+            const RealType thickness, depth, max_depth;
             const RealType inner_radius, outer_radius;
 
             // c
@@ -269,6 +270,7 @@ namespace GPN
                   inner_radius{inner_radius},
                   outer_radius{(inner_radius.value + thickness.value).data},
                   depth{depth},
+                  max_depth{depth.value.data.sum()},
                   linear_heat_capacity{
                       linear_heat_capacity_calc(
                           inner_radius, thickness, props)},
@@ -286,6 +288,7 @@ namespace GPN
             const value_type
                 thickness,
                 depth, inner_radius, outer_radius;
+            const RealType max_depth;
 
             // c
             const value_type linear_heat_capacity;
@@ -347,161 +350,36 @@ namespace GPN
             }
         };
 
-        struct FlowRing : public Ring
+        template <typename Ring_t>
+        struct FlowRing : public Ring_t
         {
-            using Ring::Ring;
-            FlowRing(const Ring &r) : Ring{r} {}
+            using Ring_t::Ring_t;
+            FlowRing(const Ring_t &r) : Ring_t{r} {}
         };
-        struct TubeRing : public Ring
+        template <typename Ring_t>
+        struct TubeRing : public Ring_t
         {
-            using Ring::Ring;
-            TubeRing(const Ring &r) : Ring{r} {}
+            using Ring_t::Ring_t;
+            TubeRing(const Ring_t &r) : Ring_t{r} {}
         };
-        struct AnnulusRing : public Ring
+        template <typename Ring_t>
+        struct AnnulusRing : public Ring_t
         {
-            using Ring::Ring;
-            AnnulusRing(const Ring &r) : Ring{r} {}
+            using Ring_t::Ring_t;
+            AnnulusRing(const Ring_t &r) : Ring_t{r} {}
         };
-        struct ColumnRing : public Ring
+        template <typename Ring_t>
+        struct ColumnRing : public Ring_t
         {
-            using Ring::Ring;
-            ColumnRing(const Ring &r) : Ring{r} {}
+            using Ring_t::Ring_t;
+            ColumnRing(const Ring_t &r) : Ring_t{r} {}
         };
-        struct CementRing : public Ring
+        template <typename Ring_t>
+        struct CementRing : public Ring_t
         {
-            using Ring::Ring;
-            CementRing(const Ring &r) : Ring{r} {}
+            using Ring_t::Ring_t;
+            CementRing(const Ring_t &r) : Ring_t{r} {}
         };
-
-        // struct Casing
-        // {
-        //     Casing(const std::vector<Ring> &completion)
-        //         : sandwich{completion},
-        //           sandface_radius{completion.back().outer_radius},
-        //           flow_radius{completion.front().outer_radius},
-        //           column_outer_radius{completion[MaterialType::Column].outer_radius}
-        //     {
-        //         for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Cement; ++i)
-        //         {
-        //             assert(std::abs(completion[i].inner_radius - completion[i - 1ll].outer_radius) < 1e-12);
-        //         }
-        //     }
-
-        //     const auto &back() const { return sandwich.back(); }
-        //     const auto &front() const { return sandwich.front(); }
-
-        //     const auto &flow() const { return front(); }
-
-        //     const auto &operator[](auto i) const
-        //     {
-        //         return sandwich[i];
-        //     }
-
-        //     const RealType casing_volumetric_heat_capacity() const
-        //     {
-        //         // exclude "flow" at "i = 0" from summation!
-        //         RealType C{0.0};
-        //         for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Column; ++i)
-        //         {
-        //             const auto &m = sandwich[i];
-        //             C += m.linear_heat_capacity;
-        //         }
-        //         C /= casing_area();
-        //         return C;
-        //     }
-
-        //     const RealType cement_volumetric_heat_capacity() const
-        //     {
-        //         // exclude "flow" at "i = 0" from summation!
-        //         RealType C{0.0};
-        //         for (ptrdiff_t i{MaterialType::Cement}; i <= MaterialType::Cement; ++i)
-        //         {
-        //             const auto &m = sandwich[i];
-        //             C += m.linear_heat_capacity;
-        //         }
-        //         C /= cement_area();
-        //         return C;
-        //     }
-
-        //     const RealType integral_casing_radial_heat_conductivity() const
-        //     {
-        //         // exclude "flow" at "i = 0"
-        //         // as well as "cement2" at "i = end-1"
-        //         // from summation!
-        //         RealType L{0.0};
-        //         for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Column; ++i)
-        //         {
-        //             const auto &m = sandwich[i];
-        //             L += 1.0 / m.radial_heat_conductivity;
-        //         }
-        //         assert(L > 0.0);
-        //         assert(!std::isnan(L));
-        //         return 1.0 / L;
-        //     }
-
-        //     const RealType integral_vertical_casing_heat_conductivity() const
-        //     {
-        //         // exclude "flow" at "i = 0"
-        //         // as well as "cement2" at "i = end-1"
-        //         // from summation!
-        //         RealType L{0.0};
-        //         for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Column; ++i)
-        //         {
-        //             const auto &m = sandwich[i];
-        //             L += m.integral_vertical_heat_conductivity;
-        //         }
-        //         return L / casing_area();
-        //     }
-
-        //     const RealType integral_vertical_cement_heat_conductivity() const
-        //     {
-        //         // exclude "flow" at "i = 0"
-        //         // as well as "cement2" at "i = end-1"
-        //         // from summation!
-        //         RealType L{0.0};
-        //         for (ptrdiff_t i{MaterialType::Cement}; i <= MaterialType::Cement; ++i)
-        //         {
-        //             const auto &m = sandwich[i];
-        //             L += m.integral_vertical_heat_conductivity;
-        //         }
-        //         return L / cement_area();
-        //     }
-
-        //     const std::vector<Ring> sandwich;
-        //     const RealType sandface_radius, column_outer_radius, flow_radius //, thickness
-        //         ;
-
-        //     const RealType area() const
-        //     {
-        //         const auto out{cement_area() + casing_area()};
-        //         assert(out > 0.0);
-        //         return out;
-        //     }
-
-        //     const RealType cement_area() const
-        //     {
-        //         const auto out{std::numbers::pi *
-        //                        (sandwich[MaterialType::Cement].thickness) *
-        //                        (sandwich[MaterialType::Cement].outer_radius + sandwich[MaterialType::Cement].inner_radius)};
-        //         assert(out > 0.0);
-        //         return out;
-        //     }
-
-        //     const RealType casing_area() const
-        //     {
-        //         const auto out{std::numbers::pi *
-        //                        (sandwich[MaterialType::Column].outer_radius - sandwich[MaterialType::Tube].inner_radius) *
-        //                        (sandwich[MaterialType::Column].outer_radius + sandwich[MaterialType::Tube].inner_radius)};
-        //         assert(out > 0.0);
-        //         return out;
-        //     }
-
-        // private:
-        //     const size_t size() const
-        //     {
-        //         return sandwich.size();
-        //     }
-        // };
 
         bool is_tight_casing(
             const RealType lhs,

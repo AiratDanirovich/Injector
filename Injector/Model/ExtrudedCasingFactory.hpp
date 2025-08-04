@@ -25,7 +25,7 @@ namespace GPN
                 inner_radius = 0.0;
                 for (auto id{0ll}; id < size; ++id)
                 {
-                    thickness(id) = grid_z.mesh_nodes(id) < tub_ring.depth
+                    thickness(id) = grid_z.mesh_nodes(id) < tub_ring.max_depth
                                         ? flo_ring.thickness
                                         : col_ring.inner_radius;
                 }
