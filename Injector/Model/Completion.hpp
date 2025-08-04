@@ -2,6 +2,7 @@
 
 #include <numbers>
 #include <algorithm>
+#include <vector>
 
 #include <Injector/Model/Phases/PhaseProperties.hpp>
 #include <Injector/Properties/Logs.hpp>
@@ -94,24 +95,22 @@ namespace GPN
 
             VariableStationaryPhaseProperties(
                 const Density &density,
-                const SpecificHeatCapacity &mass_heat_capacity,
+                const SpecificHeatCapacity &specific_heat_capacity,
                 const HeatConductivity &heat_conductivity) noexcept
                 : density{density},
-                  mass_heat_capacity{mass_heat_capacity},
+                  specific_heat_capacity{specific_heat_capacity},
                   heat_conductivity{heat_conductivity},
                   volumetric_heat_capacity{
-                      (mass_heat_capacity.value *
+                      (specific_heat_capacity.value *
                        density.value)
                           .data}
             {
             }
 
             const Eigen::ArrayX<RealType> density;
-            const Eigen::ArrayX<RealType> mass_heat_capacity;
+            const Eigen::ArrayX<RealType> specific_heat_capacity;
             const Eigen::ArrayX<RealType> heat_conductivity;
             const Eigen::ArrayX<RealType> volumetric_heat_capacity;
-
-            //    const Container_t<RealType> depth_grid;
         };
 
         struct Flow : public StationaryPhaseProperties
@@ -161,7 +160,15 @@ namespace GPN
 
         struct VarFlow : public VariableStationaryPhaseProperties
         {
-            using VariableStationaryPhaseProperties::VariableStationaryPhaseProperties;
+            VarFlow(const GPN::Density &density,
+                    const GPN::SpecificHeatCapacity &specific_heat_capacity,
+                    const GPN::HeatConductivity &heat_conductivity)
+                : VariableStationaryPhaseProperties{
+                      Completion::Density{std::vector<RealType>{density}},
+                      Completion::SpecificHeatCapacity{std::vector<RealType>{specific_heat_capacity}},
+                      Completion::HeatConductivity{std::vector<RealType>{heat_conductivity}}}
+            {
+            }
         };
 
         struct Ring
