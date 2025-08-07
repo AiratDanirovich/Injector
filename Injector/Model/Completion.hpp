@@ -517,10 +517,9 @@ namespace GPN
 
             static VarRing create_annulus_ring(
                 const VarAnnulus &annulus_ring_props,
-                const VarDepth& depth_intervals,
+                const Eigen::ArrayX<RealType> &depth_intervals,
                 const VarRing &tube,
-                const VarRing &column
-            )
+                const VarRing &column)
             {
                 using namespace std;
 
@@ -536,6 +535,35 @@ namespace GPN
 
                 assert(tube.depth_stencils.size() > 1ll);
                 assert(column.depth_stencils.size() > 1ll);
+
+                vector<RealType> depth_stencils(depth_intervals.size() + 1ull, 0.0);
+                std::partial_sum(
+                    depth_intervals.cbegin(),
+                    depth_intervals.cend(),
+                    depth_stencils.begin() + 1ull);
+                assert(depth_stencils[0ull] == 0.0);
+                for (auto i{1ull}; i < depth_stencils.size(); ++i)
+                    assert(depth_stencils[i] == depth_stencils[i - 1] + depth_intervals(i - 1ll));
+
+                {
+                    depth_stencils.insert(depth_stencils.end(), tube.depth_stencils.cbegin() + 1ull, tube.depth_stencils.cend());
+                    assert(depth_stencils.size() ==
+                           tube.depth_stencils.size() + depth_intervals.size());
+                    std::sort(depth_stencils.begin(), depth_stencils.end());
+
+                    assert(depth_stencils.back() == tube.max_depth);
+
+                    RealType cur_depth{0.0};
+                    for (
+                        auto tube_id{1ll}, ann_id{1ll};
+                        (tube_id < tube.depth_stencils.size()) &&
+                        (cur_depth < tube.max_depth);)
+                    {
+                    }
+                    assert(cur_depth == tube.max_depth);
+                }
+
+                depth_stencils.insert(depth_stencils.end(), column.depth_stencils.cbegin() + 1ull, column.depth_stencils.cend());
 
                 return VarRing{
                     VarRingSimple{
