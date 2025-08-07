@@ -8,6 +8,8 @@
 #include <Injector/Model/Phases/PhaseProperties.hpp>
 #include <Injector/Properties/Logs.hpp>
 
+#include <tests/includes/print_vector.hpp>
+
 #pragma warning(push)
 #pragma warning(disable : 4723)
 namespace GPN
@@ -519,19 +521,10 @@ namespace GPN
                 const VarAnnulus &annulus_ring_props,
                 const Eigen::ArrayX<RealType> &depth_intervals,
                 const VarRing &tube,
-                const VarRing &column)
+                const VarRing &column,
+                const auto &grid_z)
             {
                 using namespace std;
-
-                vector<RealType>
-                    density, specific_heat_capacity, heat_conductivity,
-                    radial_thickness, depth_interval, inner_radius;
-                density.reserve(tube.depth_stencils.size() + column.depth_stencils.size());
-                specific_heat_capacity.reserve(density.capacity());
-                heat_conductivity.reserve(density.capacity());
-                radial_thickness.reserve(density.capacity());
-                depth_interval.reserve(density.capacity());
-                inner_radius.reserve(density.capacity());
 
                 assert(tube.depth_stencils.size() > 1ll);
                 assert(column.depth_stencils.size() > 1ll);
@@ -545,25 +538,147 @@ namespace GPN
                 for (auto i{1ull}; i < depth_stencils.size(); ++i)
                     assert(depth_stencils[i] == depth_stencils[i - 1] + depth_intervals(i - 1ll));
 
+                assert(depth_stencils.back() == tube.max_depth);
+
+#pragma region SET-PHYSICAL-PROPERTIES
+                vector<RealType>
+                    density, specific_heat_capacity, heat_conductivity;
+                density.reserve(grid_z.mesh_size());
+                specific_heat_capacity.reserve(grid_z.mesh_size());
+                heat_conductivity.reserve(grid_z.mesh_size());
+
                 {
-                    depth_stencils.insert(depth_stencils.end(), tube.depth_stencils.cbegin() + 1ull, tube.depth_stencils.cend());
-                    assert(depth_stencils.size() ==
-                           tube.depth_stencils.size() + depth_intervals.size());
-                    std::sort(depth_stencils.begin(), depth_stencils.end());
-
-                    assert(depth_stencils.back() == tube.max_depth);
-
-                    RealType cur_depth{0.0};
+                    auto id{0ll};
                     for (
-                        auto tube_id{1ll}, ann_id{1ll};
-                        (tube_id < tube.depth_stencils.size()) &&
-                        (cur_depth < tube.max_depth);)
+                        auto depth_id{1ll};
+                        (id < grid_z.mesh_size()) &&
+                        (grid_z.mesh_nodes(id) < depth_stencils.back());
+                        ++id)
                     {
+                        if (grid_z.mesh_nodes(id) > depth_stencils[depth_id])
+                            ++depth_id;
+
+                        if (grid_z.mesh_nodes(id) > depth_stencils[depth_id])
+                            throw std::logic_error(
+                                "Annulus physical properties discretization is "
+                                "higher than the discretization of z-axis grid.");
+
+                        density.push_back(
+                            annulus_ring_props.density(depth_id - 1ll));
+                        specific_heat_capacity.push_back(
+                            annulus_ring_props.specific_heat_capacity(depth_id - 1ll));
+                        heat_conductivity.push_back(
+                            annulus_ring_props.heat_conductivity(depth_id - 1ll));
                     }
-                    assert(cur_depth == tube.max_depth);
+
+                    // extrapolate annulus physical properties
+                    // below tube length
+                    // with the last set of (density; capacity; conductivity) annulus values
+                    for (; id < grid_z.mesh_size(); ++id)
+                    {
+                        density.push_back(
+                            annulus_ring_props.density.tail(1ll)(0ll));
+                        specific_heat_capacity.push_back(
+                            annulus_ring_props.specific_heat_capacity.tail(1ll)(0ll));
+                        heat_conductivity.push_back(
+                            annulus_ring_props.heat_conductivity.tail(1ll)(0ll));
+                    }
+                    assert(density.size() == grid_z.mesh_size());
+                    assert(specific_heat_capacity.size() == grid_z.mesh_size());
+                    assert(heat_conductivity.size() == grid_z.mesh_size());
                 }
 
-                depth_stencils.insert(depth_stencils.end(), column.depth_stencils.cbegin() + 1ull, column.depth_stencils.cend());
+                cout << "density:\n";
+                print_vector(density);
+
+                cout << "grid_z:\n";
+                cout << grid_z.mesh_nodes.transpose() << endl;
+
+                cout << "tube.depth_stencils:\n";
+                cout << tube.depth_stencils.transpose() << endl;
+#pragma endregion
+#pragma region SET-INNER-RADIUS
+                vector<RealType> inner_radius;
+                inner_radius.reserve(grid_z.mesh_size());
+                {
+                    assert(grid_z.mesh_nodes.tail(1ll)(0ll) > tube.max_depth);
+                    // for (auto id{0ll}, depth_id{1ll}; id < grid_z.mesh_size(); ++id)
+                    auto id{0ll};
+                    for (
+                        auto depth_id{1ll};
+                        (id < grid_z.mesh_size()) &&
+                        (grid_z.mesh_nodes(id) < depth_stencils.back());
+                        ++id)
+                    {
+                        if (grid_z.mesh_nodes(id) > tube.depth_stencils(depth_id))
+                            ++depth_id;
+
+                        if (
+                            (depth_id < tube.depth_stencils.size() - 1ll) &&
+                            (grid_z.mesh_nodes(id) > tube.depth_stencils(depth_id)))
+                            throw std::logic_error(
+                                "Tube properties discretization is "
+                                "higher than the discretization of z-axis grid.");
+
+                        inner_radius.push_back(
+                            tube.outer_radius(depth_id - 1ll));
+                    }
+                    // extrapolate annulus physical properties
+                    // below tube length
+                    // with the last set of (density; capacity; conductivity) annulus values
+                    auto depth_id{1ll};
+                    while (column.depth_stencils(depth_id) < grid_z.mesh_nodes(id))
+                        ++depth_id;
+
+                    inner_radius.push_back(
+                        column.inner_radius(depth_id - 1ll));
+                    ++id;
+
+                    for (; id < grid_z.mesh_size(); ++id)
+                    {
+                        if (grid_z.mesh_nodes(id) > column.depth_stencils(depth_id))
+                            ++depth_id;
+
+                        inner_radius.push_back(
+                            column.inner_radius(depth_id - 1ll));
+                    }
+                    assert(inner_radius.size() == grid_z.mesh_size());
+                }
+#pragma endregion
+#pragma region SET-OUTER-RADIUS
+                vector<RealType> outer_radius;
+                outer_radius.reserve(grid_z.mesh_size());
+                assert(grid_z.mesh_nodes.tail(1ll)(0ll) < column.max_depth);
+                for (auto id{0ll}, depth_id{1ll}; id < grid_z.mesh_size(); ++id)
+                {
+                    if (grid_z.mesh_nodes(id) > column.depth_stencils(depth_id))
+                        ++depth_id;
+
+                    if (grid_z.mesh_nodes(id) > column.depth_stencils(depth_id))
+                        throw std::logic_error(
+                            "Column properties discretization is "
+                            "higher than the discretization of z-axis grid.");
+
+                    outer_radius.push_back(
+                        column.inner_radius(depth_id - 1ll));
+                }
+                assert(outer_radius.size() == grid_z.mesh_size());
+#pragma endregion
+
+                for (auto id{0ull}; id < outer_radius.size(); ++id)
+                {
+                    if(grid_z.mesh_nodes(id) < tube.max_depth)
+                        assert(outer_radius[id] > inner_radius[id]);
+                    else
+                        assert(outer_radius[id] == inner_radius[id]);
+                }
+
+                vector<RealType> thickness(outer_radius.size());
+                std::transform(
+                    outer_radius.cbegin(), outer_radius.cend(),
+                    inner_radius.cbegin(), thickness.begin(),
+                    [](auto a, auto b)
+                    { return a - b; });
 
                 return VarRing{
                     VarRingSimple{
@@ -571,8 +686,8 @@ namespace GPN
                             Completion::Density{density},
                             Completion::SpecificHeatCapacity{specific_heat_capacity},
                             Completion::HeatConductivity{heat_conductivity}},
-                        Completion::VarThickness{radial_thickness},
-                        Completion::VarDepth{depth_interval}},
+                        Completion::VarThickness{thickness},
+                        Completion::VarDepth{grid_z.dual_steps}},
                     Completion::VarInnerRadius{inner_radius}};
             }
         };
