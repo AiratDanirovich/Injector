@@ -3,6 +3,7 @@
 #include <numbers>
 #include <algorithm>
 #include <vector>
+#include <exception>
 
 #include <Injector/Model/Phases/PhaseProperties.hpp>
 #include <Injector/Properties/Logs.hpp>
@@ -262,8 +263,8 @@ namespace GPN
             using value_type = Eigen::ArrayX<RealType>;
 
             VarRingSimple(const VariableStationaryPhaseProperties &props,
-                    const VarThickness &thickness,
-                    const VarDepth &depth_intervals)
+                          const VarThickness &thickness,
+                          const VarDepth &depth_intervals)
                 : props{props},
                   thickness{thickness},
                   depth_stencils{depth_stencils_calc(depth_intervals)},
@@ -308,41 +309,59 @@ namespace GPN
             }
         };
 
-
-
-        struct VarRing
-            : public VariableStationaryPhaseProperties
+        struct VarRing : public VarRingSimple
         {
             using value_type = Eigen::ArrayX<RealType>;
 
-            VarRing(const VariableStationaryPhaseProperties &props,
-                    const VarThickness &thickness,
-                    const VarInnerRadius &inner_radius,
-                    const VarDepth &depth)
-                : VariableStationaryPhaseProperties{props},
-                  thickness{thickness},
+            VarRing(const VarRingSimple &props,
+                    const VarInnerRadius &inner_radius)
+                : VarRingSimple{props},
                   inner_radius{inner_radius},
-                  outer_radius{(inner_radius.value + thickness.value).data},
-                  depth{depth},
-                  max_depth{depth.value.data.sum()},
+                  outer_radius{(value_type)inner_radius + (value_type)thickness},
                   linear_heat_capacity{
                       linear_heat_capacity_calc(
-                          inner_radius, thickness, props)},
+                          this->inner_radius, this->thickness, props.volumetric_heat_capacity())},
                   radial_heat_conductivity{
                       radial_heat_conductivity_calc(
-                          inner_radius, thickness, props)},
+                          this->inner_radius, this->thickness, props.heat_conductivity())},
                   integral_vertical_heat_conductivity{
-                      props.heat_conductivity *
+                      props.heat_conductivity() *
                       std::numbers::pi *
-                      (thickness.value * (thickness.value + 2.0 * inner_radius.value)).data}
+                      (value_type)thickness * ((value_type)thickness + 2.0 * (value_type)inner_radius)}
             {
                 assert(assertion());
             }
 
+            VarRing(const VariableStationaryPhaseProperties &props,
+                    const VarThickness &thickness,
+                    const VarInnerRadius &inner_radius,
+                    const VarDepth &depth_intervals)
+                : VarRing{
+                      VarRingSimple{props, thickness, depth_intervals},
+                      inner_radius}
+            {
+            }
+
+            // static value_type populate_array(const value_type &property, const auto &depth_stencils, const auto &grid_z)
+            // {
+            //     value_type out(grid_z.mesh_size());
+            //     auto id{0ll};
+            //     for (auto depth_id{0ll}; id < grid_z.mesh_size(); ++id)
+            //     {
+            //         if (depth_stencils(depth_id) < grid_z.mesh_nodes(id))
+            //             ++depth_id;
+            //         if (depth_stencils(depth_id) < grid_z.mesh_nodes(id))
+            //             throw std::logic_error(
+            //                 "Z-grid is too coarce! "
+            //                 "The casing properties vary multile times within a single z-step.");
+            //         out(id) = property(depth_id);
+            //     }
+            //     return out;
+            // }
+
             const value_type
-                thickness,
-                depth, inner_radius, outer_radius;
-            const RealType max_depth;
+                inner_radius,
+                outer_radius;
 
             // c
             const value_type linear_heat_capacity;
@@ -359,34 +378,44 @@ namespace GPN
 
         private:
             static value_type
+            depth_stencils_calc(const VarDepth &depth)
+            {
+                const auto &data{depth.value.data};
+                value_type out(1ll + data.size());
+                out(0ll) = 0.0;
+                for (auto i{1ll}; i < out.size(); ++i)
+                    out(i) = out(i - 1ll) + data(i - 1ll);
+                return out;
+            }
+
+            static value_type
             linear_heat_capacity_calc(
-                VarInnerRadius inner_radius,
-                VarThickness thickness,
-                const VariableStationaryPhaseProperties &props)
+                const value_type &inner_radius,
+                const value_type &thickness,
+                const value_type &volumetric_heat_capacity)
             {
                 return (std::numbers::pi *
-                        thickness.value * (2.0 * inner_radius.value + thickness.value) *
-                        props.volumetric_heat_capacity)
-                    .data;
+                        thickness * (2.0 * inner_radius + thickness) *
+                        volumetric_heat_capacity);
             }
 
             static value_type
             radial_heat_conductivity_calc(
-                VarInnerRadius inner_radius,
-                VarThickness thickness,
-                const VariableStationaryPhaseProperties &props)
+                const value_type &inner_radius,
+                const value_type &thickness,
+                const value_type &heat_conductivity)
             {
-                Eigen::ArrayX<RealType> out(thickness.value.size());
+                Eigen::ArrayX<RealType> out(thickness.size());
                 for (auto idx{0ll}; idx < out.size(); ++idx)
 
-                    if (thickness.value(idx) == 0.0)
+                    if (thickness(idx) == 0.0)
                     {
                         out[idx] = std::numeric_limits<RealType>::infinity();
                     }
                     else
                     {
-                        const RealType temp{std::log(1.0 + (RealType)thickness.value(idx) / (RealType)inner_radius.value(idx))};
-                        out[idx] = props.heat_conductivity(idx) / temp;
+                        const RealType temp{std::log(1.0 + (RealType)thickness(idx) / (RealType)inner_radius(idx))};
+                        out[idx] = heat_conductivity(idx) / temp;
                     }
 
                 return out;
@@ -401,6 +430,90 @@ namespace GPN
                     temp.cbegin(), temp.cend(),
                     [](RealType v)
                     { return std::abs(v) < 1e-12; });
+            }
+        };
+
+        struct FactoryVarRing
+        {
+            static VarRing create_flow_ring(
+                const Flow &flow_ring_props,
+                const VarRing &tube,
+                const VarRing &column)
+            {
+                using namespace std;
+
+                vector<RealType>
+                    density, specific_heat_capacity, heat_conductivity,
+                    radial_thickness, depth_interval, inner_radius;
+                density.reserve(tube.depth_stencils.size() + column.depth_stencils.size());
+                specific_heat_capacity.reserve(density.capacity());
+                heat_conductivity.reserve(density.capacity());
+                radial_thickness.reserve(density.capacity());
+                depth_interval.reserve(density.capacity());
+                inner_radius.reserve(density.capacity());
+
+                assert(tube.depth_stencils.size() > 1ll);
+                assert(column.depth_stencils.size() > 1ll);
+
+                for (auto depth_id{1ll}; depth_id < tube.depth_stencils.size(); ++depth_id)
+                {
+                    depth_interval.push_back(
+                        tube.depth_stencils(depth_id) - tube.depth_stencils(depth_id - 1ll));
+
+                    radial_thickness.push_back(tube.thickness(depth_id - 1ll));
+                    inner_radius.push_back(tube.inner_radius(depth_id - 1ll));
+
+                    density.push_back(flow_ring_props.density);
+                    specific_heat_capacity.push_back(flow_ring_props.specific_heat_capacity);
+                    heat_conductivity.push_back(flow_ring_props.heat_conductivity);
+                }
+
+                // skip column intervals which intersect with the tube overall height
+                auto depth_id{1ll};
+                while (
+                    (depth_id < column.depth_stencils.size()) &&
+                    (column.depth_stencils(depth_id) < tube.max_depth))
+                    ++depth_id;
+
+
+                if (depth_id < column.depth_stencils.size())
+                {
+                    depth_interval.push_back(
+                        column.depth_stencils(depth_id) - tube.max_depth);
+
+                    radial_thickness.push_back(column.thickness(depth_id-1ll));
+                    inner_radius.push_back(column.inner_radius(depth_id-1ll));
+
+                    density.push_back(flow_ring_props.density);
+                    specific_heat_capacity.push_back(flow_ring_props.specific_heat_capacity);
+                    heat_conductivity.push_back(flow_ring_props.heat_conductivity);
+                    ++depth_id;
+                }
+                else
+                    throw std::logic_error("Column length must be greater than the tube length!");
+
+                for (; depth_id < column.depth_stencils.size(); ++depth_id)
+                {
+                    depth_interval.push_back(
+                        column.depth_stencils(depth_id) - column.depth_stencils(depth_id - 1ll));
+
+                    radial_thickness.push_back(column.thickness(depth_id - 1ll));
+                    inner_radius.push_back(column.inner_radius(depth_id - 1ll));
+
+                    density.push_back(flow_ring_props.density);
+                    specific_heat_capacity.push_back(flow_ring_props.specific_heat_capacity);
+                    heat_conductivity.push_back(flow_ring_props.heat_conductivity);
+                }
+
+                return VarRing{
+                    VarRingSimple{
+                        VarFlow{
+                            Completion::Density{density},
+                            Completion::SpecificHeatCapacity{specific_heat_capacity},
+                            Completion::HeatConductivity{heat_conductivity}},
+                        Completion::VarThickness{radial_thickness},
+                        Completion::VarDepth{depth_interval}},
+                    Completion::VarInnerRadius{inner_radius}};
             }
         };
 
@@ -594,12 +707,12 @@ namespace GPN
 
         struct ExtrudedRing : public StationaryPhaseProperties
         {
-            template <typename Container_t, typename PhaseProperties_t>
+            template <typename Container_t>
             ExtrudedRing(
-                const PhaseProperties_t &props,
+                const StationaryPhaseProperties &props,
                 const Container_t &inner_radius,
                 const Container_t &thickness)
-                : StationaryPhaseProperties{props},
+                : props{props},
                   thickness{thickness},
                   inner_radius{inner_radius},
                   outer_radius{inner_radius + thickness},
@@ -620,6 +733,8 @@ namespace GPN
             const Eigen::ArrayX<RealType>
                 thickness, depth,
                 inner_radius, outer_radius;
+
+            const StationaryPhaseProperties props;
 
             // c
             const Eigen::ArrayX<RealType> linear_heat_capacity;
@@ -656,6 +771,91 @@ namespace GPN
             {
                 const auto temp{(1.0 + thickness / inner_radius).log()};
                 Eigen::ArrayX<RealType> out{props.heat_conductivity / temp};
+                for (auto id{0ll}; id < out.size(); ++id)
+                {
+                    if (thickness(id) == 0.0)
+                        out(id) = std::numeric_limits<RealType>::infinity();
+                }
+
+                return out;
+            }
+        };
+
+        struct VarExtrudedRing
+        {
+            using value_type = Eigen::ArrayX<RealType>;
+
+            VarExtrudedRing(
+                const value_type &density,
+                const value_type &specific_heat_capacity,
+                const value_type &heat_conductivity,
+                const value_type &inner_radius,
+                const value_type &thickness)
+                : thickness{thickness},
+                  inner_radius{inner_radius},
+                  outer_radius{inner_radius + thickness},
+                  linear_heat_capacity{
+                      linear_heat_capacity_calc(
+                          inner_radius, thickness, density * specific_heat_capacity)},
+                  radial_heat_conductivity{
+                      radial_heat_conductivity_calc(
+                          inner_radius, thickness, heat_conductivity)},
+                  integral_vertical_heat_conductivity{
+                      heat_conductivity * std::numbers::pi *
+                      thickness * (thickness + 2.0 * inner_radius)}
+            {
+                for (auto id{0ll}; id < thickness.size(); ++id)
+                    assert(std::abs(outer_radius(id) - inner_radius(id) - thickness(id)) < 1e-12);
+
+                //        assert(thickness.size() == depth.size());
+                assert(thickness.size() == inner_radius.size());
+                assert(thickness.size() == outer_radius.size());
+                assert(thickness.size() == density.size());
+                assert(thickness.size() == specific_heat_capacity.size());
+                assert(thickness.size() == heat_conductivity.size());
+                assert(thickness.size() == linear_heat_capacity.size());
+                assert(thickness.size() == radial_heat_conductivity.size());
+                assert(thickness.size() == integral_vertical_heat_conductivity.size());
+            }
+
+            const Eigen::ArrayX<RealType>
+                thickness, // depth,
+                inner_radius, outer_radius,
+                viscosity, specific_heat_capacity, heat_conductivity;
+
+            // c
+            const Eigen::ArrayX<RealType> linear_heat_capacity;
+            // lambda/log(r_o/r_i)
+            const Eigen::ArrayX<RealType> radial_heat_conductivity;
+            const Eigen::ArrayX<RealType> integral_vertical_heat_conductivity;
+
+            const Eigen::ArrayX<RealType> area() const
+            {
+                return std::numbers::pi *
+                       (outer_radius - inner_radius) *
+                       (outer_radius + inner_radius);
+            }
+
+        private:
+            static auto
+            linear_heat_capacity_calc(
+                const auto &inner_radius,
+                const auto &thickness,
+                const auto &volumetric_heat_capacity)
+            {
+                return std::numbers::pi *
+                       thickness * (2 * inner_radius + thickness) *
+                       volumetric_heat_capacity;
+            }
+
+            static auto
+            radial_heat_conductivity_calc(
+                const auto &inner_radius,
+                const auto &thickness,
+                const auto &heat_conductivity)
+            {
+                const auto temp{(1.0 + thickness / inner_radius).log()};
+                Eigen::ArrayX<RealType> out{heat_conductivity / temp};
                 for (auto id{0ll}; id < out.size(); ++id)
                 {
                     if (thickness(id) == 0.0)
