@@ -90,7 +90,8 @@ TEST_CASE("Well_Test")
             FactoryVarRing::create_flow_ring(
                 flow_ring_props,
                 casing.at(MaterialType::Tube),
-                casing.at(MaterialType::Column)));
+                casing.at(MaterialType::Column),
+                grid_z));
     }
     {
         const auto &data2 = data["completion"]["variable"]["annulus"];
@@ -99,23 +100,15 @@ TEST_CASE("Well_Test")
             Completion::Density{data2["density"].get<VR>()},
             Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<VR>()},
             Completion::HeatConductivity{data2["heat_conductivity"].get<VR>()}};
-            
+
         casing.emplace(
-            Completion::MaterialType::Flow,
+            Completion::MaterialType::Annulus,
             FactoryVarRing::create_annulus_ring(
                 annulus_ring_props,
                 Completion::VarDepth{data2["depth_interval"].get<VR>()},
                 casing.at(MaterialType::Tube),
-                casing.at(MaterialType::Column)));
-
-        //     casing.emplace(Completion::MaterialType::Annulus,
-        //         VarRingSimple{
-        //             VarAnnulus{
-        //                 Completion::Density{data2["density"].get<VR>()},
-        //                 Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<VR>()},
-        //                 Completion::HeatConductivity{data2["heat_conductivity"].get<VR>()}},
-        //             Completion::VarThickness{data2["thickness"].get<VR>()},
-        //             Completion::VarDepth{data2["depth_interval"].get<VR>()}});
+                casing.at(MaterialType::Column),
+                grid_z));
     }
     // {
     //     const auto &data2 = data["completion"]["variable"]["cement"];
