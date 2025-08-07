@@ -43,10 +43,8 @@ TEST_CASE("Well_Test")
             Grids::Factory::generate_dual_grid_stencils_from_steps(
                 0.0, data["collector"]["thickness"].get<VR>()))};
 
-    map<Completion::MaterialType::material_type, VarRingSimple> casing_simple;
     map<Completion::MaterialType::material_type, VarRing> casing;
 
-    //    casing.emplace(MaterialType::Tube, 1);
     {
         const auto &data2 = data["completion"]["variable"]["column"];
 
@@ -63,27 +61,14 @@ TEST_CASE("Well_Test")
                     Completion::VarDepth{data2["depth_interval"].get<VR>()}},
                 Completion::VarInnerRadius{data2["inner_radius"].get<VR>()}},
                 grid_z));
-
-
-        // casing.emplace(
-        //     Completion::MaterialType::Column,
-        //     VarRing{
-        //         VarRingSimple{
-        //             VarColumn{
-        //                 Completion::Density{data2["density"].get<VR>()},
-        //                 Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<VR>()},
-        //                 Completion::HeatConductivity{data2["heat_conductivity"].get<VR>()}},
-        //             Completion::VarThickness{data2["radial_thickness"].get<VR>()},
-        //             Completion::VarDepth{data2["depth_interval"].get<VR>()}},
-        //         Completion::VarInnerRadius{data2["inner_radius"].get<VR>()}});
     }
 
     {
         const auto &data2 = data["completion"]["variable"]["tube"];
-
         casing.emplace(
             Completion::MaterialType::Tube,
-            VarRing{
+            FactoryVarRing::create_tube_ring(
+                VarRing{
                 VarRingSimple{
                     VarTube{
                         Completion::Density{data2["density"].get<VR>()},
@@ -91,7 +76,8 @@ TEST_CASE("Well_Test")
                         Completion::HeatConductivity{data2["heat_conductivity"].get<VR>()}},
                     Completion::VarThickness{data2["radial_thickness"].get<VR>()},
                     Completion::VarDepth{data2["depth_interval"].get<VR>()}},
-                Completion::VarInnerRadius{data2["inner_radius"].get<VR>()}});
+                Completion::VarInnerRadius{data2["inner_radius"].get<VR>()}},
+                grid_z));
     }
     { // flowing fluid
         const auto &data2 = data["fluid"];

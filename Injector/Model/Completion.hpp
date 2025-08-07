@@ -494,62 +494,62 @@ namespace GPN
                     Completion::VarInnerRadius{inner_radius}};
             }
 
-            //    static VarRing create_tube_ring(
-            //     const VarRing &tube,
-            //     const auto &grid_z)
-            // {
-            //     using namespace std;
+               static VarRing create_tube_ring(
+                const VarRing &tube,
+                const auto &grid_z)
+            {
+                using namespace std;
 
-            //     vector<RealType>
-            //         density, specific_heat_capacity, heat_conductivity, outer_radius, inner_radius;
-            //     density.reserve(grid_z.mesh_size());
-            //     specific_heat_capacity.reserve(grid_z.mesh_size());
-            //     heat_conductivity.reserve(grid_z.mesh_size());
-            //     outer_radius.reserve(grid_z.mesh_size());
-            //     inner_radius.reserve(grid_z.mesh_size());
+                vector<RealType>
+                    density, specific_heat_capacity, heat_conductivity, outer_radius, inner_radius;
+                density.reserve(grid_z.mesh_size());
+                specific_heat_capacity.reserve(grid_z.mesh_size());
+                heat_conductivity.reserve(grid_z.mesh_size());
+                outer_radius.reserve(grid_z.mesh_size());
+                inner_radius.reserve(grid_z.mesh_size());
 
-            //     for (auto id{0ll}, depth_id{1ll}; id < grid_z.mesh_size(); ++id)
-            //     {
-            //         if (grid_z.mesh_nodes(id) > column.depth_stencils(depth_id))
-            //             ++depth_id;
-            //         if (grid_z.mesh_nodes(id) > column.depth_stencils(depth_id))
-            //             throw std::logic_error(
-            //                 "Tube physical properties discretization is "
-            //                 "higher than the discretization of z-axis grid.");
+                for (auto id{0ll}, depth_id{1ll}; id < grid_z.mesh_size(); ++id)
+                {
+                    if (grid_z.mesh_nodes(id) > tube.depth_stencils(depth_id))
+                        ++depth_id;
+                    if (grid_z.mesh_nodes(id) > tube.depth_stencils(depth_id))
+                        throw std::logic_error(
+                            "Tube physical properties discretization is "
+                            "higher than the discretization of z-axis grid.");
 
-            //         density.push_back(
-            //             column.density()(depth_id - 1ll));
-            //         specific_heat_capacity.push_back(
-            //             column.specific_heat_capacity()(depth_id - 1ll));
-            //         heat_conductivity.push_back(
-            //             column.heat_conductivity()(depth_id - 1ll));
+                    density.push_back(
+                        tube.density()(depth_id - 1ll));
+                    specific_heat_capacity.push_back(
+                        tube.specific_heat_capacity()(depth_id - 1ll));
+                    heat_conductivity.push_back(
+                        tube.heat_conductivity()(depth_id - 1ll));
 
-            //         outer_radius.push_back(
-            //             column.outer_radius(depth_id - 1ll));
-            //         inner_radius.push_back(
-            //             column.inner_radius(depth_id - 1ll));
-            //     }
+                    outer_radius.push_back(
+                        tube.outer_radius(depth_id - 1ll));
+                    inner_radius.push_back(
+                        tube.inner_radius(depth_id - 1ll));
+                }
 
-            //     for (auto id{0ull}; id < outer_radius.size(); ++id)
-            //         assert(outer_radius[id] > inner_radius[id]);
+                for (auto id{0ull}; id < outer_radius.size(); ++id)
+                    assert(outer_radius[id] > inner_radius[id]);
 
-            //     vector<RealType> thickness(outer_radius.size());
-            //     std::transform(
-            //         outer_radius.cbegin(), outer_radius.cend(),
-            //         inner_radius.cbegin(), thickness.begin(),
-            //         [](auto a, auto b)
-            //         { return a - b; });
+                vector<RealType> thickness(outer_radius.size());
+                std::transform(
+                    outer_radius.cbegin(), outer_radius.cend(),
+                    inner_radius.cbegin(), thickness.begin(),
+                    [](auto a, auto b)
+                    { return a - b; });
 
-            //     return VarRing{
-            //         VarRingSimple{
-            //             VarColumn{
-            //                 Completion::Density{density},
-            //                 Completion::SpecificHeatCapacity{specific_heat_capacity},
-            //                 Completion::HeatConductivity{heat_conductivity}},
-            //             Completion::VarThickness{thickness},
-            //             Completion::VarDepth{grid_z.dual_steps}},
-            //         Completion::VarInnerRadius{inner_radius}};
-            // }
+                return VarRing{
+                    VarRingSimple{
+                        VarTube{
+                            Completion::Density{density},
+                            Completion::SpecificHeatCapacity{specific_heat_capacity},
+                            Completion::HeatConductivity{heat_conductivity}},
+                        Completion::VarThickness{thickness},
+                        Completion::VarDepth{grid_z.dual_steps}},
+                    Completion::VarInnerRadius{inner_radius}};
+            }
 
             static VarRing create_flow_ring(
                 const Flow &flow_ring_props,
