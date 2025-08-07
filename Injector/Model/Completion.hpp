@@ -15,7 +15,7 @@ namespace GPN
     {
         struct MaterialType
         {
-            enum
+            enum material_type
             {
                 Flow = 0,
                 Tube = 1,
@@ -84,6 +84,8 @@ namespace GPN
         struct VarInnerRadius : public SomePropertyVar
         {
         };
+
+        /// @brief Intervals of depth of const-value properties
         struct VarDepth : public SomePropertyVar
         {
         };
@@ -107,11 +109,10 @@ namespace GPN
             {
             }
 
-
-            /// @brief Generate const-value phase properties
-            /// @param density 
-            /// @param specific_heat_capacity 
-            /// @param heat_conductivity 
+            /// @brief Generate const-value phase properties from a single set of parameters
+            /// @param density
+            /// @param specific_heat_capacity
+            /// @param heat_conductivity
             VariableStationaryPhaseProperties(
                 const GPN::Density &density,
                 const GPN::SpecificHeatCapacity &specific_heat_capacity,
@@ -255,6 +256,59 @@ namespace GPN
                 }
             }
         };
+
+        struct VarRingSimple
+        {
+            using value_type = Eigen::ArrayX<RealType>;
+
+            VarRingSimple(const VariableStationaryPhaseProperties &props,
+                    const VarThickness &thickness,
+                    const VarDepth &depth_intervals)
+                : props{props},
+                  thickness{thickness},
+                  depth_stencils{depth_stencils_calc(depth_intervals)},
+                  max_depth{depth_intervals.value.data.sum()}
+            {
+            }
+
+            const auto &density() const
+            {
+                return props.density;
+            }
+            const auto &specific_heat_capacity() const
+            {
+                return props.specific_heat_capacity;
+            }
+            const auto &volumetric_heat_capacity() const
+            {
+                return props.volumetric_heat_capacity;
+            }
+            const auto &heat_conductivity() const
+            {
+                return props.heat_conductivity;
+            }
+
+            const VariableStationaryPhaseProperties props;
+
+            const value_type
+                thickness,
+                depth_stencils;
+            const RealType max_depth;
+
+        private:
+            static value_type
+            depth_stencils_calc(const VarDepth &depth)
+            {
+                const auto &data{depth.value.data};
+                value_type out(1ll + data.size());
+                out(0ll) = 0.0;
+                for (auto i{1ll}; i < out.size(); ++i)
+                    out(i) = out(i - 1ll) + data(i - 1ll);
+                return out;
+            }
+        };
+
+
 
         struct VarRing
             : public VariableStationaryPhaseProperties
