@@ -49,9 +49,11 @@ TEST_CASE("Well_Test")
     //    casing.emplace(MaterialType::Tube, 1);
     {
         const auto &data2 = data["completion"]["variable"]["column"];
+
         casing.emplace(
             Completion::MaterialType::Column,
-            VarRing{
+            FactoryVarRing::create_column_ring(
+                VarRing{
                 VarRingSimple{
                     VarColumn{
                         Completion::Density{data2["density"].get<VR>()},
@@ -59,7 +61,21 @@ TEST_CASE("Well_Test")
                         Completion::HeatConductivity{data2["heat_conductivity"].get<VR>()}},
                     Completion::VarThickness{data2["radial_thickness"].get<VR>()},
                     Completion::VarDepth{data2["depth_interval"].get<VR>()}},
-                Completion::VarInnerRadius{data2["inner_radius"].get<VR>()}});
+                Completion::VarInnerRadius{data2["inner_radius"].get<VR>()}},
+                grid_z));
+
+
+        // casing.emplace(
+        //     Completion::MaterialType::Column,
+        //     VarRing{
+        //         VarRingSimple{
+        //             VarColumn{
+        //                 Completion::Density{data2["density"].get<VR>()},
+        //                 Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<VR>()},
+        //                 Completion::HeatConductivity{data2["heat_conductivity"].get<VR>()}},
+        //             Completion::VarThickness{data2["radial_thickness"].get<VR>()},
+        //             Completion::VarDepth{data2["depth_interval"].get<VR>()}},
+        //         Completion::VarInnerRadius{data2["inner_radius"].get<VR>()}});
     }
 
     {
@@ -110,17 +126,19 @@ TEST_CASE("Well_Test")
                 casing.at(MaterialType::Column),
                 grid_z));
     }
-    // {
-    //     const auto &data2 = data["completion"]["variable"]["cement"];
-    //     casing.emplace(Completion::MaterialType::Cement,
-    //         VarRingSimple{
-    //             VarCement{
-    //                 Completion::Density{data2["density"].get<VR>()},
-    //                 Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<VR>()},
-    //                 Completion::HeatConductivity{data2["heat_conductivity"].get<VR>()}},
-    //             Completion::VarThickness{data2["thickness"].get<VR>()},
-    //             Completion::VarDepth{data2["depth_interval"].get<VR>()}});
-    // }
+    {
+        const auto &data2 = data["completion"]["variable"]["cement"];
+        casing.emplace(Completion::MaterialType::Cement,
+            VarRing{
+            VarRingSimple{
+                VarCement{
+                    Completion::Density{data2["density"].get<VR>()},
+                    Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<VR>()},
+                    Completion::HeatConductivity{data2["heat_conductivity"].get<VR>()}},
+                Completion::VarThickness{data2["radial_thickness"].get<VR>()},
+                Completion::VarDepth{data2["depth_interval"].get<VR>()}},
+            Completion::VarInnerRadius{data2["inner_radius"].get<VR>()}});
+    }
 
     // Casing<VarRing> completion{casing};
 
@@ -137,4 +155,10 @@ TEST_CASE("Well_Test")
 
     // const ExtrudedCasing extr_completion{
     //     ExtrudedCasingFactory::create(completion, grid_z)};
+
+
+
+
+
+
 }
