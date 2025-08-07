@@ -27,7 +27,7 @@ using namespace GPN;
 using namespace GPN::Grids;
 using namespace GPN::Completion;
 
-using VR = std::vector<RealType>;
+using VR = vector<RealType>;
 
 TEST_CASE("Well_Test")
 {
@@ -61,29 +61,14 @@ TEST_CASE("Well_Test")
     {
         const auto &data2 = data["completion"]["variable"]["tube"];
 
-        auto density{data2["density"].get<VR>()};
-        auto specific_heat_capacity{data2["specific_heat_capacity"].get<VR>()};
-        auto heat_conductivity{data2["heat_conductivity"].get<VR>()};
-        auto thickness{data2["thickness"].get<VR>()};
-    //    auto outer_radius{transfer_to_vector(casing.back().outer_radius)};
-        auto depth_interval{data2["depth_interval"].get<VR>()};
-
-        // density.push_back(density.back());
-        // specific_heat_capacity.push_back(specific_heat_capacity.back());
-        // heat_conductivity.push_back(heat_conductivity.back());
-        // thickness.push_back(0.0);
-        // outer_radius.push_back(outer_radius.back());
-        // depth_interval.push_back(numeric_limits<RealType>::max());
-
         casing.emplace(Completion::MaterialType::Tube,
             VarRingSimple{
                 VarTube{
-                    Completion::Density{density},
-                    Completion::SpecificHeatCapacity{specific_heat_capacity},
-                    Completion::HeatConductivity{heat_conductivity}},
-                Completion::VarThickness{thickness},
-            //    Completion::VarInnerRadius{outer_radius},
-                Completion::VarDepth{depth_interval}
+                    Completion::Density{data2["density"].get<VR>()},
+                    Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<VR>()},
+                    Completion::HeatConductivity{data2["heat_conductivity"].get<VR>()}},
+                Completion::VarThickness{data2["thickness"].get<VR>()},
+                Completion::VarDepth{data2["depth_interval"].get<VR>()}
                 }
             );
     }
@@ -96,7 +81,6 @@ TEST_CASE("Well_Test")
                     Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<VR>()},
                     Completion::HeatConductivity{data2["heat_conductivity"].get<VR>()}},
                 Completion::VarThickness{data2["thickness"].get<VR>()},
-            //    Completion::VarInnerRadius{casing.back().outer_radius},
                 Completion::VarDepth{data2["depth_interval"].get<VR>()}});
     }
     {
@@ -104,24 +88,22 @@ TEST_CASE("Well_Test")
         casing.emplace(Completion::MaterialType::Column,
             VarRingSimple{
                 VarColumn{
-                    Completion::Density{data2["density"].get<vector<RealType>>()},
-                    Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<vector<RealType>>()},
-                    Completion::HeatConductivity{data2["heat_conductivity"].get<vector<RealType>>()}},
-                Completion::VarThickness{data2["thickness"].get<vector<RealType>>()},
-    //            Completion::VarInnerRadius{casing.back().outer_radius},
-                Completion::VarDepth{data2["depth_interval"].get<vector<RealType>>()}});
+                    Completion::Density{data2["density"].get<VR>()},
+                    Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<VR>()},
+                    Completion::HeatConductivity{data2["heat_conductivity"].get<VR>()}},
+                Completion::VarThickness{data2["thickness"].get<VR>()},
+                Completion::VarDepth{data2["depth_interval"].get<VR>()}});
     }
     {
         const auto &data2 = data["completion"]["variable"]["cement"];
         casing.emplace(Completion::MaterialType::Cement,
             VarRingSimple{
                 VarCement{
-                    Completion::Density{data2["density"].get<vector<RealType>>()},
-                    Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<vector<RealType>>()},
-                    Completion::HeatConductivity{data2["heat_conductivity"].get<vector<RealType>>()}},
-                Completion::VarThickness{data2["thickness"].get<vector<RealType>>()},
-        //        Completion::VarInnerRadius{casing.back().outer_radius},
-                Completion::VarDepth{data2["depth_interval"].get<vector<RealType>>()}});
+                    Completion::Density{data2["density"].get<VR>()},
+                    Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<VR>()},
+                    Completion::HeatConductivity{data2["heat_conductivity"].get<VR>()}},
+                Completion::VarThickness{data2["thickness"].get<VR>()},
+                Completion::VarDepth{data2["depth_interval"].get<VR>()}});
     }
 
     // Casing<VarRing> completion{casing};
