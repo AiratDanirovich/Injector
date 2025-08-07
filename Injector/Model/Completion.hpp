@@ -475,14 +475,13 @@ namespace GPN
                     (column.depth_stencils(depth_id) < tube.max_depth))
                     ++depth_id;
 
-
                 if (depth_id < column.depth_stencils.size())
                 {
                     depth_interval.push_back(
                         column.depth_stencils(depth_id) - tube.max_depth);
 
-                    radial_thickness.push_back(column.thickness(depth_id-1ll));
-                    inner_radius.push_back(column.inner_radius(depth_id-1ll));
+                    radial_thickness.push_back(column.thickness(depth_id - 1ll));
+                    inner_radius.push_back(column.inner_radius(depth_id - 1ll));
 
                     density.push_back(flow_ring_props.density);
                     specific_heat_capacity.push_back(flow_ring_props.specific_heat_capacity);
@@ -504,6 +503,39 @@ namespace GPN
                     specific_heat_capacity.push_back(flow_ring_props.specific_heat_capacity);
                     heat_conductivity.push_back(flow_ring_props.heat_conductivity);
                 }
+
+                return VarRing{
+                    VarRingSimple{
+                        VarFlow{
+                            Completion::Density{density},
+                            Completion::SpecificHeatCapacity{specific_heat_capacity},
+                            Completion::HeatConductivity{heat_conductivity}},
+                        Completion::VarThickness{radial_thickness},
+                        Completion::VarDepth{depth_interval}},
+                    Completion::VarInnerRadius{inner_radius}};
+            }
+
+            static VarRing create_annulus_ring(
+                const VarAnnulus &annulus_ring_props,
+                const VarDepth& depth_intervals,
+                const VarRing &tube,
+                const VarRing &column
+            )
+            {
+                using namespace std;
+
+                vector<RealType>
+                    density, specific_heat_capacity, heat_conductivity,
+                    radial_thickness, depth_interval, inner_radius;
+                density.reserve(tube.depth_stencils.size() + column.depth_stencils.size());
+                specific_heat_capacity.reserve(density.capacity());
+                heat_conductivity.reserve(density.capacity());
+                radial_thickness.reserve(density.capacity());
+                depth_interval.reserve(density.capacity());
+                inner_radius.reserve(density.capacity());
+
+                assert(tube.depth_stencils.size() > 1ll);
+                assert(column.depth_stencils.size() > 1ll);
 
                 return VarRing{
                     VarRingSimple{
