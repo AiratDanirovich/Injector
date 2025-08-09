@@ -168,48 +168,28 @@ TEST_CASE("Well_Test")
                 casing.at(MaterialType::Column),
                 grid_z));
 
-        const auto density = Completion::Density{data2["density"].get<VR>()};
-        const auto capacity = Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<VR>()};
-        const auto conductivity = Completion::HeatConductivity{data2["heat_conductivity"].get<VR>()};
-        const auto thickness = Completion::VarThickness{data2["radial_thickness"].get<VR>()};
-        const auto depth_interval = Completion::VarDepth{data2["depth_interval"].get<VR>()};
-        const auto depth_stencils = accumulate_steps(depth_interval.value.data);
-        const auto inner_radius = Completion::VarInnerRadius{data2["inner_radius"].get<VR>()};
+        const auto density = GPN::Density{data2["density"].get<RealType>()};
+        const auto capacity = GPN::SpecificHeatCapacity{data2["specific_heat_capacity"].get<RealType>()};
+        const auto conductivity = GPN::HeatConductivity{data2["heat_conductivity"].get<RealType>()};
 
-        const auto ring{casing.at(MaterialType::Tube)};
+        const auto ring{casing.at(MaterialType::Flow)};
+        const auto &tube{casing.at(MaterialType::Tube)};
         const auto &column{casing.at(MaterialType::Column)};
         auto id{0ll}, depth_id{1ll};
-        for (;
-             (id < grid_z.mesh_size()) &&
-             (grid_z.mesh_nodes(id) < depth_stencils.back());
-             ++id)
+
+        for (auto id{0ll}; id < grid_z.mesh_size(); ++id)
         {
-            if (grid_z.mesh_nodes(id) > depth_stencils[depth_id])
-                ++depth_id;
-            REQUIRE(grid_z.mesh_nodes(id) < depth_stencils[depth_id]);
-
-            CHECK(ring.density()(id) == density.value(depth_id - 1ll));
-            CHECK(ring.specific_heat_capacity()(id) == capacity.value(depth_id - 1ll));
-            CHECK(ring.heat_conductivity()(id) == conductivity.value(depth_id - 1ll));
-
-            CHECK(ring.inner_radius(id) == inner_radius.value(depth_id - 1ll));
-            CHECK(ring.thickness(id) == thickness.value(depth_id - 1ll));
+            CHECK(ring.density()(id) == density);
+            CHECK(ring.specific_heat_capacity()(id) == capacity);
+            CHECK(ring.heat_conductivity()(id) == conductivity);
             CHECK(ring.inner_radius(id) + ring.thickness(id) == ring.outer_radius(id));
-        }
-        REQUIRE(depth_id == depth_stencils.size() - 1ull);
-        REQUIRE(depth_id == density.value.size());
-        for (;
-             (id < grid_z.mesh_size()) &&
-             (grid_z.mesh_nodes(id) < depth_stencils.back());
-             ++id)
-        {
-            CHECK(ring.density()(id) == density.value(depth_id - 1ll));
-            CHECK(ring.specific_heat_capacity()(id) == capacity.value(depth_id - 1ll));
-            CHECK(ring.heat_conductivity()(id) == conductivity.value(depth_id - 1ll));
+            CHECK(ring.inner_radius(id) == 0.0);
+            CHECK(ring.thickness(id) == ring.outer_radius(id));
 
-            CHECK(ring.inner_radius(id) == column.inner_radius(id));
-            CHECK(ring.outer_radius(id) == column.inner_radius(id));
-            CHECK(ring.thickness(id) == 0.0);
+            if (ring.thickness(id) == 0.0)
+                CHECK(ring.outer_radius(id) == column.inner_radius(id));
+            else
+                CHECK(ring.outer_radius(id) == tube.inner_radius(id));
         }
     }
     {
