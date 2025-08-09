@@ -7,7 +7,6 @@
 #include <Injector/Grids/GridRefiners.hpp>
 
 #include <Injector/Model/Completion.hpp>
-#include <Injector/Model/CasingLogs.hpp>
 #include <Injector/Model/ExtrudedCasingFactory.hpp>
 
 #include <nlohmann/json.hpp>
