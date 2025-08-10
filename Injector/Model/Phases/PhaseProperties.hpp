@@ -27,18 +27,18 @@ namespace GPN
         StationaryPhaseProperties(const StationaryPhaseProperties&) = default;
         StationaryPhaseProperties(
             Density density,
-            SpecificHeatCapacity mass_heat_capacity,
+            SpecificHeatCapacity specific_heat_capacity,
             HeatConductivity heat_conductivity) noexcept
             : density{density},
-              mass_heat_capacity{mass_heat_capacity},
+              specific_heat_capacity{specific_heat_capacity},
               heat_conductivity{heat_conductivity},
               volumetric_heat_capacity{
-                  mass_heat_capacity *
+                  specific_heat_capacity *
                   density}
         {
         }
         const RealType density;
-        const RealType mass_heat_capacity;
+        const RealType specific_heat_capacity;
         const RealType heat_conductivity;
         const RealType volumetric_heat_capacity;
     };
@@ -48,10 +48,10 @@ namespace GPN
         PhaseProperties(
             Viscosity viscosity,
             Density density,
-            SpecificHeatCapacity mass_heat_capacity,
+            SpecificHeatCapacity specific_heat_capacity,
             HeatConductivity heat_conductivity) noexcept
             : StationaryPhaseProperties{
-                  density, mass_heat_capacity,
+                  density, specific_heat_capacity,
                   heat_conductivity},
               viscosity{viscosity}
         {
