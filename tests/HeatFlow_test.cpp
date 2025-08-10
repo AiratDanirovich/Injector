@@ -155,7 +155,14 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const RealType start_time{data["history"]["start_time"]};
   /*temperatures*/
   /*completion*/
-  const Casing<Ring> completion{std::move(get_completion(data))};
+  const auto temp_grid_z{
+      Factory::create_axes<CoordinateTypes::Z>(
+          RefinerVerticle{
+              data["grid"]["z_minor_step"].get<RealType>(),
+              transfer_to_eigen(data["collector"]["is_permeable"].get<VR>())},
+          Grids::Factory::generate_dual_grid_stencils_from_steps(
+              0.0, data["collector"]["thickness"].get<VR>()))};
+  const Casing<VarRing> completion{get_completion(data, temp_grid_z)};
   /*END*/
 
   // make grid2D
@@ -175,9 +182,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                                          r_stencils)};
   const auto &grid_z{grid2D->first_coord};
   const auto &grid_r{grid2D->second_coord};
-  
+
   const ExtrudedCasing extr_completion{
-    ExtrudedCasingFactory::create(completion, grid_z)};
+      VarExtrudedCasingFactory::create(completion)};
 
   cout << "radial dual grid stencils:\n"
        << transfer_to_eigen(r_stencils).transpose() << endl;

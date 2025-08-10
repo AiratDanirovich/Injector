@@ -881,8 +881,8 @@ namespace GPN
         struct Casing
         {
             using value_type = Ring_t::value_type;
-            Casing(std::map<MaterialType::material_type, Ring_t> &&completion)
-                : sandwich{std::move(completion)},
+            Casing(const std::map<MaterialType::material_type, Ring_t> &completion)
+                : sandwich{completion},
                   sandface_radius{sandwich.at(MaterialType::Back).outer_radius},
                   flow_radius{sandwich.at(MaterialType::Front).outer_radius},
                   column_outer_radius{sandwich.at(MaterialType::Column).outer_radius}
@@ -1363,10 +1363,10 @@ namespace GPN
 
                 for (auto id{0ll}; id < r1.size(); ++id)
                     out(id) = r1(id) < Tube.outer_radius(id)
-                                  ? log(r1(id) / Tube.inner_radius(id)) / Tube.heat_conductivity
+                                  ? log(r1(id) / Tube.inner_radius(id)) / Tube.heat_conductivity()(id)
                               : (r1(id) < Column.inner_radius(id))
-                                  ? 1 / Tube.radial_heat_conductivity(id) + log(r1(id) / Tube.outer_radius(id)) / Annulus.heat_conductivity
-                                  : 1 / Tube.radial_heat_conductivity(id) + 1 / Annulus.radial_heat_conductivity(id) + log(r1(id) / Column.inner_radius(id)) / Column.heat_conductivity;
+                                  ? 1 / Tube.radial_heat_conductivity(id) + log(r1(id) / Tube.outer_radius(id)) / Annulus.heat_conductivity()(id)
+                                  : 1 / Tube.radial_heat_conductivity(id) + 1 / Annulus.radial_heat_conductivity(id) + log(r1(id) / Column.inner_radius(id)) / Column.heat_conductivity()(id);
                 return out;
             }
 
