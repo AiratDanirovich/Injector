@@ -751,61 +751,48 @@ namespace GPN
             }
 
             static VarRing create_cement_ring(
-                const VarCement &cement_ring_props,
-                const Eigen::ArrayX<RealType> &depth_intervals,
+                const VarRingSimple &cement,
                 const VarRing &column,
                 const auto &grid_z)
             {
                 using namespace std;
 
-                vector<RealType> depth_stencils(depth_intervals.size() + 1ull, 0.0);
-                std::partial_sum(
-                    depth_intervals.cbegin(),
-                    depth_intervals.cend(),
-                    depth_stencils.begin() + 1ull);
-                assert(depth_stencils[0ull] == 0.0);
-                for (auto i{1ull}; i < depth_stencils.size(); ++i)
-                    assert(depth_stencils[i] == depth_stencils[i - 1] + depth_intervals(i - 1ll));
+                const auto& depth_stencils{cement.depth_stencils};
 
-                assert(depth_stencils.back() == column.max_depth);
-
-#pragma region SET-PHYSICAL-PROPERTIES
                 vector<RealType>
-                    density, specific_heat_capacity, heat_conductivity;
-                density.reserve(grid_z.mesh_size());
-                specific_heat_capacity.reserve(grid_z.mesh_size());
-                heat_conductivity.reserve(grid_z.mesh_size());
-                {
-                }
-#pragma endregion
-#pragma region SET-OUTER-RADIUS
-                vector<RealType> outer_radius;
-                outer_radius.reserve(grid_z.mesh_size());
-                assert(grid_z.mesh_nodes.tail(1ll)(0ll) < column.max_depth);
+                    density, specific_heat_capacity, heat_conductivity, 
+                    inner_radius, thickness;
+                const auto size{grid_z.mesh_size()};
+                density.reserve(size);
+                specific_heat_capacity.reserve(size);
+                heat_conductivity.reserve(size);
+                thickness.reserve(size);
+                inner_radius.reserve(size);
+
                 for (auto id{0ll}, depth_id{1ll}; id < grid_z.mesh_size(); ++id)
                 {
-                    if (grid_z.mesh_nodes(id) > column.depth_stencils(depth_id))
+                    if (grid_z.mesh_nodes(id) > cement.depth_stencils(depth_id))
                         ++depth_id;
-
-                    if (grid_z.mesh_nodes(id) > column.depth_stencils(depth_id))
+                    if (grid_z.mesh_nodes(id) > cement.depth_stencils(depth_id))
                         throw std::logic_error(
-                            "Column properties discretization is "
+                            "The descritization of cement physical properties is "
                             "higher than the discretization of z-axis grid.");
 
-                    outer_radius.push_back(
-                        column.inner_radius(depth_id - 1ll));
+                    density.push_back(
+                        cement.density()(depth_id - 1ll));
+                    specific_heat_capacity.push_back(
+                        cement.specific_heat_capacity()(depth_id - 1ll));
+                    heat_conductivity.push_back(
+                        cement.heat_conductivity()(depth_id - 1ll));
+
+                    inner_radius.push_back(
+                        column.outer_radius(id));
+                    thickness.push_back(
+                        cement.thickness(depth_id - 1ll));
                 }
-                assert(outer_radius.size() == grid_z.mesh_size());
-#pragma endregion
 
-                const auto &inner_radius{column.outer_radius};
-
-                vector<RealType> thickness(outer_radius.size());
-                std::transform(
-                    outer_radius.cbegin(), outer_radius.cend(),
-                    inner_radius.cbegin(), thickness.begin(),
-                    [](auto a, auto b)
-                    { return a - b; });
+                for (auto id{0ull}; id < thickness.size(); ++id)
+                    assert(thickness[id] > 0.0);
 
                 return VarRing{
                     VarRingSimple{
