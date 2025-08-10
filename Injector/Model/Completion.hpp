@@ -904,7 +904,7 @@ namespace GPN
 
             const auto &operator[](auto i) const
             {
-                return sandwich.at(i);
+                return sandwich.at((MaterialType::material_type)i);
             }
 
             const value_type casing_volumetric_heat_capacity() const
@@ -998,10 +998,9 @@ namespace GPN
 
         struct ExtrudedRing : public VarRing
         {
-            template <typename Container_t>
             ExtrudedRing(
-                VarRing &&props)
-                : VarRing{std::move(props)},                  
+                const VarRing &props)
+                : VarRing{props},
                   linear_heat_capacity{
                       linear_heat_capacity_calc(
                           props.inner_radius, props.thickness, props)},
@@ -1016,7 +1015,7 @@ namespace GPN
                     assert(std::abs(outer_radius(id) - inner_radius(id) - thickness(id)) < 1e-12);
             }
 
-
+            using value_type = Eigen::ArrayX<RealType>;
             // c
             const Eigen::ArrayX<RealType> linear_heat_capacity;
             // lambda/log(r_o/r_i)
@@ -1032,7 +1031,7 @@ namespace GPN
 
         private:
             template <typename PhaseProperties_t>
-            static auto
+            static value_type
             linear_heat_capacity_calc(
                 const auto &inner_radius,
                 const auto &thickness,
@@ -1044,7 +1043,7 @@ namespace GPN
             }
 
             template <typename PhaseProperties_t>
-            static auto
+            static value_type
             radial_heat_conductivity_calc(
                 const auto &inner_radius,
                 const auto &thickness,
@@ -1128,7 +1127,7 @@ namespace GPN
             }
 
         private:
-            static auto
+            static value_type
             linear_heat_capacity_calc(
                 const auto &inner_radius,
                 const auto &thickness,
@@ -1139,7 +1138,7 @@ namespace GPN
                        volumetric_heat_capacity;
             }
 
-            static auto
+            static value_type
             radial_heat_conductivity_calc(
                 const auto &inner_radius,
                 const auto &thickness,
@@ -1388,11 +1387,20 @@ namespace GPN
 
         struct VarExtrudedCasingFactory
         {
-            static void create_extruded_casing(
-                const Casing<VarRing> &competion)
+            static ExtrudedCasing create(
+                const Casing<VarRing> &completion)
             {
-            //    ExtrudedCasing casing{};
-            //    return casing;
+                using namespace std;
+
+                vector<ExtrudedRing> extruded_rings;
+                extruded_rings.reserve(MaterialType::Size);
+                for (ptrdiff_t i{MaterialType::Front}; i <= MaterialType::Back; ++i)
+                {
+                    extruded_rings.push_back(ExtrudedRing{VarRing{completion[(MaterialType::material_type)i]}});
+                }
+
+                ExtrudedCasing casing{extruded_rings};
+                return casing;
             }
         };
 

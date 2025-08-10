@@ -361,17 +361,6 @@ TEST_CASE("Well_Test")
 
     Casing<VarRing> completion{std::move(casing)};
 
-    // const auto flow_ring =
-    //     ExtrudedRingFactory::create_ring(
-    //         FlowRing{casing[MaterialType::Flow]},
-    //         TubeRing{casing[MaterialType::Tube]},
-    //         ColumnRing{casing[MaterialType::Column]},
-    //         grid_z);
-
-    // cout << "flow_ring :: thickness:\n"
-    //      << flow_ring.thickness.transpose() << endl
-    //      << endl;
-
-    // const ExtrudedCasing extr_completion{
-    //     ExtrudedCasingFactory::create(completion, grid_z)};
+    ExtrudedCasing extr_completion{
+        VarExtrudedCasingFactory::create(completion)};
 }
