@@ -144,9 +144,16 @@ TEST_CASE("apply_well_test", "apply_well_test")
     CHECK(Tube.outer_radius(i) == Annulus.inner_radius(i));
     CHECK(Annulus.outer_radius(i) == Column.inner_radius(i));
     CHECK(Column.outer_radius(i) == Sandface.inner_radius(i));
-    if (grid_z.mesh_nodes(i) < completion[MaterialType::Tube].depth())
+    if (grid_z.mesh_nodes(i) < completion[MaterialType::Tube].real_depth)
     {
+      {
+      INFO(
+        "i = " << i << '\n' <<
+        "tube_thickness:\n" << Tube.thickness.transpose() << '\n' << 
+        "annulus_thickness:\n" << Annulus.thickness.transpose() << '\n' <<
+        "tube_depth_stencils:\n" << Tube.depth_stencils.transpose());
       CHECK(Tube.thickness(i) > 0.0);
+      }
       CHECK(Annulus.thickness(i) > 0.0);
     }
     else
@@ -463,7 +470,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
       {
         CHECK(r1(id) > Tube.inner_radius(id));
         CHECK(r1(id) < Column.outer_radius(id));
-        if (completion[MaterialType::Tube].depth() < grid_z.mesh_nodes(id))
+        if (completion[MaterialType::Tube].real_depth < grid_z.mesh_nodes(id))
         {
           CHECK(r1(id) > Column.inner_radius(id));
           CHECK(r1(id) < Column.outer_radius(id));

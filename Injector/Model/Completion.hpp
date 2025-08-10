@@ -333,7 +333,8 @@ namespace GPN
                   integral_vertical_heat_conductivity{
                       props.heat_conductivity() *
                       std::numbers::pi *
-                      (value_type)thickness * ((value_type)thickness + 2.0 * (value_type)inner_radius)}
+                      (value_type)thickness * ((value_type)thickness + 2.0 * (value_type)inner_radius)},
+                  real_depth{depth(props.thickness, props.depth_stencils)}
             {
                 assert(assertion());
             }
@@ -365,21 +366,11 @@ namespace GPN
             //     return out;
             // }
 
-            const RealType depth() const
-            {
-                const auto it = std::find(thickness.cbegin(), thickness.cend(), 0.0);
-                if(it == thickness.cend())
-                    return depth_stencils.tail(0ll)(1ll);
-                else
-                {
-                    const ptrdiff_t dist{std::distance(thickness.cbegin(), it)};
-                    return depth_stencils(dist+1ll);
-                }
-            }
-
             const value_type
                 inner_radius,
                 outer_radius;
+
+            const RealType real_depth;
 
             // c
             const value_type linear_heat_capacity;
@@ -439,6 +430,20 @@ namespace GPN
                 return out;
             }
 
+            static RealType depth(
+                const value_type &thickness,
+                const value_type &depth_stencils)
+            {
+                const auto it = std::find(thickness.cbegin(), thickness.cend(), 0.0);
+                if (it == thickness.cend())
+                    return depth_stencils.tail(1ll)(0ll);
+                else
+                {
+                    const ptrdiff_t dist{std::distance(thickness.cbegin(), it)};
+                    return depth_stencils(dist);
+                }
+            }
+
             bool assertion()
             {
                 const value_type temp{
@@ -466,6 +471,8 @@ namespace GPN
                 heat_conductivity.reserve(grid_z.mesh_size());
                 outer_radius.reserve(grid_z.mesh_size());
                 inner_radius.reserve(grid_z.mesh_size());
+
+                assert(column.max_depth >= grid_z.mesh_nodes.tail(1ll)(0ll));
 
                 for (auto id{0ll}, depth_id{1ll}; id < grid_z.mesh_size(); ++id)
                 {
