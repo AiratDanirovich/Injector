@@ -366,7 +366,81 @@ Wrapper::Wrapper(
             f << extr_completion.radial_node_position().transpose().format(commaFmt) << '\n';
             f.close();
         }
+        {
+            ofstream f{std::string{"output/flow-props.csv"}};
+            const auto ring{MaterialType::Flow};
+            f << grid_z.mesh_nodes.transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].density().transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].specific_heat_capacity().transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].volumetric_heat_capacity().transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].heat_conductivity().transpose().format(commaFmt) << '\n';
+            
+            f << extr_completion[ring].inner_radius.transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].outer_radius.transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].thickness.transpose().format(commaFmt) << '\n';
 
+            f.close();
+        }
+        {
+            ofstream f{std::string{"output/tube-props.csv"}};
+            const auto ring{MaterialType::Tube};
+            f << grid_z.mesh_nodes.transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].density().transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].specific_heat_capacity().transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].volumetric_heat_capacity().transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].heat_conductivity().transpose().format(commaFmt) << '\n';
+            
+            f << extr_completion[ring].inner_radius.transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].outer_radius.transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].thickness.transpose().format(commaFmt) << '\n';
+
+            f.close();
+        }
+        {
+            ofstream f{std::string{"output/annulus-props.csv"}};
+            const auto ring{MaterialType::Annulus};
+            f << grid_z.mesh_nodes.transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].density().transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].specific_heat_capacity().transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].volumetric_heat_capacity().transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].heat_conductivity().transpose().format(commaFmt) << '\n';
+            
+            f << extr_completion[ring].inner_radius.transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].outer_radius.transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].thickness.transpose().format(commaFmt) << '\n';
+
+            f.close();
+        }
+        {
+            ofstream f{std::string{"output/column-props.csv"}};
+            const auto ring{MaterialType::Column};
+            f << grid_z.mesh_nodes.transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].density().transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].specific_heat_capacity().transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].volumetric_heat_capacity().transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].heat_conductivity().transpose().format(commaFmt) << '\n';
+            
+            f << extr_completion[ring].inner_radius.transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].outer_radius.transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].thickness.transpose().format(commaFmt) << '\n';
+
+            f.close();
+        }
+        {
+            ofstream f{std::string{"output/cement-props.csv"}};
+            const auto ring{MaterialType::Cement};
+            f << grid_z.mesh_nodes.transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].density().transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].specific_heat_capacity().transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].volumetric_heat_capacity().transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].heat_conductivity().transpose().format(commaFmt) << '\n';
+            
+            f << extr_completion[ring].inner_radius.transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].outer_radius.transpose().format(commaFmt) << '\n';
+            f << extr_completion[ring].thickness.transpose().format(commaFmt) << '\n';
+
+            f.close();
+        }
         {
             ofstream f{std::string{"output/data.txt"}};
             f << "top collector height: " << grid_z.mesh_nodes(well.top_collector_cell_id()) << " m" << endl;
