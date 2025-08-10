@@ -204,7 +204,7 @@ namespace GPN
 #pragma region SET-HEAT-CAPACITY
                     // first column -- inside the tube, contains only water
                     medium_vol_heatcapacity.col(0ll) =
-                        completion.flow().volumetric_heat_capacity*
+                        completion.flow().volumetric_heat_capacity()*
                         completion.flow().area()/
                         grid2D->face_area_axes1(0ll);
                     // second column -- from tube inner radius to column outer radius
@@ -225,14 +225,14 @@ namespace GPN
                 //    const auto &grid_r = grid2D->second_coord;
                     const auto &sandface = completion.back();
                     medium_heat_conductivity_axes2.col(2ll) =
-                        sandface.heat_conductivity;
+                        sandface.heat_conductivity();
                     // r_{1/2} is fixed at HeatFaceProps container
 
                     // interpolate verticle heat conductivity:
                     // (1) modify water heat conductivity in col(0ll)
                     const auto &flow = completion.front();
                     medium_heat_conductivity_axes1.col(0ll) =
-                        flow.heat_conductivity * 
+                        flow.heat_conductivity() * 
                         flow.area() / grid2D->face_area_axes1(0ll);
                     // (2) set casing heat conductivity in col(1ll)
                     medium_heat_conductivity_axes1.col(1ll) =

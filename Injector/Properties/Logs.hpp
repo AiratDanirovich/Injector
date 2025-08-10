@@ -68,7 +68,7 @@ namespace GPN
 
         auto operator-(RealType v, const StepProperty &rhs)
         {
-            return StepProperty{v - rhs.data};
+            return StepProperty{StepPropertyContainer{v - rhs.data}};
         }
 
         struct StepPropertyGrid

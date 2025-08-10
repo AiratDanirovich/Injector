@@ -70,9 +70,21 @@ TEST_CASE("apply_well_test", "apply_well_test")
   const RealType
       z_minor_step{data["grid"]["z_minor_step"]}; // m
   /*completion*/
-  const Casing completion{get_completion(data)};
-  for (const auto &r : completion.sandwich)
-    REQUIRE(r.heat_conductivity > 0.0);
+  const auto temp_grid_z{
+      Factory::create_axes<CoordinateTypes::Z>(
+          RefinerVerticle{
+              data["grid"]["z_minor_step"].get<RealType>(),
+              transfer_to_eigen(data["collector"]["is_permeable"].get<VR>())},
+          Grids::Factory::generate_dual_grid_stencils_from_steps(
+              0.0, data["collector"]["thickness"].get<VR>()))};
+  const Casing<VarRing> completion{get_completion(data, temp_grid_z)};
+  for (const auto &[key, r] : completion.sandwich)
+    REQUIRE(
+        std::all_of(
+            r.heat_conductivity().cbegin(),
+            r.heat_conductivity().cend(),
+            [](RealType v)
+            { return v > 0.0; }));
   /*END*/
 
   // make grid2D
@@ -82,20 +94,22 @@ TEST_CASE("apply_well_test", "apply_well_test")
   const RealType &rMax = r_stencils.back();
   const RealType &rMin = r_stencils.front();
 
-  for (const auto &r : completion.sandwich)
+  for (const auto &[key, r] : completion.sandwich)
   {
-    CHECK_THAT(r.linear_heat_capacity,
-               WithinRel(
-                   r.area() * r.volumetric_heat_capacity,
-                   tol));
+    const Eigen::ArrayX<RealType> area{r.area()};
+    for (auto id{0ll}; id < area.size(); ++id)
+      CHECK_THAT(r.linear_heat_capacity(id),
+                 WithinRel(
+                     area(id) * r.volumetric_heat_capacity()(id),
+                     tol));
   }
 
   // CHECK r_stencils
   {
     CHECK(r_stencils[0ull] == 0.0);
-    CHECK(r_stencils[1ull] == completion.flow_radius);
-    CHECK(r_stencils[2ull] == completion.column_outer_radius);
-    CHECK(r_stencils[3ull] == completion.sandface_radius);
+    CHECK(r_stencils[1ull] == completion.flow_radius(0ll));
+    CHECK(r_stencils[2ull] == completion.column_outer_radius(0ll));
+    CHECK(r_stencils[3ull] == completion.sandface_radius(0ll));
     CHECK(r_stencils[4ull] > r_stencils[3ll]);
   }
 
@@ -111,7 +125,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
   const auto &grid_z{grid2D->first_coord};
   const auto &grid_r{grid2D->second_coord};
 
-  const ExtrudedCasing extr_completion{ExtrudedCasingFactory::create(completion, grid_z)};
+  const ExtrudedCasing extr_completion{VarExtrudedCasingFactory::create(completion)};
   const auto &Flow{extr_completion[MaterialType::Flow]};
   const auto &Tube{extr_completion[MaterialType::Tube]};
   const auto &Annulus{extr_completion[MaterialType::Annulus]};
@@ -130,9 +144,16 @@ TEST_CASE("apply_well_test", "apply_well_test")
     CHECK(Tube.outer_radius(i) == Annulus.inner_radius(i));
     CHECK(Annulus.outer_radius(i) == Column.inner_radius(i));
     CHECK(Column.outer_radius(i) == Sandface.inner_radius(i));
-    if (grid_z.mesh_nodes(i) < completion[MaterialType::Tube].depth)
+    if (grid_z.mesh_nodes(i) < completion[MaterialType::Tube].real_depth)
     {
+      {
+      INFO(
+        "i = " << i << '\n' <<
+        "tube_thickness:\n" << Tube.thickness.transpose() << '\n' << 
+        "annulus_thickness:\n" << Annulus.thickness.transpose() << '\n' <<
+        "tube_depth_stencils:\n" << Tube.depth_stencils.transpose());
       CHECK(Tube.thickness(i) > 0.0);
+      }
       CHECK(Annulus.thickness(i) > 0.0);
     }
     else
@@ -144,14 +165,14 @@ TEST_CASE("apply_well_test", "apply_well_test")
 
   const Eigen::ArrayX<RealType> casing_vert_cond{
       std::numbers::pi *
-      (Tube.heat_conductivity * Tube.thickness * (Tube.inner_radius + Tube.outer_radius) +
-       Annulus.heat_conductivity * Annulus.thickness * (Annulus.inner_radius + Annulus.outer_radius) +
-       Column.heat_conductivity * Column.thickness * (Column.inner_radius + Column.outer_radius)) /
+      (Tube.heat_conductivity() * Tube.thickness * (Tube.inner_radius + Tube.outer_radius) +
+       Annulus.heat_conductivity() * Annulus.thickness * (Annulus.inner_radius + Annulus.outer_radius) +
+       Column.heat_conductivity() * Column.thickness * (Column.inner_radius + Column.outer_radius)) /
       (std::numbers::pi *
        (Column.outer_radius + Tube.inner_radius) *
        (Column.outer_radius - Tube.inner_radius))};
   const Eigen::ArrayX<RealType> cement_vert_cond{
-      std::numbers::pi * Sandface.thickness * (Sandface.inner_radius + Sandface.outer_radius) * Sandface.heat_conductivity /
+      std::numbers::pi * Sandface.thickness * (Sandface.inner_radius + Sandface.outer_radius) * Sandface.heat_conductivity() /
       (std::numbers::pi * Sandface.thickness * (Sandface.inner_radius + Sandface.outer_radius))};
   {
     const Eigen::ArrayX<RealType> cement_temp{extr_completion.integral_vertical_cement_heat_conductivity()};
@@ -178,7 +199,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
   }
 
   const Eigen::ArrayX<RealType> cement_heat_cap{
-      completion[MaterialType::Cement].volumetric_heat_capacity * Sandface.area()};
+      completion[MaterialType::Cement].volumetric_heat_capacity() * Sandface.area()};
   {
     const auto &cement_temp{Sandface.linear_heat_capacity};
     for (auto i{0ll}; i < casing_vert_cond.size(); ++i)
@@ -225,8 +246,8 @@ TEST_CASE("apply_well_test", "apply_well_test")
   const PhaseProperties water{
       FluidFactory::create_water(
           Viscosity{viscosity},
-          Density{density},
-          SpecificHeatCapacity{capacity},
+          GPN::Density{density},
+          GPN::SpecificHeatCapacity{capacity},
           GPN::HeatConductivity{heat_conductivity})};
 
   const auto weights{
@@ -341,7 +362,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
     const auto &heat_conductivity_2 = heat_props.medium_heat_conductivity_axes2.values();
     const auto flow_area{Flow.area()};
 
-    const Eigen::ArrayX<RealType> temp{Flow.volumetric_heat_capacity *
+    const Eigen::ArrayX<RealType> temp{Flow.volumetric_heat_capacity() *
                                        flow_area *
                                        (grid_z.dual_nodes.tail(capacity.rows()) - grid_z.dual_nodes.head(capacity.rows()))};
     const Eigen::ArrayX<RealType> flow_face_ratio{extr_completion.flow().area() /
@@ -363,7 +384,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
                        tol));
         CHECK_THAT(capacity(row, col),
                    WithinRel(
-                       extr_completion.flow().volumetric_heat_capacity * flow_face_ratio(row), tol));
+                       extr_completion.flow().volumetric_heat_capacity()(row) * flow_face_ratio(row), tol));
         // vertical heat conductivity is equal to water corrected for the face ratio
         CHECK_THAT(heat_conductivity_1(row, col),
                    WithinRel(
@@ -402,7 +423,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
                        tol));
         CHECK_THAT(heat_conductivity_2(row, col),
                    WithinRel(
-                       Sandface.heat_conductivity,
+                       Sandface.heat_conductivity()(row),
                        tol));
       }
 
@@ -449,18 +470,18 @@ TEST_CASE("apply_well_test", "apply_well_test")
       {
         CHECK(r1(id) > Tube.inner_radius(id));
         CHECK(r1(id) < Column.outer_radius(id));
-        if (completion[MaterialType::Tube].depth < grid_z.mesh_nodes(id))
+        if (completion[MaterialType::Tube].real_depth < grid_z.mesh_nodes(id))
         {
           CHECK(r1(id) > Column.inner_radius(id));
           CHECK(r1(id) < Column.outer_radius(id));
         }
         zeta_0(id) =
             r1(id) < Tube.outer_radius(id)
-                ? std::log(r1(id) / Tube.inner_radius(id)) / Tube.heat_conductivity
+                ? std::log(r1(id) / Tube.inner_radius(id)) / Tube.heat_conductivity()(id)
             : r1(id) < Annulus.outer_radius(id)
-                ? 1 / Tube.radial_heat_conductivity(id) + std::log(r1(id) / Tube.outer_radius(id)) / Annulus.heat_conductivity
+                ? 1 / Tube.radial_heat_conductivity(id) + std::log(r1(id) / Tube.outer_radius(id)) / Annulus.heat_conductivity()(id)
                 // r1(id) < Column.outer-radius(id)
-                : 1 / Tube.radial_heat_conductivity(id) + 1 / Annulus.radial_heat_conductivity(id) + std::log(r1(id) / Column.inner_radius(id)) / Column.heat_conductivity;
+                : 1 / Tube.radial_heat_conductivity(id) + 1 / Annulus.radial_heat_conductivity(id) + std::log(r1(id) / Column.inner_radius(id)) / Column.heat_conductivity()(id);
       }
 
       {
@@ -476,7 +497,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
       // heat resistivity at the face between the casing-sandwich and the cement
       const Eigen::ArrayX<RealType> zeta_1{
           1 / extr_completion.integral_casing_radial_heat_conductivity() +
-          log(grid_r.mesh_nodes(2ll) / Column.outer_radius) / Sandface.heat_conductivity -
+          log(grid_r.mesh_nodes(2ll) / Column.outer_radius) / Sandface.heat_conductivity() -
           zeta_0};
       {
         const auto col{1ll}; // flow in the tube
@@ -493,12 +514,12 @@ TEST_CASE("apply_well_test", "apply_well_test")
         const auto col{2ll}; // face between cement and rocks
         for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
         {
-          const auto zeta_2{
-              log(Sandface.outer_radius(row) / grid_r.mesh_nodes(col)) / Sandface.heat_conductivity +
+          const Eigen::ArrayX<RealType> zeta_2{
+              log(Sandface.outer_radius(row) / grid_r.mesh_nodes(col)) / Sandface.heat_conductivity() +
               log(grid_r.mesh_nodes(col + 1ll) / Sandface.outer_radius(row)) / heat_conductivity(row)};
           CHECK_THAT(f_conductivity_2(row, col),
                      WithinRel(
-                         1.0 / zeta_2,
+                         1.0 / zeta_2(row),
                          tol));
         }
       }
@@ -526,9 +547,9 @@ TEST_CASE("apply_well_test", "apply_well_test")
           CHECK_THAT(f_conductivity_1(row, col) * grid2D->face_area_axes1(col),
                      WithinRel(
                          1.0 / ((grid_z.dual_nodes(row + 1ll) - grid_z.mesh_nodes(row)) /
-                                    (Flow.heat_conductivity * flow_area(row)) +
+                                    (Flow.heat_conductivity()(row) * flow_area(row)) +
                                 (grid_z.mesh_nodes(row + 1ll) - grid_z.dual_nodes(row + 1ll)) /
-                                    (Flow.heat_conductivity * flow_area(row + 1ll))),
+                                    (Flow.heat_conductivity()(row) * flow_area(row + 1ll))),
                          tol));
         }
       }
