@@ -365,6 +365,18 @@ namespace GPN
             //     return out;
             // }
 
+            const RealType depth() const
+            {
+                const auto it = std::find(thickness.cbegin(), thickness.cend(), 0.0);
+                if(it == thickness.cend())
+                    return depth_stencils.tail(0ll)(1ll);
+                else
+                {
+                    const ptrdiff_t dist{std::distance(thickness.cbegin(), it)};
+                    return depth_stencils(dist+1ll);
+                }
+            }
+
             const value_type
                 inner_radius,
                 outer_radius;
