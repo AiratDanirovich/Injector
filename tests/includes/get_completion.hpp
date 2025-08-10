@@ -12,12 +12,12 @@ const auto get_completion(const json &data)
     using namespace GPN;
     using namespace GPN::Completion;
 
-    std::vector<Ring> out;
-    out.reserve(5);
+    std::map<MaterialType::material_type, Ring> out;
 
     { // flowing fluid
         const auto &data2 = data["fluid"];
-        out.push_back(
+        out.emplace(
+            MaterialType::Flow,
             Ring{
                 Flow{
                     GPN::Density{data2["density"]},
@@ -31,56 +31,60 @@ const auto get_completion(const json &data)
     { // tube
         const auto &data2 = data["completion"]["tube"];
 
-        out.push_back(
+        out.emplace(
+            MaterialType::Tube,
             Ring{
                 Tube{
                     GPN::Density{data2["density"]},
                     GPN::SpecificHeatCapacity{data2["specific_heat_capacity"]},
                     GPN::HeatConductivity{data2["heat_conductivity"]}},
                 Thickness{data2["thickness"]},
-                InnerRadius{out.back().outer_radius},
+                InnerRadius{out.at(MaterialType::Flow).outer_radius},
                 Depth{data2["depth"]}});
     }
 
     { // annulus
         const auto &data2 = data["completion"]["annulus"];
 
-        out.push_back(
+        out.emplace(
+            MaterialType::Annulus,
             Ring{
                 Annulus{
                     GPN::Density{data2["density"]},
                     GPN::SpecificHeatCapacity{data2["specific_heat_capacity"]},
                     GPN::HeatConductivity{data2["heat_conductivity"]}},
                 Thickness{data2["thickness"]},
-                InnerRadius{out.back().outer_radius},
+                InnerRadius{out.at(MaterialType::Tube).outer_radius},
                 Depth{std::numeric_limits<RealType>::max()}});
     }
 
     { // column
         const auto &data2 = data["completion"]["column"];
 
-        out.push_back(
+        out.emplace(
+            MaterialType::Column,
             Ring{
                 Annulus{
                     GPN::Density{data2["density"]},
                     GPN::SpecificHeatCapacity{data2["specific_heat_capacity"]},
                     GPN::HeatConductivity{data2["heat_conductivity"]}},
                 Thickness{data2["thickness"]},
-                InnerRadius{out.back().outer_radius},
+                InnerRadius{out.at(MaterialType::Annulus).outer_radius},
                 Depth{std::numeric_limits<RealType>::max()}});
     }
 
     { // cement
         const auto &data2 = data["completion"]["cement"];
 
-        out.push_back(
+        out.emplace(
+            MaterialType::Cement,
             Ring{
                 Cement{
                     GPN::Density{data2["density"]},
                     GPN::SpecificHeatCapacity{data2["specific_heat_capacity"]},
                     GPN::HeatConductivity{data2["heat_conductivity"]}},
                 Thickness{data2["thickness"]},
-                InnerRadius{out.back().outer_radius},
+                InnerRadius{out.at(MaterialType::Column).outer_radius},
                 Depth{std::numeric_limits<RealType>::max()}});
     }
 
