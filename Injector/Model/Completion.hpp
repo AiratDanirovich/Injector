@@ -438,7 +438,7 @@ namespace GPN
 
         struct FactoryVarRing
         {
-            static VarRing create_column_ring(
+            static VarRing create_column(
                 const VarRing &column,
                 const auto &grid_z)
             {

@@ -51,7 +51,7 @@ TEST_CASE("Well_Test")
         const auto &data2 = data["completion"]["variable"]["column"];
         casing.emplace(
             Completion::MaterialType::Column,
-            FactoryVarRing::create_column_ring(
+            FactoryVarRing::create_column(
                 VarRing{
                     VarRingSimple{
                         VarColumn{
@@ -88,6 +88,12 @@ TEST_CASE("Well_Test")
         }
         REQUIRE(depth_id == depth_stencils.size() - 1ull);
         REQUIRE(depth_id == density.value.size());
+        REQUIRE(ring.density().size() == grid_z.mesh_size());
+        REQUIRE(ring.specific_heat_capacity().size() == grid_z.mesh_size());
+        REQUIRE(ring.heat_conductivity().size() == grid_z.mesh_size());
+        REQUIRE(ring.inner_radius.size() == grid_z.mesh_size());
+        REQUIRE(ring.thickness.size() == grid_z.mesh_size());
+        REQUIRE(ring.outer_radius.size() == grid_z.mesh_size());
     }
 
     {
@@ -147,6 +153,12 @@ TEST_CASE("Well_Test")
             CHECK(ring.outer_radius(id) == column.inner_radius(id));
             CHECK(ring.thickness(id) == 0.0);
         }
+        REQUIRE(ring.density().size() == grid_z.mesh_size());
+        REQUIRE(ring.specific_heat_capacity().size() == grid_z.mesh_size());
+        REQUIRE(ring.heat_conductivity().size() == grid_z.mesh_size());
+        REQUIRE(ring.inner_radius.size() == grid_z.mesh_size());
+        REQUIRE(ring.thickness.size() == grid_z.mesh_size());
+        REQUIRE(ring.outer_radius.size() == grid_z.mesh_size());
     }
 
     { // flowing fluid
@@ -188,6 +200,12 @@ TEST_CASE("Well_Test")
             else
                 CHECK(ring.outer_radius(id) == tube.inner_radius(id));
         }
+        REQUIRE(ring.density().size() == grid_z.mesh_size());
+        REQUIRE(ring.specific_heat_capacity().size() == grid_z.mesh_size());
+        REQUIRE(ring.heat_conductivity().size() == grid_z.mesh_size());
+        REQUIRE(ring.inner_radius.size() == grid_z.mesh_size());
+        REQUIRE(ring.thickness.size() == grid_z.mesh_size());
+        REQUIRE(ring.outer_radius.size() == grid_z.mesh_size());
     }
     {
         const auto &data2 = data["completion"]["variable"]["annulus"];
@@ -245,6 +263,12 @@ TEST_CASE("Well_Test")
             CHECK(ring.outer_radius(id) == column.inner_radius(id));
             CHECK(ring.thickness(id) == 0.0);
         }
+        REQUIRE(ring.density().size() == grid_z.mesh_size());
+        REQUIRE(ring.specific_heat_capacity().size() == grid_z.mesh_size());
+        REQUIRE(ring.heat_conductivity().size() == grid_z.mesh_size());
+        REQUIRE(ring.inner_radius.size() == grid_z.mesh_size());
+        REQUIRE(ring.thickness.size() == grid_z.mesh_size());
+        REQUIRE(ring.outer_radius.size() == grid_z.mesh_size());
     }
     {
         const auto &data2 = data["completion"]["variable"]["cement"];
@@ -285,6 +309,12 @@ TEST_CASE("Well_Test")
         }
         REQUIRE(depth_id == depth_stencils.size() - 1ull);
         REQUIRE(depth_id == density.value.size());
+        REQUIRE(ring.density().size() == grid_z.mesh_size());
+        REQUIRE(ring.specific_heat_capacity().size() == grid_z.mesh_size());
+        REQUIRE(ring.heat_conductivity().size() == grid_z.mesh_size());
+        REQUIRE(ring.inner_radius.size() == grid_z.mesh_size());
+        REQUIRE(ring.thickness.size() == grid_z.mesh_size());
+        REQUIRE(ring.outer_radius.size() == grid_z.mesh_size());
     }
 
     // Casing<VarRing> completion{casing};
