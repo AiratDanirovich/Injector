@@ -164,6 +164,59 @@ namespace GPN
 
                 return ExtrudedCasing{extruded_casing};
             }
+
+            // template <typename Grid_t>
+            // static ExtrudedCasing create(
+            //     const Casing<VarRing> &casing,
+            //     const Grid_t &grid_z)
+            // {
+            //     std::vector<ExtrudedRing> extruded_casing;
+            //     extruded_casing.reserve(MaterialType::Size);
+
+            //     extruded_casing.emplace_back(
+            //         ExtrudedRingFactory::create_ring(
+            //             FlowRing{casing[MaterialType::Flow]},
+            //             TubeRing{casing[MaterialType::Tube]},
+            //             ColumnRing{casing[MaterialType::Column]},
+            //             grid_z));
+
+            //     extruded_casing.emplace_back(
+            //         ExtrudedRingFactory::create_ring(
+            //             TubeRing{casing[MaterialType::Tube]},
+            //             ColumnRing{casing[MaterialType::Column]},
+            //             grid_z));
+
+            //     extruded_casing.emplace_back(
+            //         ExtrudedRingFactory::create_ring(
+            //             AnnulusRing{casing[MaterialType::Annulus]},
+            //             TubeRing{casing[MaterialType::Tube]},
+            //             ColumnRing{casing[MaterialType::Column]},
+            //             grid_z));
+
+            //     extruded_casing.emplace_back(
+            //         ExtrudedRingFactory::create_ring(
+            //             ColumnRing{casing[MaterialType::Column]},
+            //             grid_z));
+
+            //     extruded_casing.emplace_back(
+            //         ExtrudedRingFactory::create_ring(
+            //             CementRing{casing[MaterialType::Cement]},
+            //             grid_z));
+
+            //     for (auto id{0ll}; id < grid_z.mesh_size(); ++id)
+            //     {
+            //         for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Cement; ++i)
+            //         {
+            //             assert(is_tight_casing(extruded_casing[i].inner_radius(id), extruded_casing[i - 1ll].outer_radius(id)));
+            //         }
+            //         for (const auto &r : extruded_casing)
+            //         {
+            //             assert(std::abs(r.inner_radius(id) + r.thickness(id) - r.outer_radius(id)) < 1e-12);
+            //         }
+            //     }
+
+            //     return ExtrudedCasing{extruded_casing};
+            // }
         };
 
     } // Completion

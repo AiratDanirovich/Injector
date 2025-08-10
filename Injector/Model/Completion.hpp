@@ -996,36 +996,26 @@ namespace GPN
             }
         };
 
-        struct ExtrudedRing : public StationaryPhaseProperties
+        struct ExtrudedRing : public VarRing
         {
             template <typename Container_t>
             ExtrudedRing(
-                const StationaryPhaseProperties &props,
-                const Container_t &inner_radius,
-                const Container_t &thickness)
-                : props{props},
-                  thickness{thickness},
-                  inner_radius{inner_radius},
-                  outer_radius{inner_radius + thickness},
+                VarRing &&props)
+                : VarRing{std::move(props)},                  
                   linear_heat_capacity{
                       linear_heat_capacity_calc(
-                          inner_radius, thickness, props)},
+                          props.inner_radius, props.thickness, props)},
                   radial_heat_conductivity{
                       radial_heat_conductivity_calc(
-                          inner_radius, thickness, props)},
+                          props.inner_radius, props.thickness, props)},
                   integral_vertical_heat_conductivity{
-                      props.heat_conductivity * std::numbers::pi *
-                      thickness * (thickness + 2.0 * inner_radius)}
+                      props.heat_conductivity() * std::numbers::pi *
+                      props.thickness * (props.thickness + 2.0 * props.inner_radius)}
             {
                 for (auto id{0ll}; id < thickness.size(); ++id)
                     assert(std::abs(outer_radius(id) - inner_radius(id) - thickness(id)) < 1e-12);
             }
 
-            const Eigen::ArrayX<RealType>
-                thickness, depth,
-                inner_radius, outer_radius;
-
-            const StationaryPhaseProperties props;
 
             // c
             const Eigen::ArrayX<RealType> linear_heat_capacity;
@@ -1050,7 +1040,7 @@ namespace GPN
             {
                 return std::numbers::pi *
                        thickness * (2 * inner_radius + thickness) *
-                       props.volumetric_heat_capacity;
+                       props.volumetric_heat_capacity();
             }
 
             template <typename PhaseProperties_t>
@@ -1061,7 +1051,7 @@ namespace GPN
                 const PhaseProperties_t &props)
             {
                 const auto temp{(1.0 + thickness / inner_radius).log()};
-                Eigen::ArrayX<RealType> out{props.heat_conductivity / temp};
+                Eigen::ArrayX<RealType> out{props.heat_conductivity() / temp};
                 for (auto id{0ll}; id < out.size(); ++id)
                 {
                     if (thickness(id) == 0.0)
@@ -1075,6 +1065,16 @@ namespace GPN
         struct VarExtrudedRing
         {
             using value_type = Eigen::ArrayX<RealType>;
+
+            VarExtrudedRing(const VarRing &casing)
+                : VarExtrudedRing{
+                      casing.density(),
+                      casing.specific_heat_capacity(),
+                      casing.heat_conductivity(),
+                      casing.inner_radius,
+                      casing.thickness}
+            {
+            }
 
             VarExtrudedRing(
                 const value_type &density,
@@ -1110,9 +1110,9 @@ namespace GPN
             }
 
             const Eigen::ArrayX<RealType>
-                thickness, // depth,
+                thickness,
                 inner_radius, outer_radius,
-                viscosity, specific_heat_capacity, heat_conductivity;
+                specific_heat_capacity, heat_conductivity;
 
             // c
             const Eigen::ArrayX<RealType> linear_heat_capacity;
@@ -1277,7 +1277,7 @@ namespace GPN
                 const auto &annulus{sandwich[MaterialType::Annulus]};
                 return (annulus.area() / std::numbers::pi) *
                            log(tube.outer_radius / tube.inner_radius) +
-                       tube.heat_conductivity / annulus.heat_conductivity *
+                       tube.heat_conductivity() / annulus.heat_conductivity() *
                            (annulus.outer_radius * annulus.outer_radius *
                                 log(annulus.outer_radius / tube.outer_radius) -
                             annulus.area() / 2.0 / std::numbers::pi);
@@ -1290,10 +1290,10 @@ namespace GPN
                 const auto &column{sandwich[MaterialType::Column]};
                 return (
                            log(tube.outer_radius / tube.inner_radius) +
-                           tube.heat_conductivity / annulus.heat_conductivity *
+                           tube.heat_conductivity() / annulus.heat_conductivity() *
                                log(annulus.outer_radius / annulus.inner_radius)) *
                            (column.area() / std::numbers::pi) +
-                       tube.heat_conductivity / column.heat_conductivity *
+                       tube.heat_conductivity() / column.heat_conductivity() *
                            (column.outer_radius * column.outer_radius * log(column.outer_radius / column.inner_radius) -
                             column.area() / 2.0 / std::numbers::pi);
             }
@@ -1304,9 +1304,9 @@ namespace GPN
                 const auto &annulus{sandwich[MaterialType::Annulus]};
                 const auto &column{sandwich[MaterialType::Column]};
 
-                return (tube.volumetric_heat_capacity * I_tube() +
-                        annulus.volumetric_heat_capacity * I_annulus() +
-                        column.volumetric_heat_capacity * I_column()) /
+                return (tube.volumetric_heat_capacity() * I_tube() +
+                        annulus.volumetric_heat_capacity() * I_annulus() +
+                        column.volumetric_heat_capacity() * I_column()) /
                        (casing_area() * casing_volumetric_heat_capacity());
             }
 
@@ -1332,7 +1332,7 @@ namespace GPN
                             annulus.inner_radius(id) *
                             exp(
                                 (T(id) - std::log(tube.outer_radius(id) / tube.inner_radius(id))) /
-                                (tube.heat_conductivity / annulus.heat_conductivity))};
+                                (tube.heat_conductivity()(id) / annulus.heat_conductivity()(id)))};
                         assert(R > annulus.inner_radius(id));
                         if (R < column.inner_radius(id))
                             out(id) = R;
@@ -1342,9 +1342,9 @@ namespace GPN
                                 column.inner_radius(id) *
                                 std::exp(
                                     (T(id) - std::log(tube.outer_radius(id) / tube.inner_radius(id)) -
-                                     (tube.heat_conductivity / annulus.heat_conductivity) *
+                                     (tube.heat_conductivity()(id) / annulus.heat_conductivity()(id)) *
                                          std::log(annulus.outer_radius(id) / annulus.inner_radius(id))) /
-                                    (tube.heat_conductivity / column.heat_conductivity))};
+                                    (tube.heat_conductivity()(id) / column.heat_conductivity()(id)))};
                             assert(R > column.inner_radius(id));
                             assert(R < column.outer_radius(id));
                             out(id) = R;
@@ -1376,13 +1376,23 @@ namespace GPN
                 const auto &Column{sandwich[MaterialType::Column]};
                 const auto &Sandface{sandwich[MaterialType::Cement]};
                 return 1 / integral_casing_radial_heat_conductivity() +
-                       log(r2 / Column.outer_radius) / Sandface.heat_conductivity;
+                       log(r2 / Column.outer_radius) / Sandface.heat_conductivity();
             }
 
         private:
             const size_t size() const
             {
                 return sandwich.size();
+            }
+        };
+
+        struct VarExtrudedCasingFactory
+        {
+            static void create_extruded_casing(
+                const Casing<VarRing> &competion)
+            {
+            //    ExtrudedCasing casing{};
+            //    return casing;
             }
         };
 
