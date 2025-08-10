@@ -887,11 +887,11 @@ namespace GPN
                   flow_radius{sandwich.at(MaterialType::Front).outer_radius},
                   column_outer_radius{sandwich.at(MaterialType::Column).outer_radius}
             {
-                // for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Cement; ++i)
-                //     assert(
-                //         is_tight_casing(
-                //             sandwich.at(i).inner_radius,
-                //             sandwich.at(i - 1ll).outer_radius));
+                for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Cement; ++i)
+                    assert(
+                        is_tight_casing(
+                            sandwich.at((MaterialType::material_type)i).inner_radius,
+                            sandwich.at((MaterialType::material_type)(i - 1ll)).outer_radius));
             }
 
             const std::map<MaterialType::material_type, Ring_t> sandwich;
@@ -902,7 +902,7 @@ namespace GPN
 
             const auto &flow() const { return front(); }
 
-            const auto &operator[](MaterialType::material_type i) const
+            const auto &operator[](auto i) const
             {
                 return sandwich.at(i);
             }
