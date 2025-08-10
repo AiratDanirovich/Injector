@@ -11,8 +11,10 @@
 
 #include <vector>
 #include <InjectorDLL/Defines.h>
+#include <nlohmann/json.hpp>
 
 using VR = std::vector<RealType>;
+using json = nlohmann::json;
 
 class CustomVector;
 #pragma warning(push)
@@ -60,7 +62,8 @@ public:
         const VR &inlet_temperatures,     // K
         // casing
         // {fluid, tube, annulus, column, cementInner, cementOuter}
-        const std::array<MaterialProps, 6> &casing_data
+       // const std::array<MaterialProps, 6> &casing_data
+       const json& data
     );
     ~Wrapper();
 

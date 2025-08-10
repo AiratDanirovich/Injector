@@ -7,6 +7,7 @@
 #include <InjectorDLL/Defines.h>
 #include <InjectorDLL/Wrapper.h>
 
+// #include "parse_completion.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -14,85 +15,6 @@ using VR = std::vector<RealType>;
 
 using namespace std;
 using json = nlohmann::json;
-
-VR generate_stencils(RealType t0, RealType t1, RealType t_step_major)
-{
-    auto segm_count{static_cast<size_t>(std::ceil(t1 - t0) / t_step_major)};
-    double step = (t1 - t0) / (segm_count);
-    VR out(segm_count + 1ll);
-
-    for (auto i{0ull}; i < out.size(); ++i)
-        out[i] = t0 + i * step;
-    return out;
-}
-VR generate_steps(const VR &dual_nodes)
-{
-    VR out(dual_nodes.size() - 1ll);
-
-    for (auto i{0ull}; i < out.size(); ++i)
-        out[i] = dual_nodes[i + 1] - dual_nodes[i];
-    return out;
-}
-
-const std::array<std::array<RealType, 6>, 6> parse_completion(const json &data)
-{
-    std::array<std::array<RealType, 6>, 6> out;
-
-    { // flowing fluid
-        const auto &data2 = data["fluid"];
-        out[0ull] = {data2["density"],
-                     data2["specific_heat_capacity"],
-                     data2["heat_conductivity"],
-                     data["completion"]["tube"]["inner_radius"],
-                     0.0,
-                     std::numeric_limits<RealType>::max()};
-    }
-
-    { // tube
-        const auto &data2 = data["completion"]["tube"];
-        out[1ull] = {data2["density"],
-                     data2["specific_heat_capacity"],
-                     data2["heat_conductivity"],
-                     data2["thickness"],
-                     data2["inner_radius"],
-                     data2["depth"]};
-    }
-
-    { // annulus
-        const auto &data2 = data["completion"]["annulus"];
-        out[2ull] = {data2["density"],
-                     data2["specific_heat_capacity"],
-                     data2["heat_conductivity"],
-                     data2["thickness"],
-                     // tube inner_radius + tube wall thickness
-                     out[1ull][4ull] + out[1ull][3ull],
-                     std::numeric_limits<RealType>::max()};
-    }
-
-    { // column
-        const auto &data2 = data["completion"]["column"];
-        out[3ull] = {data2["density"],
-                     data2["specific_heat_capacity"],
-                     data2["heat_conductivity"],
-                     data2["thickness"],
-                     // annulus inner_radius + annulus wall thickness
-                     out[2ull][4ull] + out[2ull][3ull],
-                     std::numeric_limits<RealType>::max()};
-    }
-
-    { // cement
-        const auto &data2 = data["completion"]["cement"];
-        out[4ull] = {data2["density"],
-                     data2["specific_heat_capacity"],
-                     data2["heat_conductivity"],
-                     data2["thickness"],
-                     // column inner_radius + column wall thickness
-                     out[3ull][4ull] + out[3ull][3ull],
-                     std::numeric_limits<RealType>::max()};
-    }
-
-    return out;
-}
 
 int main()
 {
@@ -151,7 +73,7 @@ int main()
     const VR well_rates = data["history"]["dynamic"]["well_rate"]; // m^3/s
     const VR inlet_temperatures = data["history"]["dynamic"]["inlet_temperature"];
     /*well*/
-    const auto casing{parse_completion(data)};
+//    const auto casing{parse_completion(data)};
     /*END*/
 
     const auto &data2 = data["collector"]["geotherma"]["interpolate"];
@@ -198,7 +120,7 @@ int main()
         // well
         well_rates,         // ~1.1E-3 m^3/s
         inlet_temperatures, // K
-        casing);
+        data);
 
     const auto t_end{chrono::high_resolution_clock::now()};
     cout << "Elapsed time:                       " << (t_end - t_start).count() * 1E-9 << " seconds\n";

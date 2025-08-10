@@ -30,7 +30,8 @@
 #include <Injector/Solver/FullImplicit/Solver.hpp>
 #include <Injector/Solver/SolverManager.hpp>
 
-#include "make_completion.hpp"
+#include <tests/includes/get_completion.hpp>
+#include <tests/includes/transfer_to_eigen.hpp>
 
 #include <Eigen/Core>
 
@@ -154,7 +155,9 @@ Wrapper::Wrapper(
     const VR &inlet_temperatures, // K
     // casing
     // {fluid, tube, annulus, column, cementInner, cementOuter}
-    const std::array<MaterialProps, 6> &casing_data)
+    // const std::array<MaterialProps, 6> &casing_data,
+    const json& data
+    )
 {
     // adapt stl container to Eigen container
     LogValuesContainer is_permeable_stencils(is_permeable.size());
@@ -170,7 +173,17 @@ Wrapper::Wrapper(
     LogValuesContainer solid_heatconductivity_stencils(solid_heatconductivity.size());
     std::copy(solid_heatconductivity.begin(), solid_heatconductivity.end(), solid_heatconductivity_stencils.begin());
 
-    const Casing completion{make_completion(casing_data)};
+      const auto temp_grid_z{
+      Grids::Factory::create_axes<CoordinateTypes::Z>(
+          Grids::RefinerVerticle{
+              data["grid"]["z_minor_step"].get<RealType>(),
+              transfer_to_eigen(data["collector"]["is_permeable"].get<VR>())},
+          Grids::Factory::generate_dual_grid_stencils_from_steps(
+              0.0, data["collector"]["thickness"].get<VR>()))};
+  const Casing<VarRing> completion{get_completion(data, temp_grid_z)};
+
+
+//    const Casing completion{make_completion(casing_data)};
 
     // r_stencils
     GPN::WellHoles well_holes{WellHolesFactory::create(completion)};
@@ -189,7 +202,7 @@ Wrapper::Wrapper(
     const auto &grid_z{grid2D->first_coord};
 
     const ExtrudedCasing extr_completion{
-        ExtrudedCasingFactory::create(completion, grid_z)};
+        VarExtrudedCasingFactory::create(completion)};
     // collector
     const Logs::Rocks::CoreSampleLogs core_data{
         is_permeable_stencils,
@@ -201,9 +214,9 @@ Wrapper::Wrapper(
     const PhaseProperties water{
         FluidFactory::create_water(
             Viscosity{viscosity},
-            Density{density},
-            SpecificHeatCapacity{capacity},
-            HeatConductivity{heat_conductivity_fluid})};
+            GPN::Density{density},
+            GPN::SpecificHeatCapacity{capacity},
+            GPN::HeatConductivity{heat_conductivity_fluid})};
 
     const auto weights{
         Logs::RateWeightsFactory::create(
