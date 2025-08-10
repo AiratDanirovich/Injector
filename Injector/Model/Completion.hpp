@@ -495,7 +495,7 @@ namespace GPN
                     Completion::VarInnerRadius{inner_radius}};
             }
 
-            static VarRing create_tube_ring(
+            static VarRing create_tube(
                 const VarRing &tube,
                 const VarRing &column,
                 const auto &grid_z)

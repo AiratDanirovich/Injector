@@ -72,6 +72,7 @@ TEST_CASE("Well_Test")
         const auto inner_radius = Completion::VarInnerRadius{data2["inner_radius"].get<VR>()};
         const auto ring{casing.at(MaterialType::Column)};
         auto depth_id{1ll};
+        REQUIRE(depth_stencils.back() >= grid_z.dual_nodes.tail(1ll)(0ll));
         for (auto id{0ll}; id < grid_z.mesh_size(); ++id)
         {
             if (grid_z.mesh_nodes(id) > depth_stencils[depth_id])
@@ -100,7 +101,7 @@ TEST_CASE("Well_Test")
         const auto &data2 = data["completion"]["variable"]["tube"];
         casing.emplace(
             Completion::MaterialType::Tube,
-            FactoryVarRing::create_tube_ring(
+            FactoryVarRing::create_tube(
                 VarRing{
                     VarRingSimple{
                         VarTube{
@@ -124,6 +125,9 @@ TEST_CASE("Well_Test")
         const auto ring{casing.at(MaterialType::Tube)};
         const auto &column{casing.at(MaterialType::Column)};
         auto id{0ll}, depth_id{1ll};
+        REQUIRE(depth_stencils.back() < grid_z.dual_nodes.tail(1ll)(0ll));
+        REQUIRE(depth_stencils.back() <= column.max_depth);
+        // check the real tube interval, z < depth_stencils.back()
         for (;
              (id < grid_z.mesh_size()) &&
              (grid_z.mesh_nodes(id) < depth_stencils.back());
@@ -143,16 +147,22 @@ TEST_CASE("Well_Test")
         }
         REQUIRE(depth_id == depth_stencils.size() - 1ull);
         REQUIRE(depth_id == density.value.size());
+        // check the imaginary tube interval, z > depth_stencils.back()
         for (; id < grid_z.mesh_size(); ++id)
         {
+            // extrapolate the last available tube interval below its 
+            // real depth
             CHECK(ring.density()(id) == density.value(depth_id - 1ll));
             CHECK(ring.specific_heat_capacity()(id) == capacity.value(depth_id - 1ll));
             CHECK(ring.heat_conductivity()(id) == conductivity.value(depth_id - 1ll));
 
+            // and assume zero thickness,
+            // with inner-radius == column.inner_radius
             CHECK(ring.inner_radius(id) == column.inner_radius(id));
             CHECK(ring.outer_radius(id) == column.inner_radius(id));
             CHECK(ring.thickness(id) == 0.0);
         }
+        // verify the final sizes of arrays
         REQUIRE(ring.density().size() == grid_z.mesh_size());
         REQUIRE(ring.specific_heat_capacity().size() == grid_z.mesh_size());
         REQUIRE(ring.heat_conductivity().size() == grid_z.mesh_size());
