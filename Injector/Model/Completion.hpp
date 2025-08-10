@@ -3,6 +3,7 @@
 #include <numbers>
 #include <algorithm>
 #include <vector>
+#include <map>
 #include <exception>
 
 #include <Injector/Model/Phases/PhaseProperties.hpp>
@@ -21,11 +22,13 @@ namespace GPN
         {
             enum material_type
             {
-                Flow = 0,
+                Front = 0,
+                Flow = Front,
                 Tube = 1,
                 Annulus = 2,
                 Column = 3,
                 Cement = 4,
+                Back = Cement,
                 Size = 5
             };
         };
@@ -757,10 +760,10 @@ namespace GPN
             {
                 using namespace std;
 
-                const auto& depth_stencils{cement.depth_stencils};
+                const auto &depth_stencils{cement.depth_stencils};
 
                 vector<RealType>
-                    density, specific_heat_capacity, heat_conductivity, 
+                    density, specific_heat_capacity, heat_conductivity,
                     inner_radius, thickness;
                 const auto size{grid_z.mesh_size()};
                 density.reserve(size);
@@ -878,27 +881,30 @@ namespace GPN
         struct Casing
         {
             using value_type = Ring_t::value_type;
-            Casing(const std::vector<Ring_t> &completion)
-                : sandwich{completion},
-                  sandface_radius{completion.back().outer_radius},
-                  flow_radius{completion.front().outer_radius},
-                  column_outer_radius{completion[MaterialType::Column].outer_radius}
+            Casing(std::map<MaterialType::material_type, Ring_t> &&completion)
+                : sandwich{std::move(completion)},
+                  sandface_radius{sandwich.at(MaterialType::Back).outer_radius},
+                  flow_radius{sandwich.at(MaterialType::Front).outer_radius},
+                  column_outer_radius{sandwich.at(MaterialType::Column).outer_radius}
             {
-                for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Cement; ++i)
-                    assert(
-                        is_tight_casing(
-                            completion[i].inner_radius,
-                            completion[i - 1ll].outer_radius));
+                // for (ptrdiff_t i{MaterialType::Tube}; i <= MaterialType::Cement; ++i)
+                //     assert(
+                //         is_tight_casing(
+                //             sandwich.at(i).inner_radius,
+                //             sandwich.at(i - 1ll).outer_radius));
             }
 
-            const auto &back() const { return sandwich.back(); }
-            const auto &front() const { return sandwich.front(); }
+            const std::map<MaterialType::material_type, Ring_t> sandwich;
+            const value_type sandface_radius, column_outer_radius, flow_radius;
+
+            const auto &back() const { return sandwich.at(MaterialType::Back); }
+            const auto &front() const { return sandwich.at(MaterialType::Front); }
 
             const auto &flow() const { return front(); }
 
-            const auto &operator[](auto i) const
+            const auto &operator[](MaterialType::material_type i) const
             {
-                return sandwich[i];
+                return sandwich.at(i);
             }
 
             const value_type casing_volumetric_heat_capacity() const
@@ -908,7 +914,7 @@ namespace GPN
                 value_type C{sandwich[start].linear_heat_capacity};
                 for (ptrdiff_t i{start + 1}; i <= MaterialType::Column; ++i)
                 {
-                    const auto &m = sandwich[i];
+                    const auto &m = sandwich.at(i);
                     C += m.linear_heat_capacity;
                 }
                 C /= casing_area();
@@ -917,7 +923,7 @@ namespace GPN
 
             const value_type cement_volumetric_heat_capacity() const
             {
-                return sandwich[MaterialType::Cement].linear_heat_capacity / cement_area();
+                return sandwich.at(MaterialType::Cement).linear_heat_capacity / cement_area();
             }
 
             const value_type integral_casing_radial_heat_conductivity() const
@@ -926,10 +932,10 @@ namespace GPN
                 // as well as "cement2" at "i = end-1"
                 // from summation!
                 const auto start{MaterialType::Tube};
-                value_type L{sandwich[start].radial_heat_conductivity};
+                value_type L{sandwich.at(start).radial_heat_conductivity};
                 for (ptrdiff_t i{start + 1}; i <= MaterialType::Column; ++i)
                 {
-                    const auto &m = sandwich[i];
+                    const auto &m = sandwich.at(i);
                     L += 1.0 / m.radial_heat_conductivity;
                 }
                 assert(is_positive(L));
@@ -943,10 +949,10 @@ namespace GPN
                 // as well as "cement2" at "i = end-1"
                 // from summation!
                 const auto start{MaterialType::Tube};
-                value_type L{sandwich[start].integral_vertical_heat_conductivity};
+                value_type L{sandwich.at(start).integral_vertical_heat_conductivity};
                 for (ptrdiff_t i{start + 1}; i <= MaterialType::Column; ++i)
                 {
-                    const auto &m = sandwich[i];
+                    const auto &m = sandwich.at(i);
                     L += m.integral_vertical_heat_conductivity;
                 }
                 assert(is_positive(L));
@@ -956,12 +962,8 @@ namespace GPN
 
             const value_type integral_vertical_cement_heat_conductivity() const
             {
-                return sandwich[MaterialType::Cement].integral_vertical_heat_conductivity / cement_area();
+                return sandwich.at(MaterialType::Cement).integral_vertical_heat_conductivity / cement_area();
             }
-
-            const std::vector<Ring_t> sandwich;
-            const value_type sandface_radius, column_outer_radius, flow_radius //, thickness
-                ;
 
             const value_type area() const
             {
@@ -972,8 +974,8 @@ namespace GPN
             const value_type cement_area() const
             {
                 const value_type out{std::numbers::pi *
-                                     (sandwich[MaterialType::Cement].thickness) *
-                                     (sandwich[MaterialType::Cement].outer_radius + sandwich[MaterialType::Cement].inner_radius)};
+                                     (sandwich.at(MaterialType::Cement).thickness) *
+                                     (sandwich.at(MaterialType::Cement).outer_radius + sandwich.at(MaterialType::Cement).inner_radius)};
                 assert(is_positive(out));
                 return out;
             }
@@ -981,8 +983,8 @@ namespace GPN
             const value_type casing_area() const
             {
                 const value_type out{std::numbers::pi *
-                                     (sandwich[MaterialType::Column].outer_radius - sandwich[MaterialType::Tube].inner_radius) *
-                                     (sandwich[MaterialType::Column].outer_radius + sandwich[MaterialType::Tube].inner_radius)};
+                                     (sandwich.at(MaterialType::Column).outer_radius - sandwich.at(MaterialType::Tube).inner_radius) *
+                                     (sandwich.at(MaterialType::Column).outer_radius + sandwich.at(MaterialType::Tube).inner_radius)};
                 assert(is_positive(out));
                 return out;
             }

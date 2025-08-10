@@ -359,7 +359,7 @@ TEST_CASE("Well_Test")
     }
 #pragma endregion
 
-    // Casing<VarRing> completion{casing};
+    Casing<VarRing> completion{std::move(casing)};
 
     // const auto flow_ring =
     //     ExtrudedRingFactory::create_ring(
