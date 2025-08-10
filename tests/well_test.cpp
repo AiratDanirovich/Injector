@@ -10,6 +10,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
+
+#include "includes/transfer_to_eigen.hpp"
+#include "includes/make_steps.hpp"
+
 using namespace Catch;
 using namespace Catch::Matchers;
 
@@ -20,25 +24,6 @@ using namespace GPN::Grids;
 using namespace GPN::Logs;
 using namespace GPN::Phases;
 using namespace GPN::CoordinateTypes;
-
-using VR = std::vector<RealType>;
-
-vector<RealType> make_steps(const VR &data)
-{
-    VR out(data.size() - 1ull);
-    for (auto i{1ull}; i < data.size(); ++i)
-        out[i - 1ull] = data[i] - data[i - 1ull];
-
-    return out;
-}
-
-LogValuesContainer transfer_to_eigen(const VR &data, const RealType factor = 1.0)
-{
-    LogValuesContainer out(data.size());
-    for (auto i{0ull}; i < data.size(); ++i)
-        out(i) = factor * data[i];
-    return out;
-}
 
 std::vector<RealType> grid_stencils{0.0, 1.0, 3.0, 7.0, 10.0};
 std::vector<RealType> grid_thickness{make_steps(grid_stencils)};
