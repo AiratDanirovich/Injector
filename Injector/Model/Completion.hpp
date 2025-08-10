@@ -593,7 +593,7 @@ namespace GPN
                     Completion::VarInnerRadius{inner_radius}};
             }
 
-            static VarRing create_flow_ring(
+            static VarRing create_flow(
                 const Flow &flow_ring_props,
                 const VarRing &tube,
                 const VarRing &column,
@@ -645,7 +645,7 @@ namespace GPN
                     Completion::VarInnerRadius{inner_radius}};
             }
 
-            static VarRing create_annulus_ring(
+            static VarRing create_annulus(
                 const VarAnnulus &annulus_ring_props,
                 const Eigen::ArrayX<RealType> &depth_intervals,
                 const VarRing &tube,
@@ -750,7 +750,7 @@ namespace GPN
                     Completion::VarInnerRadius{inner_radius}};
             }
 
-            static VarRing create_cement_ring(
+            static VarRing create_cement(
                 const VarRingSimple &cement,
                 const VarRing &column,
                 const auto &grid_z)

@@ -47,7 +47,9 @@ TEST_CASE("Well_Test")
 
     map<Completion::MaterialType::material_type, VarRing> casing;
 
+#pragma region VERIFY-COLUMN
     {
+#pragma region ARRANGE
         const auto &data2 = data["completion"]["variable"]["column"];
         casing.emplace(
             Completion::MaterialType::Column,
@@ -62,7 +64,8 @@ TEST_CASE("Well_Test")
                         Completion::VarDepth{data2["depth_interval"].get<VR>()}},
                     Completion::VarInnerRadius{data2["inner_radius"].get<VR>()}},
                 grid_z));
-
+#pragma endregion
+#pragma region CHECKS
         const auto density = Completion::Density{data2["density"].get<VR>()};
         const auto capacity = Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<VR>()};
         const auto conductivity = Completion::HeatConductivity{data2["heat_conductivity"].get<VR>()};
@@ -95,9 +98,12 @@ TEST_CASE("Well_Test")
         REQUIRE(ring.inner_radius.size() == grid_z.mesh_size());
         REQUIRE(ring.thickness.size() == grid_z.mesh_size());
         REQUIRE(ring.outer_radius.size() == grid_z.mesh_size());
+#pragma endregion
     }
-
+#pragma endregion
+#pragma region VERIFY-TUBE
     {
+#pragma region ARRANGE
         const auto &data2 = data["completion"]["variable"]["tube"];
         casing.emplace(
             Completion::MaterialType::Tube,
@@ -113,7 +119,8 @@ TEST_CASE("Well_Test")
                     Completion::VarInnerRadius{data2["inner_radius"].get<VR>()}},
                 casing.at(MaterialType::Column),
                 grid_z));
-
+#pragma endregion
+#pragma region CHECKS
         const auto density = Completion::Density{data2["density"].get<VR>()};
         const auto capacity = Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<VR>()};
         const auto conductivity = Completion::HeatConductivity{data2["heat_conductivity"].get<VR>()};
@@ -150,7 +157,7 @@ TEST_CASE("Well_Test")
         // check the imaginary tube interval, z > depth_stencils.back()
         for (; id < grid_z.mesh_size(); ++id)
         {
-            // extrapolate the last available tube interval below its 
+            // extrapolate the last available tube interval below its
             // real depth
             CHECK(ring.density()(id) == density.value(depth_id - 1ll));
             CHECK(ring.specific_heat_capacity()(id) == capacity.value(depth_id - 1ll));
@@ -169,9 +176,12 @@ TEST_CASE("Well_Test")
         REQUIRE(ring.inner_radius.size() == grid_z.mesh_size());
         REQUIRE(ring.thickness.size() == grid_z.mesh_size());
         REQUIRE(ring.outer_radius.size() == grid_z.mesh_size());
+#pragma endregion
     }
-
+#pragma endregion
+#pragma region VERIFY-FLOW
     { // flowing fluid
+#pragma region ARRANGE
         const auto &data2 = data["fluid"];
 
         const Flow flow_ring_props{
@@ -181,12 +191,13 @@ TEST_CASE("Well_Test")
 
         casing.emplace(
             Completion::MaterialType::Flow,
-            FactoryVarRing::create_flow_ring(
+            FactoryVarRing::create_flow(
                 flow_ring_props,
                 casing.at(MaterialType::Tube),
                 casing.at(MaterialType::Column),
                 grid_z));
-
+#pragma endregion
+#pragma region CHECKS
         const auto density = GPN::Density{data2["density"].get<RealType>()};
         const auto capacity = GPN::SpecificHeatCapacity{data2["specific_heat_capacity"].get<RealType>()};
         const auto conductivity = GPN::HeatConductivity{data2["heat_conductivity"].get<RealType>()};
@@ -216,8 +227,12 @@ TEST_CASE("Well_Test")
         REQUIRE(ring.inner_radius.size() == grid_z.mesh_size());
         REQUIRE(ring.thickness.size() == grid_z.mesh_size());
         REQUIRE(ring.outer_radius.size() == grid_z.mesh_size());
+#pragma endregion
     }
+#pragma endregion
+#pragma region VERIFY-ANNULUS
     {
+#pragma region ARRANGE
         const auto &data2 = data["completion"]["variable"]["annulus"];
 
         const VarAnnulus annulus_ring_props{
@@ -227,13 +242,14 @@ TEST_CASE("Well_Test")
 
         casing.emplace(
             Completion::MaterialType::Annulus,
-            FactoryVarRing::create_annulus_ring(
+            FactoryVarRing::create_annulus(
                 annulus_ring_props,
                 Completion::VarDepth{data2["depth_interval"].get<VR>()},
                 casing.at(MaterialType::Tube),
                 casing.at(MaterialType::Column),
                 grid_z));
-
+#pragma endregion
+#pragma region CHECKS
         const auto density = Completion::Density{data2["density"].get<VR>()};
         const auto capacity = Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<VR>()};
         const auto conductivity = Completion::HeatConductivity{data2["heat_conductivity"].get<VR>()};
@@ -244,6 +260,10 @@ TEST_CASE("Well_Test")
         const auto &tube{casing.at(MaterialType::Tube)};
         const auto &column{casing.at(MaterialType::Column)};
         auto id{0ll}, depth_id{1ll};
+
+        REQUIRE(depth_stencils.back() < column.max_depth);
+        REQUIRE(depth_stencils.back() < grid_z.dual_nodes.tail(1ll)(0ll));
+        // check the real annulus interval, z < depth_stencils.back()
         for (;
              (id < grid_z.mesh_size()) &&
              (grid_z.mesh_nodes(id) < depth_stencils.back());
@@ -263,12 +283,17 @@ TEST_CASE("Well_Test")
         }
         REQUIRE(depth_id == depth_stencils.size() - 1ull);
         REQUIRE(depth_id == density.value.size());
+        // check the imaginary annulus interval, z > depth_stencils.back()
         for (; id < grid_z.mesh_size(); ++id)
         {
+            // extrapolate the last available tube interval below its
+            // real depth
             CHECK(ring.density()(id) == density.value(depth_id - 1ll));
             CHECK(ring.specific_heat_capacity()(id) == capacity.value(depth_id - 1ll));
             CHECK(ring.heat_conductivity()(id) == conductivity.value(depth_id - 1ll));
 
+            // extrapolate the last available tube interval below its
+            // real depth
             CHECK(ring.inner_radius(id) == column.inner_radius(id));
             CHECK(ring.outer_radius(id) == column.inner_radius(id));
             CHECK(ring.thickness(id) == 0.0);
@@ -279,11 +304,15 @@ TEST_CASE("Well_Test")
         REQUIRE(ring.inner_radius.size() == grid_z.mesh_size());
         REQUIRE(ring.thickness.size() == grid_z.mesh_size());
         REQUIRE(ring.outer_radius.size() == grid_z.mesh_size());
+#pragma endregion
     }
+#pragma endregion
+#pragma region VERIFY-CEMENT
     {
+#pragma region ARRANGE
         const auto &data2 = data["completion"]["variable"]["cement"];
         casing.emplace(Completion::MaterialType::Cement,
-                       FactoryVarRing::create_cement_ring(
+                       FactoryVarRing::create_cement(
                            VarRingSimple{
                                VarCement{
                                    Completion::Density{data2["density"].get<VR>()},
@@ -293,7 +322,8 @@ TEST_CASE("Well_Test")
                                Completion::VarDepth{data2["depth_interval"].get<VR>()}},
                            casing.at(MaterialType::Column),
                            grid_z));
-
+#pragma endregion
+#pragma region CHECKS
         const auto density = Completion::Density{data2["density"].get<VR>()};
         const auto capacity = Completion::SpecificHeatCapacity{data2["specific_heat_capacity"].get<VR>()};
         const auto conductivity = Completion::HeatConductivity{data2["heat_conductivity"].get<VR>()};
@@ -325,7 +355,9 @@ TEST_CASE("Well_Test")
         REQUIRE(ring.inner_radius.size() == grid_z.mesh_size());
         REQUIRE(ring.thickness.size() == grid_z.mesh_size());
         REQUIRE(ring.outer_radius.size() == grid_z.mesh_size());
+#pragma endregion
     }
+#pragma endregion
 
     // Casing<VarRing> completion{casing};
 
