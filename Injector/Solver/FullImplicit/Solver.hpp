@@ -199,18 +199,33 @@ namespace GPN
                         // copy Laplace term in y-direction for a fixed x
                         const SpMatrix &A{splitX.LaplaceTerm(row)};
                         // convection term
-                        // exclude rightmost edge
-                        const auto &flow{split_flow_field.row(row).head(second_coord_size).matrix().transpose()};
+                        const auto &temp_flow{split_flow_field.row(row).matrix()};
+                        // positive flow values
+                        const auto flow_plus{(temp_flow.array() + temp_flow.array().abs()) / 2.0};
+                        assert(flow_plus.cols() == second_coord_size + 1ll);
+                        assert(std::all_of(flow_plus.cbegin(), flow_plus.cend(), [](const RealType v)
+                                           { return v >= 0.0; }));
+                        // negative flow values
+                        const auto flow_minus{(temp_flow.array() - temp_flow.array().abs()) / 2.0};
+                        assert(flow_minus.cols() == second_coord_size + 1ll);
+                        assert(std::all_of(flow_minus.cbegin(), flow_minus.cend(), [](const RealType v)
+                                           { return v <= 0.0; }));
 
                         // upper diagonal
                         for (auto col{0ll}; col < second_coord_size - 1ll; ++col)
                         {
                             const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l + first_coord_size, A.coeff(col, col + 1ll));
+                            tripletList.emplace_back(l, l + first_coord_size, 
+                                A.coeff(col, col + 1ll) + flow_minus(col + 1ll));
                         }
-
+                        
                         // main diagonal
-                        const auto diag{(A.diagonal() + flow).eval()};
+                        const auto diag{(
+                                            A.diagonal() +
+                                            (flow_plus.matrix().head(second_coord_size) -
+                                            flow_minus.matrix().tail(second_coord_size)).transpose())
+                                            .eval()};
+
                         for (auto col{0ll}; col < second_coord_size; ++col)
                         {
                             const auto l{grid->to_linear(row, col)};
@@ -224,7 +239,7 @@ namespace GPN
                             assert(l >= first_coord_size);
                             tripletList.emplace_back(
                                 l, l - first_coord_size,
-                                A.coeff(col, col - 1ll) - flow(col));
+                                A.coeff(col, col - 1ll) - flow_plus(col));
                         }
                     }
                 }
@@ -257,7 +272,8 @@ namespace GPN
                         for (auto row{0ll}; row < first_coord_size - 1ll; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l + 1ll, A.coeff(row, row + 1ll) + flow_minus(row + 1ll));
+                            tripletList.emplace_back(l, l + 1ll, 
+                                A.coeff(row, row + 1ll) + flow_minus(row + 1ll));
                         }
 
                         // main diagonal
