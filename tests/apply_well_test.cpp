@@ -25,7 +25,6 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 using json = nlohmann::json;
-
 using VR = std::vector<GPN::RealType>;
 
 using namespace std;

@@ -234,9 +234,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const CrossFlows cross_flows{
     1.0, weights, from_coords, to_layers};
 
-
-
-
   const Well_Explicit well{
       core_data.is_permeable, core_data.is_perforated, weights};
 
