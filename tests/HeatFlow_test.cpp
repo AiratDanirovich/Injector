@@ -18,6 +18,7 @@
 #include <Injector/Model/Completion.hpp>
 #include <Injector/Model/ExtrudedCasingFactory.hpp>
 
+#include <Injector/Properties/Logs.hpp>
 #include <Injector/Properties/FlowField.hpp>
 #include <Injector/Properties/Factory.hpp>
 #include <Injector/Solver/BoundaryConditions.hpp>
