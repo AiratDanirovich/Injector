@@ -26,10 +26,12 @@ namespace GPN
             template <
                 typename Grid_t,
                 typename Capacity_t,
-                typename ConvectionTermFactory_t,
-                typename BC_t>
+                typename ConvectionTermFactory_t>
             struct Solver
             {
+                using BC_t = BoundaryConditions::BoundaryConditions;
+
+
                 using Map1D =
                     Eigen::Map<
                         Eigen::ArrayX<RealType>>;
@@ -103,24 +105,24 @@ namespace GPN
                 template <typename Coefs_t>
                 struct EquationView
                 {
-                    using MatrixRow_t = Eigen::Block<Eigen::SparseMatrix<RealType>, 1, -1, false>;
-                    EquationView(MatrixRow_t A,
+                    using Matrix_t = Eigen::SparseMatrix<RealType>;
+                    EquationView(Matrix_t &A,
                                  RealType &rhs,
                                  const ptrdiff_t diag_id,
                                  const Coefs_t &neib_ids)
-                        : matrix_row{A}, rhs{rhs},
+                        : matrix{A}, rhs{rhs},
                           diag_id{diag_id},
                           neib_ids{neib_ids}
                     {
-                        assert(matrix_row.cols() > 1ll);
+                        assert(matrix.cols() > 1ll);
                         for (const auto id : neib_ids)
                         {
                             assert(id >= 0ll);
-                            assert(id < matrix_row.cols()*matrix_row.cols());
+                            assert(id < matrix.cols() * matrix.cols());
                         }
                     }
 
-                    MatrixRow_t matrix_row;
+                    Matrix_t &matrix;
                     RealType &rhs;
                     const ptrdiff_t diag_id;
                     const Coefs_t &neib_ids;
@@ -128,17 +130,17 @@ namespace GPN
                     void set_type_I(const RealType val)
                     {
                         // set diagonal value = 1.0
-                        matrix_row.coeffRef(diag_id) = 1.0;
+                        matrix.coeffRef(diag_id, diag_id) = 1.0;
                         // set non-diagonal values = 0.0
                         for (const auto id : neib_ids)
-                            matrix_row.coeffRef(id) = 0.0;
+                            matrix.coeffRef(diag_id, id) = 0.0;
                         //  set rhs = val to satisfy: 1.0*T = val
                         rhs = val;
                     }
                     void add_rhs_type_II(const RealType val)
                     {
                         // add the given flux to the rhs
-                            rhs += val;
+                        rhs += val;
                     }
                 };
 
@@ -207,7 +209,7 @@ namespace GPN
                     const auto &split_flow_field{
                         convection_factory.get_flow_in_axes2()};
 
-#pragma omp parallel for // num_threads(16) schedule(dynamic)
+// #pragma omp parallel for // num_threads(16) schedule(dynamic)
                     //   take every line along x-direction. A line per y-node
                     //  It is a row of 2D grid representation
                     for (std::ptrdiff_t i = 0; i < first_coord_size; ++i)
@@ -234,12 +236,33 @@ namespace GPN
                         // cumulative term
                         A.diagonal() = A.diagonal() + time_factor;
                         // convection term
-                        const auto &flow{split_flow_field.row(i).head(second_coord_size).matrix().transpose()};
+                        const auto &temp_flow{split_flow_field.row(i).matrix()};
+                        // negative flow values
+                        const auto flow_plus{(temp_flow.array() + temp_flow.array().abs()) / 2.0};
+                        assert(flow_plus.cols() == second_coord_size + 1ll);
+                        assert(std::all_of(flow_plus.cbegin(), flow_plus.cend(), [](const RealType v)
+                                           { return v >= 0.0; }));
+                        // positive flow values
+                        const auto flow_minus{(temp_flow.array() - temp_flow.array().abs()) / 2.0};
+                        assert(flow_minus.cols() == second_coord_size + 1ll);
+                        assert(std::all_of(flow_minus.cbegin(), flow_minus.cend(), [](const RealType v)
+                                           { return v <= 0.0; }));
+
+                        // const auto &flow{split_flow_field.row(i).head(second_coord_size).matrix().transpose()};
                         // exclude rightmost edge
-                        A.diagonal() = A.diagonal() + flow;
+
+                        A.diagonal() = 
+                            (A.diagonal() + 
+                            (flow_plus.matrix().head(second_coord_size) - 
+                            flow_minus.matrix().tail(second_coord_size)).transpose())
+                            .eval();
+
                         // exclude leftmost and rightmost edges
                         for (auto idx{1ll}; idx < A.rows(); ++idx)
-                            A.coeffRef(idx, idx - 1ll) -= flow(idx - 0ll);
+                            A.coeffRef(idx, idx - 1ll) -= flow_plus(idx);
+                        // exclude leftmost and rightmost edges
+                        for (auto idx{0ll}; idx < A.rows() - 1ll; ++idx)
+                            A.coeffRef(idx, idx + 1ll) += flow_minus(idx + 1ll);
 
                         // BC
                         applyBC_split_x(A, rhs, i);
@@ -253,7 +276,7 @@ namespace GPN
                     const auto &split_flow_field{
                         convection_factory.get_flow_in_axes1()};
 
-#pragma omp parallel for
+// #pragma omp parallel for
                     // take every line along x-direction. A line per y-node.
                     // It is a col of 2D grid representation
                     for (std::ptrdiff_t j = 0; j < second_coord_size; ++j)
@@ -286,22 +309,27 @@ namespace GPN
                         const auto &temp_flow{split_flow_field.col(j).matrix()};
                         // negative flow values
                         const auto flow_plus{(temp_flow.array() + temp_flow.array().abs()) / 2.0};
-                        assert(flow_plus.rows() == first_coord_size+1ll);
-                        assert(std::all_of(flow_plus.cbegin(), flow_plus.cend(), [](const RealType v){return v >= 0.0;}));
+                        assert(flow_plus.rows() == first_coord_size + 1ll);
+                        assert(std::all_of(flow_plus.cbegin(), flow_plus.cend(), [](const RealType v)
+                                           { return v >= 0.0; }));
                         // positive flow values
                         const auto flow_minus{(temp_flow.array() - temp_flow.array().abs()) / 2.0};
-                        assert(flow_minus.rows() == first_coord_size+1ll);
-                        assert(std::all_of(flow_minus.cbegin(), flow_minus.cend(), [](const RealType v){return v <= 0.0;}));
+                        assert(flow_minus.rows() == first_coord_size + 1ll);
+                        assert(std::all_of(flow_minus.cbegin(), flow_minus.cend(), [](const RealType v)
+                                           { return v <= 0.0; }));
 
-                //        const auto &flow{split_flow_field.col(j).head(first_coord_size).matrix()};
+                        // const auto &flow{split_flow_field.col(j).head(first_coord_size).matrix()};
                         // exclude leftmost edge
 
-                        A.diagonal() = A.diagonal() + flow_plus.matrix().head(first_coord_size) - flow_minus.matrix().tail(first_coord_size);
+                        A.diagonal() = 
+                            A.diagonal() + 
+                            flow_plus.matrix().head(first_coord_size) - 
+                            flow_minus.matrix().tail(first_coord_size);
                         // exclude leftmost and rightmost edges
                         for (auto idx{1ll}; idx < A.rows(); ++idx)
                             A.coeffRef(idx, idx - 1ll) -= flow_plus(idx);
                         // exclude leftmost and rightmost edges
-                        for (auto idx{0ll}; idx < A.rows()-1ll; ++idx)
+                        for (auto idx{0ll}; idx < A.rows() - 1ll; ++idx)
                             A.coeffRef(idx, idx + 1ll) += flow_minus(idx + 1ll);
                         // BC
                         applyBC_split_y(A, rhs, j);
@@ -344,12 +372,14 @@ namespace GPN
                 void applyBC_split_x(SpMatrix &A, RHS_t &b, ptrdiff_t i)
                 {
                     {
-                        EquationView view{A.row(0ll), b(0ll), 0ll, std::array<ptrdiff_t, 1ull>{1ll}};
+                        const auto neibs{std::array<ptrdiff_t, 1ull>{1ll}};
+                        EquationView view{A, b(0ll), 0ll, neibs};
                         bc.set_west_val(view, i);
                     }
                     {
-                        std::ptrdiff_t n = A.outerSize() - 1;
-                        EquationView view{A.row(n), b(n), n, std::array<ptrdiff_t, 1ull>{n - 1ll}};
+                        const std::ptrdiff_t n{A.outerSize() - 1ll};
+                        const auto neibs{std::array<ptrdiff_t, 1ull>{n - 1ll}};
+                        EquationView view{A, b(n), n, neibs};
                         bc.set_east_val(view, i);
                     }
                 }
@@ -357,12 +387,14 @@ namespace GPN
                 void applyBC_split_y(SpMatrix &A, RHS_t &b, ptrdiff_t j)
                 {
                     {
-                        EquationView view{A.row(0ll), b(0ll), 0ll, std::array<ptrdiff_t, 1ull>{1ll}};
+                        const auto neibs{std::array<ptrdiff_t, 1ull>{1ll}};
+                        EquationView view{A, b(0ll), 0ll, neibs};
                         bc.set_south_val(view, j);
                     }
                     {
-                        std::ptrdiff_t n = A.outerSize() - 1;
-                        EquationView view{A.row(n), b(n), n, std::array<ptrdiff_t, 1ull>{n - 1ll}};
+                        const std::ptrdiff_t n{A.outerSize() - 1ll};
+                        const auto neibs{std::array<ptrdiff_t, 1ull>{n - 1ll}};
+                        EquationView view{A, b(n), n, neibs};
                         bc.set_north_val(view, j);
                     }
                 }
