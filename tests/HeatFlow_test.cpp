@@ -45,6 +45,7 @@ using json = nlohmann::json;
 using namespace std;
 using namespace GPN;
 using namespace GPN::Logs;
+using namespace GPN::CrossFlow;
 using namespace GPN::Grids;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
@@ -154,7 +155,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       z_minor_step{data["grid"]["z_minor_step"]}; // m
   //  const ptrdiff_t rNodes{data["grid"]["rNodes"]};
   /*history*/
-  const string history_type{data["history"]["history_type"].get<string>()};
   const RealType t_minor_step{data["history"]["t_minor_step"]};
   const RealType start_time{data["history"]["start_time"]};
   /*temperatures*/
@@ -230,6 +230,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           weights_stencils,
           core_data.is_permeable,
           grid_z)};
+
+  const CrossFlows cross_flows{
+    1.0, weights, from_coords, to_layers};
+
+
+
+
   const Well_Explicit well{
       core_data.is_permeable, core_data.is_perforated, weights};
 
