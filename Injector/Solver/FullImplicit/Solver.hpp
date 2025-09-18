@@ -27,10 +27,13 @@ namespace GPN
             template <
                 typename Grid_t,
                 typename Capacity_t,
-                typename ConvectionTermFactory_t,
-                typename BC_t>
+                typename ConvectionTermFactory_t
+                >
             struct Solver
             {
+                using BC_t = BoundaryConditions::BoundaryConditions;
+
+
                 using SpMatrix = SplittingMethod::SpMatrix;
 
                 using cRHS_t = const Eigen::VectorX<RealType>;
@@ -75,43 +78,43 @@ namespace GPN
                 template <typename Coefs_t>
                 struct EquationView
                 {
-                    using MatrixRow_t = Eigen::Block<Eigen::SparseMatrix<RealType>, 1, -1, false>;
-                    EquationView(MatrixRow_t A,
+                    using Matrix_t = Eigen::SparseMatrix<RealType>; // Eigen::Block<Eigen::SparseMatrix<RealType>, 1, -1, false>;
+                    EquationView(Matrix_t &A,
                                  RealType &rhs,
                                  const ptrdiff_t diag_id,
-                                 const Coefs_t &neib_ids)
-                        : matrix_row{A}, rhs{rhs},
+                                 const Coefs_t& neib_ids)
+                        : matrix{A}, rhs{rhs},
                           diag_id{diag_id},
                           neib_ids{neib_ids}
                     {
-                        assert(matrix_row.cols() > 1ll);
+                        assert(matrix.cols() > 1ll);
                         for (const auto id : neib_ids)
                         {
                             assert(id >= 0ll);
-                            assert(id < matrix_row.cols()*matrix_row.cols());
+                            assert(id < matrix.cols()*matrix.cols());
                         }
                     }
 
-                    MatrixRow_t matrix_row;
+                    Matrix_t &matrix;
                     RealType &rhs;
                     const ptrdiff_t diag_id;
-                    const Coefs_t &neib_ids;
+                    const Coefs_t& neib_ids;
 
                     void set_type_I(const RealType val)
                     {
                         // set diagonal value = 1.0
-                        matrix_row.coeffRef(diag_id) = 1.0;
+                        matrix.coeffRef(diag_id, diag_id) = 1.0;
                         // set non-diagonal values = 0.0
                         for (const auto id : neib_ids)
-                            matrix_row.coeffRef(id) = 0.0;
+                            matrix.coeffRef(diag_id, id) = 0.0;
                         //  set rhs = val to satisfy: 1.0*T = val
                         rhs = val;
                     }
                     void add_rhs_type_II(const RealType val)
                     {
-                        bool flag{matrix_row.coeffRef(diag_id) == 1.0};
+                        bool flag{matrix.coeffRef(diag_id, diag_id) == 1.0};
                         for (const auto id : neib_ids)
-                            flag = flag && (matrix_row.coeffRef(id) == 0.0);
+                            flag = flag && (matrix.coeffRef(diag_id, id) == 0.0);
                         // add the given flux to the rhs,
                         // if type_I BC was not applied 
                         // from the other face
@@ -129,14 +132,14 @@ namespace GPN
 
                     ptrdiff_t A_size{first_coord_size * second_coord_size};
                     assert(A_size == grid->mesh_size());
-                    Eigen::SparseMatrix<RealType> A{// ctor per matrix
+                    Eigen::SparseMatrix<RealType> A{// ctor for matrix
                                                     A_size,
                                                     A_size};
 
                     A.reserve(A_size * 5ll);
 
                     std::vector<Eigen::Triplet<RealType, ptrdiff_t>> tripletList;
-                    tripletList.reserve(5ll * A_size);
+                    tripletList.reserve(6ll * A_size);
 
                     // tau_factor multiplies Delta_u at different time moments,
                     // i.e., t and t+tau
@@ -199,18 +202,33 @@ namespace GPN
                         // copy Laplace term in y-direction for a fixed x
                         const SpMatrix &A{splitX.LaplaceTerm(row)};
                         // convection term
-                        // exclude rightmost edge
-                        const auto &flow{split_flow_field.row(row).head(second_coord_size).matrix().transpose()};
+                        const auto &temp_flow{split_flow_field.row(row).matrix()};
+                        // positive flow values
+                        const auto flow_plus{(temp_flow.array() + temp_flow.array().abs()) / 2.0};
+                        assert(flow_plus.cols() == second_coord_size + 1ll);
+                        assert(std::all_of(flow_plus.cbegin(), flow_plus.cend(), [](const RealType v)
+                                           { return v >= 0.0; }));
+                        // negative flow values
+                        const auto flow_minus{(temp_flow.array() - temp_flow.array().abs()) / 2.0};
+                        assert(flow_minus.cols() == second_coord_size + 1ll);
+                        assert(std::all_of(flow_minus.cbegin(), flow_minus.cend(), [](const RealType v)
+                                           { return v <= 0.0; }));
 
                         // upper diagonal
                         for (auto col{0ll}; col < second_coord_size - 1ll; ++col)
                         {
                             const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l + first_coord_size, A.coeff(col, col + 1ll));
+                            tripletList.emplace_back(l, l + first_coord_size, 
+                                A.coeff(col, col + 1ll) + flow_minus(col + 1ll));
                         }
-
+                        
                         // main diagonal
-                        const auto diag{(A.diagonal() + flow).eval()};
+                        const auto diag{(
+                                            A.diagonal() +
+                                            (flow_plus.matrix().head(second_coord_size) -
+                                            flow_minus.matrix().tail(second_coord_size)).transpose())
+                                            .eval()};
+
                         for (auto col{0ll}; col < second_coord_size; ++col)
                         {
                             const auto l{grid->to_linear(row, col)};
@@ -224,7 +242,7 @@ namespace GPN
                             assert(l >= first_coord_size);
                             tripletList.emplace_back(
                                 l, l - first_coord_size,
-                                A.coeff(col, col - 1ll) - flow(col));
+                                A.coeff(col, col - 1ll) - flow_plus(col));
                         }
                     }
                 }
@@ -257,7 +275,8 @@ namespace GPN
                         for (auto row{0ll}; row < first_coord_size - 1ll; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l + 1ll, A.coeff(row, row + 1ll) + flow_minus(row + 1ll));
+                            tripletList.emplace_back(l, l + 1ll, 
+                                A.coeff(row, row + 1ll) + flow_minus(row + 1ll));
                         }
 
                         // main diagonal
@@ -318,6 +337,10 @@ namespace GPN
                     return lu.solve(b);
                 }
 
+
+                /// @brief Apply boundary conditions of the problem
+                /// @param A NxN sparse matrix of the problem with a row per every node of the 2D mesh
+                /// @param b Nx1 vector of the rhs of the algebraic problem
                 void applyBC(SpMatrix &A, Eigen::VectorX<RealType> &b)
                 {
                     { // west face
@@ -325,28 +348,31 @@ namespace GPN
                         {
                             auto row{0ll};
                             const auto l{grid->to_linear(row, col)};
+                            const auto neibs{std::array<ptrdiff_t, 2ull>{l + 1, l + first_coord_size}};
                             EquationView view{
-                                A.row(l), b(l),
+                                A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 2ull>{l + 1, l + first_coord_size}};
+                                neibs};
                             bc.set_west_val(view, row);
                         }
                         for (auto row{1ll}; row < first_coord_size - 1ll; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
+                            const auto neibs{std::array<ptrdiff_t, 3ull>{l - 1, l + 1, l + first_coord_size}};
                             EquationView view{
-                                A.row(l), b(l),
+                                A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 3ull>{l - 1, l + 1, l + first_coord_size}};
+                                neibs};
                             bc.set_west_val(view, row);
                         }
                         {
                             auto row{first_coord_size - 1ll};
                             const auto l{grid->to_linear(row, col)};
+                            const auto neibs{std::array<ptrdiff_t, 2ull>{l - 1, l + first_coord_size}};
                             EquationView view{
-                                A.row(l), b(l),
+                                A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 2ull>{l - 1, l + first_coord_size}};
+                                neibs};
                             bc.set_west_val(view, row);
                         }
                     }
@@ -355,28 +381,31 @@ namespace GPN
                         {
                             auto row{0ll};
                             const auto l{grid->to_linear(row, col)};
+                            const auto neibs{std::array<ptrdiff_t, 2ull>{l + 1, l - first_coord_size}};
                             EquationView view{
-                                A.row(l), b(l),
+                                A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 2ull>{l + 1, l - first_coord_size}};
+                                neibs};
                             bc.set_east_val(view, row);
                         }
                         for (auto row{1ll}; row < first_coord_size - 1ll; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
+                            const auto neibs{std::array<ptrdiff_t, 3ull>{l - 1, l + 1, l - first_coord_size}};
                             EquationView view{
-                                A.row(l), b(l),
+                                A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 3ull>{l - 1, l + 1, l - first_coord_size}};
+                                neibs};
                             bc.set_east_val(view, row);
                         }
                         {
                             auto row{first_coord_size - 1ll};
                             const auto l{grid->to_linear(row, col)};
+                            const auto neibs{std::array<ptrdiff_t, 2ull>{l - 1, l - first_coord_size}};
                             EquationView view{
-                                A.row(l), b(l),
+                                A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 2ull>{l - 1, l - first_coord_size}};
+                                neibs};
                             bc.set_east_val(view, row);
                         }
                     }
@@ -386,28 +415,32 @@ namespace GPN
                         {
                             const auto col{0ll};
                             const auto l{grid->to_linear(row, col)};
+                            const auto neib{std::array<ptrdiff_t, 2ll>{l + 1, l + first_coord_size}};
                             EquationView view{
-                                A.row(l), b(l),
+                                A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 2ll>{l + 1, l + first_coord_size}};
+                                neib};
                             bc.set_south_val(view, col);
                         }
                         for (auto col{1ll}; col < second_coord_size - 1ll; ++col)
                         {
                             const auto l{grid->to_linear(row, col)};
+                            const auto neib{std::array<ptrdiff_t, 3ll>{l - first_coord_size, l + 1, l + first_coord_size}};
                             EquationView view{
-                                A.row(l), b(l),
+                                A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 3ll>{l - first_coord_size, l + 1, l + first_coord_size}};
+                                neib};
                             bc.set_south_val(view, col);
                         }
                         {
                             const auto col{second_coord_size - 1ll};
                             const auto l{grid->to_linear(row, col)};
+                            const auto neib{std::array<ptrdiff_t, 2ll>{l - first_coord_size, l + 1}};
+
                             EquationView view{
-                                A.row(l), b(l),
+                                A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 2ll>{l - first_coord_size, l + 1}};
+                                neib};
                             bc.set_south_val(view, col);
                         }
                     }
@@ -416,28 +449,31 @@ namespace GPN
                         {
                             const auto col{0ll};
                             const auto l{grid->to_linear(row, col)};
+                            const auto neib{std::array<ptrdiff_t, 2ll>{l - 1, l + first_coord_size}};
                             EquationView view{
-                                A.row(l), b(l),
+                                A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 2ll>{l - 1, l + first_coord_size}};
+                                neib};
                             bc.set_north_val(view, col);
                         }
                         for (auto col{1ll}; col < second_coord_size - 1ll; ++col)
                         {
                             const auto l{grid->to_linear(row, col)};
+                            const auto neib{std::array<ptrdiff_t, 3ll>{l - first_coord_size, l - 1, l + first_coord_size}};
                             EquationView view{
-                                A.row(l), b(l),
+                                A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 3ll>{l - first_coord_size, l - 1, l + first_coord_size}};
+                                neib};
                             bc.set_north_val(view, col);
                         }
                         {
                             const auto col{second_coord_size - 1ll};
                             const auto l{grid->to_linear(row, col)};
+                            const auto neib{std::array<ptrdiff_t, 3ll>{l - first_coord_size, l - 1}};
                             EquationView view{
-                                A.row(l), b(l),
+                                A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 3ll>{l - first_coord_size, l - 1}};
+                                neib};
                             bc.set_north_val(view, col);
                         }
                     }
