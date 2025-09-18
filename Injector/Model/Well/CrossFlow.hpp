@@ -21,14 +21,11 @@ namespace GPN
                 const std::ptrdiff_t from_id,
                 const std::ptrdiff_t to_id,
                 const RealType flux)
-                : // dir = 1.0 if the cross flow is directed downwards,
-                  // dir = -1.0 if the crossflow is directed upwards
-                  verticle_flux{
+                : verticle_flux{
                       set_verticle_flux(
                           some_log, from_id, to_id,
-                          flux * (from_id < to_id ? 1.0 : -1.0))},
-                  from_id{from_id},
-                  to_id{to_id}
+                          flux)},
+                  from_id{from_id}, to_id{to_id}
             {
             }
 
@@ -42,12 +39,17 @@ namespace GPN
                 const Logs::StepPropertyGrid &some_log,
                 const std::ptrdiff_t from_id,
                 const std::ptrdiff_t to_id,
-                const RealType directed_flux)
+                const RealType flux)
             {
+                // dir = 1.0 if the cross flow is directed downwards,
+                // dir = -1.0 if the crossflow is directed upwards
+                const RealType dir{(from_id < to_id ? 1.0 : -1.0)};
+                const RealType directed_flux{flux * dir};
+
                 assert((from_id >= 0ll) && (from_id < some_log.log_vals.rows()));
                 assert((to_id >= 0ll) && (to_id < some_log.log_vals.rows()));
-                StepPropertyContainer out{StepPropertyContainer::Zero(some_log.log_vals.rows())};
-                out.middleRows(from_id, std::abs(from_id - to_id)) = directed_flux;
+                StepPropertyContainer out{StepPropertyContainer::Zero(some_log.grid.dual_nodes.rows())};
+                out.middleRows(std::min(from_id, to_id) + 1ll, std::abs(from_id - to_id)) = directed_flux;
                 return out;
             }
         };
