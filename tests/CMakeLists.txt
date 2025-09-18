@@ -38,6 +38,7 @@ add_catch2_test(basesplit_test)
 add_catch2_test(splitx_test)
 add_catch2_test(splity_test)
 add_catch2_test(solver_test)
+add_catch2_test(solver_full_implicit_test)
 
 add_catch2_test(well_test)
 add_catch2_test(apply_well_test)

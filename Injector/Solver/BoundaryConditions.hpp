@@ -1,8 +1,7 @@
 #pragma once
 
 #include <memory>
-#include <Eigen/Core>
-#include <Eigen/SparseCore>
+#include <vector>
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/Grids2D.hpp>
@@ -33,12 +32,12 @@ namespace GPN
             BCNorth north;
             const Grids::GridDual &grid;
 
-            Eigen::ArrayX<RealType> south_vals, north_vals;
+            std::vector<RealType> south_vals, north_vals;
             std::shared_ptr<const BCFunctorBase> functor;
 
             void set_vals(RealType t)
             {
-                for (std::ptrdiff_t i{0ll}; i < south_vals.size(); ++i)
+                for (std::size_t i{0ull}; i < south_vals.size(); ++i)
                 {
                     south_vals[i] =
                         (*functor)(south.fixed_x, i, t);
@@ -73,12 +72,12 @@ namespace GPN
             // f(x,y) for the first-type boundary condition
             std::shared_ptr<const BCFunctorBase> functor;
 
-            Eigen::ArrayX<RealType> east_vals, west_vals;
+            std::vector<RealType> east_vals, west_vals;
 
             // set values u(x,y) at fixed y = y_east and y = y_west
             void set_vals(RealType t)
             {
-                for (std::ptrdiff_t i{0ull}; i < east_vals.size(); ++i)
+                for (std::size_t i{0ull}; i < east_vals.size(); ++i)
                 {
                     east_vals[i] = (*functor)(i, east.fixed_y, t);
                     west_vals[i] = (*functor)(i, west.fixed_y, t);
@@ -138,14 +137,12 @@ namespace GPN
             {
                 if (east_west.west.type == BoundaryCondition::BCType::first)
                 {
-                    view.set_diag((RealType)1.0);
-                    view.set_neib((RealType)0.0);
-                    view.set_rhs(west_vals(i));
+                    view.set_type_I(west_vals(i));
                     return;
                 }
                 else if (east_west.west.type == BoundaryCondition::BCType::second)
                 {
-                    view.add_rhs(west_vals(i));
+                    view.add_rhs_type_II(west_vals(i));
                     return;
                 }
 
@@ -157,14 +154,12 @@ namespace GPN
             {
                 if (east_west.east.type == BoundaryCondition::BCType::first)
                 {
-                    view.set_diag((RealType)1.0);
-                    view.set_neib((RealType)0.0);
-                    view.set_rhs(east_vals(i));
+                    view.set_type_I(east_vals(i));
                     return;
                 }
                 else if (east_west.east.type == BoundaryCondition::BCType::second)
                 {
-                    view.add_rhs(east_vals(i));
+                    view.add_rhs_type_II(east_vals(i));
                     return;
                 }
 
@@ -176,14 +171,12 @@ namespace GPN
             {
                 if (south_north.south.type == BoundaryCondition::BCType::first)
                 {
-                    view.set_diag((RealType)1.0);
-                    view.set_neib((RealType)0.0);
-                    view.set_rhs(south_vals(i));
+                    view.set_type_I(south_vals(i));
                     return;
                 }
                 else if (south_north.south.type == BoundaryCondition::BCType::second)
                 {
-                    view.add_rhs(south_vals(i));
+                    view.add_rhs_type_II(south_vals(i));
                     return;
                 }
 
@@ -195,14 +188,12 @@ namespace GPN
             {
                 if (south_north.north.type == BoundaryCondition::BCType::first)
                 {
-                    view.set_diag((RealType)1.0);
-                    view.set_neib((RealType)0.0);
-                    view.set_rhs(north_vals(i));
+                    view.set_type_I(north_vals(i));
                     return;
                 }
                 else if (south_north.north.type == BoundaryCondition::BCType::second)
                 {
-                    view.add_rhs(north_vals(i));
+                    view.add_rhs_type_II(north_vals(i));
                     return;
                 }
 

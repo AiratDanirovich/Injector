@@ -68,6 +68,8 @@ namespace GPN
             {
                 assert(first >= 0ll);
                 assert(second >= 0ll);
+                assert(first < first_coord.mesh_size());
+                assert(second < second_coord.mesh_size());
                 return first + second * first_coord.mesh_size();
             }
 
@@ -77,6 +79,7 @@ namespace GPN
             auto to_twin(const ptrdiff_t linear) const
             {
                 assert(linear >= 0ll);
+                assert(linear < mesh_size());
                 return {linear % first_coord.mesh_size(), linear / first_coord.mesh_size()};
             }
 

@@ -39,7 +39,7 @@ using namespace GPN::Grids;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
 using namespace GPN::EqSolver;
-using namespace GPN::EqSolver::SplittingMethod;
+using namespace GPN::EqSolver::FullImplicit;
 
 /// @brief Initial temperature is assumed to be constant
 struct FunctorIC : public InitialConditions::ICFunctorBase
@@ -291,7 +291,7 @@ const auto get_completion(const json &data)
 
     out.push_back(
         Ring{
-            Annulus{
+            Column{
                 Density{data2["density"]},
                 SpecificHeatCapacity{data2["specific_heat_capacity"]},
                 GPN::HeatConductivity{data2["heat_conductivity"]}},

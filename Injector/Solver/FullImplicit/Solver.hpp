@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <array>
 #include <tuple>
 #include <cassert>
 
@@ -32,7 +33,8 @@ namespace GPN
             {
                 using SpMatrix = SplittingMethod::SpMatrix;
 
-                using RHS_t = Eigen::Map<const Eigen::VectorX<RealType>>;
+                using cRHS_t = const Eigen::VectorX<RealType>;
+                using RHS_t = Eigen::VectorX<RealType>;
 
                 template <
                     typename LaplaceFactor_t>
@@ -70,41 +72,55 @@ namespace GPN
                     states.emplace_back(state);
                 }
 
+                template <typename Coefs_t>
                 struct EquationView
                 {
                     using MatrixRow_t = Eigen::Block<Eigen::SparseMatrix<RealType>, 1, -1, false>;
                     EquationView(MatrixRow_t A,
-                               RealType &rhs,
-                               std::ptrdiff_t diag,
-                               std::ptrdiff_t neib)
-                        : matrix{A}, rhs{rhs},
-                          diag{diag}, neib{neib}
+                                 RealType &rhs,
+                                 const ptrdiff_t diag_id,
+                                 const Coefs_t &neib_ids)
+                        : matrix_row{A}, rhs{rhs},
+                          diag_id{diag_id},
+                          neib_ids{neib_ids}
                     {
+                        assert(matrix_row.cols() > 1ll);
+                        for (const auto id : neib_ids)
+                        {
+                            assert(id >= 0ll);
+                            assert(id < matrix_row.cols()*matrix_row.cols());
+                        }
                     }
 
-                    MatrixRow_t matrix;
+                    MatrixRow_t matrix_row;
                     RealType &rhs;
-                    std::ptrdiff_t diag, neib;
+                    const ptrdiff_t diag_id;
+                    const Coefs_t &neib_ids;
 
-                    void set_diag(const RealType val)
+                    void set_type_I(const RealType val)
                     {
-                        matrix.coeffRef(diag) = val;
-                    }
-                    void set_neib(const RealType val)
-                    {
-                        matrix.coeffRef(neib) = val;
-                    }
-                    void set_rhs(const RealType val)
-                    {
+                        // set diagonal value = 1.0
+                        matrix_row.coeffRef(diag_id) = 1.0;
+                        // set non-diagonal values = 0.0
+                        for (const auto id : neib_ids)
+                            matrix_row.coeffRef(id) = 0.0;
+                        //  set rhs = val to satisfy: 1.0*T = val
                         rhs = val;
                     }
-                    void add_rhs(const RealType val)
+                    void add_rhs_type_II(const RealType val)
                     {
-                        rhs += val;
+                        bool flag{matrix_row.coeffRef(diag_id) == 1.0};
+                        for (const auto id : neib_ids)
+                            flag = flag && (matrix_row.coeffRef(id) == 0.0);
+                        // add the given flux to the rhs,
+                        // if type_I BC was not applied 
+                        // from the other face
+                        if(flag == false)
+                            rhs += val;
                     }
                 };
 
-                void advance(RealType tau)
+                auto advance(RealType tau)
                 {
                     // update convection field
                     convection_factory.set_flow_field(cur_time, tau);
@@ -116,6 +132,7 @@ namespace GPN
                     Eigen::SparseMatrix<RealType> A{// ctor per matrix
                                                     A_size,
                                                     A_size};
+
                     A.reserve(A_size * 5ll);
 
                     std::vector<Eigen::Triplet<RealType, ptrdiff_t>> tripletList;
@@ -128,23 +145,22 @@ namespace GPN
 
                     assert(A_size == tau_factor.size());
 
-                    //        assemble_y(tripletList);
-                    //        assemble_x(tripletList);
+                    assemble_y(tripletList);
+                    assemble_x(tripletList);
 
                     A.setFromTriplets(tripletList.begin(), tripletList.end());
-                    const RHS_t capacity_term(tau_factor.data(), A_size, 1ll);
-                    A.diagonal() = A.diagonal() + capacity_term;
+                    A.diagonal() = A.diagonal() + tau_factor.matrix();
 
-                    Eigen::VectorX<RealType> rhs{
+                    RHS_t rhs{
                         (state.cur_state.reshaped(A_size, 1ll).array() * tau_factor).matrix()};
-
                     // BC
-                    applyBC_x(A, rhs);
-                    //    applyBC_y(A, rhs_vect);
+                    applyBC(A, rhs);
 
-                    const auto val{solve_linear_problem(A, rhs)};
+                    state.cur_state = solve_linear_problem(A, rhs).array().reshaped(first_coord_size, second_coord_size);
 
                     cur_time += tau;
+
+                    return std::pair{std::move(A), std::move(rhs)};
                 }
 
                 struct Solution
@@ -178,7 +194,7 @@ namespace GPN
 
                     //  Take every line for a fixed x node.
                     //  It is a row of 2D grid representation
-                    for (std::ptrdiff_t row = 0; row < first_coord_size; ++row)
+                    for (auto row{0ll}; row < first_coord_size; ++row)
                     {
                         // copy Laplace term in y-direction for a fixed x
                         const SpMatrix &A{splitX.LaplaceTerm(row)};
@@ -187,28 +203,28 @@ namespace GPN
                         const auto &flow{split_flow_field.row(row).head(second_coord_size).matrix().transpose()};
 
                         // upper diagonal
-                        for (std::ptrdiff_t col{1ll}; col < second_coord_size; ++col)
+                        for (auto col{0ll}; col < second_coord_size - 1ll; ++col)
                         {
-                            const auto node_id{};
                             const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l + first_coord_size, A.coeff(col - 1ll, col));
+                            tripletList.emplace_back(l, l + first_coord_size, A.coeff(col, col + 1ll));
                         }
 
                         // main diagonal
                         const auto diag{(A.diagonal() + flow).eval()};
-                        for (std::ptrdiff_t col{0ll}; col < second_coord_size; ++col)
+                        for (auto col{0ll}; col < second_coord_size; ++col)
                         {
                             const auto l{grid->to_linear(row, col)};
                             tripletList.emplace_back(l, l, diag(col));
                         }
 
                         // lower diagonal
-                        for (std::ptrdiff_t col{0ll}; col < second_coord_size - 1ll; ++col)
+                        for (auto col{1ll}; col < second_coord_size; ++col)
                         {
                             const auto l{grid->to_linear(row, col)};
+                            assert(l >= first_coord_size);
                             tripletList.emplace_back(
                                 l, l - first_coord_size,
-                                A.coeff(col + 1ll, col) - flow(col + 1ll));
+                                A.coeff(col, col - 1ll) - flow(col));
                         }
                     }
                 }
@@ -220,7 +236,7 @@ namespace GPN
 
                     // take every line for a fixed y-node.
                     // It is a col of 2D grid representation
-                    for (std::ptrdiff_t col = 0; col < second_coord_size; ++col)
+                    for (auto col{0ll}; col < second_coord_size; ++col)
                     {
                         // Laplace term
                         const SpMatrix &A{splitY.LaplaceTerm(col)};
@@ -238,11 +254,10 @@ namespace GPN
                                            { return v <= 0.0; }));
 
                         // upper diagonal
-                        for (std::ptrdiff_t row{1ll}; row < second_coord_size; ++row)
+                        for (auto row{0ll}; row < first_coord_size - 1ll; ++row)
                         {
-                            const auto node_id{};
                             const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l + 1ll, A.coeff(row - 1ll, row) + flow_minus(row));
+                            tripletList.emplace_back(l, l + 1ll, A.coeff(row, row + 1ll) + flow_minus(row + 1ll));
                         }
 
                         // main diagonal
@@ -251,19 +266,20 @@ namespace GPN
                                             flow_plus.matrix().head(first_coord_size) -
                                             flow_minus.matrix().tail(first_coord_size))
                                             .eval()};
-                        for (std::ptrdiff_t row{0ll}; row < second_coord_size; ++row)
+                        for (auto row{0ll}; row < first_coord_size; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
                             tripletList.emplace_back(l, l, diag(row));
                         }
 
                         // lower diagonal
-                        for (std::ptrdiff_t row{0ll}; row < second_coord_size - 1ll; ++row)
+                        for (auto row{1ll}; row < first_coord_size; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
+                            assert(l >= 1ll);
                             tripletList.emplace_back(
                                 l, l - 1ll,
-                                A.coeff(row + 1ll, row) - flow_plus(row + 1ll));
+                                A.coeff(row, row - 1ll) - flow_plus(row));
                         }
                     }
                 }
@@ -295,46 +311,135 @@ namespace GPN
                     Eigen::SparseLU<SpMatrix> lu;
                     lu.analyzePattern(A); // this is common for every matrix A. Can be optimized
                     lu.factorize(A);
+                    if (lu.info() != Eigen::Success)
+                    {
+                        throw std::runtime_error("LU decomposition failed!");
+                    }
                     return lu.solve(b);
                 }
 
-                void applyBC_x(SpMatrix &A, Eigen::VectorX<RealType> &b)
+                void applyBC(SpMatrix &A, Eigen::VectorX<RealType> &b)
                 {
-                    // for(auto row{0ll}; row < first_coord_size; ++row)
-                    // {
-                    //     const auto col{0ll};
-                    //     const auto l{grid->to_linear(row, col)};
-                    //     EquationView view{A.row(l), b(l), 0ll, 1ll};
-                    // //    bc.set_west_val(view, i);
-                    // }
-                    for (auto row{0ll}; row < first_coord_size; ++row)
-                    {
+                    { // west face
+                        const auto col{0ll};
+                        {
+                            auto row{0ll};
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 2ull>{l + 1, l + first_coord_size}};
+                            bc.set_west_val(view, row);
+                        }
+                        for (auto row{1ll}; row < first_coord_size - 1ll; ++row)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 3ull>{l - 1, l + 1, l + first_coord_size}};
+                            bc.set_west_val(view, row);
+                        }
+                        {
+                            auto row{first_coord_size - 1ll};
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 2ull>{l - 1, l + first_coord_size}};
+                            bc.set_west_val(view, row);
+                        }
+                    }
+                    { // east face
                         const auto col{second_coord_size - 1ll};
-                        const auto l{grid->to_linear(row, col)};
-                        std::ptrdiff_t n = A.outerSize() - 1;
-                        auto temp = b.row(l);
-                       EquationView view{A.row(n), b(l),
-                                                            n, n - 1};
-                        //    bc.set_east_val(view, i);
+                        {
+                            auto row{0ll};
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 2ull>{l + 1, l - first_coord_size}};
+                            bc.set_east_val(view, row);
+                        }
+                        for (auto row{1ll}; row < first_coord_size - 1ll; ++row)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 3ull>{l - 1, l + 1, l - first_coord_size}};
+                            bc.set_east_val(view, row);
+                        }
+                        {
+                            auto row{first_coord_size - 1ll};
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 2ull>{l - 1, l - first_coord_size}};
+                            bc.set_east_val(view, row);
+                        }
                     }
-                }
 
-                void applyBC_y(SpMatrix &A, Eigen::VectorX<RealType> &b)
-                {
-                    for (auto col{0ll}; col < second_coord_size; ++col)
-                    {
+                    { // south face
                         const auto row{0ll};
-                        const auto l{grid->to_linear(row, col)};
-                        EquationView view{A.row(l), b(l), 0ll, 1ll};
-                        //    bc.set_south_val(view, j);
+                        {
+                            const auto col{0ll};
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 2ll>{l + 1, l + first_coord_size}};
+                            bc.set_south_val(view, col);
+                        }
+                        for (auto col{1ll}; col < second_coord_size - 1ll; ++col)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 3ll>{l - first_coord_size, l + 1, l + first_coord_size}};
+                            bc.set_south_val(view, col);
+                        }
+                        {
+                            const auto col{second_coord_size - 1ll};
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 2ll>{l - first_coord_size, l + 1}};
+                            bc.set_south_val(view, col);
+                        }
                     }
-                    for (auto col{0ll}; col < second_coord_size; ++col)
-                    {
+                    { // north face
                         const auto row{first_coord_size - 1ll};
-                        const auto l{grid->to_linear(row, col)};
-                        std::ptrdiff_t n = A.outerSize() - 1;
-                        EquationView view{A.row(l), b(l), n, n - 1};
-                        //    bc.set_north_val(view, j);
+                        {
+                            const auto col{0ll};
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 2ll>{l - 1, l + first_coord_size}};
+                            bc.set_north_val(view, col);
+                        }
+                        for (auto col{1ll}; col < second_coord_size - 1ll; ++col)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 3ll>{l - first_coord_size, l - 1, l + first_coord_size}};
+                            bc.set_north_val(view, col);
+                        }
+                        {
+                            const auto col{second_coord_size - 1ll};
+                            const auto l{grid->to_linear(row, col)};
+                            EquationView view{
+                                A.row(l), b(l),
+                                l,
+                                std::array<ptrdiff_t, 3ll>{l - first_coord_size, l - 1}};
+                            bc.set_north_val(view, col);
+                        }
                     }
                 }
             };
