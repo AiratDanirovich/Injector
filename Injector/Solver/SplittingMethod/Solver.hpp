@@ -236,12 +236,32 @@ namespace GPN
                         // cumulative term
                         A.diagonal() = A.diagonal() + time_factor;
                         // convection term
-                        const auto &flow{split_flow_field.row(i).head(second_coord_size).matrix().transpose()};
+                        const auto &temp_flow{split_flow_field.row(i).matrix()};
+                        // negative flow values
+                        const auto flow_plus{(temp_flow.array() + temp_flow.array().abs()) / 2.0};
+                        assert(flow_plus.rows() == second_coord_size + 1ll);
+                        assert(std::all_of(flow_plus.cbegin(), flow_plus.cend(), [](const RealType v)
+                                           { return v >= 0.0; }));
+                        // positive flow values
+                        const auto flow_minus{(temp_flow.array() - temp_flow.array().abs()) / 2.0};
+                        assert(flow_minus.rows() == second_coord_size + 1ll);
+                        assert(std::all_of(flow_minus.cbegin(), flow_minus.cend(), [](const RealType v)
+                                           { return v <= 0.0; }));
+
+                        // const auto &flow{split_flow_field.row(i).head(second_coord_size).matrix().transpose()};
                         // exclude rightmost edge
-                        A.diagonal() = A.diagonal() + flow;
+
+                        A.diagonal() = 
+                            A.diagonal() + 
+                            flow_plus.matrix().head(second_coord_size) - 
+                            flow_minus.matrix().tail(second_coord_size);
+
                         // exclude leftmost and rightmost edges
                         for (auto idx{1ll}; idx < A.rows(); ++idx)
-                            A.coeffRef(idx, idx - 1ll) -= flow(idx - 0ll);
+                            A.coeffRef(idx, idx - 1ll) -= flow_plus(idx);
+                        // exclude leftmost and rightmost edges
+                        for (auto idx{0ll}; idx < A.rows() - 1ll; ++idx)
+                            A.coeffRef(idx, idx + 1ll) += flow_minus(idx + 1ll);
 
                         // BC
                         applyBC_split_x(A, rhs, i);
@@ -300,7 +320,10 @@ namespace GPN
                         // const auto &flow{split_flow_field.col(j).head(first_coord_size).matrix()};
                         // exclude leftmost edge
 
-                        A.diagonal() = A.diagonal() + flow_plus.matrix().head(first_coord_size) - flow_minus.matrix().tail(first_coord_size);
+                        A.diagonal() = 
+                            A.diagonal() + 
+                            flow_plus.matrix().head(first_coord_size) - 
+                            flow_minus.matrix().tail(first_coord_size);
                         // exclude leftmost and rightmost edges
                         for (auto idx{1ll}; idx < A.rows(); ++idx)
                             A.coeffRef(idx, idx - 1ll) -= flow_plus(idx);
