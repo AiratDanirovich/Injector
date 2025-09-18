@@ -332,28 +332,31 @@ namespace GPN
                         {
                             auto row{0ll};
                             const auto l{grid->to_linear(row, col)};
+                            const auto neibs{std::array<ptrdiff_t, 2ull>{l + 1, l + first_coord_size}};
                             EquationView view{
                                 A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 2ull>{l + 1, l + first_coord_size}};
+                                neibs};
                             bc.set_west_val(view, row);
                         }
                         for (auto row{1ll}; row < first_coord_size - 1ll; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
+                            const auto neibs{std::array<ptrdiff_t, 3ull>{l - 1, l + 1, l + first_coord_size}};
                             EquationView view{
                                 A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 3ull>{l - 1, l + 1, l + first_coord_size}};
+                                neibs};
                             bc.set_west_val(view, row);
                         }
                         {
                             auto row{first_coord_size - 1ll};
                             const auto l{grid->to_linear(row, col)};
+                            const auto neibs{std::array<ptrdiff_t, 2ull>{l - 1, l + first_coord_size}};
                             EquationView view{
                                 A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 2ull>{l - 1, l + first_coord_size}};
+                                neibs};
                             bc.set_west_val(view, row);
                         }
                     }
@@ -362,28 +365,31 @@ namespace GPN
                         {
                             auto row{0ll};
                             const auto l{grid->to_linear(row, col)};
+                            const auto neibs{std::array<ptrdiff_t, 2ull>{l + 1, l - first_coord_size}};
                             EquationView view{
                                 A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 2ull>{l + 1, l - first_coord_size}};
+                                neibs};
                             bc.set_east_val(view, row);
                         }
                         for (auto row{1ll}; row < first_coord_size - 1ll; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
+                            const auto neibs{std::array<ptrdiff_t, 3ull>{l - 1, l + 1, l - first_coord_size}};
                             EquationView view{
                                 A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 3ull>{l - 1, l + 1, l - first_coord_size}};
+                                neibs};
                             bc.set_east_val(view, row);
                         }
                         {
                             auto row{first_coord_size - 1ll};
                             const auto l{grid->to_linear(row, col)};
+                            const auto neibs{std::array<ptrdiff_t, 2ull>{l - 1, l - first_coord_size}};
                             EquationView view{
                                 A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 2ull>{l - 1, l - first_coord_size}};
+                                neibs};
                             bc.set_east_val(view, row);
                         }
                     }
@@ -393,28 +399,32 @@ namespace GPN
                         {
                             const auto col{0ll};
                             const auto l{grid->to_linear(row, col)};
+                            const auto neib{std::array<ptrdiff_t, 2ll>{l + 1, l + first_coord_size}};
                             EquationView view{
                                 A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 2ll>{l + 1, l + first_coord_size}};
+                                neib};
                             bc.set_south_val(view, col);
                         }
                         for (auto col{1ll}; col < second_coord_size - 1ll; ++col)
                         {
                             const auto l{grid->to_linear(row, col)};
+                            const auto neib{std::array<ptrdiff_t, 3ll>{l - first_coord_size, l + 1, l + first_coord_size}};
                             EquationView view{
                                 A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 3ll>{l - first_coord_size, l + 1, l + first_coord_size}};
+                                neib};
                             bc.set_south_val(view, col);
                         }
                         {
                             const auto col{second_coord_size - 1ll};
                             const auto l{grid->to_linear(row, col)};
+                            const auto neib{std::array<ptrdiff_t, 2ll>{l - first_coord_size, l + 1}};
+
                             EquationView view{
                                 A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 2ll>{l - first_coord_size, l + 1}};
+                                neib};
                             bc.set_south_val(view, col);
                         }
                     }
@@ -423,28 +433,31 @@ namespace GPN
                         {
                             const auto col{0ll};
                             const auto l{grid->to_linear(row, col)};
+                            const auto neib{std::array<ptrdiff_t, 2ll>{l - 1, l + first_coord_size}};
                             EquationView view{
                                 A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 2ll>{l - 1, l + first_coord_size}};
+                                neib};
                             bc.set_north_val(view, col);
                         }
                         for (auto col{1ll}; col < second_coord_size - 1ll; ++col)
                         {
                             const auto l{grid->to_linear(row, col)};
+                            const auto neib{std::array<ptrdiff_t, 3ll>{l - first_coord_size, l - 1, l + first_coord_size}};
                             EquationView view{
                                 A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 3ll>{l - first_coord_size, l - 1, l + first_coord_size}};
+                                neib};
                             bc.set_north_val(view, col);
                         }
                         {
                             const auto col{second_coord_size - 1ll};
                             const auto l{grid->to_linear(row, col)};
+                            const auto neib{std::array<ptrdiff_t, 3ll>{l - first_coord_size, l - 1}};
                             EquationView view{
                                 A, b(l),
                                 l,
-                                std::array<ptrdiff_t, 3ll>{l - first_coord_size, l - 1}};
+                                neib};
                             bc.set_north_val(view, col);
                         }
                     }
