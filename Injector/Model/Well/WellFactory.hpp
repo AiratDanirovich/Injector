@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Injector/Model/Completion.hpp>
-#include <Injector/Model/Well.hpp>
+#include <Injector/Model/Well/Well.hpp>
 
 namespace GPN
 {

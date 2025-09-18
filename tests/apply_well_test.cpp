@@ -8,8 +8,8 @@
 
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
-#include <Injector/Model/Well.hpp>
-#include <Injector/Model/WellFactory.hpp>
+#include <Injector/Model/Well/Well.hpp>
+#include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Completion.hpp>
 #include <Injector/Model/ExtrudedCasingFactory.hpp>
 
