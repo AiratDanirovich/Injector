@@ -31,6 +31,7 @@
 #include "includes/make_geotherma.hpp"
 #include "includes/get_completion.hpp"
 #include "includes/generate_stencils_and_steps.hpp"
+#include "includes/set_is_permeable_stencils.hpp"
 
 #include <nlohmann/json.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -136,11 +137,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const VR thickness{data["collector"]["thickness"].get<VR>()};
   // const ptrdiff_t nLayers{thickness.size()};
   // hydrodynamic logs
-  const auto is_permeable_stencils{transfer_to_eigen(data["collector"]["is_permeable"].get<VR>())};
   const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"].get<VR>())};
   const auto porosity_stencils{transfer_to_eigen(data["collector"]["porosity"].get<VR>())};
   const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"].get<VR>(), 1e-12)};
   const auto weights_stencils{transfer_to_eigen(data["collector"]["explicit"]["weights"].get<VR>())};
+  const auto from_coords{data["collector"]["cross_flow"]["from_coord"].get<VR>()};
+  const auto to_layers{data["collector"]["cross_flow"]["to_layers"].get<std::vector<std::ptrdiff_t>>()};
+  const auto is_permeable_stencils{set_is_permeable_stencils(is_perforated_stencils, to_layers)};
   // heat logs
   const auto solid_heatconductivity_stencils{transfer_to_eigen(data["collector"]["heatConductivity"].get<VR>())};
   const auto solid_density_stencils{transfer_to_eigen(data["collector"]["solidDensity"].get<VR>())};
