@@ -26,10 +26,12 @@ namespace GPN
             template <
                 typename Grid_t,
                 typename Capacity_t,
-                typename ConvectionTermFactory_t,
-                typename BC_t>
+                typename ConvectionTermFactory_t>
             struct Solver
             {
+                using BC_t = BoundaryConditions::BoundaryCondition;
+
+
                 using Map1D =
                     Eigen::Map<
                         Eigen::ArrayX<RealType>>;
@@ -104,7 +106,7 @@ namespace GPN
                 struct EquationView
                 {
                     using Matrix_t = Eigen::SparseMatrix<RealType>;
-                    EquationView(Matrix_t& A,
+                    EquationView(Matrix_t &A,
                                  RealType &rhs,
                                  const ptrdiff_t diag_id,
                                  const Coefs_t &neib_ids)
@@ -116,11 +118,11 @@ namespace GPN
                         for (const auto id : neib_ids)
                         {
                             assert(id >= 0ll);
-                            assert(id < matrix.cols()*matrix.cols());
+                            assert(id < matrix.cols() * matrix.cols());
                         }
                     }
 
-                    Matrix_t& matrix;
+                    Matrix_t &matrix;
                     RealType &rhs;
                     const ptrdiff_t diag_id;
                     const Coefs_t &neib_ids;
@@ -138,7 +140,7 @@ namespace GPN
                     void add_rhs_type_II(const RealType val)
                     {
                         // add the given flux to the rhs
-                            rhs += val;
+                        rhs += val;
                     }
                 };
 
@@ -286,14 +288,16 @@ namespace GPN
                         const auto &temp_flow{split_flow_field.col(j).matrix()};
                         // negative flow values
                         const auto flow_plus{(temp_flow.array() + temp_flow.array().abs()) / 2.0};
-                        assert(flow_plus.rows() == first_coord_size+1ll);
-                        assert(std::all_of(flow_plus.cbegin(), flow_plus.cend(), [](const RealType v){return v >= 0.0;}));
+                        assert(flow_plus.rows() == first_coord_size + 1ll);
+                        assert(std::all_of(flow_plus.cbegin(), flow_plus.cend(), [](const RealType v)
+                                           { return v >= 0.0; }));
                         // positive flow values
                         const auto flow_minus{(temp_flow.array() - temp_flow.array().abs()) / 2.0};
-                        assert(flow_minus.rows() == first_coord_size+1ll);
-                        assert(std::all_of(flow_minus.cbegin(), flow_minus.cend(), [](const RealType v){return v <= 0.0;}));
+                        assert(flow_minus.rows() == first_coord_size + 1ll);
+                        assert(std::all_of(flow_minus.cbegin(), flow_minus.cend(), [](const RealType v)
+                                           { return v <= 0.0; }));
 
-                //        const auto &flow{split_flow_field.col(j).head(first_coord_size).matrix()};
+                        // const auto &flow{split_flow_field.col(j).head(first_coord_size).matrix()};
                         // exclude leftmost edge
 
                         A.diagonal() = A.diagonal() + flow_plus.matrix().head(first_coord_size) - flow_minus.matrix().tail(first_coord_size);
@@ -301,7 +305,7 @@ namespace GPN
                         for (auto idx{1ll}; idx < A.rows(); ++idx)
                             A.coeffRef(idx, idx - 1ll) -= flow_plus(idx);
                         // exclude leftmost and rightmost edges
-                        for (auto idx{0ll}; idx < A.rows()-1ll; ++idx)
+                        for (auto idx{0ll}; idx < A.rows() - 1ll; ++idx)
                             A.coeffRef(idx, idx + 1ll) += flow_minus(idx + 1ll);
                         // BC
                         applyBC_split_y(A, rhs, j);
