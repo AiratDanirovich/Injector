@@ -57,12 +57,14 @@ namespace GPN
             const Logs::RateWeights &rate_weights,
             const std::vector<RealType> &from_coords,
             const std::vector<ptrdiff_t> &to_layers)
-        //    : cross_flow_data{}
+            : cross_flow_data{
+                set_cross_flow_data(
+                    total_rate, rate_weights, 
+                    from_coords, to_layers)}
         {
         }
 
-    protected:
-        std::vector<SingleCrossFlow> cross_flow_data;
+        const std::vector<SingleCrossFlow> cross_flow_data;
 
     private:
         static std::vector<SingleCrossFlow> set_cross_flow_data(
@@ -73,23 +75,26 @@ namespace GPN
         {
             assert(from_coords.size() == to_layers.size());
 
-            const auto& grid{rate_weights.grid};
+            const auto &grid{rate_weights.grid};
 
             std::vector<SingleCrossFlow> out;
             out.reserve(from_coords.size());
 
-            for(auto i{0ull}; i < from_coords.size(); ++i)
+            for (auto i{0ull}; i < from_coords.size(); ++i)
             {
-
+                const auto from_cell{get_mesh_cell_id(grid, from_coords[i])};
+                const auto to_cell{get_to_cell_id(grid, to_layers[i])};
+                out.emplace_back(rate_weights, from_cell, to_cell, total_rate * rate_weights(to_cell));
             }
 
+            return out;
         }
 
-        static std::ptrdiff_t get_cell_id(
+        static std::ptrdiff_t get_mesh_cell_id(
             const Logs::StepPropertyGrid::Grid_t &grid,
             const RealType from_coord)
         {
-            const auto& dual_nodes{grid.dual_nodes};
+            const auto &dual_nodes{grid.dual_nodes};
 
             assert(from_coord > dual_nodes(0ll));
             assert(from_coord < dual_nodes.tail<1ll>()(0ll));
@@ -103,12 +108,25 @@ namespace GPN
             const auto idx{std::distance(dual_nodes.begin(), it) - 1ll};
 
             assert(idx >= 0ll);
-            assert((dual_nodes(idx) < from_coord) && (dual_nodes(idx+1ll) > from_coord));
-            
-            const auto& mesh_nodes{grid.mesh_nodes};
-            assert(std::abs(mesh_nodes(idx) - from_coord) < (dual_nodes(idx+1ll) - dual_nodes(idx))/2.0);
+            assert((dual_nodes(idx) < from_coord) && (dual_nodes(idx + 1ll) > from_coord));
+
+            const auto &mesh_nodes{grid.mesh_nodes};
+            assert(std::abs(mesh_nodes(idx) - from_coord) < (dual_nodes(idx + 1ll) - dual_nodes(idx)) / 2.0);
 
             return idx;
+        }
+
+        static std::ptrdiff_t get_to_cell_id(
+            const Logs::StepPropertyGrid::Grid_t &grid,
+            const std::ptrdiff_t to_id)
+        {
+            const auto &dual_stencils{grid.dual_stencils};
+
+            // middle coordinate of the permeable layer that
+            // accepts the cross flow
+            const RealType to_coord{(dual_stencils(to_id) + dual_stencils(to_id + 1ll)) / 2.0};
+
+            return get_mesh_cell_id(grid, to_coord);
         }
     };
 
