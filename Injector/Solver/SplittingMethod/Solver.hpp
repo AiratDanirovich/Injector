@@ -348,12 +348,14 @@ namespace GPN
                 void applyBC_split_x(SpMatrix &A, RHS_t &b, ptrdiff_t i)
                 {
                     {
-                        EquationView view{A, b(0ll), 0ll, std::array<ptrdiff_t, 1ull>{1ll}};
+                        const auto neibs{std::array<ptrdiff_t, 1ull>{1ll}};
+                        EquationView view{A, b(0ll), 0ll, neibs};
                         bc.set_west_val(view, i);
                     }
                     {
                         const std::ptrdiff_t n{A.outerSize() - 1ll};
-                        EquationView view{A, b(n), n, std::array<ptrdiff_t, 1ull>{n - 1ll}};
+                        const auto neibs{std::array<ptrdiff_t, 1ull>{n - 1ll}};
+                        EquationView view{A, b(n), n, neibs};
                         bc.set_east_val(view, i);
                     }
                 }
@@ -361,12 +363,14 @@ namespace GPN
                 void applyBC_split_y(SpMatrix &A, RHS_t &b, ptrdiff_t j)
                 {
                     {
-                        EquationView view{A, b(0ll), 0ll, std::array<ptrdiff_t, 1ull>{1ll}};
+                        const auto neibs{std::array<ptrdiff_t, 1ull>{1ll}};
+                        EquationView view{A, b(0ll), 0ll, neibs};
                         bc.set_south_val(view, j);
                     }
                     {
                         const std::ptrdiff_t n{A.outerSize() - 1ll};
-                        EquationView view{A, b(n), n, std::array<ptrdiff_t, 1ull>{n - 1ll}};
+                        const auto neibs{std::array<ptrdiff_t, 1ull>{n - 1ll}};
+                        EquationView view{A, b(n), n, neibs};
                         bc.set_north_val(view, j);
                     }
                 }
