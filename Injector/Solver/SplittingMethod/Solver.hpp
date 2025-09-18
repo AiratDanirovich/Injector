@@ -29,7 +29,7 @@ namespace GPN
                 typename ConvectionTermFactory_t>
             struct Solver
             {
-                using BC_t = BoundaryConditions::BoundaryCondition;
+                using BC_t = BoundaryConditions::BoundaryConditions;
 
 
                 using Map1D =
