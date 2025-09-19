@@ -14,7 +14,6 @@
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Well/WellFactory.hpp>
-#include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Completion.hpp>
 #include <Injector/Model/ExtrudedCasingFactory.hpp>
 
@@ -231,9 +230,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           weights_stencils,
           core_data.is_permeable,
           grid_z)};
-
-  const CrossFlows cross_flows{
-    1.0, weights, from_coords, to_layers};
 
   const Well_Explicit well{
       core_data.is_permeable, core_data.is_perforated, weights};
