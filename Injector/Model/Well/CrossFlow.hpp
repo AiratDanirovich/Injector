@@ -20,7 +20,7 @@ namespace GPN
             /// @param some_log
             /// @param from_id
             /// @param to_id
-            /// @param flux_fraction An elementf of normalized RFP profile
+            /// @param flux_fraction An element of normalized RFP profile
             SingleCrossFlow(
                 const Logs::StepPropertyGrid &some_log,
                 const std::ptrdiff_t from_id,
