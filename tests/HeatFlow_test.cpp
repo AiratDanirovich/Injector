@@ -226,10 +226,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // const Well_KH well{
   //     water, core_data.is_permeable, core_data.is_perforated, core_data.permeability, well_holes, rMax};
   const auto weights{
-      RateWeightsFactory::create(
+      RFPFactory::create_from_container(
           weights_stencils,
-          core_data.is_permeable,
-          grid_z)};
+          core_data.is_permeable)};
 
   const Well_Explicit well{
       core_data.is_permeable, core_data.is_perforated, weights};

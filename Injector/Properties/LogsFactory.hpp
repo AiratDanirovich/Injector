@@ -229,22 +229,25 @@ namespace GPN
                 return out;
             }
         };
-
-        struct RateWeightsFactory
+        
+        namespace InternalUse
         {
-            static RateWeights create(
-                const auto &weights,
-                const IsPermeable &is_permeable,
-                const auto &grid)
+            struct RateWeightsFactory
             {
-                return {
-                    StepPropertyGrid{
-                        StepProperty{
-                            weights},
-                        grid},
-                    is_permeable};
-            }
-        };
+                static InternalUse::RateWeights create(
+                    const auto &weights,
+                    const IsPermeable &is_permeable,
+                    const auto &grid)
+                {
+                    return {
+                        StepPropertyGrid{
+                            StepProperty{
+                                weights},
+                            grid},
+                        is_permeable};
+                }
+            };
+        } // InternalUse
 
         struct SkinFactory
         {

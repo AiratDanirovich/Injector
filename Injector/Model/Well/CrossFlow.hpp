@@ -63,12 +63,12 @@ namespace GPN
         struct CrossFlows
         {
             CrossFlows(
-                const Logs::RateWeights &rate_weights,
+                const Logs::RFP &RFP_weights,
                 const std::vector<RealType> &from_coords,
                 const std::vector<ptrdiff_t> &to_layers)
                 : cross_flow_data{
                       set_cross_flow_data(
-                          rate_weights,
+                          RFP_weights,
                           from_coords, to_layers)}
             {
                 normalized_verticle_flux = set_verticle_flux();
@@ -93,13 +93,13 @@ namespace GPN
             }
 
             static std::vector<SingleCrossFlow> set_cross_flow_data(
-                const Logs::RateWeights &rate_weights,
+                const Logs::RFP &RFP_weights,
                 const std::vector<RealType> &from_coords,
                 const std::vector<ptrdiff_t> &to_layers)
             {
                 assert(from_coords.size() == to_layers.size());
 
-                const auto &grid{rate_weights.grid};
+                const auto &grid{RFP_weights.grid};
 
                 std::vector<SingleCrossFlow> out;
                 out.reserve(from_coords.size());
@@ -108,7 +108,7 @@ namespace GPN
                 {
                     const auto from_cell{get_mesh_cell_id(grid, from_coords[i])};
                     const auto to_cell{get_to_cell_id(grid, to_layers[i])};
-                    out.emplace_back(rate_weights, from_cell, to_cell, rate_weights(to_cell));
+                    out.emplace_back(RFP_weights, from_cell, to_cell, RFP_weights(to_cell));
                 }
 
                 return out;
