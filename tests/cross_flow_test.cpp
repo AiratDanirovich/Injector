@@ -36,15 +36,25 @@ struct Well_CrossFlow
     Well_CrossFlow(
         const Logs::RFP &RFP_weights,
         const Logs::WFP &WFP_weights,
-        const std::vector<RealType> &from_coords,
-        const std::vector<ptrdiff_t> &to_layers)
+        const CrossFlows &cross_flows)
         : RFP_weights{RFP_weights.log_vals},
           weights_sum{RFP_weights.log_vals.sum()},
           WFP_weights{WFP_weights.log_vals},
-          cross_flows{RFP_weights, from_coords, to_layers}
+          cross_flows{cross_flows}
     {
         assert(RFP_weights.log_vals.sum() == WFP_weights.log_vals.sum());
         assert((weights_sum == 1.0));
+    }
+
+    Well_CrossFlow(
+        const Logs::RFP &RFP_weights,
+        const Logs::WFP &WFP_weights,
+        const std::vector<RealType> &from_coords,
+        const std::vector<ptrdiff_t> &to_layers)
+        : Well_CrossFlow{
+              RFP_weights, WFP_weights,
+              CrossFlows{RFP_weights, from_coords, to_layers}}
+    {
     }
 
     StepPropertyContainer get_RFP(
@@ -64,7 +74,7 @@ struct Well_CrossFlow
         else
             throw std::invalid_argument("RFP: Either rate or pressure must be set, but not both.");
     }
-    
+
     StepPropertyContainer get_WFP(
         RealType rate,
         RealType pressure) const
@@ -109,6 +119,41 @@ private:
     const CrossFlows cross_flows;
 };
 
+/// @brief Assumption: multiple flows can start from the well,
+/// but they have to come to different layers of the reservoir.
+/// This allows to assemble the WFP from the RFP
+/// @param is_permeable 
+/// @param is_perforated 
+/// @param RFP_weights 
+/// @param cross_flows 
+/// @return 
+Logs::WFP create_WFP(
+    const Logs::IsPermeable &is_permeable,
+    const Logs::IsPerforated &is_perforated,
+    const Logs::RFP &RFP_weights,
+    const CrossFlows &cross_flows)
+{
+    auto wfp_step_prop_grid{(is_perforated * RFP_weights).log_vals};
+    StepPropertyContainer is_damaged{StepPropertyContainer::Zero(wfp_step_prop_grid.size())};
+
+    for(const auto cf : cross_flows.cross_flow_data)
+    {
+        wfp_step_prop_grid(cf.from_id) += RFP_weights(cf.to_id);
+        is_damaged(cf.from_id) = 1.0;
+    }
+
+    assert(wfp_step_prop_grid.sum() == RFP_weights.log_vals.sum());
+
+    for(auto i{0ll}; i < wfp_step_prop_grid.size(); ++i)
+    {
+        assert(
+            ((is_perforated(i) == 1.0) && (wfp_step_prop_grid(i) > 0.0)) || 
+            ((is_perforated(i) == 0.0) && (wfp_step_prop_grid(i) == 0.0)));
+    }
+
+    return Logs::WFPFactory::create_from_container(wfp_step_prop_grid, is_perforated);
+}
+
 TEST_CASE("CrossFlow", "")
 {
     ifstream f("cross_flow_test_data.json");
@@ -132,19 +177,21 @@ TEST_CASE("CrossFlow", "")
 
     const auto is_permeable{
         IsPermeableFactory::create(is_permeable_stencils, grid_z)};
+    const auto is_perforated{
+        IsPermeableFactory::create(is_perforated_stencils, grid_z)};
 
-    const auto weights{
+    const auto RFP_weights{
         RFPFactory::create_from_container(
             weights_stencils,
             is_permeable)};
 
     const RealType total_rate{1.0};
     const CrossFlows cross_flows{
-        weights, from_coords, to_layers};
+        RFP_weights, from_coords, to_layers};
 
-    cout << "flux weights: " << weights.log_vals.transpose() << endl;
-    const auto &dual_nodes{weights.grid.dual_nodes};
-    const auto &dual_stencils{weights.grid.dual_stencils};
+    cout << "flux weights: " << RFP_weights.log_vals.transpose() << endl;
+    const auto &dual_nodes{RFP_weights.grid.dual_nodes};
+    const auto &dual_stencils{RFP_weights.grid.dual_stencils};
     for (auto i{0ull}; i < cross_flows.cross_flow_data.size(); ++i)
     {
         const auto &cf{cross_flows.cross_flow_data[i]};
@@ -181,7 +228,16 @@ TEST_CASE("CrossFlow", "")
         for (auto j{std::min(to_id, from_id) + 1ll}; j < std::max(to_id, from_id) + 1ll; ++j)
         {
             INFO("top_id: " << j << ", to_id: " << to_id << ", from_id: " << from_id << ", dir: " << dir);
-            CHECK(cf.verticle_flux(j) == dir * weights(to_id));
+            CHECK(cf.verticle_flux(j) == dir * RFP_weights(to_id));
         }
     }
+
+    const auto WFP_weights{
+        create_WFP(
+            is_permeable,
+            is_perforated,
+            RFP_weights,
+            cross_flows)};
+
+    const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 }

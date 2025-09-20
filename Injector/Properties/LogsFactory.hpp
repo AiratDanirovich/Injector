@@ -429,7 +429,7 @@ namespace GPN
                 const IsPerforated_t &is_perforated)
             {
                 return WFP{
-                    StepPropertyGrid{StepProperty{wfp}, is_perforated.grid},
+                    StepPropertyGrid{{wfp}, is_perforated.grid},
                     is_perforated};
             }
 

@@ -25,8 +25,8 @@ namespace GPN
         };
 
         /// @brief Container for values of step properties.
-        /// Copies from standard continer (Eigen or STL)
-        /// to local field variable.
+        /// It performs copying from the standard continer (Eigen or STL)
+        /// to the local field variable.
         struct StepProperty
         {
             StepPropertyContainer data;
@@ -35,8 +35,8 @@ namespace GPN
                 const StepPropertyContainer &adata)
                 : StepProperty{
                       std::vector<RealType>(
-                          adata.begin(),
-                          adata.end())}
+                          adata.cbegin(),
+                          adata.cend())}
             {
             }
 
