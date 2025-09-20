@@ -3,6 +3,7 @@
 #include <vector>
 #include <algorithm>
 #include <numbers>
+#include <numeric>
 #include <cmath>
 #include <cassert>
 
@@ -206,10 +207,10 @@ namespace GPN
 
         LogValuesContainer get_RFP(const auto &history_record) const = delete;
         LogValuesContainer get_WFP(const auto &history_record) const = delete;
+        LogValuesContainer get_verticle_cement_flow(const auto &history_record) const = delete;
 
         const Logs::IsPermeable is_permeable;
         const Logs::IsPerforated is_perforated;
-        //    const Logs::IsGhostLayer is_ghost;
 
         const StepPropertyContainer RFP_weights;
         const StepPropertyContainer WFP_weights;
@@ -233,12 +234,12 @@ namespace GPN
             return WFP_weights;
         }
 
-    private:
         static ptrdiff_t layer_id(const auto &indicator)
         {
             const auto perforated_it = std::ranges::find(indicator.log_vals, 1.0);
             return std::distance(indicator.log_vals.cbegin(), perforated_it);
         }
+        // cell id where the cross-flow leaves the column
         const ptrdiff_t its_top_collector_cell_id{-1ll};
     };
 
@@ -266,8 +267,41 @@ namespace GPN
         {
             return get_WFP(history_record.rate, history_record.pressure);
         }
+        template <typename HistoryRecord_t>
+        auto get_verticle_cement_flow(const HistoryRecord_t &history_record) const
+        {
+            return get_verticle_cement_flow(history_record.rate, history_record.pressure);
+        }
 
     protected:
+        StepPropertyContainer get_verticle_cement_flow(
+            RealType rate,
+            RealType pressure) const
+        {
+            if (std::isnan(rate))
+            { // define rate from pressure
+                throw std::invalid_argument("cement flow: Rate must be set");
+            }
+            else if (std::isnan(pressure))
+            { // define pressure from rate
+                assert(!std::isnan(rate));
+                assert(rate >= 0.0);
+
+                const auto rfp_vals{get_RFP(rate, pressure)};
+                // leftover flowrate along the well
+                LogValuesContainer cum_sum{LogValuesContainer::Zero(is_permeable.grid.dual_size())};
+                std::partial_sum(
+                    rfp_vals.cbegin(),
+                    rfp_vals.cbegin() + top_collector_cell_id(),
+                    cum_sum.begin() + 1ll, std::plus<RealType>());
+                // the flow in cement goes UP, 
+                // while the flow in the tube -- DOWN
+                return -cum_sum;
+            }
+            else
+                throw std::invalid_argument("cement flow: Either rate or pressure must be set, but not both.");
+        }
+
         StepPropertyContainer get_RFP(
             RealType rate,
             RealType pressure) const
