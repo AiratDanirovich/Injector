@@ -215,25 +215,32 @@ namespace GPN
         };
 
         /// @brief Indicator of permeable layers,
-        /// so the liquid can flow outside the well,
-        /// and along the collector layers
+        /// so the liquid flows along these layers
         struct IsPermeable : public IndicatorProperty
         {
             using IndicatorProperty::IndicatorProperty;
         };
         
         /// @brief Indicator of perforated cells,
-        /// so the liquid can leave the tube-column,
-        /// to further flow along the cement
+        /// so the liquid can leave the column,
+        /// to further flow across the cement to the permeable layers
         struct IsPerforated : public IndicatorProperty
         {
             using IndicatorProperty::IndicatorProperty;
         };
 
-        /// @brief Indicator of perforated cells,
-        /// so the liquid can leave the tube-column,
-        /// to further flow along the cement
+        /// @brief Indicator of permeable layers
+        /// in the reservoir,
+        /// which can accept fluid
         struct IsGhostLayer : public IndicatorProperty
+        {
+            using IndicatorProperty::IndicatorProperty;
+        };
+
+        /// @brief Indicator of cells with damaged column,
+        /// so the liquid can leave the column,
+        /// to further flow vertically along the cement
+        struct IsDamaged : public IndicatorProperty
         {
             using IndicatorProperty::IndicatorProperty;
         };
