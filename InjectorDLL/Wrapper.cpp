@@ -141,6 +141,7 @@ Wrapper::Wrapper(
     const VR &RFP_weights_stencils,        // -- /*rate distribution between layers*/
     const VR &is_permeable,                // {0, 1}, --
     const VR &is_perforated,               // {0, 1}, --
+    const VR &from_coords,                 // coordinates of column corrosion, m
     const VR &solid_density,               // kg/(m^3)
     const VR &solid_specific_heatcapacity, // J/(kg*K)
     // geotherma
@@ -155,8 +156,7 @@ Wrapper::Wrapper(
     const VR &well_rates,         // ~1.1E-3 m^3/s
     const VR &inlet_temperatures, // K
     // casing
-    // {fluid, tube, annulus, column, cementInner, cementOuter}
-    // const std::array<MaterialProps, 6> &casing_data,
+    // {fluid, tube, annulus, column, cement}
     const json &data)
 {
     // adapt stl container to Eigen container

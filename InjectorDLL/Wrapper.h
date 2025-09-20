@@ -47,6 +47,7 @@ public:
         const VR &weights_stencils,            // -- /*rate distribution between layers*/
         const VR &is_permeable,                // {0, 1}, --
         const VR &is_perforated,               // {0, 1}, --
+        const VR &from_coords,                 // coordinates of column corrosion, m
         const VR &solid_density,               // kg/(m^3)
         const VR &solid_specific_heatcapacity, // J/(kg*K)
         // geotherma
