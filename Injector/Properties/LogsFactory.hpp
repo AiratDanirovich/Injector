@@ -133,6 +133,58 @@ namespace GPN
             IsPerforated is_permeable;
         };
 
+        struct IsDamagedFactory
+        {
+            template <typename Grid_t>
+            static IsDamaged create(
+                const auto& cross_flows,
+                const auto &is_perforated,
+                const Grid_t &grid)
+            {
+                StepPropertyContainer
+                            // the data and logs is assumed interpolated
+                            // for a finer grid
+                            is_damaged{StepPropertyContainer::Zero(grid.mesh_size())};
+
+                for(const auto &cf : cross_flows)
+                {
+                    const auto from_id{cf.from_id};
+                    if(is_perforated[from_id] == 0.0)
+                        is_damaged[from_id] = 1.0;
+                }
+
+                assert(is_perforated.size() == is_damaged.size());
+                for (auto i{0ll}; i < (ptrdiff_t)is_perforated.size(); ++i)
+                {
+                    assert(
+                        (is_perforated[i] == 0.0) ||
+                        (is_perforated[i] == 1.0));
+                    assert(
+                        ((is_perforated[i] == 0.0) && ((is_damaged[i] == 0.0) || (is_damaged[i] == 1.0))) ||
+                        ((is_perforated[i] == 1.0) && (is_damaged[i] == 0.0)));
+                }
+
+                // at least one perforated layer must exist
+                assert(std::any_of(is_perforated.cbegin(), is_perforated.cend(), [](const RealType v)
+                                   { return v == 1.0; }));
+
+                return IsDamaged{
+                    StepPropertyGrid{
+                        StepPropertyContainer{
+                            // the data and logs is assumed interpolated
+                            // for a finer grid
+                            is_damaged},
+                        grid}};
+            }
+
+            const auto &is_permeable_stencils() const
+            {
+                return is_permeable.log_vals;
+            }
+
+            IsPerforated is_permeable;
+        };
+
         struct PermeabilityFactory
         {
             template <typename Grid_t>
