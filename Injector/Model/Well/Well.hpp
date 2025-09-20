@@ -10,6 +10,7 @@
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Model/Phases/PhaseProperties.hpp>
+#include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Properties/Logs.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
 
@@ -302,22 +303,6 @@ namespace GPN
             else
                 throw std::invalid_argument("WFP: Either rate or pressure must be set, but not both.");
         }
-    };
-
-    struct Well_CrossFlow
-        : public Well_Explicit
-    {
-        Well_CrossFlow(
-            const Logs::IsPermeable &is_permeable,
-            const Logs::IsPerforated &is_perforated,
-            const StepPropertyContainer &weights)
-            : Well_Explicit{
-                  is_permeable,
-                  is_perforated,
-                  /*RFP_weights*/ weights}
-        {
-        }
-
     };
 
     struct Well_KH
