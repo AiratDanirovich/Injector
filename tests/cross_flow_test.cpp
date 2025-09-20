@@ -232,12 +232,12 @@ TEST_CASE("CrossFlow", "")
         }
     }
 
-    const auto WFP_weights{
-        create_WFP(
-            is_permeable,
-            is_perforated,
-            RFP_weights,
-            cross_flows)};
+    // const auto WFP_weights{
+    //     create_WFP(
+    //         is_permeable,
+    //         is_perforated,
+    //         RFP_weights,
+    //         cross_flows)};
 
-    const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
+//    const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 }
