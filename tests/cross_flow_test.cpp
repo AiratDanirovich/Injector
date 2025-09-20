@@ -4,15 +4,19 @@
 #include <Injector/Grids/Defines.h>
 
 #include <Injector/Grids/GridsFactory.hpp>
+#include <Injector/Grids/Grids2D.hpp>
 #include <Injector/Grids/GridRefiners.hpp>
+#include <Injector/History/History.hpp>
+#include <Injector/History/RatesFactory.hpp>
+#include <Injector/Model/Phases/FluidFactory.hpp>
+#include <Injector/Model/Well/CrossFlow.hpp>
+#include <Injector/Model/Well/Well.hpp>
 #include <Injector/Properties/Logs.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
 
-#include <Injector/Model/Well/CrossFlow.hpp>
-#include <Injector/Model/Well/Well.hpp>
-
 #include "includes/transfer_to_eigen.hpp"
 #include "includes/set_is_permeable_stencils.hpp"
+#include "includes/make_history.hpp"
 
 #include <nlohmann/json.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -26,10 +30,50 @@ using namespace Catch;
 using namespace Catch::Matchers;
 using namespace GPN;
 using namespace GPN::Grids;
+using namespace GPN::Phases;
+using namespace GPN::FaceProperties;
 using namespace GPN::Logs;
 using namespace GPN::CrossFlow;
 
 RealType viscosity{6e-4}, density{1000}, capacity{4200}, heat_conductivity{0.6};
+
+/// @brief Assumption: multiple flows can start from the well,
+/// but they have to come to different layers of the reservoir.
+/// This allows to assemble the WFP from the RFP
+/// @param is_permeable
+/// @param is_perforated
+/// @param RFP_weights
+/// @param cross_flows
+/// @return
+Logs::WFP create_WFP(
+    const Logs::IsPerforated &is_perforated,
+    const Logs::RFP &RFP_weights,
+    const CrossFlows &cross_flows)
+{
+    StepPropertyContainer wfp_step_prop_grid{(is_perforated * RFP_weights).log_vals};
+    const auto is_damaged{Logs::IsDamagedFactory::create(
+        cross_flows,
+        is_perforated.log_vals,
+        is_perforated.grid)};
+
+    for (const auto &cf : cross_flows.cross_flow_data)
+        wfp_step_prop_grid(cf.from_id) += RFP_weights(cf.to_id);
+
+    assert(wfp_step_prop_grid.sum() == RFP_weights.log_vals.sum());
+
+    assert(is_perforated.size() == wfp_step_prop_grid.size());
+    for (auto i{0ll}; i < wfp_step_prop_grid.size(); ++i)
+    {
+        assert(
+            ((is_perforated(i) != is_damaged(i)) &&
+             (wfp_step_prop_grid(i) > 0.0)) ||
+            ((is_perforated(i) == 0.0) && (is_damaged(i) == 0.0) &&
+             (wfp_step_prop_grid(i) == 0.0)));
+    }
+
+    return Logs::WFPFactory::create_from_container(
+        wfp_step_prop_grid, is_perforated + is_damaged);
+}
 
 struct Well_CrossFlow
 {
@@ -119,56 +163,22 @@ private:
     const CrossFlows cross_flows;
 };
 
-/// @brief Assumption: multiple flows can start from the well,
-/// but they have to come to different layers of the reservoir.
-/// This allows to assemble the WFP from the RFP
-/// @param is_permeable 
-/// @param is_perforated 
-/// @param RFP_weights 
-/// @param cross_flows 
-/// @return 
-Logs::WFP create_WFP(
-    const Logs::IsPerforated &is_perforated,
-    const Logs::RFP &RFP_weights,
-    const CrossFlows &cross_flows)
-{
-    StepPropertyContainer wfp_step_prop_grid{(is_perforated * RFP_weights).log_vals};
-    const auto is_damaged{Logs::IsDamagedFactory::create(
-                cross_flows,
-                is_perforated.log_vals,
-                is_perforated.grid)};
-
-    for(const auto& cf : cross_flows.cross_flow_data)
-        wfp_step_prop_grid(cf.from_id) += RFP_weights(cf.to_id);
-
-    assert(wfp_step_prop_grid.sum() == RFP_weights.log_vals.sum());
-
-    assert(is_perforated.size() == wfp_step_prop_grid.size());
-    for(auto i{0ll}; i < wfp_step_prop_grid.size(); ++i)
-    {
-        assert(
-            ((is_perforated(i) != is_damaged(i)) &&
-            (wfp_step_prop_grid(i) > 0.0)) || 
-            ((is_perforated(i) == 0.0) && (is_damaged(i) == 0.0) && 
-            (wfp_step_prop_grid(i) == 0.0)));
-    }
-
-    return Logs::WFPFactory::create_from_container(
-        wfp_step_prop_grid, is_perforated + is_damaged);
-}
-
 TEST_CASE("CrossFlow", "")
 {
     ifstream f("cross_flow_test_data.json");
     REQUIRE(f.is_open());
     json data = json::parse(f);
-
+    // hydrodynamic logs
     const auto weights_stencils{transfer_to_eigen(data["collector"]["explicit"]["weights"].get<VR>())};
-
     const auto from_coords{data["collector"]["cross_flow"]["from_coord"].get<VR>()};
     const auto to_layers{data["collector"]["cross_flow"]["to_layers"].get<std::vector<std::ptrdiff_t>>()};
     const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"].get<VR>())};
     const auto is_permeable_stencils{set_is_permeable_stencils(is_perforated_stencils, to_layers)};
+    /*collector*/
+    const VR thickness{data["collector"]["thickness"].get<VR>()};
+    /*grid*/
+    const RealType
+        z_minor_step{data["grid"]["z_minor_step"]}; // m
 
     const auto grid_z{
         Factory::create_axes<CoordinateTypes::Z>(
@@ -241,5 +251,29 @@ TEST_CASE("CrossFlow", "")
             RFP_weights,
             cross_flows)};
 
-//    const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
+    const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
+
+    // make fluid
+    const PhaseProperties water{
+        FluidFactory::create_water(
+            Viscosity{viscosity},
+            GPN::Density{density},
+            GPN::SpecificHeatCapacity{capacity},
+            GPN::HeatConductivity{heat_conductivity})};
+
+    // history
+    const History history{make_history(data)};
+
+    // z-refiner
+    RefinerVerticle refiner{z_minor_step, is_permeable_stencils};
+    const VR r_stencils{0.0, 0.1, 0.2, 0.3};
+    const auto grid2D{
+        Grids::CylinderGridFactory::create(refiner,
+                                           Grids::Factory::generate_dual_grid_stencils_from_steps(
+                                               0.0, thickness),
+                                           r_stencils)};
+
+    // rates field factory
+    FaceProperties::RatesFactory rates_factory{
+        grid2D, well, history, water};
 }
