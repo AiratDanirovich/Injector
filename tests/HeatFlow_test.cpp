@@ -143,7 +143,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"].get<VR>())};
   const auto porosity_stencils{transfer_to_eigen(data["collector"]["porosity"].get<VR>())};
   const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"].get<VR>(), 1e-12)};
-  const auto weights_stencils{transfer_to_eigen(data["collector"]["explicit"]["weights"].get<VR>())};
+  const auto RFP_weights_stencils{transfer_to_eigen(data["collector"]["explicit"]["weights"].get<VR>())};
   const auto from_coords{data["collector"]["cross_flow"]["from_coord"].get<VR>()};
   const auto to_layers{data["collector"]["cross_flow"]["to_layers"].get<std::vector<std::ptrdiff_t>>()};
   const auto is_permeable_stencils{set_is_permeable_stencils(is_perforated_stencils, to_layers)};
@@ -226,13 +226,22 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // well
   // const Well_KH well{
   //     water, core_data.is_permeable, core_data.is_perforated, core_data.permeability, well_holes, rMax};
-  const auto weights{
+  const auto RFP_weights{
       RFPFactory::create_from_container(
-          weights_stencils,
+          RFP_weights_stencils,
           core_data.is_permeable)};
+  const CrossFlows cross_flows{
+      RFP_weights, from_coords, to_layers};
+  const auto WFP_weights{
+      create_WFP(
+          core_data.is_perforated,
+          RFP_weights,
+          cross_flows)};
 
-  const Well_Explicit well{
-      core_data.is_permeable, core_data.is_perforated, weights};
+  const Well_Explicit well_explicit{
+      core_data.is_permeable, core_data.is_perforated, RFP_weights};
+
+  const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
