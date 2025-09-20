@@ -9,6 +9,7 @@
 #include <Injector/Properties/LogsFactory.hpp>
 
 #include <Injector/Model/Well/CrossFlow.hpp>
+#include <Injector/Model/Well/Well.hpp>
 
 #include "includes/transfer_to_eigen.hpp"
 #include "includes/set_is_permeable_stencils.hpp"
@@ -29,6 +30,62 @@ using namespace GPN::Logs;
 using namespace GPN::CrossFlow;
 
 RealType viscosity{6e-4}, density{1000}, capacity{4200}, heat_conductivity{0.6};
+
+struct Well_CrossFlow
+{
+    Well_CrossFlow(
+        const Logs::RFP &rfp_rate_weights,
+        const Logs::WFP &wfp_rate_weights,
+        const std::vector<RealType> &from_coords,
+        const std::vector<ptrdiff_t> &to_layers)
+        : RFP_weights{rfp_rate_weights.log_vals},
+          weights_sum{rfp_rate_weights.log_vals.sum()},
+          WFP_weights{wfp_rate_weights.log_vals}
+    {
+        assert(RFP_weights.sum() == WFP_weights.sum());
+    }
+
+    StepPropertyContainer get_RFP(
+        RealType rate,
+        RealType pressure) const
+    {
+        if (std::isnan(rate))
+        { // define rate from pressure
+            throw std::invalid_argument("RFP: Rate must be set");
+        }
+        else if (std::isnan(pressure))
+        { // define pressure from rate
+            assert(!std::isnan(rate));
+            assert(rate >= 0.0);
+            return ((rate / weights_sum) * RFP_weights).eval();
+        }
+        else
+            throw std::invalid_argument("RFP: Either rate or pressure must be set, but not both.");
+    }
+    
+    StepPropertyContainer get_WFP(
+        RealType rate,
+        RealType pressure) const
+    {
+        if (std::isnan(rate))
+        { // define rate from pressure
+            throw std::invalid_argument("RFP: Rate must be set");
+        }
+        else if (std::isnan(pressure))
+        { // define pressure from rate
+            assert(!std::isnan(rate));
+            assert(rate >= 0.0);
+            return ((rate / weights_sum) * RFP_weights).eval();
+        }
+        else
+            throw std::invalid_argument("RFP: Either rate or pressure must be set, but not both.");
+    }
+
+private:
+    const RealType weights_sum;
+    const StepPropertyContainer &RFP_weights;
+    const StepPropertyContainer &WFP_weights;
+};
 
 TEST_CASE("CrossFlow", "")
 {
@@ -55,14 +112,13 @@ TEST_CASE("CrossFlow", "")
         IsPermeableFactory::create(is_permeable_stencils, grid_z)};
 
     const auto weights{
-        RateWeightsFactory::create(
+        RFPFactory::create_from_container(
             weights_stencils,
-            is_permeable,
-            grid_z)};
+            is_permeable)};
 
     const RealType total_rate{1.0};
     const CrossFlows cross_flows{
-        total_rate, weights, from_coords, to_layers};
+        weights, from_coords, to_layers};
 
     cout << "flux weights: " << weights.log_vals.transpose() << endl;
     const auto &dual_nodes{weights.grid.dual_nodes};
@@ -79,7 +135,7 @@ TEST_CASE("CrossFlow", "")
                 ++to_id;
             --to_id;
             CHECK(dual_nodes(to_id) < to_coord);
-            CHECK(dual_nodes(to_id+1ll) == to_coord);
+            CHECK(dual_nodes(to_id + 1ll) == to_coord);
         }
         auto from_id{0ll};
         { // get FROM id
@@ -87,7 +143,7 @@ TEST_CASE("CrossFlow", "")
                 ++from_id;
             --from_id;
             CHECK(dual_nodes(from_id) < from_coords[i]);
-            CHECK(dual_nodes(from_id+1ll) > from_coords[i]);
+            CHECK(dual_nodes(from_id + 1ll) > from_coords[i]);
         }
 
         const RealType dir{from_id < to_id ? 1.0 : -1.0};
@@ -103,7 +159,7 @@ TEST_CASE("CrossFlow", "")
         for (auto j{std::min(to_id, from_id) + 1ll}; j < std::max(to_id, from_id) + 1ll; ++j)
         {
             INFO("top_id: " << j << ", to_id: " << to_id << ", from_id: " << from_id << ", dir: " << dir);
-            CHECK(cf.verticle_flux(j) == dir * total_rate * weights(to_id));
+            CHECK(cf.verticle_flux(j) == dir * weights(to_id));
         }
     }
 }
