@@ -101,6 +101,23 @@ struct Well_CrossFlow
     {
     }
 
+    template <typename HistoryRecord_t>
+    auto get_RFP(const HistoryRecord_t &history_record) const
+    {
+        return get_RFP(history_record.rate, history_record.pressure);
+    }
+    template <typename HistoryRecord_t>
+    auto get_WFP(const HistoryRecord_t &history_record) const
+    {
+        return get_WFP(history_record.rate, history_record.pressure);
+    }
+    template <typename HistoryRecord_t>
+    auto get_verticle_cement_flow(const HistoryRecord_t &history_record) const
+    {
+        return get_verticle_cement_flow(history_record.rate, history_record.pressure);
+    }
+
+private:
     StepPropertyContainer get_RFP(
         RealType rate,
         RealType pressure) const
@@ -155,7 +172,6 @@ struct Well_CrossFlow
             throw std::invalid_argument("RFP: Either rate or pressure must be set, but not both.");
     }
 
-private:
     const RealType weights_sum;
     const StepPropertyContainer &RFP_weights;
     const StepPropertyContainer &WFP_weights;
@@ -276,4 +292,6 @@ TEST_CASE("CrossFlow", "")
     // rates field factory
     FaceProperties::RatesFactory rates_factory{
         grid2D, well, history, water};
+
+    rates_factory.set_flow_field(0.0, 1800.0);
 }
