@@ -57,7 +57,7 @@ namespace GPN
                 out.middleRows(std::min(from_id, to_id) + 1ll, std::abs(from_id - to_id)) = directed_normalized_flux;
                 return out;
             }
-#pragma region
+#pragma endregion
         };
 
         struct CrossFlows
