@@ -146,7 +146,7 @@ namespace GPN
                             // for a finer grid
                             is_damaged{StepPropertyContainer::Zero(grid.mesh_size())};
 
-                for(const auto &cf : cross_flows)
+                for(const auto &cf : cross_flows.cross_flow_data)
                 {
                     const auto from_id{cf.from_id};
                     if(is_perforated[from_id] == 0.0)

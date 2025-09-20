@@ -128,19 +128,18 @@ private:
 /// @param cross_flows 
 /// @return 
 Logs::WFP create_WFP(
-    const Logs::IsPermeable &is_permeable,
     const Logs::IsPerforated &is_perforated,
     const Logs::RFP &RFP_weights,
     const CrossFlows &cross_flows)
 {
     auto wfp_step_prop_grid{(is_perforated * RFP_weights).log_vals};
-    StepPropertyContainer is_damaged{StepPropertyContainer::Zero(wfp_step_prop_grid.size())};
+    const auto is_damaged{Logs::IsDamagedFactory::create(
+                cross_flows,
+                is_perforated.log_vals,
+                is_perforated.grid)};
 
-    for(const auto cf : cross_flows.cross_flow_data)
-    {
+    for(const auto& cf : cross_flows.cross_flow_data)
         wfp_step_prop_grid(cf.from_id) += RFP_weights(cf.to_id);
-        is_damaged(cf.from_id) = 1.0;
-    }
 
     assert(wfp_step_prop_grid.sum() == RFP_weights.log_vals.sum());
 
