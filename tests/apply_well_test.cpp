@@ -8,8 +8,8 @@
 
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
-#include <Injector/Model/Well.hpp>
-#include <Injector/Model/WellFactory.hpp>
+#include <Injector/Model/Well/Well.hpp>
+#include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Completion.hpp>
 #include <Injector/Model/ExtrudedCasingFactory.hpp>
 
@@ -25,7 +25,6 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 using json = nlohmann::json;
-
 using VR = std::vector<GPN::RealType>;
 
 using namespace std;
@@ -251,10 +250,9 @@ TEST_CASE("apply_well_test", "apply_well_test")
           GPN::HeatConductivity{heat_conductivity})};
 
   const auto weights{
-      RateWeightsFactory::create(
+      RFPFactory::create_from_container(
           weights_stencils,
-          core_data.is_permeable,
-          grid_z)};
+          core_data.is_permeable)};
 
   // CHECK weights
   {
