@@ -34,15 +34,17 @@ RealType viscosity{6e-4}, density{1000}, capacity{4200}, heat_conductivity{0.6};
 struct Well_CrossFlow
 {
     Well_CrossFlow(
-        const Logs::RFP &rfp_rate_weights,
-        const Logs::WFP &wfp_rate_weights,
+        const Logs::RFP &RFP_weights,
+        const Logs::WFP &WFP_weights,
         const std::vector<RealType> &from_coords,
         const std::vector<ptrdiff_t> &to_layers)
-        : RFP_weights{rfp_rate_weights.log_vals},
-          weights_sum{rfp_rate_weights.log_vals.sum()},
-          WFP_weights{wfp_rate_weights.log_vals}
+        : RFP_weights{RFP_weights.log_vals},
+          weights_sum{RFP_weights.log_vals.sum()},
+          WFP_weights{WFP_weights.log_vals},
+          cross_flows{RFP_weights, from_coords, to_layers}
     {
-        assert(RFP_weights.sum() == WFP_weights.sum());
+        assert(RFP_weights.log_vals.sum() == WFP_weights.log_vals.sum());
+        assert((weights_sum == 1.0));
     }
 
     StepPropertyContainer get_RFP(
@@ -75,7 +77,7 @@ struct Well_CrossFlow
         { // define pressure from rate
             assert(!std::isnan(rate));
             assert(rate >= 0.0);
-            return ((rate / weights_sum) * RFP_weights).eval();
+            return ((rate / weights_sum) * WFP_weights).eval();
         }
         else
             throw std::invalid_argument("RFP: Either rate or pressure must be set, but not both.");
@@ -85,6 +87,8 @@ private:
     const RealType weights_sum;
     const StepPropertyContainer &RFP_weights;
     const StepPropertyContainer &WFP_weights;
+
+    const CrossFlows cross_flows;
 };
 
 TEST_CASE("CrossFlow", "")
