@@ -18,12 +18,13 @@
 
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
-#include <Injector/Model/WellFactory.hpp>
+#include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Completion.hpp>
 #include <Injector/Model/ExtrudedCasingFactory.hpp>
 
+#include <Injector/Properties/Factory.hpp>
 #include <Injector/Properties/FlowField.hpp>
-#include <Injector/Model/Well.hpp>
+#include <Injector/Model/Well/Well.hpp>
 #include <Injector/Solver/BoundaryConditions.hpp>
 #include <Injector/Solver/State2D.hpp>
 #include <Injector/Solver/InitialCondition.hpp>
@@ -137,7 +138,7 @@ Wrapper::Wrapper(
     const VR &solid_heatconductivity,      // Watt/(m*K)
     const VR &porosity,                    // 0.0 < porosity <= 1.0, --
     const VR &permeability_stencils,       // m^2
-    const VR &weights_stencils,            // -- /*rate distribution between layers*/
+    const VR &RFP_weights_stencils,        // -- /*rate distribution between layers*/
     const VR &is_permeable,                // {0, 1}, --
     const VR &is_perforated,               // {0, 1}, --
     const VR &solid_density,               // kg/(m^3)
@@ -156,8 +157,7 @@ Wrapper::Wrapper(
     // casing
     // {fluid, tube, annulus, column, cementInner, cementOuter}
     // const std::array<MaterialProps, 6> &casing_data,
-    const json& data
-    )
+    const json &data)
 {
     // adapt stl container to Eigen container
     LogValuesContainer is_permeable_stencils(is_permeable.size());
@@ -173,17 +173,16 @@ Wrapper::Wrapper(
     LogValuesContainer solid_heatconductivity_stencils(solid_heatconductivity.size());
     std::copy(solid_heatconductivity.begin(), solid_heatconductivity.end(), solid_heatconductivity_stencils.begin());
 
-      const auto temp_grid_z{
-      Grids::Factory::create_axes<CoordinateTypes::Z>(
-          Grids::RefinerVerticle{
-              data["grid"]["z_minor_step"].get<RealType>(),
-              transfer_to_eigen(data["collector"]["is_permeable"].get<VR>())},
-          Grids::Factory::generate_dual_grid_stencils_from_steps(
-              0.0, data["collector"]["thickness"].get<VR>()))};
-  const Casing<VarRing> completion{get_completion(data, temp_grid_z)};
+    const auto temp_grid_z{
+        Grids::Factory::create_axes<CoordinateTypes::Z>(
+            Grids::RefinerVerticle{
+                data["grid"]["z_minor_step"].get<RealType>(),
+                transfer_to_eigen(data["collector"]["is_permeable"].get<VR>())},
+            Grids::Factory::generate_dual_grid_stencils_from_steps(
+                0.0, data["collector"]["thickness"].get<VR>()))};
+    const Casing<VarRing> completion{get_completion(data, temp_grid_z)};
 
-
-//    const Casing completion{make_completion(casing_data)};
+    //    const Casing completion{make_completion(casing_data)};
 
     // r_stencils
     GPN::WellHoles well_holes{WellHolesFactory::create(completion)};
@@ -218,15 +217,14 @@ Wrapper::Wrapper(
             GPN::SpecificHeatCapacity{capacity},
             GPN::HeatConductivity{heat_conductivity_fluid})};
 
-    const auto weights{
-        Logs::RateWeightsFactory::create(
-            weights_stencils,
-            core_data.is_permeable,
-            grid_z)};
+    const auto RFP_weights{
+        Logs::RFPFactory::create_from_container(
+            RFP_weights_stencils,
+            core_data.is_permeable)};
 
     const Well_Explicit well{
         core_data.is_permeable,
-        core_data.is_perforated, weights};
+        core_data.is_perforated, RFP_weights};
 
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
@@ -374,7 +372,7 @@ Wrapper::Wrapper(
             f << extr_completion[ring].specific_heat_capacity().transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].volumetric_heat_capacity().transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].heat_conductivity().transpose().format(commaFmt) << '\n';
-            
+
             f << extr_completion[ring].inner_radius.transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].outer_radius.transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].thickness.transpose().format(commaFmt) << '\n';
@@ -389,7 +387,7 @@ Wrapper::Wrapper(
             f << extr_completion[ring].specific_heat_capacity().transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].volumetric_heat_capacity().transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].heat_conductivity().transpose().format(commaFmt) << '\n';
-            
+
             f << extr_completion[ring].inner_radius.transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].outer_radius.transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].thickness.transpose().format(commaFmt) << '\n';
@@ -404,7 +402,7 @@ Wrapper::Wrapper(
             f << extr_completion[ring].specific_heat_capacity().transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].volumetric_heat_capacity().transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].heat_conductivity().transpose().format(commaFmt) << '\n';
-            
+
             f << extr_completion[ring].inner_radius.transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].outer_radius.transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].thickness.transpose().format(commaFmt) << '\n';
@@ -419,7 +417,7 @@ Wrapper::Wrapper(
             f << extr_completion[ring].specific_heat_capacity().transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].volumetric_heat_capacity().transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].heat_conductivity().transpose().format(commaFmt) << '\n';
-            
+
             f << extr_completion[ring].inner_radius.transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].outer_radius.transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].thickness.transpose().format(commaFmt) << '\n';
@@ -434,7 +432,7 @@ Wrapper::Wrapper(
             f << extr_completion[ring].specific_heat_capacity().transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].volumetric_heat_capacity().transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].heat_conductivity().transpose().format(commaFmt) << '\n';
-            
+
             f << extr_completion[ring].inner_radius.transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].outer_radius.transpose().format(commaFmt) << '\n';
             f << extr_completion[ring].thickness.transpose().format(commaFmt) << '\n';
