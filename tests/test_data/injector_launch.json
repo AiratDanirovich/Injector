@@ -6,22 +6,26 @@
     "heat_conductivity": 1.00000
   },
   "collector": {
-    "thickness": [   100,  3,   21],
-    "is_permeable": [0.0, 1.0,  0.0],
-    "is_perforated":[0.0, 1.0,  0.0],
-    "porosity":     [0.0, 1.0,  0.0],
-    "permeability": [0.0, 0.07, 0.0],
+    "thickness": [   100, 2,   3,    21],
+    "is_perforated":[0.0, 0.0, 1.0,  0.0],
+    "cross_flow":{
+      "__comment": "from_coord is in meters; to_layers is in the layer of <collector> section starting from Zero",
+      "from_coord": [40.1],
+      "to_layers": [1]
+    },  
+    "porosity":     [0.0, 1.0,  1.0,  0.0],
+    "permeability": [0.0, 0.07, 0.07, 0.0],
     "rate_division_types": ["KH", "explicit"],
     "rate_division_type": "KH",
     "explicit":{
-      "weights": [0.0, 1.0,  0.0]
+      "weights": [0.0, 0.5, 0.5,  0.0]
     },
     "KH":{
     },
-    "heatConductivity0": [1.2, 1.2,  1.2,  1.2, 1.2,  1.2, 1.2, 1.2, 1.2],
-    "heatConductivity": [1.00000, 1.00000, 1.00000],
-    "solidDensity": [1000, 1000, 1000],
-    "solidSpecificHeatCapacity": [4200,4200,4200],
+    "__heatConductivity": [1.2, 1.2,  1.2,  1.2, 1.2,  1.2, 1.2, 1.2, 1.2],
+    "heatConductivity": [1.00000, 1.00000, 1.00000, 1.00000],
+    "solidDensity": [1000, 1000, 1000, 1000],
+    "solidSpecificHeatCapacity": [4200,4200,4200,4200],
     "geotherma":{
       "type": "const",
       "types": ["const", "interpolate"],
