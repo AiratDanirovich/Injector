@@ -13,5 +13,25 @@
   },
   "grid": {
     "z_minor_step": 2.7
+  },
+   "history": {
+    "start_time": 0.0,
+    "t_minor_step": 1200,
+    "t_unit": "h",
+    "t_units": ["d", "h", "m", "s"],
+    "history_type": "dynamic",
+    "history_types": ["static", "dynamic"],
+    "dynamic": {
+      "t_major_step": [1.0, 1.0, 1.0],
+      "well_rate": [0.002, 0.002, 0.0],
+      "inlet_temperature": [293, 293, 293]
+    },
+    "static": {
+      "t_start": 0.0,
+      "t_end": 672,
+      "t_major_step": 96,
+      "well_rate": 0.00231,
+      "inlet_temperature": 293
+    }
   }
 }
