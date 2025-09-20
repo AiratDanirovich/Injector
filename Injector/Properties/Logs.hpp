@@ -239,7 +239,7 @@ namespace GPN
         };
 
         /// @brief Rate distribution along the
-        /// layers
+        /// layers, Reservoir Flow Profile (RFP)
         struct RateWeights
             : public StepPropertyGrid,
               private AssertNonNegative
