@@ -237,7 +237,7 @@ namespace GPN
         {
             using IndicatorProperty::IndicatorProperty;
         };
-        
+
         namespace InternalUse
         {
             /// @brief Rate distribution along the
@@ -258,14 +258,17 @@ namespace GPN
                             ((indicator(id) == 1.0)) ||
                             ((indicator(id) == 0.0) && (weights(id) == 0.0)));
 
-                    assert(std::abs(weights.log_vals.sum() - 1.0) < 1E-12);
+                    assert(
+                        std::all_of(weights.log_vals.cbegin(), weights.log_vals.cend(), [](const RealType v)
+                                    { return v == 0.0; }) ||
+                        (std::abs(log_vals.sum() - 1.0) < 1E-12));
                 }
 
             private:
                 static StepPropertyGrid normalize(const StepPropertyGrid &weights)
                 {
                     const RealType sum{weights.log_vals.sum()};
-                    return StepPropertyGrid{weights.log_vals / sum, weights.grid};
+                    return StepPropertyGrid{weights.log_vals / (sum == 0.0 ? 1.0 : sum), weights.grid};
                 }
             };
         } // InternalUse

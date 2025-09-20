@@ -406,7 +406,7 @@ namespace GPN
                 const IsPermeable_t &is_permeable)
             {
                 return RFP{
-                    StepPropertyGrid{rfp, is_permeable.grid},
+                    StepPropertyGrid{StepProperty{rfp}, is_permeable.grid},
                     is_permeable};
             }
 
@@ -429,7 +429,7 @@ namespace GPN
                 const IsPerforated_t &is_perforated)
             {
                 return WFP{
-                    StepPropertyGrid{wfp, is_perforated.grid},
+                    StepPropertyGrid{StepProperty{wfp}, is_perforated.grid},
                     is_perforated};
             }
 
