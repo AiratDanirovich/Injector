@@ -132,7 +132,7 @@ Logs::WFP create_WFP(
     const Logs::RFP &RFP_weights,
     const CrossFlows &cross_flows)
 {
-    auto wfp_step_prop_grid{(is_perforated * RFP_weights).log_vals};
+    StepPropertyContainer wfp_step_prop_grid{(is_perforated * RFP_weights).log_vals};
     const auto is_damaged{Logs::IsDamagedFactory::create(
                 cross_flows,
                 is_perforated.log_vals,
@@ -143,14 +143,18 @@ Logs::WFP create_WFP(
 
     assert(wfp_step_prop_grid.sum() == RFP_weights.log_vals.sum());
 
+    assert(is_perforated.size() == wfp_step_prop_grid.size());
     for(auto i{0ll}; i < wfp_step_prop_grid.size(); ++i)
     {
         assert(
-            ((is_perforated(i) == 1.0) && (wfp_step_prop_grid(i) > 0.0)) || 
-            ((is_perforated(i) == 0.0) && (wfp_step_prop_grid(i) == 0.0)));
+            ((is_perforated(i) != is_damaged(i)) &&
+            (wfp_step_prop_grid(i) > 0.0)) || 
+            ((is_perforated(i) == 0.0) && (is_damaged(i) == 0.0) && 
+            (wfp_step_prop_grid(i) == 0.0)));
     }
 
-    return Logs::WFPFactory::create_from_container(wfp_step_prop_grid, is_perforated);
+    return Logs::WFPFactory::create_from_container(
+        wfp_step_prop_grid, is_perforated + is_damaged);
 }
 
 TEST_CASE("CrossFlow", "")
@@ -231,12 +235,11 @@ TEST_CASE("CrossFlow", "")
         }
     }
 
-    // const auto WFP_weights{
-    //     create_WFP(
-    //         is_permeable,
-    //         is_perforated,
-    //         RFP_weights,
-    //         cross_flows)};
+    const auto WFP_weights{
+        create_WFP(
+            is_perforated,
+            RFP_weights,
+            cross_flows)};
 
 //    const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 }
