@@ -133,6 +133,58 @@ namespace GPN
             IsPerforated is_permeable;
         };
 
+        struct IsDamagedFactory
+        {
+            template <typename Grid_t>
+            static IsDamaged create(
+                const auto& cross_flows,
+                const auto &is_perforated,
+                const Grid_t &grid)
+            {
+                StepPropertyContainer
+                            // the data and logs is assumed interpolated
+                            // for a finer grid
+                            is_damaged{StepPropertyContainer::Zero(grid.mesh_size())};
+
+                for(const auto &cf : cross_flows.cross_flow_data)
+                {
+                    const auto from_id{cf.from_id};
+                    if(is_perforated[from_id] == 0.0)
+                        is_damaged[from_id] = 1.0;
+                }
+
+                assert(is_perforated.size() == is_damaged.size());
+                for (auto i{0ll}; i < (ptrdiff_t)is_perforated.size(); ++i)
+                {
+                    assert(
+                        (is_perforated[i] == 0.0) ||
+                        (is_perforated[i] == 1.0));
+                    assert(
+                        ((is_perforated[i] == 0.0) && ((is_damaged[i] == 0.0) || (is_damaged[i] == 1.0))) ||
+                        ((is_perforated[i] == 1.0) && (is_damaged[i] == 0.0)));
+                }
+
+                // at least one perforated layer must exist
+                assert(std::any_of(is_perforated.cbegin(), is_perforated.cend(), [](const RealType v)
+                                   { return v == 1.0; }));
+
+                return IsDamaged{
+                    StepPropertyGrid{
+                        StepPropertyContainer{
+                            // the data and logs is assumed interpolated
+                            // for a finer grid
+                            is_damaged},
+                        grid}};
+            }
+
+            const auto &is_permeable_stencils() const
+            {
+                return is_permeable.log_vals;
+            }
+
+            IsPerforated is_permeable;
+        };
+
         struct PermeabilityFactory
         {
             template <typename Grid_t>
@@ -229,22 +281,25 @@ namespace GPN
                 return out;
             }
         };
-
-        struct RateWeightsFactory
+        
+        namespace InternalUse
         {
-            static RateWeights create(
-                const auto &weights,
-                const IsPermeable &is_permeable,
-                const auto &grid)
+            struct RateWeightsFactory
             {
-                return {
-                    StepPropertyGrid{
-                        StepProperty{
-                            weights},
-                        grid},
-                    is_permeable};
-            }
-        };
+                static InternalUse::RateWeights create(
+                    const auto &weights,
+                    const IsPermeable &is_permeable,
+                    const auto &grid)
+                {
+                    return {
+                        StepPropertyGrid{
+                            StepProperty{
+                                weights},
+                            grid},
+                        is_permeable};
+                }
+            };
+        } // InternalUse
 
         struct SkinFactory
         {
@@ -403,18 +458,8 @@ namespace GPN
                 const IsPermeable_t &is_permeable)
             {
                 return RFP{
-                    StepPropertyGrid{rfp, is_permeable.grid},
+                    StepPropertyGrid{StepProperty{rfp}, is_permeable.grid},
                     is_permeable};
-            }
-
-            template <typename Record_t, typename Well_t>
-            static auto create_from_well(
-                const Record_t &history_record,
-                const Well_t &well)
-            {
-                return RFP{
-                    StepPropertyGrid{well.get_RFP(history_record), well.is_permeable.grid},
-                    well.is_permeable};
             }
         };
 
@@ -426,18 +471,8 @@ namespace GPN
                 const IsPerforated_t &is_perforated)
             {
                 return WFP{
-                    StepPropertyGrid{wfp, is_perforated.grid},
+                    StepPropertyGrid{{wfp}, is_perforated.grid},
                     is_perforated};
-            }
-
-            template <typename Record_t, typename Well_t>
-            static auto create_from_well(
-                const Record_t history_record,
-                const Well_t &well)
-            {
-                return WFP{
-                    StepPropertyGrid{well.get_WFP(history_record), well.is_perforated.grid},
-                    well.is_perforated};
             }
         };
 

@@ -25,8 +25,8 @@ namespace GPN
         };
 
         /// @brief Container for values of step properties.
-        /// Copies from standard continer (Eigen or STL)
-        /// to local field variable.
+        /// It performs copying from the standard continer (Eigen or STL)
+        /// to the local field variable.
         struct StepProperty
         {
             StepPropertyContainer data;
@@ -35,8 +35,8 @@ namespace GPN
                 const StepPropertyContainer &adata)
                 : StepProperty{
                       std::vector<RealType>(
-                          adata.begin(),
-                          adata.end())}
+                          adata.cbegin(),
+                          adata.cend())}
             {
             }
 
@@ -98,7 +98,7 @@ namespace GPN
                       interpolate(property_vals, grid),
                       grid}
             {
-                assert(property_vals.size() == grid.dual_stencils.size()-1ll);
+                assert(property_vals.size() == grid.dual_stencils.size() - 1ll);
             }
 
             auto operator()(auto id) const
@@ -215,57 +215,70 @@ namespace GPN
         };
 
         /// @brief Indicator of permeable layers,
-        /// so the liquid can flow outside the well,
-        /// and along the collector layers
+        /// so the liquid flows along these layers
         struct IsPermeable : public IndicatorProperty
         {
             using IndicatorProperty::IndicatorProperty;
         };
-        
+
         /// @brief Indicator of perforated cells,
-        /// so the liquid can leave the tube-column,
-        /// to further flow along the cement
+        /// so the liquid can leave the column,
+        /// to further flow across the cement to the permeable layers
         struct IsPerforated : public IndicatorProperty
         {
             using IndicatorProperty::IndicatorProperty;
         };
 
-        /// @brief Indicator of perforated cells,
-        /// so the liquid can leave the tube-column,
-        /// to further flow along the cement
+        /// @brief Indicator of permeable layers
+        /// in the reservoir,
+        /// which can accept fluid
         struct IsGhostLayer : public IndicatorProperty
         {
             using IndicatorProperty::IndicatorProperty;
         };
 
-        /// @brief Rate distribution along the
-        /// layers
-        struct RateWeights
-            : public StepPropertyGrid,
-              private AssertNonNegative
+        /// @brief Indicator of cells with damaged column,
+        /// so the liquid can leave the column,
+        /// to further flow vertically along the cement
+        struct IsDamaged : public IndicatorProperty
         {
-            RateWeights(
-                const StepPropertyGrid &weights,
-                const IsPermeable &is_permeable)
-                : StepPropertyGrid{normalize(weights)},
-                  AssertNonNegative{weights}
-            {
-                assert(weights.size() == is_permeable.size());
-                for (std::ptrdiff_t id{0ll}; id < weights.size(); ++id)
-                    assert(
-                        ((is_permeable(id) == 1.0) && (weights(id) > 0.0)) ||
-                        ((is_permeable(id) == 0.0) && (weights(id) == 0.0)));
-
-                assert(std::abs(weights.log_vals.sum() - 1.0) < 1E-12);
-            }
-
-        private:
-            static StepPropertyGrid normalize(const StepPropertyGrid &weights)
-            {
-                const RealType sum{weights.log_vals.sum()};
-                return StepPropertyGrid{weights.log_vals / sum, weights.grid};
-            }
+            using IndicatorProperty::IndicatorProperty;
         };
+
+        namespace InternalUse
+        {
+            /// @brief Rate distribution along the
+            /// layers
+            struct RateWeights
+                : public StepPropertyGrid,
+                  private AssertNonNegative
+            {
+                RateWeights(
+                    const StepPropertyGrid &weights,
+                    const StepPropertyGrid &indicator)
+                    : StepPropertyGrid{normalize(weights)},
+                      AssertNonNegative{weights}
+                {
+                    assert(weights.size() == indicator.size());
+                    for (std::ptrdiff_t id{0ll}; id < weights.size(); ++id)
+                        assert(
+                            ((indicator(id) == 1.0)) ||
+                            ((indicator(id) == 0.0) && (weights(id) == 0.0)));
+
+                    assert(
+                        std::all_of(weights.log_vals.cbegin(), weights.log_vals.cend(), [](const RealType v)
+                                    { return v == 0.0; }) ||
+                        (std::abs(log_vals.sum() - 1.0) < 1E-12));
+                }
+
+            private:
+                static StepPropertyGrid normalize(const StepPropertyGrid &weights)
+                {
+                    const RealType sum{weights.log_vals.sum()};
+                    return StepPropertyGrid{weights.log_vals / (sum == 0.0 ? 1.0 : sum), weights.grid};
+                }
+            };
+        } // InternalUse
 
         struct ExternalPressure
             : public StepPropertyGrid,
@@ -286,36 +299,22 @@ namespace GPN
         };
 
         struct RFP
-            : public StepPropertyGrid,
-              private AssertNonNegative
+            : public InternalUse::RateWeights
         {
             RFP(const StepPropertyGrid &rfp,
                 const IsPermeable &is_permeable)
-                : StepPropertyGrid{rfp},
-                  AssertNonNegative{rfp}
+                : InternalUse::RateWeights(rfp, is_permeable)
             {
-                assert(rfp.size() == is_permeable.size());
-                for (std::ptrdiff_t id{0ll}; id < rfp.size(); ++id)
-                    assert(
-                        ((is_permeable(id) == 1.0)) ||
-                        ((is_permeable(id) == 0.0) && (rfp(id) == 0.0)));
             }
         };
 
         struct WFP
-            : public StepPropertyGrid,
-              private AssertNonNegative
+            : public InternalUse::RateWeights
         {
             WFP(const StepPropertyGrid &wfp,
                 const IsPerforated &is_perforated)
-                : StepPropertyGrid{wfp},
-                  AssertNonNegative{wfp}
+                : InternalUse::RateWeights(wfp, is_perforated)
             {
-                assert(wfp.size() == is_perforated.size());
-                for (std::ptrdiff_t id{0ll}; id < wfp.size(); ++id)
-                    assert(
-                        ((is_perforated(id) == 1.0)) ||
-                        ((is_perforated(id) == 0.0) && (wfp(id) == 0.0)));
             }
         };
 

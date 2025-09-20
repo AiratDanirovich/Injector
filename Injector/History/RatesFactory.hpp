@@ -152,7 +152,5 @@ namespace GPN
         protected:
             const cptr<FaceProperties::ReservoirFlowField> heat_flow_field;
         };
-
     } // Properties
-
 } // GPN
