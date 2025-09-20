@@ -33,6 +33,7 @@
 
 #include <tests/includes/get_completion.hpp>
 #include <tests/includes/transfer_to_eigen.hpp>
+#include <tests/includes/set_is_permeable_stencils.hpp>
 
 #include <Eigen/Core>
 
@@ -139,9 +140,9 @@ Wrapper::Wrapper(
     const VR &porosity,                    // 0.0 < porosity <= 1.0, --
     const VR &permeability_stencils,       // m^2
     const VR &RFP_weights_stencils,        // -- /*rate distribution between layers*/
-    const VR &is_permeable,                // {0, 1}, --
     const VR &is_perforated,               // {0, 1}, --
     const VR &from_coords,                 // coordinates of column corrosion, m
+    const std::vector<ptrdiff_t> &to_layers,// -- /* ids of layers accepting the cross flow */
     const VR &solid_density,               // kg/(m^3)
     const VR &solid_specific_heatcapacity, // J/(kg*K)
     // geotherma
@@ -160,8 +161,8 @@ Wrapper::Wrapper(
     const json &data)
 {
     // adapt stl container to Eigen container
-    LogValuesContainer is_permeable_stencils(is_permeable.size());
-    std::copy(is_permeable.cbegin(), is_permeable.cend(), is_permeable_stencils.begin());
+//    LogValuesContainer is_permeable_stencils(is_permeable.size());
+//    std::copy(is_permeable.cbegin(), is_permeable.cend(), is_permeable_stencils.begin());
     LogValuesContainer is_perforated_stencils(is_perforated.size());
     std::copy(is_perforated.cbegin(), is_perforated.cend(), is_perforated_stencils.begin());
     LogValuesContainer solid_density_stencils(solid_density.size());
@@ -172,6 +173,8 @@ Wrapper::Wrapper(
     std::copy(porosity.begin(), porosity.end(), porosity_stencils.begin());
     LogValuesContainer solid_heatconductivity_stencils(solid_heatconductivity.size());
     std::copy(solid_heatconductivity.begin(), solid_heatconductivity.end(), solid_heatconductivity_stencils.begin());
+
+    const auto is_permeable_stencils{set_is_permeable_stencils(is_perforated_stencils, to_layers)};
 
     const auto temp_grid_z{
         Grids::Factory::create_axes<CoordinateTypes::Z>(

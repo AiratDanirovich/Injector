@@ -45,9 +45,9 @@ public:
         const VR &porosity,                    // --
         const VR &permeability,                // m^2
         const VR &weights_stencils,            // -- /*rate distribution between layers*/
-        const VR &is_permeable,                // {0, 1}, --
         const VR &is_perforated,               // {0, 1}, --
         const VR &from_coords,                 // coordinates of column corrosion, m
+        const std::vector<ptrdiff_t> &to_layers,// -- /* ids of layers accepting the cross flow */
         const VR &solid_density,               // kg/(m^3)
         const VR &solid_specific_heatcapacity, // J/(kg*K)
         // geotherma

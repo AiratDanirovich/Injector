@@ -33,7 +33,7 @@ int main()
     const VR thickness = data["collector"]["thickness"];
     //  const ptrdiff_t nLayers{thickness.size()};
     // hydrodynamic logs
-    const VR is_permeable_stencils = data["collector"]["is_permeable"];
+//    const VR is_permeable_stencils = data["collector"]["is_permeable"];
     const VR is_perforated_stencils = data["collector"]["is_perforated"];
     const VR porosity_stencils = data["collector"]["porosity"];
     const VR permeability_stencils = data["collector"]["permeability"];
@@ -107,9 +107,9 @@ int main()
         porosity_stencils,                    // --
         permeability_stencils,                // m^2
         RFP_weights_stencils,                 // -- /*rate distribution between layers of reservoir*/
-        is_permeable_stencils,                // {0, 1}, --
         is_perforated_stencils,               // {0, 1}, --
         from_coords,                          // coordinates of column corrosion, m
+        to_layers,
         solid_density_stencils,               // kg/(m^3)
         solid_specific_heatcapacity_stencils, // J/(kg*K)
         // geotherma
