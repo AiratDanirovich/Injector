@@ -43,7 +43,7 @@ TEST_CASE("CrossFlow", "")
     REQUIRE(f.is_open());
     json data = json::parse(f);
     // hydrodynamic logs
-    const auto weights_stencils{transfer_to_eigen(data["collector"]["explicit"]["weights"].get<VR>())};
+    const auto RFP_weights_stencils{transfer_to_eigen(data["collector"]["explicit"]["weights"].get<VR>())};
     const auto from_coords{data["collector"]["cross_flow"]["from_coord"].get<VR>()};
     const auto to_layers{data["collector"]["cross_flow"]["to_layers"].get<std::vector<std::ptrdiff_t>>()};
     const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"].get<VR>())};
@@ -69,7 +69,7 @@ TEST_CASE("CrossFlow", "")
 
     const auto RFP_weights{
         RFPFactory::create_from_container(
-            weights_stencils,
+            RFP_weights_stencils,
             is_permeable)};
 
     const RealType total_rate{1.0};
