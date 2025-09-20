@@ -20,11 +20,11 @@ namespace GPN
                 const Logs::StepPropertyGrid &some_log,
                 const std::ptrdiff_t from_id,
                 const std::ptrdiff_t to_id,
-                const RealType flux)
+                const RealType flux_fraction)
                 : verticle_flux{
                       set_verticle_flux(
                           some_log, from_id, to_id,
-                          flux)},
+                          flux_fraction)},
                   from_id{from_id}, to_id{to_id}
             {
             }
@@ -39,17 +39,17 @@ namespace GPN
                 const Logs::StepPropertyGrid &some_log,
                 const std::ptrdiff_t from_id,
                 const std::ptrdiff_t to_id,
-                const RealType flux)
+                const RealType flux_fraction)
             {
                 // dir = 1.0 if the cross flow is directed downwards,
                 // dir = -1.0 if the crossflow is directed upwards
                 const RealType dir{(from_id < to_id ? 1.0 : -1.0)};
-                const RealType directed_flux{flux * dir};
+                const RealType directed_normalized_flux{flux_fraction * dir};
 
                 assert((from_id >= 0ll) && (from_id < some_log.log_vals.rows()));
                 assert((to_id >= 0ll) && (to_id < some_log.log_vals.rows()));
                 StepPropertyContainer out{StepPropertyContainer::Zero(some_log.grid.dual_nodes.rows())};
-                out.middleRows(std::min(from_id, to_id) + 1ll, std::abs(from_id - to_id)) = directed_flux;
+                out.middleRows(std::min(from_id, to_id) + 1ll, std::abs(from_id - to_id)) = directed_normalized_flux;
                 return out;
             }
         };
@@ -57,22 +57,36 @@ namespace GPN
         struct CrossFlows
         {
             CrossFlows(
-                const RealType total_rate,
                 const Logs::RateWeights &rate_weights,
                 const std::vector<RealType> &from_coords,
                 const std::vector<ptrdiff_t> &to_layers)
                 : cross_flow_data{
                       set_cross_flow_data(
-                          total_rate, rate_weights,
+                          rate_weights,
                           from_coords, to_layers)}
             {
+                normalized_verticle_flux = set_verticle_flux();
+            }
+
+            const StepPropertyContainer get_verticle_flux(
+                const RealType total_flux) const
+            {
+                return total_flux * normalized_verticle_flux;
             }
 
             const std::vector<SingleCrossFlow> cross_flow_data;
 
         private:
+            StepPropertyContainer normalized_verticle_flux;
+            const StepPropertyContainer set_verticle_flux() const
+            {
+                StepPropertyContainer out{cross_flow_data.front().verticle_flux};
+                for (auto i{1ull}; i < cross_flow_data.size(); ++i)
+                    out += cross_flow_data[i].verticle_flux;
+                return out;
+            }
+
             static std::vector<SingleCrossFlow> set_cross_flow_data(
-                const RealType total_rate,
                 const Logs::RateWeights &rate_weights,
                 const std::vector<RealType> &from_coords,
                 const std::vector<ptrdiff_t> &to_layers)
@@ -88,7 +102,7 @@ namespace GPN
                 {
                     const auto from_cell{get_mesh_cell_id(grid, from_coords[i])};
                     const auto to_cell{get_to_cell_id(grid, to_layers[i])};
-                    out.emplace_back(rate_weights, from_cell, to_cell, total_rate * rate_weights(to_cell));
+                    out.emplace_back(rate_weights, from_cell, to_cell, rate_weights(to_cell));
                 }
 
                 return out;
