@@ -128,11 +128,15 @@ namespace GPN
                 const Well_t &well,
                 const Grid2D_t &grid2D)
             {
+                // flow at the tube radius
+                const auto wfp_vals{well.get_WFP(history_record)};
+                const auto rfp_vals{well.get_RFP(history_record)};
+                const auto cement_verticle_flow_vals{well.get_verticle_cement_flow(history_record)};
 #pragma region AXES2-AS-FACENORMAL
-                const auto rfp{Logs::RFPFactory::create_from_well(history_record, well)};
-                auto axes2_as_face_normal{FlowFieldFactory::flow_in_dir2(rfp, grid2D)};
-                axes2_as_face_normal.col(0ll) = 0.0;                          // boundary condition, zero flux at the axis of symmetry
-                axes2_as_face_normal.col(1ll) = well.get_WFP(history_record); // flow at the tube radius
+                auto axes2_as_face_normal{FlowFieldFactory::flow_in_dir2(rfp_vals, grid2D)};
+                // horizontal flow
+                axes2_as_face_normal.col(0ll) = 0.0;      // boundary condition, zero flux at the axis of symmetry
+                axes2_as_face_normal.col(1ll) = wfp_vals; // flow at the tube inner radius
 #pragma endregion
 #pragma region AXES1-AS-FACENORMAL
                 FaceValuesContainer axes1_as_face_normal{
@@ -141,29 +145,16 @@ namespace GPN
                         grid2D.second_coord.mesh_size())};
 
                 { // set the flow in tube
-                    const auto wfp{Logs::WFPFactory::create_from_well(history_record, well)};
-                    // ref to log vals as Eigen::ArrayX container
-                    const auto &wfp_vals{wfp.log_vals};
                     // cumsum of rfp flow rates
                     LogValuesContainer cum_sum{LogValuesContainer::Zero(grid2D.first_coord.dual_size())};
                     std::partial_sum(wfp_vals.cbegin(), wfp_vals.cend(), cum_sum.begin() + 1ll, std::plus<RealType>());
-                    // leftover flowrate along the well
+                    // residual flowrate along the well
                     const LogValuesContainer z_flow{history_record.rate - cum_sum};
 
                     axes1_as_face_normal.col(0ll) = z_flow;
                 }
-                { // set the flow in cement
-                    const auto rfp{Logs::RFPFactory::create_from_well(history_record, well)};
-                    // ref to log vals as Eigen::ArrayX container
-                    const auto &rfp_vals{rfp.log_vals};
-                    // cumsum of rfp flow rates
-                    LogValuesContainer cum_sum{LogValuesContainer::Zero(grid2D.first_coord.dual_size())};
-                    std::partial_sum(rfp_vals.cbegin(), rfp_vals.cbegin() + well.top_collector_cell_id(), cum_sum.begin() + 1ll, std::plus<RealType>());
-
-                    // leftover flowrate along the well
-                    const LogValuesContainer& z_flow{cum_sum};
-                    
-                    axes1_as_face_normal.col(1ll) = -z_flow;
+                { // set the verticle flow in cement
+                    axes1_as_face_normal.col(1ll) = cement_verticle_flow_vals;
                 }
 #pragma endregion
                 return ReservoirFlowField{

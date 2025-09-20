@@ -461,16 +461,6 @@ namespace GPN
                     StepPropertyGrid{StepProperty{rfp}, is_permeable.grid},
                     is_permeable};
             }
-
-            template <typename Record_t, typename Well_t>
-            static auto create_from_well(
-                const Record_t &history_record,
-                const Well_t &well)
-            {
-                return RFP{
-                    StepPropertyGrid{well.get_RFP(history_record), well.is_permeable.grid},
-                    well.is_permeable};
-            }
         };
 
         struct WFPFactory
@@ -483,16 +473,6 @@ namespace GPN
                 return WFP{
                     StepPropertyGrid{{wfp}, is_perforated.grid},
                     is_perforated};
-            }
-
-            template <typename Record_t, typename Well_t>
-            static auto create_from_well(
-                const Record_t history_record,
-                const Well_t &well)
-            {
-                return WFP{
-                    StepPropertyGrid{well.get_WFP(history_record), well.is_perforated.grid},
-                    well.is_perforated};
             }
         };
 
