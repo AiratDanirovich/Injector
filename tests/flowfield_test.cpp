@@ -6,7 +6,7 @@
 #include <Injector/Grids/Grids2D.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
 #include <Injector/Properties/FlowField.hpp>
-#include <Injector/Model/Well.hpp>
+#include <Injector/Model/Well/Well.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 
 #include <catch2/catch_test_macros.hpp>

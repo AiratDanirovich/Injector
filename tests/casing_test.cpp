@@ -16,6 +16,7 @@
 #include "includes/transfer_to_eigen.hpp"
 #include "includes/transfer_to_vector.hpp"
 #include "includes/accumulate_steps.hpp"
+#include "includes/set_is_permeable_stencils.hpp"
 
 using namespace std;
 
@@ -37,11 +38,16 @@ TEST_CASE("Well_Test")
     REQUIRE(f.is_open());
     json data = json::parse(f);
 
+    
+  const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"].get<VR>())};
+  const auto to_layers{data["collector"]["cross_flow"]["to_layers"].get<std::vector<std::ptrdiff_t>>()};
+  const auto is_permeable_stencils{set_is_permeable_stencils(is_perforated_stencils, to_layers)};
+
     const auto grid_z{
         Factory::create_axes<CoordinateTypes::Z>(
             RefinerVerticle{
                 data["grid"]["z_minor_step"].get<RealType>(),
-                transfer_to_eigen(data["collector"]["is_permeable"].get<VR>())},
+                is_permeable_stencils},
             Grids::Factory::generate_dual_grid_stencils_from_steps(
                 0.0, data["collector"]["thickness"].get<VR>()))};
 

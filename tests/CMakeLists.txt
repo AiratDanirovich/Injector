@@ -28,6 +28,7 @@ add_catch2_test(json_test)
 
 add_catch2_test(water_test)
 add_catch2_test(casing_test)
+add_catch2_test(cross_flow_test)
 
 add_catch2_test(grid_test)
 add_catch2_test(initialstate_test)
@@ -73,5 +74,9 @@ install(FILES ${PROJECT_SOURCE_DIR}/test_data/apply_well_test_data.json
 install(FILES ${PROJECT_SOURCE_DIR}/test_data/apply_well_test_data.json
     DESTINATION ${PROJECT_BINARY_DIR})
 
+install(FILES ${PROJECT_SOURCE_DIR}/test_data/cross_flow_test_data.json
+    DESTINATION $<TARGET_FILE_DIR:apply_well_test>)
+install(FILES ${PROJECT_SOURCE_DIR}/test_data/cross_flow_test_data.json
+    DESTINATION ${PROJECT_BINARY_DIR})
 
 

@@ -4,12 +4,13 @@
 #include <nlohmann/json.hpp>
 
 #include <Injector/Grids/Defines.h>
-#include <Injector/Model/Completion.hpp>
 
 using json = nlohmann::json;
 using VR = std::vector<GPN::RealType>;
 
-GPN::LogValuesContainer transfer_to_eigen(const VR &data, const GPN::RealType factor = 1.0)
+GPN::LogValuesContainer transfer_to_eigen(
+    const VR &data, 
+    const GPN::RealType factor = 1.0)
 {
     using namespace GPN;
 

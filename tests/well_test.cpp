@@ -4,7 +4,7 @@
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
-#include <Injector/Model/Well.hpp>
+#include <Injector/Model/Well/Well.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 
 #include <catch2/catch_test_macros.hpp>
