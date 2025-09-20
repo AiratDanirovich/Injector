@@ -18,6 +18,7 @@
 
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
+#include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Completion.hpp>
 #include <Injector/Model/ExtrudedCasingFactory.hpp>
@@ -44,6 +45,7 @@ using namespace std;
 using json = nlohmann::json;
 
 using namespace GPN;
+using namespace GPN::CrossFlow;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
 using namespace GPN::EqSolver;
@@ -135,16 +137,16 @@ Wrapper::Wrapper(
     const RealType z_minor_step, // m, /*maximum step within impermeable layers*/
     // eight vectors of the same size
     // values are in SI
-    const VR &thickness,                   // meter
-    const VR &solid_heatconductivity,      // Watt/(m*K)
-    const VR &porosity,                    // 0.0 < porosity <= 1.0, --
-    const VR &permeability_stencils,       // m^2
-    const VR &RFP_weights_stencils,        // -- /*rate distribution between layers*/
-    const VR &is_perforated,               // {0, 1}, --
-    const VR &from_coords,                 // coordinates of column corrosion, m
-    const std::vector<ptrdiff_t> &to_layers,// -- /* ids of layers accepting the cross flow */
-    const VR &solid_density,               // kg/(m^3)
-    const VR &solid_specific_heatcapacity, // J/(kg*K)
+    const VR &thickness,                     // meter
+    const VR &solid_heatconductivity,        // Watt/(m*K)
+    const VR &porosity,                      // 0.0 < porosity <= 1.0, --
+    const VR &permeability_stencils,         // m^2
+    const VR &RFP_weights_stencils,          // -- /*rate distribution between layers*/
+    const VR &is_perforated,                 // {0, 1}, --
+    const VR &from_coords,                   // coordinates of column corrosion, m
+    const std::vector<ptrdiff_t> &to_layers, // -- /* ids of layers accepting the cross flow */
+    const VR &solid_density,                 // kg/(m^3)
+    const VR &solid_specific_heatcapacity,   // J/(kg*K)
     // geotherma
     const RealType z_top,      // m, /* z-coordinate of the top */
     const VR &geotherma_nodes, // m, /* nodes for geotherma interpolation */
@@ -161,8 +163,8 @@ Wrapper::Wrapper(
     const json &data)
 {
     // adapt stl container to Eigen container
-//    LogValuesContainer is_permeable_stencils(is_permeable.size());
-//    std::copy(is_permeable.cbegin(), is_permeable.cend(), is_permeable_stencils.begin());
+    //    LogValuesContainer is_permeable_stencils(is_permeable.size());
+    //    std::copy(is_permeable.cbegin(), is_permeable.cend(), is_permeable_stencils.begin());
     LogValuesContainer is_perforated_stencils(is_perforated.size());
     std::copy(is_perforated.cbegin(), is_perforated.cend(), is_perforated_stencils.begin());
     LogValuesContainer solid_density_stencils(solid_density.size());
@@ -224,10 +226,15 @@ Wrapper::Wrapper(
         Logs::RFPFactory::create_from_container(
             RFP_weights_stencils,
             core_data.is_permeable)};
+    const CrossFlows cross_flows{
+        RFP_weights, from_coords, to_layers};
+    const auto WFP_weights{
+        create_WFP(
+            core_data.is_perforated,
+            RFP_weights,
+            cross_flows)};
 
-    const Well_Explicit well{
-        core_data.is_permeable,
-        core_data.is_perforated, RFP_weights};
+  const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
@@ -442,11 +449,11 @@ Wrapper::Wrapper(
 
             f.close();
         }
-        {
-            ofstream f{std::string{"output/data.txt"}};
-            f << "top collector height: " << grid_z.mesh_nodes(well.top_collector_cell_id()) << " m" << endl;
-            f.close();
-        }
+        // {
+        //     ofstream f{std::string{"output/data.txt"}};
+        //     f << "top collector height: " << grid_z.mesh_nodes(well.top_collector_cell_id()) << " m" << endl;
+        //     f.close();
+        // }
     }
     catch (const std::exception &e)
     {
