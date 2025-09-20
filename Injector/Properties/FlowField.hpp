@@ -71,13 +71,21 @@ namespace GPN
 
             template <typename Grid2D_t>
             static auto flow_in_dir2(
-                const Logs::StepPropertyGrid &log,
+                const StepPropertyContainer &log,
                 const Grid2D_t &grid2D)
             {
                 assert(grid2D.first_coord.mesh_size() == log.size());
                 FaceValuesContainer face_vals(log.size(), grid2D.second_coord.dual_size());
-                face_vals.colwise() = log.log_vals;
+                face_vals.colwise() = log;
                 return face_vals;
+            }
+
+            template <typename Grid2D_t>
+            static auto flow_in_dir2(
+                const Logs::StepPropertyGrid &log,
+                const Grid2D_t &grid2D)
+            {
+                return flow_in_dir2(log.log_vals, grid2D);
             }
         };
 
