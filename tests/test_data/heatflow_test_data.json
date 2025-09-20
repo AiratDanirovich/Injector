@@ -6,10 +6,10 @@
     "heat_conductivity": 0.0
   },
   "collector": {
-    "thickness": [    50,  3,   0.3,  3,   0.3,   3,   0.3, 0.3,  3],
-    "is_permeable":  [0.0, 0.0, 1.0,  0.0, 1.0,   0.0, 1.0, 1.0,  0.0],  
+    "thickness": [    50,  3,   0.3,  3,   0.3,   3,   0.3, 0.3,  3],  
     "is_perforated": [0.0, 0.0, 0.0,  0.0, 1.0,   0.0, 1.0, 1.0,  0.0],
     "cross_flow":{
+      "__comment": "from_coord is in meters; to_layers is in the geological section input starting from Zero",
       "from_coord": [40],
       "to_layers": [2]
     },  

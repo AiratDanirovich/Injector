@@ -164,7 +164,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       Factory::create_axes<CoordinateTypes::Z>(
           RefinerVerticle{
               data["grid"]["z_minor_step"].get<RealType>(),
-              transfer_to_eigen(data["collector"]["is_permeable"].get<VR>())},
+              is_permeable_stencils},
           Grids::Factory::generate_dual_grid_stencils_from_steps(
               0.0, data["collector"]["thickness"].get<VR>()))};
   const Casing<VarRing> completion{get_completion(data, temp_grid_z)};
