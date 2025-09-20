@@ -16,6 +16,11 @@ namespace GPN
         /// from a single hole in the column hrough the cement to a permeable layer
         struct SingleCrossFlow
         {
+            /// @brief
+            /// @param some_log
+            /// @param from_id
+            /// @param to_id
+            /// @param flux_fraction An elementf of normalized RFP profile
             SingleCrossFlow(
                 const Logs::StepPropertyGrid &some_log,
                 const std::ptrdiff_t from_id,
@@ -33,7 +38,7 @@ namespace GPN
             // const RealType flux;
             const std::ptrdiff_t from_id, to_id;
             const StepPropertyContainer verticle_flux;
-
+#pragma region PRIVATE-METHODS
         private:
             static StepPropertyContainer set_verticle_flux(
                 const Logs::StepPropertyGrid &some_log,
@@ -52,6 +57,7 @@ namespace GPN
                 out.middleRows(std::min(from_id, to_id) + 1ll, std::abs(from_id - to_id)) = directed_normalized_flux;
                 return out;
             }
+#pragma region
         };
 
         struct CrossFlows
@@ -75,7 +81,7 @@ namespace GPN
             }
 
             const std::vector<SingleCrossFlow> cross_flow_data;
-
+#pragma region PRIVETA-METHODS
         private:
             StepPropertyContainer normalized_verticle_flux;
             const StepPropertyContainer set_verticle_flux() const
@@ -146,6 +152,7 @@ namespace GPN
 
                 return get_mesh_cell_id(grid, to_coord);
             }
+#pragma endregion
         };
     } // CrossFlow
 } // GPN
