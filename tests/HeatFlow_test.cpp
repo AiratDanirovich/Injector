@@ -180,7 +180,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto grid2D{
       Grids::CylinderGridFactory::create(
           z_refiner.refine(z_stencils),
-          r_refiner->refine(WellHolesFactory::create(completion).get_stencils(data["grid"]["r_start"], data["grid"]["r_end"])))};
+          r_refiner->refine(
+            WellHolesFactory::create(completion).get_stencils(
+              data["grid"]["r_start"], data["grid"]["r_end"])))};
 
   const auto &grid_z{grid2D->first_coord};
   const auto &grid_r{grid2D->second_coord};
