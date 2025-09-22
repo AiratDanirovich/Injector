@@ -10,7 +10,7 @@ namespace GPN
 {
     namespace Grids
     {
-        struct EmptyRefinerVerticle
+        struct EmptyRefiner
         {
             DualNodesContainer refine(
                 const GridDualStencils &dual_nodes_stencils) noexcept
