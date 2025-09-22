@@ -122,6 +122,23 @@ namespace GPN
 
         struct AbstractRefinerRadial
         {
+            DualNodesContainer refine(
+                const GridDualStencils &dual_nodes_stencils) noexcept
+            {
+                return refine(dual_nodes_stencils.dual_nodes);
+            }
+            DualNodesContainer refine(
+                const DualNodesContainer &dual_nodes) noexcept
+            {
+                std::vector<RealType> buf(dual_nodes.size());
+                std::copy(dual_nodes.cbegin(), dual_nodes.cend(), buf.begin());
+
+                return refine(buf);
+            }
+
+            virtual DualNodesContainer refine(
+                const std::vector<RealType> &r_stencils) noexcept = 0;
+
         protected:
             std::vector<RealType> init_grid(
                 const std::vector<RealType> &r_stencils,
@@ -169,35 +186,43 @@ namespace GPN
             }
         };
 
-        // struct RefinerRadial_UniformWellHoles
-        //     : public AbstractRefinerRadial
-        // {
-        //     RefinerRadial_UniformWellHoles(
-        //         const WellHoles &well_holes,
-        //         const RealType r_max,
-        //         const std::ptrdiff_t r_nodes_nmbr)
-        //         : AbstractRefinerRadial{well_holes, r_max},
-        //           r_nodes_nmbr{r_nodes_nmbr}
-        //     {
-        //     }
+        struct RefinerRadial_UniformWellHoles
+            : public AbstractRefinerRadial
+        {
+            RefinerRadial_UniformWellHoles(
+                const std::ptrdiff_t r_nodes_nmbr)
+                : r_nodes_nmbr{r_nodes_nmbr}
+            {
+            }
 
-        //     DualNodesContainer refine(
-        //         const GridDualStencils &dual_nodes_stencils) noexcept
-        //     {
-        //         return refine(dual_nodes_stencils.dual_nodes);
-        //     }
-        //     DualNodesContainer refine(
-        //         const DualNodesContainer &dual_nodes) noexcept
-        //     {
-        //         std::vector<RealType> buf(dual_nodes.size());
-        //         std::copy(dual_nodes.cbegin(), dual_nodes.cend(), buf.begin());
+            /// @brief
+            /// @param r_stencils Includes r = 0, radii of sandwich materials, and r_max
+            /// @return
+            DualNodesContainer refine(
+                const std::vector<RealType> &r_stencils) noexcept override 
+            {
+                assert(r_stencils.size() == 5ull);
 
-        //         return refine(buf);
-        //     }
+                const auto r_min{r_stencils.front()},
+                    tube_inner_radius{r_stencils[1ull]},
+                    column_outer_radius{r_stencils[2ull]},
+                    sandface_radius{r_stencils[3ull]},
+                    r_max{r_stencils.back()};
 
-        // protected:
-        //     const std::ptrdiff_t r_nodes_nmbr;
-        // };
+                assert(r_min == 0.0);
+                assert(r_min < tube_inner_radius);
+                assert(tube_inner_radius < column_outer_radius);
+                assert(column_outer_radius < sandface_radius);
+                assert(sandface_radius < r_max);
+
+                // uniform grid
+                return generate_uniform_radial_grid(
+                    r_stencils, r_nodes_nmbr);
+            }
+
+        protected:
+            const std::ptrdiff_t r_nodes_nmbr;
+        };
 
         struct RefinerRadial_LogWellHoles
             : public AbstractRefinerRadial
@@ -211,25 +236,11 @@ namespace GPN
                 assert(q >= 1.0);
             }
 
-            DualNodesContainer refine(
-                const GridDualStencils &dual_nodes_stencils) noexcept
-            {
-                return refine(dual_nodes_stencils.dual_nodes);
-            }
-            DualNodesContainer refine(
-                const DualNodesContainer &dual_nodes) noexcept
-            {
-                std::vector<RealType> buf(dual_nodes.size());
-                std::copy(dual_nodes.cbegin(), dual_nodes.cend(), buf.begin());
-
-                return refine(buf);
-            }
-
             /// @brief
             /// @param r_stencils Includes r = 0, radii of sandwich materials, and r_max
             /// @return
             DualNodesContainer refine(
-                const std::vector<RealType> &r_stencils) noexcept
+                const std::vector<RealType> &r_stencils) noexcept override 
             {
                 assert(r_stencils.size() == 5ull);
 
