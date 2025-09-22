@@ -180,10 +180,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const RealType &rMin = r_stencils.front();
 
   // z-refiner
-  RefinerVerticle refiner{z_minor_step, is_permeable_stencils};
+  RefinerVerticle z_refiner{z_minor_step, is_permeable_stencils};
+  // r-refiner
+  //RefinerRadial_LogWellHoles r_refiner{z_minor_step, is_permeable_stencils};
+
   // the grid itself
   const auto grid2D{
-      Grids::CylinderGridFactory::create(refiner,
+      Grids::CylinderGridFactory::create(z_refiner,
                                          Grids::Factory::generate_dual_grid_stencils_from_steps(
                                              0.0, thickness),
                                          r_stencils)};

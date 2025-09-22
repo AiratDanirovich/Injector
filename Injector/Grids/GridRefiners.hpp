@@ -120,21 +120,95 @@ namespace GPN
             const RealType step;
         };
 
+        struct AbstractRefinerRadial
+        {
+        protected:
+            std::vector<RealType> init_grid(
+                const std::vector<RealType> &r_stencils,
+                const std::ptrdiff_t r_nodes) const
+            {
+                assert(r_stencils.size() >= 2ll);
+                std::vector<RealType> out;
+                out.reserve(r_nodes + 5ull);
+                // forget the r_max
+                std::copy(r_stencils.begin(), r_stencils.cend() - 1ll, out.begin());
+                return out;
+            }
+
+            DualNodesContainer generate_uniform_radial_grid(
+                const std::vector<RealType> &r_stencils,
+                const ptrdiff_t r_nodes) const
+            {
+                assert(r_stencils.size() >= 2ull);
+
+                const RealType r_max{r_stencils.back()};
+                const RealType r_min{r_stencils.front()};
+                const auto sandface_radius{r_stencils[r_stencils.size() - 2ll]};
+
+                assert(r_min == 0.0);
+                assert(r_max > sandface_radius);
+                assert(r_nodes > 1ll);
+
+                // forget r_max in the origianl stencils container
+                std::vector<RealType> out{init_grid(r_stencils, r_nodes)};
+                // step of uniform mesh
+                const RealType step{(r_max - sandface_radius) / (r_nodes - 1ll)};
+                for (auto i{2ll}; i < r_nodes; ++i)
+                    out.push_back(out.back() + step);
+                out.push_back(r_max);
+
+                assert(out.front() == r_min);
+                for (auto i{1ull}; i < out.size(); ++i)
+                    assert(out[i] > out[i - 1ull]);
+                assert(out.back() == r_max);
+
+                DualNodesContainer buf(out.size());
+                std::copy(out.cbegin(), out.cend(), buf.begin());
+
+                return buf;
+            }
+        };
+
+        // struct RefinerRadial_UniformWellHoles
+        //     : public AbstractRefinerRadial
+        // {
+        //     RefinerRadial_UniformWellHoles(
+        //         const WellHoles &well_holes,
+        //         const RealType r_max,
+        //         const std::ptrdiff_t r_nodes_nmbr)
+        //         : AbstractRefinerRadial{well_holes, r_max},
+        //           r_nodes_nmbr{r_nodes_nmbr}
+        //     {
+        //     }
+
+        //     DualNodesContainer refine(
+        //         const GridDualStencils &dual_nodes_stencils) noexcept
+        //     {
+        //         return refine(dual_nodes_stencils.dual_nodes);
+        //     }
+        //     DualNodesContainer refine(
+        //         const DualNodesContainer &dual_nodes) noexcept
+        //     {
+        //         std::vector<RealType> buf(dual_nodes.size());
+        //         std::copy(dual_nodes.cbegin(), dual_nodes.cend(), buf.begin());
+
+        //         return refine(buf);
+        //     }
+
+        // protected:
+        //     const std::ptrdiff_t r_nodes_nmbr;
+        // };
+
         struct RefinerRadial_LogWellHoles
+            : public AbstractRefinerRadial
         {
             RefinerRadial_LogWellHoles(
-                const WellHoles &well_holes,
-                const RealType rMax,
                 const RealType q,
                 const RealType max_step)
-                : tube_inner_radius{well_holes.tube_inner_radius},
-                  sandface_radius{well_holes.sandface_radius},
-                  column_outer_radius{well_holes.column_outer_radius},
-                  r_max{rMax},
-                  q{q},
-                  max_step{max_step},
-                  r_min{0.0}
+                : q{q},
+                  max_step{max_step}
             {
+                assert(q >= 1.0);
             }
 
             DualNodesContainer refine(
@@ -151,21 +225,35 @@ namespace GPN
                 return refine(buf);
             }
 
+            /// @brief
+            /// @param r_stencils Includes r = 0, radii of sandwich materials, and r_max
+            /// @return
             DualNodesContainer refine(
-                const std::vector<RealType> &nodes) noexcept
+                const std::vector<RealType> &r_stencils) noexcept
             {
+                assert(r_stencils.size() == 5ull);
+
+                const auto r_min{r_stencils.front()},
+                    tube_inner_radius{r_stencils[1ull]},
+                    column_outer_radius{r_stencils[2ull]},
+                    sandface_radius{r_stencils[3ull]},
+                    r_max{r_stencils.back()};
+
+                assert(r_min == 0.0);
                 assert(r_min < tube_inner_radius);
-                assert(r_max > sandface_radius);
-                //    assert(max_step > tube_radius);
-                //    assert(max_step > sandface_radius - tube_radius);
-                assert(q >= 1.0);
+                assert(tube_inner_radius < column_outer_radius);
+                assert(column_outer_radius < sandface_radius);
+                assert(sandface_radius < r_max);
                 // base, minimum step for geometric progression
-                const RealType base_step = sandface_radius - column_outer_radius;
+                const auto base_step{sandface_radius - column_outer_radius};
 
                 if (q == 1.0)
                 {
                     // uniform grid
-                    return generate_uniform_radial_grid(r_min, r_max, (ptrdiff_t)std::ceil((r_max - r_min) / base_step));
+                    return generate_uniform_radial_grid(
+                        r_stencils,
+                        static_cast<ptrdiff_t>(
+                            std::ceil((r_max - r_min) / base_step)));
                 }
                 else
                 {
@@ -177,7 +265,7 @@ namespace GPN
                             std::log(1.0 + (r_max - sandface_radius) / base_step * (q - 1.0)) /
                             std::log(q))};
 
-                    std::vector<RealType> out{init_grid(r_min, r_max, nx)};
+                    std::vector<RealType> out{init_grid(r_stencils, nx)};
 
                     // recalculate the base step
                     const RealType hx{base_step}; //{(r_max - sandface_radius) * (q - 1.0) / (std::pow(q, nx) - 1.0)};
@@ -201,6 +289,7 @@ namespace GPN
                     }
                     for (auto i{1ull}; i < out.size(); ++i)
                         assert(out[i] > out[i - 1ull]);
+                    assert(out.back() >= r_max);
 
                     DualNodesContainer buf(out.size());
                     std::copy(out.cbegin(), out.cend(), buf.begin());
@@ -209,57 +298,8 @@ namespace GPN
             }
 
         protected:
-            const RealType sandface_radius;
-            const RealType tube_inner_radius;
-            const RealType column_outer_radius;
-            const RealType r_max;
             const RealType q;
             const RealType max_step;
-            const RealType r_min;
-
-        private:
-            std::vector<RealType> init_grid(
-                const RealType r_min,
-                const RealType r_max,
-                const ptrdiff_t r_nodes) const
-            {
-                std::vector<RealType> out;
-                out.reserve(r_nodes + 3ull);
-
-                out.push_back(r_min);               // push leftmost boundary
-                out.push_back(tube_inner_radius);   // push tube radius
-                out.push_back(column_outer_radius); // push tube radius
-                out.push_back(sandface_radius);     // push sandface radius
-
-                return out;
-            }
-
-            DualNodesContainer generate_uniform_radial_grid(
-                const RealType r_min,
-                const RealType r_max,
-                const ptrdiff_t r_nodes) const
-            {
-                assert(r_min < tube_inner_radius);
-                assert(r_max > sandface_radius);
-                assert(r_nodes > 1ll);
-
-                std::vector<RealType> out{init_grid(r_min, r_max, r_nodes)};
-
-                const RealType step{(r_max - sandface_radius) / (r_nodes - 1ll)};
-                for (auto i{2ll}; i < r_nodes; ++i)
-                    out.push_back(out.back() + step);
-                out.push_back(r_max);
-
-                assert(out.front() == r_min);
-                for (auto i{1ull}; i < out.size(); ++i)
-                    assert(out[i] > out[i - 1ull]);
-                assert(out.back() == r_max);
-
-                DualNodesContainer buf(out.size());
-                std::copy(out.cbegin(), out.cend(), buf.begin());
-
-                return buf;
-            }
         };
     } // Grids
 } // GPN

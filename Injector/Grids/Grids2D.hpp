@@ -181,7 +181,7 @@ namespace GPN
             static auto create(Refiner_t &&refiner, const auto &z_stencils, const auto &r_stencils)
             {
                 return create_cylinder_grid_2D_ptr(
-                    refiner,
+                    std::move(refiner),
                     z_stencils, r_stencils);
             }
 
@@ -217,7 +217,10 @@ namespace GPN
             }
 
             template <typename Refiner_t>
-            static auto create_cylinder_grid_2D_ptr(Refiner_t &&refiner, const auto &z_stencils, const auto &r_stencils)
+            static auto create_cylinder_grid_2D_ptr(
+                Refiner_t &&refiner, 
+                const auto &z_stencils, 
+                const auto &r_stencils)
             {
                 auto z_grid{Factory::create_axes<CoordinateTypes::Z>(refiner, z_stencils)};
                 auto r_grid{Factory::create_axes<CoordinateTypes::R_CylCoord>(r_stencils)};
