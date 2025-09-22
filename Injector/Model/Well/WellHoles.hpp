@@ -17,7 +17,7 @@ namespace GPN
     {
     };
 
-     /// @brief Descriptor for the well circular desing,
+    /// @brief Descriptor for the well circular desing,
     /// contains radii of tube < column < sandface.
     /// Cement is between column and sandface
     struct WellHoles
@@ -32,6 +32,15 @@ namespace GPN
         {
             assert(tube_inner_radius < column_outer_radius);
             assert(column_outer_radius < sandface_radius);
+        }
+
+        auto get_stencils(
+            const RealType r_min, const RealType r_max) const noexcept
+        {
+            return std::vector<RealType>{
+                r_min, tube_inner_radius,
+                column_outer_radius, sandface_radius,
+                r_max};
         }
 
         std::vector<RealType> generate_uniform_radial_grid(

@@ -7,8 +7,6 @@
 #include <Injector/Grids/Defines.h>
 #include <Injector/Properties/Logs.hpp>
 
-#include <Injector/Model/Well/WellHoles.hpp>
-
 namespace GPN
 {
     namespace Grids
@@ -123,12 +121,12 @@ namespace GPN
         struct AbstractRefinerRadial
         {
             DualNodesContainer refine(
-                const GridDualStencils &dual_nodes_stencils) noexcept
+                const GridDualStencils &dual_nodes_stencils) const noexcept
             {
                 return refine(dual_nodes_stencils.dual_nodes);
             }
             DualNodesContainer refine(
-                const DualNodesContainer &dual_nodes) noexcept
+                const DualNodesContainer &dual_nodes) const noexcept
             {
                 std::vector<RealType> buf(dual_nodes.size());
                 std::copy(dual_nodes.cbegin(), dual_nodes.cend(), buf.begin());
@@ -137,7 +135,7 @@ namespace GPN
             }
 
             virtual DualNodesContainer refine(
-                const std::vector<RealType> &r_stencils) noexcept = 0;
+                const std::vector<RealType> &r_stencils) const noexcept = 0;
 
         protected:
             std::vector<RealType> init_grid(
@@ -199,7 +197,7 @@ namespace GPN
             /// @param r_stencils Includes r = 0, radii of sandwich materials, and r_max
             /// @return
             DualNodesContainer refine(
-                const std::vector<RealType> &r_stencils) noexcept override 
+                const std::vector<RealType> &r_stencils) const noexcept override 
             {
                 assert(r_stencils.size() == 5ull);
 
@@ -240,7 +238,7 @@ namespace GPN
             /// @param r_stencils Includes r = 0, radii of sandwich materials, and r_max
             /// @return
             DualNodesContainer refine(
-                const std::vector<RealType> &r_stencils) noexcept override 
+                const std::vector<RealType> &r_stencils) const noexcept override 
             {
                 assert(r_stencils.size() == 5ull);
 
