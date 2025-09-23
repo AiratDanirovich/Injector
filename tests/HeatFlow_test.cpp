@@ -168,22 +168,26 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   RefinerVerticle z_refiner{z_minor_step, is_permeable_stencils};
   const auto temp_grid_z{
       Factory::create_axes<CoordinateTypes::Z>(
-          z_refiner.refine(z_stencils))};
+          z_refiner, z_stencils)};
   const Casing<VarRing> completion{get_completion(data, temp_grid_z)};
   /*END*/
 
   // make grid2D
+  // r_stencils
+  const VR r_stencils{
+    WellHoles{WellHolesFactory::create(completion)}.get_stencils(
+      data["grid"]["r_start"],
+      data["grid"]["r_end"])};
   // r-refiner
   const AbstractRefinerRadial *r_refiner{
       make_r_refiner(data)};
+
+  const auto r_nodes{r_refiner->refine(r_stencils)};
   // the grid itself
   const auto grid2D{
       Grids::CylinderGridFactory::create(
-          z_refiner.refine(z_stencils),
-          r_refiner->refine(
-            WellHolesFactory::create(completion).get_stencils(
-              data["grid"]["r_start"], data["grid"]["r_end"])))};
-
+          z_refiner, z_stencils,
+          r_nodes)};
   const auto &grid_z{grid2D->first_coord};
   const auto &grid_r{grid2D->second_coord};
 
