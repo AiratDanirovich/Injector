@@ -21,11 +21,7 @@ namespace GPN
             template <typename Container_t, typename Grid_t>
             IsPermeableFactory(const Container_t &is_permeable, const Grid_t &grid)
                 : is_permeable{
-                      IsPermeable{
-                          StepPropertyGrid{
-                              StepProperty{
-                                  is_permeable},
-                              grid}}}
+                      create(is_permeable, grid)}
             {
             }
 
@@ -137,19 +133,19 @@ namespace GPN
         {
             template <typename Grid_t>
             static IsDamaged create(
-                const auto& cross_flows,
+                const auto &cross_flows,
                 const auto &is_perforated,
                 const Grid_t &grid)
             {
                 StepPropertyContainer
-                            // the data and logs is assumed interpolated
-                            // for a finer grid
-                            is_damaged{StepPropertyContainer::Zero(grid.mesh_size())};
+                    // the data and logs is assumed interpolated
+                    // for a finer grid
+                    is_damaged{StepPropertyContainer::Zero(grid.mesh_size())};
 
-                for(const auto &cf : cross_flows.cross_flow_data)
+                for (const auto &cf : cross_flows.cross_flow_data)
                 {
                     const auto from_id{cf.from_id};
-                    if(is_perforated[from_id] == 0.0)
+                    if (is_perforated[from_id] == 0.0)
                         is_damaged[from_id] = 1.0;
                 }
 
@@ -281,7 +277,7 @@ namespace GPN
                 return out;
             }
         };
-        
+
         namespace InternalUse
         {
             struct RateWeightsFactory

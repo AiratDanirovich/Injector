@@ -146,7 +146,8 @@ namespace GPN
                 std::vector<RealType> out;
                 out.reserve(r_nodes + 5ull);
                 // forget the r_max
-                std::copy(r_stencils.begin(), r_stencils.cend() - 1ll, out.begin());
+                for(auto i{0ull}; i < r_stencils.size()-1ull; ++i)
+                    out.push_back(r_stencils[i]);
                 return out;
             }
 
