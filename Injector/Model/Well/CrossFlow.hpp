@@ -72,6 +72,13 @@ namespace GPN
                           from_coords, to_layers)}
             {
                 normalized_verticle_flux = set_verticle_flux();
+
+                auto this_coord{from_coords};
+                std::sort(this_coord.begin(), this_coord.end());
+
+                constexpr RealType min_spacing{1.0};
+                for (auto i{1ull}; i < this_coord.size(); ++i)
+                    assert(this_coord[i] >= this_coord[i - 1ull] + min_spasing);
             }
 
             const StepPropertyContainer get_verticle_flux(
