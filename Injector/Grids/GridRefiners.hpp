@@ -132,7 +132,7 @@ namespace GPN
             {
                 std::sort(this->from_coord.begin(), this->from_coord.end());
 
-                const auto this_coord = this->from_coord;
+                const auto& this_coord{this->from_coord};
                 for (auto i{1ull}; i < this_coord.size(); ++i)
                     assert(this_coord[i] >= this_coord[i - 1ull] + min_spasing);
             }
