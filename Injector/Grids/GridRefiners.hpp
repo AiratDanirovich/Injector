@@ -146,7 +146,7 @@ namespace GPN
                 std::vector<RealType> out;
                 out.reserve(r_nodes + 5ull);
                 // forget the r_max
-                for(auto i{0ull}; i < r_stencils.size()-1ull; ++i)
+                for (auto i{0ull}; i < r_stencils.size() - 1ull; ++i)
                     out.push_back(r_stencils[i]);
                 return out;
             }
@@ -198,7 +198,7 @@ namespace GPN
             /// @param r_stencils Includes r = 0, radii of sandwich materials, and r_max
             /// @return
             DualNodesContainer refine(
-                const std::vector<RealType> &r_stencils) const noexcept override 
+                const std::vector<RealType> &r_stencils) const noexcept override
             {
                 assert(r_stencils.size() == 5ull);
 
@@ -239,7 +239,7 @@ namespace GPN
             /// @param r_stencils Includes r = 0, radii of sandwich materials, and r_max
             /// @return
             DualNodesContainer refine(
-                const std::vector<RealType> &r_stencils) const noexcept override 
+                const std::vector<RealType> &r_stencils) const noexcept override
             {
                 assert(r_stencils.size() == 5ull);
 
