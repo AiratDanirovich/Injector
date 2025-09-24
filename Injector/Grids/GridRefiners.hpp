@@ -118,6 +118,139 @@ namespace GPN
             const RealType step;
         };
 
+        struct RefinerVerticle_CrossFlow
+        {
+            RefinerVerticle_CrossFlow(
+                const RealType regular_step,
+                const LogValuesContainer &is_permeable,
+                const std::vector<RealType> &from_coord,
+                const RealType crossflow_step)
+                : is_permeable{is_permeable},
+                  regular_step{regular_step},
+                  from_coord{from_coord},
+                  crossflow_step{crossflow_step}
+            {
+                std::sort(this->from_coord.begin(), this->from_coord.end());
+
+                const auto this_coord = this->from_coord;
+                for (auto i{1ull}; i < this_coord.size(); ++i)
+                    assert(this_coord[i] >= this_coord[i - 1ull] + min_spasing);
+            }
+
+            DualNodesContainer refine(
+                const GridDualStencils &dual_nodes_stencils) noexcept
+            {
+                return refine(dual_nodes_stencils.dual_nodes);
+            }
+            DualNodesContainer refine(
+                const DualNodesContainer &dual_nodes) noexcept
+            {
+                std::vector<RealType> buf(dual_nodes.size());
+                std::copy(dual_nodes.cbegin(), dual_nodes.cend(), buf.begin());
+
+                return refine(buf);
+            }
+
+            DualNodesContainer refine(
+                const std::vector<RealType> &dual_nodes) noexcept
+            {
+                std::vector<RealType> buf;
+                buf.reserve(dual_nodes.size() + from_coord.size() + 2ull);
+
+                RealType top{dual_nodes.front()},
+                    bot{dual_nodes.back()};
+                ptrdiff_t layers{static_cast<ptrdiff_t>(std::ceil((bot - top) / regular_step))};
+
+                auto cf_id{0ull};
+                // push the top node
+                buf.push_back(top);
+                for (auto i{0ll}; i < is_permeable.size(); ++i)
+                {
+                    const RealType l_top{dual_nodes[i]};
+                    const RealType l_bot{dual_nodes[i + 1ll]};
+                    if (is_permeable(i) == 1.0)
+                    {
+                        // perforated layer -- do nothing
+                        buf.push_back(l_bot);
+                        // skip cross_flow coords above the current layer bottom
+                        while (from_coord[cf_id] < l_bot)
+                            ++cf_id;
+                    }
+                    else if (is_permeable(i) == 0.0)
+                    {
+                        // rocks -- refine grid
+                        // treat the cross_flow coords which are within the current layer
+                        while (
+                            (cf_id < from_coord.size()) &&
+                            (from_coord[cf_id] < l_bot))
+                        {
+                            const RealType cf_top{std::max(l_top, from_coord[cf_id] - min_spacing / 2.0)};
+                            assert(cf_top >= l_top);
+                            assert(cf_top < l_bot);
+                            assert(buf.back() <= cf_top);
+                            if (buf.back() < cf_top)
+                            {
+                                // rock layer top is above the cross-flow sublayer top.
+                                // refine rock sublayer and push the refined segments into the buf
+                                insert_rock_sublayers(buf, buf.back(), cf_top);
+                            }
+
+                            const RealType cf_bot{cf_top + min_spacing};
+                            assert(cf_bot <= l_bot);
+                            assert(cf_bot > l_top);
+                            assert(buf.back() < cf_bot);
+                            buf.push_back(cf_bot);
+
+                            ++cf_id;
+                        }
+                        // push bottom boundary only
+                        // if it is below the current cross_flow coordinate
+                        if (buf.back() < l_bot)
+                            insert_rock_sublayers(buf, buf.back(), l_bot);
+                    }
+                    else
+                    {
+                        // is_permeable should take only {0.0, 1.0} values
+                        assert(false);
+                    }
+                }
+
+                // nodes must be in STRICTLY increasing order
+                for (auto i{1ull}; i < buf.size(); ++i)
+                    assert(buf[i - 1ull] < buf[i]);
+                assert(buf.back() == nodes.back());
+
+                DualNodesContainer out(buf.size());
+                std::copy(buf.cbegin(), buf.cend(), out.begin());
+                return out;
+            }
+
+        protected:
+            const LogValuesContainer is_permeable;
+            const RealType regular_step;
+            std::vector<RealType> from_coord;
+            const RealType crossflow_step;
+
+            // minimum distance between two
+            // cross_flow coordinates
+            const RealType min_spacing{1.0};
+
+        private:
+            void insert_rock_sublayers(std::vector<RealType> &buf, const RealType top, const RealType bot)
+            {
+                // insert rock sublayers between [top < bot]
+                const RealType thickness{bot - top};
+                assert(thickness > 0.0);
+                // nmbr of segments to insert
+                const ptrdiff_t segm_nmbr{static_cast<ptrdiff_t>(std::ceil(thickness / regular_step))};
+                const RealType local_step{thickness / segm_nmbr};
+                for (auto j{0ll}; j < segm_nmbr - 1ll; ++j)
+                    buf.push_back(buf.back() + local_step);
+                // push cf top as bottom of Rock sublayer
+                buf.push_back(bot);
+            }
+        };
+
         struct AbstractRefinerRadial
         {
             DualNodesContainer refine(
