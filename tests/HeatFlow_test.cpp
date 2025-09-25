@@ -14,7 +14,9 @@
 #include <Injector/History/RatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
+#include <Injector/Model/Well/Well.hpp>
 #include <Injector/Model/Well/WellFactory.hpp>
+#include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Completion.hpp>
 #include <Injector/Model/ExtrudedCasingFactory.hpp>
 
@@ -152,47 +154,51 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto solid_density_stencils{transfer_to_eigen(data["collector"]["solidDensity"].get<VR>())};
   const auto solid_specific_heatcapacity_stencils{transfer_to_eigen(data["collector"]["solidSpecificHeatCapacity"].get<VR>())};
   /*grid*/
-  const RealType
-      z_minor_step{data["grid"]["z_minor_step"]}; // m
+  const auto
+      z_minor_step{data["grid"]["z_minor_step"].get<RealType>()}; // m
   //  const ptrdiff_t rNodes{data["grid"]["rNodes"]};
   /*history*/
-  const RealType t_minor_step{data["history"]["t_minor_step"]};
-  const RealType start_time{data["history"]["start_time"]};
+  const auto t_minor_step{data["history"]["t_minor_step"].get<RealType>()};
+  const auto start_time{data["history"]["start_time"].get<RealType>()};
   /*temperatures*/
   /*completion*/
+  // z-refiner
+  const auto z_stencils{Grids::Factory::generate_dual_grid_stencils_from_steps(
+      0.0, thickness)};
+  RefinerVerticle z_refiner{z_minor_step, is_permeable_stencils};
   const auto temp_grid_z{
       Factory::create_axes<CoordinateTypes::Z>(
-          RefinerVerticle{
-              data["grid"]["z_minor_step"].get<RealType>(),
-              is_permeable_stencils},
-          Grids::Factory::generate_dual_grid_stencils_from_steps(
-              0.0, data["collector"]["thickness"].get<VR>()))};
+          z_refiner, z_stencils)};
   const Casing<VarRing> completion{get_completion(data, temp_grid_z)};
   /*END*/
 
   // make grid2D
   // r_stencils
-  const WellHoles well_holes{WellHolesFactory::create(completion)};
-  const VR r_stencils{make_r_stencils(data, well_holes)};
-  const RealType &rMax = r_stencils.back();
-  const RealType &rMin = r_stencils.front();
+  const VR r_stencils{
+    WellHoles{WellHolesFactory::create(completion)}.get_stencils(
+      data["grid"]["r_start"],
+      data["grid"]["r_end"])};
+  // r-refiner
+  const AbstractRefinerRadial *r_refiner{
+      make_r_refiner(data)};
 
-  // z-refiner
-  RefinerVerticle refiner{z_minor_step, is_permeable_stencils};
+  const auto r_nodes{r_refiner->refine(r_stencils)};
   // the grid itself
   const auto grid2D{
-      Grids::CylinderGridFactory::create(refiner,
-                                         Grids::Factory::generate_dual_grid_stencils_from_steps(
-                                             0.0, thickness),
-                                         r_stencils)};
+      Grids::CylinderGridFactory::create(
+          z_refiner, z_stencils,
+          r_nodes)};
   const auto &grid_z{grid2D->first_coord};
   const auto &grid_r{grid2D->second_coord};
+
+  const auto rMin{grid_r.dual_front()};
+  const auto rMax{grid_r.dual_back()};
 
   const ExtrudedCasing extr_completion{
       VarExtrudedCasingFactory::create(completion)};
 
-  // cout << "radial dual grid stencils:\n"
-  //      << transfer_to_eigen(r_stencils).transpose() << endl;
+  cout << "radial dual grid stencils:\n"
+       << grid_r.dual_nodes.transpose() << endl;
 
   // cout << "radial grid:\n"
   //      << grid2D->second_coord.dual_nodes.transpose() << endl;
