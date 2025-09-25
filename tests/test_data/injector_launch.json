@@ -10,7 +10,7 @@
     "is_perforated":[0.0, 0.0, 1.0,  0.0],
     "cross_flow":{
       "__comment": "from_coord is in meters; to_layers is in the layer of <collector> section starting from Zero",
-      "from_coord": [40.1],
+      "from_coord": [103.5],
       "to_layers": [1]
     },  
     "porosity":     [0.0, 1.0,  1.0,  0.0],
