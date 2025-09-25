@@ -34,6 +34,7 @@
 
 #include <tests/includes/get_completion.hpp>
 #include <tests/includes/transfer_to_eigen.hpp>
+#include <tests/includes/make_r_stencils.hpp>
 #include <tests/includes/set_is_permeable_stencils.hpp>
 
 #include <Eigen/Core>
@@ -166,42 +167,63 @@ Wrapper::Wrapper(
     //    LogValuesContainer is_permeable_stencils(is_permeable.size());
     //    std::copy(is_permeable.cbegin(), is_permeable.cend(), is_permeable_stencils.begin());
     LogValuesContainer is_perforated_stencils(is_perforated.size());
-    std::copy(is_perforated.cbegin(), is_perforated.cend(), is_perforated_stencils.begin());
+    std::copy(
+        is_perforated.cbegin(),
+        is_perforated.cend(),
+        is_perforated_stencils.begin());
     LogValuesContainer solid_density_stencils(solid_density.size());
-    std::copy(solid_density.begin(), solid_density.end(), solid_density_stencils.begin());
-    LogValuesContainer solid_specific_heatcapacity_stencils(solid_specific_heatcapacity.size());
-    std::copy(solid_specific_heatcapacity.begin(), solid_specific_heatcapacity.end(), solid_specific_heatcapacity_stencils.begin());
+    std::copy(
+        solid_density.begin(),
+        solid_density.end(),
+        solid_density_stencils.begin());
+    LogValuesContainer solid_specific_heatcapacity_stencils(
+        solid_specific_heatcapacity.size());
+    std::copy(
+        solid_specific_heatcapacity.begin(),
+        solid_specific_heatcapacity.end(),
+        solid_specific_heatcapacity_stencils.begin());
     LogValuesContainer porosity_stencils(porosity.size());
-    std::copy(porosity.begin(), porosity.end(), porosity_stencils.begin());
-    LogValuesContainer solid_heatconductivity_stencils(solid_heatconductivity.size());
-    std::copy(solid_heatconductivity.begin(), solid_heatconductivity.end(), solid_heatconductivity_stencils.begin());
+    std::copy(
+        porosity.begin(), porosity.end(),
+        porosity_stencils.begin());
+    LogValuesContainer solid_heatconductivity_stencils(
+        solid_heatconductivity.size());
+    std::copy(
+        solid_heatconductivity.begin(),
+        solid_heatconductivity.end(),
+        solid_heatconductivity_stencils.begin());
 
-    const auto is_permeable_stencils{set_is_permeable_stencils(is_perforated_stencils, to_layers)};
+    const auto is_permeable_stencils{
+        set_is_permeable_stencils(
+            is_perforated_stencils, to_layers)};
+
+    // z-refiner
+    const auto z_stencils{Grids::Factory::generate_dual_grid_stencils_from_steps(
+        0.0, thickness)};
+    GPN::Grids::RefinerVerticle z_refiner{z_minor_step, is_permeable_stencils};
 
     const auto temp_grid_z{
         Grids::Factory::create_axes<CoordinateTypes::Z>(
-            Grids::RefinerVerticle{
-                data["grid"]["z_minor_step"].get<RealType>(),
-                is_permeable_stencils},
-            Grids::Factory::generate_dual_grid_stencils_from_steps(
-                0.0, data["collector"]["thickness"].get<VR>()))};
+            z_refiner, z_stencils)};
     const Casing<VarRing> completion{get_completion(data, temp_grid_z)};
 
     //    const Casing completion{make_completion(casing_data)};
 
     // r_stencils
-    GPN::WellHoles well_holes{WellHolesFactory::create(completion)};
-    VR r_stencils = well_holes.generate_log_radial_grid(
-        rMin, rMax, q, r_max_step);
-    // z-refiner
-    GPN::Grids::RefinerVerticle refiner{z_minor_step, is_permeable_stencils};
+    const VR r_stencils{
+        WellHoles{WellHolesFactory::create(completion)}.get_stencils(
+            data["grid"]["r_start"],
+            data["grid"]["r_end"])};
+    // r-refiner
+    const Grids::AbstractRefinerRadial *r_refiner{
+        make_r_refiner(data)};
+
+    const auto r_nodes{r_refiner->refine(r_stencils)};
     // the grid itself
     const auto grid2D{
         Grids::CylinderGridFactory::create(
-            refiner,
-            Grids::Factory::generate_dual_grid_stencils_from_steps(
-                0.0, thickness),
-            r_stencils)};
+            z_refiner, z_stencils,
+            r_nodes)};
     const auto &grid_r{grid2D->second_coord};
     const auto &grid_z{grid2D->first_coord};
 
@@ -234,7 +256,7 @@ Wrapper::Wrapper(
             RFP_weights,
             cross_flows)};
 
-  const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
+    const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,

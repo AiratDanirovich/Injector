@@ -78,7 +78,7 @@ namespace GPN
 
                 constexpr RealType min_spacing{1.0};
                 for (auto i{1ull}; i < this_coord.size(); ++i)
-                    assert(this_coord[i] >= this_coord[i - 1ull] + min_spasing);
+                    assert(this_coord[i] >= this_coord[i - 1ull] + min_spacing);
             }
 
             const StepPropertyContainer get_normalized_verticle_flux() const

@@ -134,7 +134,7 @@ namespace GPN
 
                 const auto& this_coord{this->from_coord};
                 for (auto i{1ull}; i < this_coord.size(); ++i)
-                    assert(this_coord[i] >= this_coord[i - 1ull] + min_spasing);
+                    assert(this_coord[i] >= this_coord[i - 1ull] + min_spacing);
             }
 
             DualNodesContainer refine(
@@ -218,7 +218,7 @@ namespace GPN
                 // nodes must be in STRICTLY increasing order
                 for (auto i{1ull}; i < buf.size(); ++i)
                     assert(buf[i - 1ull] < buf[i]);
-                assert(buf.back() == nodes.back());
+                assert(buf.back() == dual_nodes.back());
 
                 DualNodesContainer out(buf.size());
                 std::copy(buf.cbegin(), buf.cend(), out.begin());
