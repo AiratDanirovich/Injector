@@ -54,33 +54,6 @@
     }
   },
   "completion": {
-    "tube": {
-      "inner_radius": 0.04,
-      "thickness": 0.04,
-      "heat_conductivity": 1E20,
-      "density": 1000,
-      "specific_heat_capacity": 4200,
-      "depth": 25
-    },
-    "annulus": {
-      "thickness": 0.04,
-      "heat_conductivity": 0.04,
-      "density": 90,
-      "specific_heat_capacity": 1000
-    },
-    "column": {
-      "thickness": 0.04,
-      "heat_conductivity": 0.04,
-      "density": 90,
-      "specific_heat_capacity": 1000
-    },
-    "cement": {
-      "thickness": 0.04,
-      "heat_conductivity": 1.2,
-      "specific_heat_capacity": 900,
-      "density": 3500
-    },
-    "variable": {
       "tube": {
         "inner_radius": [0.04],
         "radial_thickness": [0.04],
@@ -110,18 +83,17 @@
         "specific_heat_capacity": [900],
         "depth_interval": [1000]
       }
-    }
   },
   "history": {
     "start_time": 0.0,
-    "t_minor_step": 1200,
+    "t_minor_step": 3600,
     "t_unit": "h",
     "t_units": ["d", "h", "m", "s"],
     "history_type": "dynamic",
     "history_types": ["static", "dynamic"],
     "dynamic": {
       "t_major_step": [1.0, 1.0, 1.0],
-      "well_rate": [0.002, 0.002, 0.0],
+      "well_rate": [0.002, 0.002, 0.001],
       "inlet_temperature": [293, 293, 293]
     },
     "static": {

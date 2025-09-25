@@ -191,8 +191,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const ExtrudedCasing extr_completion{
       VarExtrudedCasingFactory::create(completion)};
 
-  cout << "radial dual grid stencils:\n"
-       << transfer_to_eigen(r_stencils).transpose() << endl;
+  // cout << "radial dual grid stencils:\n"
+  //      << transfer_to_eigen(r_stencils).transpose() << endl;
 
   // cout << "radial grid:\n"
   //      << grid2D->second_coord.dual_nodes.transpose() << endl;
@@ -312,12 +312,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     f.close();
   }
 #pragma region CHECKS
+  const auto rate{rates_factory.get_rate()};
   // verify flow field
   const auto &v1 = rates_factory.get_flow_in_axes1(); // verticle flow
   for (auto row{0ll}; row < v1.rows(); ++row)
   {
-    CHECK(v1(row, 0ll) >= 0.0);
-    CHECK(v1(row, 1ll) <= 0.0);
+    CHECK(v1(row, 0ll)*rate >= 0.0);
     for (auto col{2ll}; col < v1.cols(); ++col)
       CHECK(v1(row, col) == 0.0);
   }

@@ -39,7 +39,7 @@ RealType viscosity{6e-4}, density{1000}, capacity{4200}, heat_conductivity{0.6};
 
 TEST_CASE("CrossFlow", "")
 {
-    ifstream f("cross_flow_test_data.json");
+    ifstream f("heatflow_test_data.json");
     REQUIRE(f.is_open());
     json data = json::parse(f);
     // hydrodynamic logs
@@ -58,7 +58,7 @@ TEST_CASE("CrossFlow", "")
         Factory::create_axes<CoordinateTypes::Z>(
             RefinerVerticle{
                 data["grid"]["z_minor_step"].get<RealType>(),
-                transfer_to_eigen(data["collector"]["is_permeable"].get<VR>())},
+                is_permeable_stencils},
             Grids::Factory::generate_dual_grid_stencils_from_steps(
                 0.0, data["collector"]["thickness"].get<VR>()))};
 

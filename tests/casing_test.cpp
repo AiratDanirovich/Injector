@@ -56,7 +56,7 @@ TEST_CASE("Well_Test")
 #pragma region VERIFY-COLUMN
     {
 #pragma region ARRANGE
-        const auto &data2 = data["completion"]["variable"]["column"];
+        const auto &data2 = data["completion"]["column"];
         casing.emplace(
             Completion::MaterialType::Column,
             FactoryVarRing::create_column(
@@ -110,7 +110,7 @@ TEST_CASE("Well_Test")
 #pragma region VERIFY-TUBE
     {
 #pragma region ARRANGE
-        const auto &data2 = data["completion"]["variable"]["tube"];
+        const auto &data2 = data["completion"]["tube"];
         casing.emplace(
             Completion::MaterialType::Tube,
             FactoryVarRing::create_tube(
@@ -239,7 +239,7 @@ TEST_CASE("Well_Test")
 #pragma region VERIFY-ANNULUS
     {
 #pragma region ARRANGE
-        const auto &data2 = data["completion"]["variable"]["annulus"];
+        const auto &data2 = data["completion"]["annulus"];
 
         const VarAnnulus annulus_ring_props{
             Completion::Density{data2["density"].get<VR>()},
@@ -316,7 +316,7 @@ TEST_CASE("Well_Test")
 #pragma region VERIFY-CEMENT
     {
 #pragma region ARRANGE
-        const auto &data2 = data["completion"]["variable"]["cement"];
+        const auto &data2 = data["completion"]["cement"];
         casing.emplace(Completion::MaterialType::Cement,
                        FactoryVarRing::create_cement(
                            VarRingSimple{
