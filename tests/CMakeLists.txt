@@ -45,16 +45,15 @@ add_catch2_test(solver_full_implicit_test)
 add_catch2_test(well_test)
 add_catch2_test(apply_well_test)
 add_catch2_test(flowfield_test)
+add_catch2_test(flowfield_crossflow_test)
 add_catch2_test(hydrodynamicsolver_test)
 
 add_catch2_test(splitting_solver_constvalProblem)
 add_catch2_test(splitting_solver_SelfSimilarProblem)
 add_catch2_test(solvermanager_test)
 
-
 add_catch2_test(horizontalflow_test)
 add_catch2_test(HeatFlow_test)
-
 
 add_catch2_test(history_test)
 add_catch2_test(geotherma_test)
