@@ -9,11 +9,11 @@ set (project_name injector_test)
 project(${project_name})
 
 # Include Catch2
-include(${CMAKE_SOURCE_DIR}../cmake/Catch2.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/Catch2.cmake)
 # Include nlohmann_json::nlohmann_json
-include(${CMAKE_SOURCE_DIR}../cmake/JSON_lib.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/JSON_lib.cmake)
 # add macro with add_catch2_test definition
-include(${CMAKE_SOURCE_DIR}../cmake/AddTest.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/AddTest.cmake)
 
 # Enable CTest
 include(CTest)
@@ -51,10 +51,8 @@ add_catch2_test(splitting_solver_constvalProblem)
 add_catch2_test(splitting_solver_SelfSimilarProblem)
 add_catch2_test(solvermanager_test)
 
-
 add_catch2_test(horizontalflow_test)
 add_catch2_test(HeatFlow_test)
-
 
 add_catch2_test(history_test)
 add_catch2_test(geotherma_test)

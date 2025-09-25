@@ -468,7 +468,7 @@ namespace GPN
             { // define pressure from rate
                 assert(!std::isnan(rate));
                 assert(rate >= 0.0);
-                return ((rate / weights_sum) * cross_flows.get_verticle_flux(rate)).eval();
+                return ((rate / weights_sum) * cross_flows.get_normalized_verticle_flux()).eval();
             }
             else
                 throw std::invalid_argument("RFP: Either rate or pressure must be set, but not both.");
