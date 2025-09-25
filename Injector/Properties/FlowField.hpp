@@ -133,12 +133,15 @@ namespace GPN
                 const auto rfp_vals{well.get_RFP(history_record)};
                 const auto cement_verticle_flow_vals{well.get_verticle_cement_flow(history_record)};
 #pragma region AXES2-AS-FACENORMAL
+                // assume reservoir flow profile by default in the entire domain
                 auto axes2_as_face_normal{FlowFieldFactory::flow_in_dir2(rfp_vals, grid2D)};
-                // horizontal flow
+                // fix horizontal flow to take boundary conditions, the well and its competion into account
                 axes2_as_face_normal.col(0ll) = 0.0;      // boundary condition, zero flux at the axis of symmetry
                 axes2_as_face_normal.col(1ll) = wfp_vals; // flow at the tube inner radius
+                axes2_as_face_normal.col(2ll) = wfp_vals; // flow at the cement inner radius
 #pragma endregion
 #pragma region AXES1-AS-FACENORMAL
+                // assume by default zero verticle flux in the entire domain
                 FaceValuesContainer axes1_as_face_normal{
                     FaceValuesContainer::Zero(
                         grid2D.first_coord.dual_size(),
@@ -153,8 +156,12 @@ namespace GPN
 
                     axes1_as_face_normal.col(0ll) = z_flow;
                 }
+                {
+                    // the verticle flow in tube-wall::annulus::column-wall
+                    // is zero, as assumed by default for every node
+                }
                 { // set the verticle flow in cement
-                    axes1_as_face_normal.col(1ll) = cement_verticle_flow_vals;
+                    axes1_as_face_normal.col(2ll) = cement_verticle_flow_vals;
                 }
 #pragma endregion
                 return ReservoirFlowField{
