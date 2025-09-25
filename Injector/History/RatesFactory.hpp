@@ -54,6 +54,7 @@ namespace GPN
 
                     inlet_temperature = history.temps(pos);
                     rate = history.rates(pos);
+                    pressure = history.pressure(pos);
                 }
             }
 
@@ -74,6 +75,14 @@ namespace GPN
             {
                 return rate;
             }
+            const auto get_pressure() const
+            {
+                return pressure;
+            }
+            const auto get_history_record() const
+            {
+                return history.get_record(pos);
+            }
 
         protected:
             const cptr<Grid2D_t> grid2D;
@@ -85,7 +94,7 @@ namespace GPN
         private:
             std::ptrdiff_t pos{-1ll};
             RealType inlet_temperature;
-            RealType rate;
+            RealType rate, pressure;
         };
 
         template <typename Grid2D_t, typename Fluid_t>
