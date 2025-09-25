@@ -74,10 +74,15 @@ namespace GPN
                 normalized_verticle_flux = set_verticle_flux();
             }
 
+            const StepPropertyContainer get_normalized_verticle_flux() const
+            {
+                return normalized_verticle_flux;
+            }
+
             const StepPropertyContainer get_verticle_flux(
                 const RealType total_flux) const
             {
-                return total_flux * normalized_verticle_flux;
+                return total_flux * get_normalized_verticle_flux();
             }
 
             const std::vector<SingleCrossFlow> cross_flow_data;
