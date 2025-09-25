@@ -89,9 +89,13 @@ TEST_CASE("apply_well_test", "apply_well_test")
   // make grid2D
   // r_stencils
   const WellHoles well_holes{WellHolesFactory::create(completion)};
-  const VR r_stencils{make_r_stencils(data, well_holes)};
-  const RealType &rMax = r_stencils.back();
-  const RealType &rMin = r_stencils.front();
+  const AbstractRefinerRadial *r_refiner{
+      make_r_refiner(data)};
+  const auto r_stencils{transfer_to_vector(r_refiner->refine(
+    WellHolesFactory::create(completion).get_stencils(
+    data["grid"]["r_start"], data["grid"]["r_end"])))};
+  const RealType &rMax{r_stencils.back()};
+  const RealType &rMin{r_stencils.front()};
 
   for (const auto &[key, r] : completion.sandwich)
   {
@@ -146,12 +150,15 @@ TEST_CASE("apply_well_test", "apply_well_test")
     if (grid_z.mesh_nodes(i) < completion[MaterialType::Tube].real_depth)
     {
       {
-      INFO(
-        "i = " << i << '\n' <<
-        "tube_thickness:\n" << Tube.thickness.transpose() << '\n' << 
-        "annulus_thickness:\n" << Annulus.thickness.transpose() << '\n' <<
-        "tube_depth_stencils:\n" << Tube.depth_stencils.transpose());
-      CHECK(Tube.thickness(i) > 0.0);
+        INFO(
+            "i = " << i << '\n'
+                   << "tube_thickness:\n"
+                   << Tube.thickness.transpose() << '\n'
+                   << "annulus_thickness:\n"
+                   << Annulus.thickness.transpose() << '\n'
+                   << "tube_depth_stencils:\n"
+                   << Tube.depth_stencils.transpose());
+        CHECK(Tube.thickness(i) > 0.0);
       }
       CHECK(Annulus.thickness(i) > 0.0);
     }
