@@ -46,7 +46,7 @@ find_package(OpenMP)
     endif()
     
 # Include nlohmann_json::nlohmann_json
-include(${CMAKE_SOURCE_DIR}../cmake/JSON_lib.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/JSON_lib.cmake)
 
 # enable testing
 # enable_testing()
