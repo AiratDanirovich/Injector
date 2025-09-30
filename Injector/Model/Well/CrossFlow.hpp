@@ -71,7 +71,7 @@ namespace GPN
                           RFP_weights,
                           from_coords, to_layers)}
             {
-                normalized_verticle_flux = set_verticle_flux();
+                normalized_verticle_flux = set_verticle_flux(RFP_weights);
 
                 auto this_coord{from_coords};
                 std::sort(this_coord.begin(), this_coord.end());
@@ -96,10 +96,10 @@ namespace GPN
 #pragma region PRIVETA-METHODS
         private:
             StepPropertyContainer normalized_verticle_flux;
-            const StepPropertyContainer set_verticle_flux() const
+            const StepPropertyContainer set_verticle_flux(const Logs::RFP &RFP_weights) const
             {
-                StepPropertyContainer out{cross_flow_data.front().verticle_flux};
-                for (auto i{1ull}; i < cross_flow_data.size(); ++i)
+                StepPropertyContainer out{StepPropertyContainer::Zero(RFP_weights.grid.dual_nodes.rows())};
+                for (auto i{0ull}; i < cross_flow_data.size(); ++i)
                     out += cross_flow_data[i].verticle_flux;
                 return out;
             }
