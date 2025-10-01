@@ -6,6 +6,7 @@
 
 #include <Injector/Model/Phases/PhaseProperties.hpp>
 #include <Injector/Properties/Logs.hpp>
+#include <Injector/Properties/PhysicalField.hpp>
 
 namespace GPN
 {
@@ -55,7 +56,7 @@ namespace GPN
                 : fluid{fluid},
                   permeability{permeability},
                   ext_pressure{ext_pressure},
-                  P{PressureField::ICFactory(start_time, grid2D, ext_pressure)},
+                  P{ext_pressure.log_vals, grid2D},
                   thickness_log{grid2D->first_coord.control_volumes}
             {
                 const auto& r_grid{grid2D->second_coord};
@@ -72,8 +73,7 @@ namespace GPN
             }
 
         private:
-            PressureField P;
-
+            Properties::Pressure<Grid2D_t> P;
             const Fluid_t fluid;
             const Well_t well;
             const cptr<Grid2D_t> grid2D;
