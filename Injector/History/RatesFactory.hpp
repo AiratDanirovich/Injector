@@ -44,7 +44,7 @@ namespace GPN
                     // this method only works at FixedRate injection
                     assert(history.regimes[pos] == InjectorRegimes::FixedRate);
 
-                    // volumetric flow filed in two directions
+                    // volumetric flow field in two directions
                     volumetric_flow_field = 
                         std::make_shared<FaceProperties::ReservoirFlowField>(
                             FaceProperties::FlowFactory::create_from_well(
@@ -62,9 +62,18 @@ namespace GPN
             {
                 return heat_flow_field->axes1_as_face_normal;
             }
-            const auto &get_flow_in_axes2() const
+            const auto &get_heat_flow_in_axes2() const
             {
                 return heat_flow_field->axes2_as_face_normal;
+            }
+            
+            const auto &get_volumetric_flow_in_axes1() const
+            {
+                return volumetric_flow_field->axes1_as_face_normal;
+            }
+            const auto &get_volumetric_flow_in_axes2() const
+            {
+                return volumetric_flow_field->axes2_as_face_normal;
             }
 
             const auto get_temperature() const
@@ -121,7 +130,7 @@ namespace GPN
             {
                 return heat_flow_field->axes1_as_face_normal;
             }
-            const auto &get_flow_in_axes2() const
+            const auto &get_heat_flow_in_axes2() const
             {
                 return heat_flow_field->axes2_as_face_normal;
             }
@@ -152,7 +161,7 @@ namespace GPN
             {
                 return heat_flow_field->axes1_as_face_normal;
             }
-            const auto &get_flow_in_axes2() const
+            const auto &get_heat_flow_in_axes2() const
             {
                 return heat_flow_field->axes2_as_face_normal;
             }

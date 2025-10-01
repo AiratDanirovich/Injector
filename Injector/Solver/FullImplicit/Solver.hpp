@@ -193,7 +193,7 @@ namespace GPN
                 void assemble_x(auto &tripletList)
                 {
                     const auto &split_flow_field{
-                        convection_factory.get_flow_in_axes2()};
+                        convection_factory.get_heat_flow_in_axes2()};
 
                     //  Take every line for a fixed x node.
                     //  It is a row of 2D grid representation

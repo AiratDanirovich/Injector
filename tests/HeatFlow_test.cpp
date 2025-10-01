@@ -97,7 +97,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t) const override
   {
     if (r == grid_ptr->second_coord.dual_front())
-      return flow_field.get_flow_in_axes2()(z_id, 0ll) * flow_field.get_temperature();
+      return flow_field.get_heat_flow_in_axes2()(z_id, 0ll) * flow_field.get_temperature();
 
     if (r == grid_ptr->second_coord.dual_back())
       return 0.0;
@@ -316,7 +316,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     ofstream f{path};
     f << (rates_factory.get_heat_flow_in_axes1() / precision).round() * precision << endl
       << endl;
-    f << (rates_factory.get_flow_in_axes2() / precision).round() * precision << endl
+    f << (rates_factory.get_heat_flow_in_axes2() / precision).round() * precision << endl
       << endl;
     f.close();
   }
@@ -333,7 +333,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     for (auto col{3ll}; col < v1.cols(); ++col)
       CHECK(v1(row, col) == 0.0);
   }
-  const auto &v2 = rates_factory.get_flow_in_axes2(); // horizontal flow
+  const auto &v2 = rates_factory.get_heat_flow_in_axes2(); // horizontal flow
   // boundary conditions at r = 0.0
   for (auto row{0ll}, col{0ll}; row < v2.rows(); ++row)
   {

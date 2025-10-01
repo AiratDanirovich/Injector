@@ -207,7 +207,7 @@ namespace GPN
                     Stride_t stride{stride_size};
 
                     const auto &split_flow_field{
-                        convection_factory.get_flow_in_axes2()};
+                        convection_factory.get_heat_flow_in_axes2()};
 
  #pragma omp parallel for // num_threads(16) schedule(dynamic)
                     //   take every line along x-direction. A line per y-node
