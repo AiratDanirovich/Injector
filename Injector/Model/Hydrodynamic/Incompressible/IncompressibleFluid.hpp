@@ -20,9 +20,11 @@ namespace GPN
             IncompressibleFluidField(
                 const Fluid_t &fluid,
                 const Logs::Permeability &permeability,
+                const Logs::ExternalPressure &ext_pressure,
                 const cptr<Grid2D_t> grid2D)
                 : fluid{fluid},
-                  permeability{permeability}
+                  permeability{permeability},
+                  ext_pressure{ext_pressure}
             {
             }
 
@@ -32,6 +34,7 @@ namespace GPN
             const Fluid_t fluid;
             const cptr<Grid2D_t> grid2D;
             const Logs::Permeability permeability;
+            const Logs::ExternalPressure ext_pressure;
         };
 
     } // Hydrodynamic

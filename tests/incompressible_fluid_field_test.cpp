@@ -62,10 +62,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       z_minor_step{data["grid"]["z_minor_step"].get<RealType>()}; // m
   const auto thickness{data["collector"]["thickness"].get<VR>()};
   const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"].get<VR>(), 1e-12)};
+  const auto ext_pressure_stencils{transfer_to_eigen(data["collector"]["external_pressure"].get<VR>(), 0.0)};
   const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"].get<VR>())};
   const auto is_permeable_stencils{set_is_permeable_stencils(is_perforated_stencils, to_layers)};
 
-    /*completion*/
+  /*completion*/
   // z-refiner
   const auto z_stencils{Grids::Factory::generate_dual_grid_stencils_from_steps(
       0.0, thickness)};
@@ -114,6 +115,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           is_permeable_stencils,
           grid_z)};
 
+  const auto external_pressure{
+      Logs::ExtPressureFactory::create(
+          ext_pressure_stencils,
+          is_permeable_stencils,
+          grid_z)};
+
   // make fluid
   const PhasePropertiesJT water{
       FluidFactory::create_water_JT(
@@ -126,6 +133,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto pressure_field{IncompressibleFluidField{
       water,
       permeability,
-      grid2D
-  }};
+      external_pressure,
+      grid2D}};
 }
