@@ -58,7 +58,7 @@ namespace GPN
                 }
             }
 
-            const auto &get_flow_in_axes1() const
+            const auto &get_heat_flow_in_axes1() const
             {
                 return heat_flow_field->axes1_as_face_normal;
             }
@@ -117,7 +117,7 @@ namespace GPN
             {
             }
 
-            const auto &get_flow_in_axes1() const
+            const auto &get_heat_flow_in_axes1() const
             {
                 return heat_flow_field->axes1_as_face_normal;
             }
@@ -148,7 +148,7 @@ namespace GPN
             {
             }
 
-            const auto &get_flow_in_axes1() const
+            const auto &get_heat_flow_in_axes1() const
             {
                 return heat_flow_field->axes1_as_face_normal;
             }

@@ -109,7 +109,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   RealType operator()(const RealType z, const ptrdiff_t r_id, const RealType t) const override
   {
     if (z == grid_ptr->first_coord.dual_front())
-      return flow_field.get_flow_in_axes1()(0ll, r_id) * flow_field.get_temperature();
+      return flow_field.get_heat_flow_in_axes1()(0ll, r_id) * flow_field.get_temperature();
 
     if (z == grid_ptr->first_coord.dual_back())
       return 0.0;
@@ -314,7 +314,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   {
     string path{std::string{"flow_field.txt"}};
     ofstream f{path};
-    f << (rates_factory.get_flow_in_axes1() / precision).round() * precision << endl
+    f << (rates_factory.get_heat_flow_in_axes1() / precision).round() * precision << endl
       << endl;
     f << (rates_factory.get_flow_in_axes2() / precision).round() * precision << endl
       << endl;
@@ -324,7 +324,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto rate{rates_factory.get_rate()};
   const auto pressure{rates_factory.get_pressure()};
   // verify flow field
-  const auto &v1 = rates_factory.get_flow_in_axes1(); // verticle flow
+  const auto &v1 = rates_factory.get_heat_flow_in_axes1(); // verticle flow
   for (auto row{0ll}; row < v1.rows(); ++row)
   {
     CHECK(v1(row, 0ll) * rate >= 0.0); // flow in tube

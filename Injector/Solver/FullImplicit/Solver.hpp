@@ -250,7 +250,7 @@ namespace GPN
                 void assemble_y(auto &tripletList)
                 {
                     const auto &split_flow_field{
-                        convection_factory.get_flow_in_axes1()};
+                        convection_factory.get_heat_flow_in_axes1()};
 
                     // take every line for a fixed y-node.
                     // It is a col of 2D grid representation

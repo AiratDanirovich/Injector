@@ -202,7 +202,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     solver.save_state();
   }
 
-  const auto &v1 = rates_factory.get_flow_in_axes1();
+  const auto &v1 = rates_factory.get_heat_flow_in_axes1();
   for (auto col{0ll}; col < v1.cols(); ++col)
     for (auto row{0ll}; row < v1.rows(); ++row)
       CHECK(v1(row, col) == 0.0);
@@ -236,7 +236,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     f << rates_factory.get_flow_in_axes2() << endl << endl;
     
-    f << rates_factory.get_flow_in_axes1() << endl << endl;
+    f << rates_factory.get_heat_flow_in_axes1() << endl << endl;
 
     f.close();
   }
