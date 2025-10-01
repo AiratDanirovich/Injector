@@ -3,6 +3,7 @@
 #include <Injector/Solver/State2D.hpp>
 
 #include <Injector/Model/Phases/PhaseProperties.hpp>
+#include <Injector/Properties/Logs.hpp>
 
 
 
@@ -11,23 +12,33 @@ namespace GPN
     namespace Hydrodynamic
     {
         struct PressureField 
-        : public EqSolver::State::State2D
+            : public EqSolver::State::State2D
         {
 
         };
 
-        struct IncompressibleFluid
+        template<typename Grid2D_t, typename Fluid_t>
+        struct IncompressibleFluidField
         {
-            IncompressibleFluid(
-                const Water& fluid)
-            : fluid{fluid} //, history{}
+            IncompressibleFluidField(
+                const Fluid_t& fluid,
+                const Logs::Permeability& permeability,
+                const cptr<Grid2D_t> grid2D)
+            : fluid{fluid}
+            
             {
 
             }
 
 
+
+
             private:
-            Water fluid;
+    //            PressureField P;
+
+                const Fluid_t fluid;
+                const cptr<Grid2D_t> grid2D;
+                const Permeability permeability;
         };
 
 
