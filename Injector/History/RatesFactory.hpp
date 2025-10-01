@@ -23,8 +23,7 @@ namespace GPN
                   well{well},
                   history{history},
                   fluid{fluid},
-                  pos{-1ll},
-                  inlet_temperature{std::numeric_limits<RealType>::lowest()}
+                  pos{-1ll}
             {
             }
 
@@ -51,10 +50,6 @@ namespace GPN
                                 history.get_record(pos), well, *grid2D));
 
                     FaceProperties::multiply(*heat_flow_field, fluid.volumetric_heat_capacity);
-
-                    inlet_temperature = history.temps(pos);
-                    rate = history.rates(pos);
-                    pressure = history.pressure(pos);
                 }
             }
 
@@ -69,15 +64,15 @@ namespace GPN
 
             const auto get_temperature() const
             {
-                return inlet_temperature;
+                return history.temps(pos);
             }
             const auto get_rate() const
             {
-                return rate;
+                return history.rates(pos);
             }
             const auto get_pressure() const
             {
-                return pressure;
+                return history.pressure(pos);
             }
             const auto get_history_record() const
             {
@@ -93,8 +88,6 @@ namespace GPN
 
         private:
             std::ptrdiff_t pos{-1ll};
-            RealType inlet_temperature;
-            RealType rate, pressure;
         };
 
         template <typename Grid2D_t, typename Fluid_t>
