@@ -6,7 +6,7 @@
 using namespace GPN;
 using namespace GPN::Phases;
 
-RealType viscosity{6e-4}, density{1000}, capacity{4200}, heat_conductivity{0.6};
+RealType viscosity{6e-4}, density{1000}, capacity{4200}, heat_conductivity{0.6}, joule_thomson{-0.02};
 
 TEST_CASE("PhaseProperties", "Water")
 {
@@ -17,4 +17,12 @@ TEST_CASE("PhaseProperties", "Water")
             Density{density},
             SpecificHeatCapacity{capacity},
             HeatConductivity{heat_conductivity})};
+
+    const auto water_JT{
+        FluidFactory::create_water_JT(
+            Viscosity{viscosity},
+            Density{density},
+            SpecificHeatCapacity{capacity},
+            HeatConductivity{heat_conductivity},
+            JouleThomson{joule_thomson})};
 }
