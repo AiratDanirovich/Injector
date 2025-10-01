@@ -151,10 +151,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
   const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
-  // const auto pressure_field{IncompressibleFluidField{
-  //     start_time,
-  //     water,
-  //     permeability,
-  //     external_pressure,
-  //     grid2D}};
+  const auto pressure_field{IncompressibleFluidField{
+      start_time,
+      water,
+      permeability,
+      external_pressure,
+      well,
+      grid2D}};
 }

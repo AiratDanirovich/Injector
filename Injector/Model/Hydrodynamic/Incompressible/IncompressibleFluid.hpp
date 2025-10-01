@@ -1,6 +1,7 @@
 #pragma once
 
 #include <numbers>
+#include <cassert>
 
 #include <Injector/Solver/State2D.hpp>
 
@@ -56,8 +57,9 @@ namespace GPN
                 : fluid{fluid},
                   permeability{permeability},
                   ext_pressure{ext_pressure},
-                  P{ext_pressure.log_vals, grid2D},
-                  thickness_log{grid2D->first_coord.control_volumes}
+                  P{Properties::FieldFactory::create(ext_pressure, grid2D)},
+                  thickness_log{grid2D->first_coord.control_volumes},
+                  well{well}
             {
                 const auto& r_grid{grid2D->second_coord};
                 const auto r_max{r_grid.dual_back()};
@@ -65,6 +67,11 @@ namespace GPN
 
                 const StepPropertyContainer temp1{-fluid.viscosity/(2.0*pi)*(r_grid.mesh_nodes/r_max).log()};
                 const StepPropertyContainer temp2{thickness_log*permeability.log_vals};
+
+    //            temp = (temp1.matrix()*temp2.transpose().matrix()).array();
+
+ //               assert(temp.rows() == P.rows());
+ //               assert(temp.cols() == P.cols());
             }
 
             void set_pressure_field(
@@ -80,6 +87,8 @@ namespace GPN
             const ControlVolumesContainer &thickness_log;
             const Logs::Permeability permeability;
             const Logs::ExternalPressure ext_pressure;
+
+            MeshNodesContainer temp;
         };
 
     } // Hydrodynamic
