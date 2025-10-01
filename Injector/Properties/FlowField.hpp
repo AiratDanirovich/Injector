@@ -89,6 +89,7 @@ namespace GPN
             }
         };
 
+        
         struct ReservoirFlowField
         {
             ReservoirFlowField(

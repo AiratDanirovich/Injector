@@ -44,11 +44,16 @@ namespace GPN
                     // this method only works at FixedRate injection
                     assert(history.regimes[pos] == InjectorRegimes::FixedRate);
 
-                    heat_flow_field =
+                    // volumetric flow filed in two directions
+                    volumetric_flow_field = 
                         std::make_shared<FaceProperties::ReservoirFlowField>(
                             FaceProperties::FlowFactory::create_from_well(
                                 history.get_record(pos), well, *grid2D));
-
+                    // heat flow field in two directions.
+                    // First, the flow field is copied
+                    heat_flow_field =
+                        std::make_shared<FaceProperties::ReservoirFlowField>(*volumetric_flow_field);
+                    // Second, the flow files is multiplied by volumetric heat capacity of fluid
                     FaceProperties::multiply(*heat_flow_field, fluid.volumetric_heat_capacity);
                 }
             }
@@ -85,6 +90,7 @@ namespace GPN
             const History &history;
             const Fluid_t &fluid;
             cptr<FaceProperties::ReservoirFlowField> heat_flow_field;
+            cptr<FaceProperties::ReservoirFlowField> volumetric_flow_field;
 
         private:
             std::ptrdiff_t pos{-1ll};
