@@ -62,7 +62,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       z_minor_step{data["grid"]["z_minor_step"].get<RealType>()}; // m
   const auto thickness{data["collector"]["thickness"].get<VR>()};
   const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"].get<VR>(), 1e-12)};
-  const auto ext_pressure_stencils{transfer_to_eigen(data["collector"]["external_pressure"].get<VR>())};
+  const auto ext_pressure_stencils{transfer_to_eigen(data["collector"]["external_pressure"].get<VR>(), 1e5)};
   const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"].get<VR>())};
   const auto is_permeable_stencils{set_is_permeable_stencils(is_perforated_stencils, to_layers)};
 
