@@ -70,7 +70,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       heat_conductivity{data["fluid"]["heat_conductivity"]},
       joule_thomson{data["fluid"]["joule_thomson"]};
   /*collector*/
-  const VR thickness{data["collector"]["thickness"].get<VR>()};
+  const auto thickness{data["collector"]["thickness"].get<VR>()};
   // const ptrdiff_t nLayers{thickness.size()};
   // hydrodynamic logs
   const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"].get<VR>())};
