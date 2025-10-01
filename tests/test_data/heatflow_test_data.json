@@ -4,7 +4,7 @@
     "viscosity": 6e-4,
     "specific_heat_capacity": 4200,
     "heat_conductivity": 0.0,
-    "JT": -0.02
+    "joule_thomson": -0.02
   },
   "collector": {
     "thickness": [    50,  3,   0.3,  3,   0.3,   3,   0.3, 0.3,  3],  

@@ -83,7 +83,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
   using ConvectionFieldFactory_t =
       GPN::FaceProperties::RatesFactory<
-          Grid2D_t, Well_t, PhaseProperties>;
+          Grid2D_t, Well_t, PhasePropertiesJT>;
   FunctorBC(
       const Logs::IsPermeable &is_permeable,
       const ConvectionFieldFactory_t &flow_field, // volumetric heat flow rate
@@ -137,7 +137,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       viscosity{data["fluid"]["viscosity"]},
       density{data["fluid"]["density"]},
       capacity{data["fluid"]["specific_heat_capacity"]},
-      heat_conductivity{data["fluid"]["heat_conductivity"]};
+      heat_conductivity{data["fluid"]["heat_conductivity"]},
+      joule_thomson{data["fluid"]["joule_thomson"]};
   /*collector*/
   const VR thickness{data["collector"]["thickness"].get<VR>()};
   // const ptrdiff_t nLayers{thickness.size()};
@@ -223,12 +224,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       grid_z};
 
   // make fluid
-  const PhaseProperties water{
-      FluidFactory::create_water(
+  const PhasePropertiesJT water{
+      FluidFactory::create_water_JT(
           Viscosity{viscosity},
           GPN::Density{density},
           GPN::SpecificHeatCapacity{capacity},
-          GPN::HeatConductivity{heat_conductivity})};
+          GPN::HeatConductivity{heat_conductivity},
+          JouleThomson{joule_thomson})};
   // well
   // const Well_KH well{
   //     water, core_data.is_permeable, core_data.is_perforated, core_data.permeability, well_holes, rMax};
