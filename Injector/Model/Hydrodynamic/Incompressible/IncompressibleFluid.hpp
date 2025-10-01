@@ -1,5 +1,7 @@
 #pragma once
 
+#include <numbers>
+
 #include <Injector/Solver/State2D.hpp>
 
 #include <Injector/Model/Phases/PhaseProperties.hpp>
@@ -40,7 +42,7 @@ namespace GPN
             }
         };
 
-        template <typename Grid2D_t, typename Fluid_t>
+        template <typename Grid2D_t, typename Fluid_t, typename Well_t>
         struct IncompressibleFluidField
         {
             IncompressibleFluidField(
@@ -48,11 +50,24 @@ namespace GPN
                 const Fluid_t &fluid,
                 const Logs::Permeability &permeability,
                 const Logs::ExternalPressure &ext_pressure,
+                const Well_t& well,
                 const cptr<Grid2D_t> grid2D)
                 : fluid{fluid},
                   permeability{permeability},
                   ext_pressure{ext_pressure},
-                  P{PressureField::ICFactory(start_time, grid2D, ext_pressure)}
+                  P{PressureField::ICFactory(start_time, grid2D, ext_pressure)},
+                  thickness_log{grid2D->first_coord.control_volumes}
+            {
+                const auto& r_grid{grid2D->second_coord};
+                const auto r_max{r_grid.dual_back()};
+                const auto pi{std::numbers::pi_v<RealType>};
+
+                const StepPropertyContainer temp1{-fluid.viscosity/(2.0*pi)*(r_grid.mesh_nodes/r_max).log()};
+                const StepPropertyContainer temp2{thickness_log*permeability.log_vals};
+            }
+
+            void set_pressure_field(
+                double t, RealType t_step)
             {
             }
 
@@ -60,7 +75,9 @@ namespace GPN
             PressureField P;
 
             const Fluid_t fluid;
+            const Well_t well;
             const cptr<Grid2D_t> grid2D;
+            const ControlVolumesContainer &thickness_log;
             const Logs::Permeability permeability;
             const Logs::ExternalPressure ext_pressure;
         };
