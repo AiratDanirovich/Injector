@@ -19,6 +19,7 @@
 #include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleFluid.hpp>
 
 #include <Injector/Properties/LogsFactory.hpp>
+#include <Injector/Properties/JT_FieldFactory.hpp>
 
 #include "includes/transfer_to_eigen.hpp"
 #include "includes/make_history.hpp"
@@ -212,4 +213,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             }
         }
     }
+
+    //    Properties::JT_FieldFactory::create(pressure_field);
 }
