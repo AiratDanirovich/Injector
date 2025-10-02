@@ -168,6 +168,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const History history{make_history(data)};
     const RealType pi{std::numbers::pi_v<RealType>};
     const RealType tol{1e-10};
+
     for (auto i{0ll}; i < history.time_steps.size(); ++i)
     {
         const auto r{history.get_record(i)};
@@ -179,10 +180,20 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
         for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
         {
-            for (auto col{0ll}; col < 3ll; ++col)
-                CHECK(P.value(row, col) == P.value(row, 3ll));
+            for (auto col{0ll}; col < 2ll; ++col)
+                CHECK(P.value(row, col) == P.value(row, 2ll));
             if (is_permeable(row) == 1.0)
             {
+                {
+                    auto col{2ll};
+                    CHECK(grid_r.dual_nodes(col + 1ll) == completion.sandface_radius(row));
+                    CHECK(P.value(row, col) ==
+                          external_pressure(row) -
+                              rfp(row) * water.viscosity /
+                                  (2.0 * pi * permeability(row) * grid_z.control_volumes(row)) *
+                                  std::log(completion.sandface_radius(row) / rMax));
+                }
+
                 for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
                     CHECK_THAT(
                         P.value(row, col),

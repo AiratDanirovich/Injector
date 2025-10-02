@@ -36,11 +36,8 @@ namespace GPN
 
             void set_pressure_field(const StepPropertyContainer &RFP)
             {
-                // calculate current pressure as if there is no well and cement-sandwich
+                // calculate current pressure well and cement-sandwich
                 auto v{((auxillary_term.colwise() * RFP).colwise() + ext_pressure.log_vals).eval()};
-                // set pressure in cement, sandwich and fluid
-                // equal to the pressure in the first rocks cell
-                v.leftCols(3ll).colwise() = v.col(3ll);
                 P = std::make_shared<Properties::Pressure<Grid2D_t>>(
                     v,
                     grid2D);
@@ -56,12 +53,12 @@ namespace GPN
 
         public:
             const Properties::Pressure<Grid2D_t> P_ext;
-            const Fluid_t& fluid;
-            const Well_t& well;
+            const Fluid_t &fluid;
+            const Well_t &well;
             const cptr<Grid2D_t> grid2D;
             const ControlVolumesContainer &thickness_log;
-            const Logs::Permeability& permeability;
-            const Logs::ExternalPressure& ext_pressure;
+            const Logs::Permeability &permeability;
+            const Logs::ExternalPressure &ext_pressure;
 
             const CellNodesContainer2D auxillary_term;
 
@@ -74,12 +71,18 @@ namespace GPN
                 const auto r_max{r_grid.dual_back()};
                 const auto pi{std::numbers::pi_v<RealType>};
 
-                const StepPropertyContainer temp1{(-fluid.viscosity) * (r_grid.mesh_nodes / r_max).log()};
+                auto r_nodes{r_grid.mesh_nodes};
+                // account for the well,
+                // the pressure is contant within the sandface radius
+                r_nodes.head(3ll) = r_grid.dual_nodes(3ll);
+
+                const StepPropertyContainer temp1{(-fluid.viscosity) * (r_nodes / r_max).log()};
                 StepPropertyContainer temp2{1.0 / ((2.0 * pi) * thickness_log * permeability.log_vals)};
 
+                // account for layers with zero permeability
                 for (auto row{0ll}; row < permeability.size(); ++row)
                     if (permeability(row) == 0.0)
-                        temp2(row) = ext_pressure(row);
+                        temp2(row) = 0.0;
 
                 const CellNodesContainer2D temp{(temp2.matrix() * temp1.transpose().matrix()).array()};
 
