@@ -200,8 +200,6 @@ namespace GPN
             protected:
                 void assemble_x(auto &tripletList)
                 {
-                    const auto &split_flow_field{
-                        convection_factory.get_heat_flow_in_axes2()};
                     const auto &split_flow_field_pos{
                         convection_factory.get_heat_flow_in_axes2_pos()};
                     const auto &split_flow_field_neg{
@@ -215,8 +213,8 @@ namespace GPN
                     {
                         // copy Laplace term in y-direction for a fixed x
                         const SpMatrix &A{splitX.LaplaceTerm(row)};
-                        const auto flow_plus{split_flow_field_pos.row(row)};
-                        const auto flow_minus{split_flow_field_neg.row(row)};
+                        const auto &flow_plus{split_flow_field_pos.row(row)};
+                        const auto &flow_minus{split_flow_field_neg.row(row)};
 
                         // upper diagonal
                         for (auto col{0ll}; col < second_coord_size - 1ll; ++col)
@@ -254,8 +252,6 @@ namespace GPN
 
                 void assemble_y(auto &tripletList)
                 {
-                    const auto &split_flow_field{
-                        convection_factory.get_heat_flow_in_axes1()};
                     const auto &split_flow_field_pos{
                         convection_factory.get_heat_flow_in_axes1_pos()};
                     const auto &split_flow_field_neg{
@@ -268,8 +264,8 @@ namespace GPN
                         // Laplace term
                         const SpMatrix &A{splitY.LaplaceTerm(col)};
 
-                        const auto flow_plus{split_flow_field_pos.col(col)};
-                        const auto flow_minus{split_flow_field_neg.col(col)};
+                        const auto &flow_plus{split_flow_field_pos.col(col)};
+                        const auto &flow_minus{split_flow_field_neg.col(col)};
 
                         // upper diagonal
                         for (auto row{0ll}; row < first_coord_size - 1ll; ++row)
