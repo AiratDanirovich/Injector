@@ -48,16 +48,16 @@ namespace GPN
                     assert(history.regimes[pos] == InjectorRegimes::FixedRate);
 
                     // volumetric flow field in two directions
-                    volumetric_flow_field = 
-                        std::make_shared<FaceProperties::ReservoirFlowField>(
+                    heat_flow_field = 
+                        std::make_shared<FaceProperties::HeatFlowField>(
                             FaceProperties::FlowFactory::create_from_well(
-                                history.get_record(pos), well, *grid2D));
+                                history.get_record(pos), well, *grid2D), fluid.volumetric_heat_capacity);
                     // heat flow field in two directions.
                     // First, the flow field is copied
-                    heat_flow_field =
-                        std::make_shared<FaceProperties::ReservoirFlowField>(*volumetric_flow_field);
+                //    heat_flow_field =
+                //        std::make_shared<FaceProperties::ReservoirFlowField>(*volumetric_flow_field);
                     // Second, the flow files is multiplied by volumetric heat capacity of fluid
-                    FaceProperties::multiply(*heat_flow_field, fluid.volumetric_heat_capacity);
+                //    FaceProperties::multiply(*heat_flow_field, fluid.volumetric_heat_capacity);
                 }
 
                 pressure_field->set_pressure_field(well.get_RFP(get_history_record()));
@@ -72,14 +72,14 @@ namespace GPN
                 return heat_flow_field->axes2_as_face_normal;
             }
             
-            const auto &get_volumetric_flow_in_axes1() const
-            {
-                return volumetric_flow_field->axes1_as_face_normal;
-            }
-            const auto &get_volumetric_flow_in_axes2() const
-            {
-                return volumetric_flow_field->axes2_as_face_normal;
-            }
+            // const auto &get_volumetric_flow_in_axes1() const
+            // {
+            //     return volumetric_flow_field->axes1_as_face_normal;
+            // }
+            // const auto &get_volumetric_flow_in_axes2() const
+            // {
+            //     return volumetric_flow_field->axes2_as_face_normal;
+            // }
 
             const auto get_temperature() const
             {
@@ -109,7 +109,7 @@ namespace GPN
             const Fluid_t &fluid;
             cptr<Hydrodynamics_t> pressure_field;
             cptr<FaceProperties::ReservoirFlowField> heat_flow_field;
-            cptr<FaceProperties::ReservoirFlowField> volumetric_flow_field;
+        //    cptr<FaceProperties::ReservoirFlowField> volumetric_flow_field;
 
         private:
             std::ptrdiff_t pos{-1ll};

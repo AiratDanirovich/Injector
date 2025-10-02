@@ -162,6 +162,9 @@ namespace GPN
             {
             }
         };
+
+        template<typename Grid2D_t>
+        using JT_SpatialComponent = Field<Grid2D_t>;
 #pragma endregion
     } // Properties
 } // GPN

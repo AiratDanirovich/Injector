@@ -89,9 +89,10 @@ namespace GPN
             }
         };
 
-        
         struct ReservoirFlowField
         {
+            ReservoirFlowField(ReservoirFlowField&&) noexcept = default;
+
             ReservoirFlowField(
                 const FaceValuesContainer &axes1_value,
                 const FaceValuesContainer &axes2_value)
@@ -202,6 +203,18 @@ namespace GPN
                     Logs::RFP{Logs::StepPropertyGrid{rfp, is_permeable.grid},
                               is_permeable},
                     grid2D};
+            }
+        };
+
+        struct HeatFlowField
+            : public ReservoirFlowField
+        {
+            HeatFlowField(
+                ReservoirFlowField &&flow_field, 
+                const RealType volumetric_heat_capacity)
+                : ReservoirFlowField{std::move(flow_field)}
+            {
+                multiply(*this, volumetric_heat_capacity);
             }
         };
 
