@@ -243,7 +243,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const GPN::BoundaryConditions::BoundaryConditions bc{
       *grid2D,
       std::make_shared<FunctorBC<
-          std::remove_const<decltype(well)>::type,
+          Well_CrossFlow,
           IncompressibleFluidField_t>>(
           core_data.is_permeable, rates_factory, grid2D),
       BoundaryConditions::BoundaryCondition::second};
