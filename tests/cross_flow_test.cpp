@@ -11,6 +11,7 @@
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Well/Well.hpp>
+#include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleFluid.hpp>
 #include <Injector/Properties/Logs.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
 
@@ -28,9 +29,11 @@ using VR = std::vector<GPN::RealType>;
 using namespace std;
 using namespace Catch;
 using namespace Catch::Matchers;
+
 using namespace GPN;
 using namespace GPN::Grids;
 using namespace GPN::Phases;
+using namespace GPN::Hydrodynamic;
 using namespace GPN::FaceProperties;
 using namespace GPN::Logs;
 using namespace GPN::CrossFlow;
@@ -48,8 +51,11 @@ TEST_CASE("CrossFlow", "")
     const auto to_layers{data["collector"]["cross_flow"]["to_layers"].get<std::vector<std::ptrdiff_t>>()};
     const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"].get<VR>())};
     const auto is_permeable_stencils{set_is_permeable_stencils(is_perforated_stencils, to_layers)};
+    const auto ext_pressure_stencils{transfer_to_eigen(data["collector"]["external_pressure"].get<VR>(), 1e5)};
+    const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"].get<VR>(), 1e-12)};
     /*collector*/
     const VR thickness{data["collector"]["thickness"].get<VR>()};
+    const auto start_time{data["history"]["start_time"].get<RealType>()};
     /*grid*/
     const RealType
         z_minor_step{data["grid"]["z_minor_step"]}; // m
@@ -66,6 +72,11 @@ TEST_CASE("CrossFlow", "")
         IsPermeableFactory::create(is_permeable_stencils, grid_z)};
     const auto is_perforated{
         IsPermeableFactory::create(is_perforated_stencils, grid_z)};
+    const auto permeability{
+        Logs::PermeabilityFactory::create(
+            permeability_stencils,
+            is_permeable_stencils,
+            grid_z)};
 
     const auto RFP_weights{
         RFPFactory::create_from_container(
@@ -146,9 +157,24 @@ TEST_CASE("CrossFlow", "")
                                            Grids::Factory::generate_dual_grid_stencils_from_steps(
                                                0.0, thickness),
                                            r_stencils)};
-
+    // external pressure log
+    const auto external_pressure{
+        Logs::ExtPressureFactory::create(
+            ext_pressure_stencils,
+            is_permeable_stencils,
+            grid_z)};
+    // fluid model for the pressure field
+    auto pressure_field{
+        IncompressibleFluidField(
+            start_time,
+            water,
+            permeability,
+            external_pressure,
+            well,
+            grid2D)};
     // rates field factory
     FaceProperties::IncompressibleRatesFactory rates_factory{
+        pressure_field,
         grid2D, well, history, water};
 
     rates_factory.set_flow_field(0.0, 1800.0);
