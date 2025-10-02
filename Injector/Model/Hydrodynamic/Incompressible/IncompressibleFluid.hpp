@@ -20,28 +20,6 @@ namespace GPN
                 : EqSolver::State::State2D{state}
             {
             }
-
-            /// @brief Initial pressure is assumed to be constant with r
-            struct FunctorIC : public GPN::InitialConditions::ICFunctorBase
-            {
-                FunctorIC(const Logs::ExternalPressure &ext_pressure)
-                    : ext_pressure{ext_pressure}
-                {
-                }
-                RealType operator()(const ptrdiff_t z_id, const ptrdiff_t, GPN::RealType) const override
-                {
-                    return ext_pressure(z_id);
-                }
-
-            protected:
-                const Logs::ExternalPressure &ext_pressure;
-            };
-
-            template <typename Grid_t_ptr>
-            static auto ICFactory(RealType t0, const Grid_t_ptr grid, const Logs::ExternalPressure &ext_pressure)
-            {
-                return EqSolver::State::State2D{EqSolver::State::State2D::FillWithFunctor(*grid, FunctorIC{ext_pressure}, t0)};
-            }
         };
 
         template <typename Grid2D_t, typename Fluid_t, typename Well_t>
