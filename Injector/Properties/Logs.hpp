@@ -280,6 +280,8 @@ namespace GPN
             };
         } // InternalUse
 
+        /// @brief Pressure at the external boundary of the 
+        /// computation domain. far from the well
         struct ExternalPressure
             : public StepPropertyGrid,
               private AssertNonNegative

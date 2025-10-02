@@ -23,8 +23,7 @@ namespace GPN
                   well{well},
                   history{history},
                   fluid{fluid},
-                  pos{-1ll},
-                  inlet_temperature{std::numeric_limits<RealType>::lowest()}
+                  pos{-1ll}
             {
             }
 
@@ -45,39 +44,49 @@ namespace GPN
                     // this method only works at FixedRate injection
                     assert(history.regimes[pos] == InjectorRegimes::FixedRate);
 
-                    heat_flow_field =
+                    // volumetric flow field in two directions
+                    volumetric_flow_field = 
                         std::make_shared<FaceProperties::ReservoirFlowField>(
                             FaceProperties::FlowFactory::create_from_well(
                                 history.get_record(pos), well, *grid2D));
-
+                    // heat flow field in two directions.
+                    // First, the flow field is copied
+                    heat_flow_field =
+                        std::make_shared<FaceProperties::ReservoirFlowField>(*volumetric_flow_field);
+                    // Second, the flow files is multiplied by volumetric heat capacity of fluid
                     FaceProperties::multiply(*heat_flow_field, fluid.volumetric_heat_capacity);
-
-                    inlet_temperature = history.temps(pos);
-                    rate = history.rates(pos);
-                    pressure = history.pressure(pos);
                 }
             }
 
-            const auto &get_flow_in_axes1() const
+            const auto &get_heat_flow_in_axes1() const
             {
                 return heat_flow_field->axes1_as_face_normal;
             }
-            const auto &get_flow_in_axes2() const
+            const auto &get_heat_flow_in_axes2() const
             {
                 return heat_flow_field->axes2_as_face_normal;
+            }
+            
+            const auto &get_volumetric_flow_in_axes1() const
+            {
+                return volumetric_flow_field->axes1_as_face_normal;
+            }
+            const auto &get_volumetric_flow_in_axes2() const
+            {
+                return volumetric_flow_field->axes2_as_face_normal;
             }
 
             const auto get_temperature() const
             {
-                return inlet_temperature;
+                return history.temps(pos);
             }
             const auto get_rate() const
             {
-                return rate;
+                return history.rates(pos);
             }
             const auto get_pressure() const
             {
-                return pressure;
+                return history.pressure(pos);
             }
             const auto get_history_record() const
             {
@@ -90,11 +99,10 @@ namespace GPN
             const History &history;
             const Fluid_t &fluid;
             cptr<FaceProperties::ReservoirFlowField> heat_flow_field;
+            cptr<FaceProperties::ReservoirFlowField> volumetric_flow_field;
 
         private:
             std::ptrdiff_t pos{-1ll};
-            RealType inlet_temperature;
-            RealType rate, pressure;
         };
 
         template <typename Grid2D_t, typename Fluid_t>
@@ -118,11 +126,11 @@ namespace GPN
             {
             }
 
-            const auto &get_flow_in_axes1() const
+            const auto &get_heat_flow_in_axes1() const
             {
                 return heat_flow_field->axes1_as_face_normal;
             }
-            const auto &get_flow_in_axes2() const
+            const auto &get_heat_flow_in_axes2() const
             {
                 return heat_flow_field->axes2_as_face_normal;
             }
@@ -149,11 +157,11 @@ namespace GPN
             {
             }
 
-            const auto &get_flow_in_axes1() const
+            const auto &get_heat_flow_in_axes1() const
             {
                 return heat_flow_field->axes1_as_face_normal;
             }
-            const auto &get_flow_in_axes2() const
+            const auto &get_heat_flow_in_axes2() const
             {
                 return heat_flow_field->axes2_as_face_normal;
             }

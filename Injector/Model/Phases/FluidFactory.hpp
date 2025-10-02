@@ -35,6 +35,7 @@ namespace GPN
                         SpecificHeatCapacity{4000},
                         HeatConductivity{0.6}}};
             }
+
             static Water create_water(
                 Viscosity viscosity,
                 Density density,
@@ -47,6 +48,23 @@ namespace GPN
                         density,
                         mass_heat_capacity,
                         heat_conductivity}};
+            }
+
+            static WaterJT create_water_JT(
+                Viscosity viscosity,
+                Density density,
+                SpecificHeatCapacity mass_heat_capacity,
+                HeatConductivity heat_conductivity,
+                JouleThomson joule_thomson)
+            {
+                return WaterJT{
+                    PhasePropertiesJT{
+                        PhaseProperties{
+                            viscosity,
+                            density,
+                            mass_heat_capacity,
+                            heat_conductivity},
+                        joule_thomson}};
             }
         };
 
