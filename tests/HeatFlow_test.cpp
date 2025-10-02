@@ -223,15 +223,14 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           well,
           grid2D});
 
-  shared_ptr<IncompressibleFluidField_t>
-      ptr_pressure_field{
-          make_shared<IncompressibleFluidField_t>(
-              start_time,
-              water,
-              core_data.permeability,
-              external_pressure,
-              well,
-              grid2D)};
+  auto ptr_pressure_field{
+      make_shared<IncompressibleFluidField_t>(
+          start_time,
+          water,
+          core_data.permeability,
+          external_pressure,
+          well,
+          grid2D)};
 
   // rates field factory
   FaceProperties::IncompressibleRatesFactory rates_factory{
@@ -256,12 +255,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       rates_factory, initial_state,
       bc, start_time});
 
-  auto solver_ptr = std::make_shared<Solver_t>(
+  auto solver_ptr{std::make_shared<Solver_t>(
       heat_face_props.medium_heat_conductivity,
       grid2D,
       heat_props.medium_vol_heatcapacity,
       rates_factory, initial_state,
-      bc, start_time);
+      bc, start_time)};
 
   const auto &solver{*solver_ptr};
 
