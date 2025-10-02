@@ -27,12 +27,10 @@ namespace GPN
             template <
                 typename Grid_t,
                 typename Capacity_t,
-                typename ConvectionTermFactory_t
-                >
+                typename ConvectionTermFactory_t>
             struct Solver
             {
                 using BC_t = BoundaryConditions::BoundaryConditions;
-
 
                 using SpMatrix = SplittingMethod::SpMatrix;
 
@@ -82,7 +80,7 @@ namespace GPN
                     EquationView(Matrix_t &A,
                                  RealType &rhs,
                                  const ptrdiff_t diag_id,
-                                 const Coefs_t& neib_ids)
+                                 const Coefs_t &neib_ids)
                         : matrix{A}, rhs{rhs},
                           diag_id{diag_id},
                           neib_ids{neib_ids}
@@ -91,14 +89,14 @@ namespace GPN
                         for (const auto id : neib_ids)
                         {
                             assert(id >= 0ll);
-                            assert(id < matrix.cols()*matrix.cols());
+                            assert(id < matrix.cols() * matrix.cols());
                         }
                     }
 
                     Matrix_t &matrix;
                     RealType &rhs;
                     const ptrdiff_t diag_id;
-                    const Coefs_t& neib_ids;
+                    const Coefs_t &neib_ids;
 
                     void set_type_I(const RealType val)
                     {
@@ -116,9 +114,9 @@ namespace GPN
                         for (const auto id : neib_ids)
                             flag = flag && (matrix.coeffRef(diag_id, id) == 0.0);
                         // add the given flux to the rhs,
-                        // if type_I BC was not applied 
+                        // if type_I BC was not applied
                         // from the other face
-                        if(flag == false)
+                        if (flag == false)
                             rhs += val;
                     }
                 };
@@ -154,8 +152,7 @@ namespace GPN
                     A.setFromTriplets(tripletList.begin(), tripletList.end());
                     A.diagonal() = A.diagonal() + tau_factor.matrix();
 
-                    RHS_t rhs{
-                        (state.cur_state.reshaped(A_size, 1ll).array() * tau_factor).matrix()};
+                    RHS_t rhs{assemble_RHS(state, tau_factor, A_size)};
                     // BC
                     applyBC(A, rhs);
 
@@ -164,6 +161,17 @@ namespace GPN
                     cur_time += tau;
 
                     return std::pair{std::move(A), std::move(rhs)};
+                }
+
+                RHS_t assemble_RHS(
+                    const auto state,
+                    const auto tau_factor,
+                    const auto A_size) const
+                {
+                    RHS_t rhs{
+                        (state.cur_state.reshaped(A_size, 1ll).array() * tau_factor).matrix()};
+
+                    return rhs;
                 }
 
                 struct Solution
@@ -195,6 +203,8 @@ namespace GPN
                     const auto &split_flow_field{
                         convection_factory.get_heat_flow_in_axes2()};
 
+                    const auto &pressure{convection_factory.get_pressure_field()};
+
                     //  Take every line for a fixed x node.
                     //  It is a row of 2D grid representation
                     for (auto row{0ll}; row < first_coord_size; ++row)
@@ -218,15 +228,16 @@ namespace GPN
                         for (auto col{0ll}; col < second_coord_size - 1ll; ++col)
                         {
                             const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l + first_coord_size, 
-                                A.coeff(col, col + 1ll) + flow_minus(col + 1ll));
+                            tripletList.emplace_back(l, l + first_coord_size,
+                                                     A.coeff(col, col + 1ll) + flow_minus(col + 1ll));
                         }
-                        
+
                         // main diagonal
                         const auto diag{(
                                             A.diagonal() +
                                             (flow_plus.matrix().head(second_coord_size) -
-                                            flow_minus.matrix().tail(second_coord_size)).transpose())
+                                             flow_minus.matrix().tail(second_coord_size))
+                                                .transpose())
                                             .eval()};
 
                         for (auto col{0ll}; col < second_coord_size; ++col)
@@ -275,8 +286,8 @@ namespace GPN
                         for (auto row{0ll}; row < first_coord_size - 1ll; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l + 1ll, 
-                                A.coeff(row, row + 1ll) + flow_minus(row + 1ll));
+                            tripletList.emplace_back(l, l + 1ll,
+                                                     A.coeff(row, row + 1ll) + flow_minus(row + 1ll));
                         }
 
                         // main diagonal
@@ -336,7 +347,6 @@ namespace GPN
                     }
                     return lu.solve(b);
                 }
-
 
                 /// @brief Apply boundary conditions of the problem
                 /// @param A NxN sparse matrix of the problem with a row per every node of the 2D mesh

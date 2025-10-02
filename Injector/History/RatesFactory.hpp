@@ -97,6 +97,10 @@ namespace GPN
                 return history.get_record(pos);
             }
 
+            const auto get_pressure_field() const
+            {
+                return pressure_field->current_pressure();
+            }
         protected:
             const cptr<Grid2D_t> grid2D;
             const Well_t &well;
