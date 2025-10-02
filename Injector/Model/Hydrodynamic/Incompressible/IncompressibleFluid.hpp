@@ -30,35 +30,54 @@ namespace GPN
                 const Fluid_t &fluid,
                 const Logs::Permeability &permeability,
                 const Logs::ExternalPressure &ext_pressure,
-                const Well_t& well,
+                const Well_t &well,
                 const cptr<Grid2D_t> grid2D)
                 : fluid{fluid},
                   permeability{permeability},
                   ext_pressure{ext_pressure},
-                  P{Properties::FieldFactory::create(ext_pressure, grid2D)},
+                  P_ext{Properties::FieldFactory::create(ext_pressure, grid2D)},
                   thickness_log{grid2D->first_coord.control_volumes},
-                  well{well}
+                  well{well},
+                  grid2D{grid2D}
             {
-                const auto& r_grid{grid2D->second_coord};
+                const auto &r_grid{grid2D->second_coord};
                 const auto r_max{r_grid.dual_back()};
                 const auto pi{std::numbers::pi_v<RealType>};
 
-                const StepPropertyContainer temp1{-fluid.viscosity/(2.0*pi)*(r_grid.mesh_nodes/r_max).log()};
-                const StepPropertyContainer temp2{thickness_log*permeability.log_vals};
+                const StepPropertyContainer temp1{(-fluid.viscosity) * (r_grid.mesh_nodes / r_max).log()};
+                StepPropertyContainer temp2{1.0/((2.0 * pi)*thickness_log * permeability.log_vals)};
 
-    //            temp = (temp1.matrix()*temp2.transpose().matrix()).array();
+                for(auto row{0ll}; row < permeability.size(); ++row)
+                    if(permeability(row) == 0.0)
+                        temp2(row) = ext_pressure(row);
 
- //               assert(temp.rows() == P.rows());
- //               assert(temp.cols() == P.cols());
+                temp = (temp2.matrix() * temp1.transpose().matrix()).array();
+
+                assert(temp.rows() == P_ext.rows());
+                assert(temp.cols() == P_ext.cols());
             }
 
-            void set_pressure_field(
-                double t, RealType t_step)
+            void set_pressure_field(const StepPropertyContainer &RFP)
             {
+                // calculate current pressure as if there is no well and cement-sandwich
+                auto v{((temp.colwise() * RFP).colwise() + ext_pressure.log_vals).eval()};
+                // set pressure in cement, sandwich and fluid
+                // equal to the pressure in the first rocks cell
+                v.leftCols(3ll).colwise() = v.col(3ll);
+                P = std::make_shared<Properties::Pressure<Grid2D_t>>(
+                    v, 
+                    grid2D);
+            }
+
+            const Properties::Pressure<Grid2D_t>& current_pressure() const
+            {
+                return *P;
             }
 
         private:
-            Properties::Pressure<Grid2D_t> P;
+            std::shared_ptr<Properties::Pressure<Grid2D_t>> P;
+
+            const Properties::Pressure<Grid2D_t> P_ext;
             const Fluid_t fluid;
             const Well_t well;
             const cptr<Grid2D_t> grid2D;
@@ -66,7 +85,7 @@ namespace GPN
             const Logs::Permeability permeability;
             const Logs::ExternalPressure ext_pressure;
 
-            MeshNodesContainer temp;
+            CellNodesContainer2D temp;
         };
 
     } // Hydrodynamic
