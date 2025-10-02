@@ -39,11 +39,11 @@ using namespace std;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::FullImplicit;
 
-void print_A(const auto &fname, const auto &A, const auto& b)
+void print_A(const auto &fname, const auto &A, const auto &b)
 {
     Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
     ofstream f{fname};
-    Eigen::MatrixX<RealType> problem(A.rows(), A.cols()+1ll);
+    Eigen::MatrixX<RealType> problem(A.rows(), A.cols() + 1ll);
     problem.leftCols(A.cols()) = Eigen::MatrixX<RealType>{A};
     problem.rightCols(1ll) = b;
     f << problem.format(CleanFmt);
@@ -66,6 +66,8 @@ const auto porosity_stencils{
     Logs::RawDataFactory::generate_porosity(z_stencils, is_permeable_stencils)};
 const auto permeability_stencils{
     Logs::RawDataFactory::generate_permeability(z_stencils, is_permeable_stencils)};
+const auto ext_pressure_stencils{
+    Logs::RawDataFactory::generate_ext_pressure(z_stencils, is_permeable_stencils)};
 // heat logs
 const auto solid_density_stencils{
     Logs::RawDataFactory::generate_solid_density(z_stencils)};
@@ -83,7 +85,7 @@ TEST_CASE("Solver")
     (*it) = 0.0;
 
     const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
-    const auto &grid{grid2D->first_coord};
+    const auto &grid_z{grid2D->first_coord};
 
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
@@ -91,7 +93,7 @@ TEST_CASE("Solver")
         solid_heatconductivity_stencils,
         porosity_stencils,
         Phases::FluidFactory::create_water(1.0, 1.0),
-        grid};
+        grid_z};
 
     const Properties::Rocks::HeatProps heat_props{
         heat_logs, grid2D};
@@ -112,11 +114,17 @@ TEST_CASE("Solver")
         is_perforated_stencils,
         porosity_stencils,
         permeability_stencils,
-        grid};
+        grid_z};
 
+    // external pressure log
+    const auto external_pressure{
+        Logs::ExtPressureFactory::create(
+            ext_pressure_stencils,
+            is_permeable_stencils,
+            grid_z)};
     // rates field factory
     FaceProperties::ZeroRatesFactory rates_factory{
-        grid2D, core_data.is_permeable};
+        grid2D, core_data.is_permeable, external_pressure};
 
     Solver solver{
         heat_face_props.medium_heat_conductivity,

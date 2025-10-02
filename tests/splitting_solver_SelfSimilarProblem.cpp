@@ -58,6 +58,7 @@ struct ExactSolution
   }
 
   const Grid2D_t &grid;
+
 protected:
   const Properties::ThermalDiffusivity<Grid2D_t> kappa;
   const Properties::HeatConductivity<Grid2D_t> &heat_conductivity;
@@ -144,6 +145,7 @@ const std::ptrdiff_t nLayers{11ull};
 const VR thickness(nLayers, 0.01); // each layer is 1m thick
 const VR is_permeable_stencils(nLayers, 1.0);
 const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 0.0)};
+const LogValuesContainer ext_pressure_stencils{LogValuesContainer::Constant(nLayers, 260 * 1e5)};
 
 const LogValuesContainer solid_heatconductivity_stencils{LogValuesContainer::Constant(nLayers, 3.9)};
 const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 3.9 /*should be 2600 in SI*/)};
@@ -167,7 +169,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       Grids::Factory::generate_dual_grid_stencils_uniform(
           Segment{rMin, rMax}, rNodes)};
   const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
-  const auto &grid{grid2D->first_coord};
+  const auto &grid_z{grid2D->first_coord};
   // make fluid
   const PhaseProperties water{
       FluidFactory::create_water(
@@ -182,7 +184,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // solver
   const Logs::Rocks::IsPermeableLog core_data{
       is_permeable_stencils,
-      grid};
+      grid_z};
 
   const auto flow_field{
       FaceProperties::FlowFactory::zero_flow(
@@ -194,7 +196,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       solid_heatconductivity_stencils,
       porosity_stencils,
       Phases::FluidFactory::create_water(1.0, 1.0),
-      grid};
+      grid_z};
 
   const Properties::Rocks::HeatProps heat_props{
       heat_logs, grid2D};
@@ -211,9 +213,15 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const GPN::BoundaryConditions::BoundaryConditions bc{
       *grid2D, std::make_shared<AFunctorBC>(es, grid2D)};
 
+  // external pressure log
+  const auto external_pressure{
+      Logs::ExtPressureFactory::create(
+          ext_pressure_stencils,
+          is_permeable_stencils,
+          grid_z)};
   // rates field factory
   FaceProperties::ZeroRatesFactory rates_factory{
-      grid2D, core_data.is_permeable};
+      grid2D, core_data.is_permeable, external_pressure};
 
   Solver solver{
       heat_face_props.medium_heat_conductivity,

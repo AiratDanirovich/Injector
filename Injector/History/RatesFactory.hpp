@@ -6,6 +6,7 @@
 
 #include <Injector/History/History.hpp>
 #include <Injector/Properties/FlowField.hpp>
+#include <Injector/Properties/PhysicalField.hpp>
 
 namespace GPN
 {
@@ -154,11 +155,13 @@ namespace GPN
         {
             ZeroRatesFactory(
                 const cptr<Grid2D_t> grid2D,
-                const Logs::IsPermeable &is_permeable)
+                const Logs::IsPermeable &is_permeable,
+                const Logs::ExternalPressure &ext_pressure)
                 : heat_flow_field{
                       std::make_shared<FaceProperties::ReservoirFlowField>(
                           FaceProperties::FlowFactory::zero_flow(
-                              is_permeable, *grid2D))}
+                              is_permeable, *grid2D))},
+                P_ext{Properties::FieldFactory::create(ext_pressure, grid2D)}
             {
             }
 
@@ -175,8 +178,15 @@ namespace GPN
                 return heat_flow_field->axes2_as_face_normal;
             }
 
+            const auto get_pressure_field() const
+            {
+                return P_ext;
+            }
+
         protected:
             const cptr<FaceProperties::ReservoirFlowField> heat_flow_field;
+            
+            const Properties::Pressure<Grid2D_t> P_ext;
         };
     } // Properties
 } // GPN
