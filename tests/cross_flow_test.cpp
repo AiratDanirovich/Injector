@@ -151,7 +151,7 @@ TEST_CASE("CrossFlow", "")
 
     // z-refiner
     RefinerVerticle refiner{z_minor_step, is_permeable_stencils};
-    const VR r_stencils{0.0, 0.1, 0.2, 0.3};
+    const VR r_stencils{0.0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9, 1.0};
     const auto grid2D{
         Grids::CylinderGridFactory::create(refiner,
                                            Grids::Factory::generate_dual_grid_stencils_from_steps(
