@@ -11,10 +11,11 @@ namespace GPN
 {
     namespace FaceProperties
     {
-        template <typename Grid2D_t, typename Well_t, typename Fluid_t>
+        template <typename Grid2D_t, typename Well_t, typename Fluid_t, typename Hydrodynamics_t>
         struct IncompressibleRatesFactory
         {
             IncompressibleRatesFactory(
+                const Hydrodynamics_t& pressure_field,
                 const cptr<Grid2D_t> grid2D,
                 const Well_t &well,
                 const History &history,
@@ -23,6 +24,7 @@ namespace GPN
                   well{well},
                   history{history},
                   fluid{fluid},
+                  pressure_field{std::make_shared<Hydrodynamics_t>(pressure_field)},
                   pos{-1ll}
             {
             }
@@ -98,6 +100,7 @@ namespace GPN
             const Well_t &well;
             const History &history;
             const Fluid_t &fluid;
+            cptr<Hydrodynamics_t> pressure_field;
             cptr<FaceProperties::ReservoirFlowField> heat_flow_field;
             cptr<FaceProperties::ReservoirFlowField> volumetric_flow_field;
 

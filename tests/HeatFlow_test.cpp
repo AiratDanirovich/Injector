@@ -214,22 +214,26 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           is_permeable_stencils,
           grid_z)};
   // fluid model for the pressure field
-  auto pressure_field{IncompressibleFluidField{
+  auto pressure_field{
+    IncompressibleFluidField(
       start_time,
       water,
       core_data.permeability,
       external_pressure,
       well,
-      grid2D}};
+      grid2D)};
   // rates field factory
   FaceProperties::IncompressibleRatesFactory rates_factory{
+    pressure_field,
       grid2D, well, history, water};
   // initial condition
   const auto initial_state{ICFactory(start_time, grid2D, *geotherma)};
   // boundary conditions
   const GPN::BoundaryConditions::BoundaryConditions bc{
       *grid2D,
-      std::make_shared<FunctorBC<std::remove_const<decltype(well)>::type>>(
+      std::make_shared<FunctorBC<
+        std::remove_const<decltype(well)>::type, 
+        std::remove_const<decltype(pressure_field)>::type>>(
           core_data.is_permeable, rates_factory, grid2D),
       BoundaryConditions::BoundaryCondition::second};
   // solver

@@ -90,7 +90,7 @@ namespace GPN
             template <typename Grid_t>
             BoundaryConditions(
                 const Grid_t &grid,
-                std::shared_ptr<const BCFunctorBase> functor,
+                cptr<const BCFunctorBase> functor,
                 BoundaryCondition::BCType bc_type = BoundaryCondition::first)
                 : south_north{
                       BCSouth{grid.first_coord.dual_front(), bc_type},
