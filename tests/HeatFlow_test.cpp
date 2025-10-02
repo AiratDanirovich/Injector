@@ -214,15 +214,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           is_permeable_stencils,
           grid_z)};
   // fluid model for the pressure field
-  auto pressure_field{
-      IncompressibleFluidField{
-          start_time,
-          water,
-          core_data.permeability,
-          external_pressure,
-          well,
-          grid2D}};
-
   using IncompressibleFluidField_t =
       decltype(IncompressibleFluidField{
           start_time,
@@ -253,7 +244,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       *grid2D,
       std::make_shared<FunctorBC<
           std::remove_const<decltype(well)>::type,
-          std::remove_const<decltype(pressure_field)>::type>>(
+          IncompressibleFluidField_t>>(
           core_data.is_permeable, rates_factory, grid2D),
       BoundaryConditions::BoundaryCondition::second};
   // solver
