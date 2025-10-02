@@ -56,7 +56,7 @@ namespace GPN
 
     namespace FaceProperties
     {
-        struct FlowFieldFactory // FaceInterpolatedField_1D
+        struct FlowFieldFactory
         {
             template <typename Grid2D_t>
             static auto flow_in_dir1(

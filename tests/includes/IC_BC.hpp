@@ -39,7 +39,7 @@ namespace GPN
   {
     using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
     using ConvectionFieldFactory_t =
-        FaceProperties::RatesFactory<
+        FaceProperties::IncompressibleRatesFactory<
             Grid2D_t, Well_t, PhasePropertiesJT>;
     FunctorBC(
         const Logs::IsPermeable &is_permeable,

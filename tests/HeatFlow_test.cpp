@@ -205,7 +205,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // history
   const History history{make_history(data)};
   // rates field factory
-  FaceProperties::RatesFactory rates_factory{
+  FaceProperties::IncompressibleRatesFactory rates_factory{
       grid2D, well, history, water};
   // initial condition
   const auto initial_state{ICFactory(start_time, grid2D, *geotherma)};

@@ -13,15 +13,6 @@ namespace GPN
 {
     namespace Hydrodynamic
     {
-        struct PressureField
-            : public EqSolver::State::State2D
-        {
-            PressureField(const EqSolver::State::State2D &state)
-                : EqSolver::State::State2D{state}
-            {
-            }
-        };
-
         template <typename Grid2D_t, typename Fluid_t, typename Well_t>
         struct IncompressibleFluidField
         {
@@ -87,7 +78,5 @@ namespace GPN
 
             CellNodesContainer2D temp;
         };
-
     } // Hydrodynamic
-
 } // GPN

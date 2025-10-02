@@ -148,7 +148,7 @@ TEST_CASE("CrossFlow", "")
                                            r_stencils)};
 
     // rates field factory
-    FaceProperties::RatesFactory rates_factory{
+    FaceProperties::IncompressibleRatesFactory rates_factory{
         grid2D, well, history, water};
 
     rates_factory.set_flow_field(0.0, 1800.0);

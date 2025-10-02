@@ -12,9 +12,9 @@ namespace GPN
     namespace FaceProperties
     {
         template <typename Grid2D_t, typename Well_t, typename Fluid_t>
-        struct RatesFactory
+        struct IncompressibleRatesFactory
         {
-            RatesFactory(
+            IncompressibleRatesFactory(
                 const cptr<Grid2D_t> grid2D,
                 const Well_t &well,
                 const History &history,
