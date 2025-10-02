@@ -202,6 +202,10 @@ namespace GPN
                 {
                     const auto &split_flow_field{
                         convection_factory.get_heat_flow_in_axes2()};
+                    const auto &split_flow_field_pos{
+                        convection_factory.get_heat_flow_in_axes2_pos()};
+                    const auto &split_flow_field_neg{
+                        convection_factory.get_heat_flow_in_axes2_neg()};
 
                     const auto &pressure{convection_factory.get_pressure_field()};
 
@@ -211,18 +215,21 @@ namespace GPN
                     {
                         // copy Laplace term in y-direction for a fixed x
                         const SpMatrix &A{splitX.LaplaceTerm(row)};
-                        // convection term
-                        const auto &temp_flow{split_flow_field.row(row).matrix()};
-                        // positive flow values
-                        const auto flow_plus{(temp_flow.array() + temp_flow.array().abs()) / 2.0};
-                        assert(flow_plus.cols() == second_coord_size + 1ll);
-                        assert(std::all_of(flow_plus.cbegin(), flow_plus.cend(), [](const RealType v)
-                                           { return v >= 0.0; }));
-                        // negative flow values
-                        const auto flow_minus{(temp_flow.array() - temp_flow.array().abs()) / 2.0};
-                        assert(flow_minus.cols() == second_coord_size + 1ll);
-                        assert(std::all_of(flow_minus.cbegin(), flow_minus.cend(), [](const RealType v)
-                                           { return v <= 0.0; }));
+                        const auto flow_plus{split_flow_field_pos.row(row)};
+                        const auto flow_minus{split_flow_field_neg.row(row)};
+                        {
+                            // convection term
+                            const auto &temp_flow{split_flow_field.row(row).matrix()};
+                            // positive flow values
+                            const auto flow_plust{(temp_flow.array() + temp_flow.array().abs()) / 2.0};
+                            // negative flow values
+                            const auto flow_minust{(temp_flow.array() - temp_flow.array().abs()) / 2.0};
+                            for(auto col{0ll}; col < flow_plust.cols(); ++col)
+                            {
+                                assert(flow_plus(col) == flow_plust(col));
+                                assert(flow_minus(col) == flow_minust(col));
+                            }
+                        }
 
                         // upper diagonal
                         for (auto col{0ll}; col < second_coord_size - 1ll; ++col)
@@ -259,9 +266,13 @@ namespace GPN
                 }
 
                 void assemble_y(auto &tripletList)
-                {
+                {                        
                     const auto &split_flow_field{
                         convection_factory.get_heat_flow_in_axes1()};
+                    const auto &split_flow_field_pos{
+                        convection_factory.get_heat_flow_in_axes1_pos()};
+                    const auto &split_flow_field_neg{
+                        convection_factory.get_heat_flow_in_axes1_neg()};
 
                     // take every line for a fixed y-node.
                     // It is a col of 2D grid representation
@@ -269,18 +280,22 @@ namespace GPN
                     {
                         // Laplace term
                         const SpMatrix &A{splitY.LaplaceTerm(col)};
-                        // convection term
-                        const auto &temp_flow{split_flow_field.col(col).matrix()};
-                        // positive flow values
-                        const auto flow_plus{(temp_flow.array() + temp_flow.array().abs()) / 2.0};
-                        assert(flow_plus.rows() == first_coord_size + 1ll);
-                        assert(std::all_of(flow_plus.cbegin(), flow_plus.cend(), [](const RealType v)
-                                           { return v >= 0.0; }));
-                        // negative flow values
-                        const auto flow_minus{(temp_flow.array() - temp_flow.array().abs()) / 2.0};
-                        assert(flow_minus.rows() == first_coord_size + 1ll);
-                        assert(std::all_of(flow_minus.cbegin(), flow_minus.cend(), [](const RealType v)
-                                           { return v <= 0.0; }));
+
+                        const auto flow_plus{split_flow_field_pos.col(col)};
+                        const auto flow_minus{split_flow_field_neg.col(col)};
+                        {
+                            // convection term
+                            const auto &temp_flow{split_flow_field.col(col).matrix()};
+                            // positive flow values
+                            const auto flow_plust{(temp_flow.array() + temp_flow.array().abs()) / 2.0};
+                            // negative flow values
+                            const auto flow_minust{(temp_flow.array() - temp_flow.array().abs()) / 2.0};
+                            for(auto row{0ll}; row < flow_plust.rows(); ++row)
+                            {
+                                assert(flow_plus(row) == flow_plust(row));
+                                assert(flow_minus(row) == flow_minust(row));
+                            }
+                        }
 
                         // upper diagonal
                         for (auto row{0ll}; row < first_coord_size - 1ll; ++row)

@@ -48,16 +48,13 @@ namespace GPN
                     assert(history.regimes[pos] == InjectorRegimes::FixedRate);
 
                     // volumetric flow field in two directions
-                    heat_flow_field = 
+                    heat_flow_field =
                         std::make_shared<FaceProperties::HeatFlowField>(
+                            // create ReservoirFlowField
                             FaceProperties::FlowFactory::create_from_well(
-                                history.get_record(pos), well, *grid2D), fluid.volumetric_heat_capacity);
-                    // heat flow field in two directions.
-                    // First, the flow field is copied
-                //    heat_flow_field =
-                //        std::make_shared<FaceProperties::ReservoirFlowField>(*volumetric_flow_field);
-                    // Second, the flow files is multiplied by volumetric heat capacity of fluid
-                //    FaceProperties::multiply(*heat_flow_field, fluid.volumetric_heat_capacity);
+                                history.get_record(pos), well, *grid2D),
+                            // multiple by heat capaity
+                            fluid.volumetric_heat_capacity);
                 }
 
                 pressure_field->set_pressure_field(well.get_RFP(get_history_record()));
@@ -71,15 +68,22 @@ namespace GPN
             {
                 return heat_flow_field->axes2_as_face_normal;
             }
-            
-            // const auto &get_volumetric_flow_in_axes1() const
-            // {
-            //     return volumetric_flow_field->axes1_as_face_normal;
-            // }
-            // const auto &get_volumetric_flow_in_axes2() const
-            // {
-            //     return volumetric_flow_field->axes2_as_face_normal;
-            // }
+            const auto &get_heat_flow_in_axes1_pos() const
+            {
+                return heat_flow_field->axes1_as_face_normal_pos;
+            }
+            const auto &get_heat_flow_in_axes2_pos() const
+            {
+                return heat_flow_field->axes2_as_face_normal_pos;
+            }
+            const auto &get_heat_flow_in_axes1_neg() const
+            {
+                return heat_flow_field->axes1_as_face_normal_neg;
+            }
+            const auto &get_heat_flow_in_axes2_neg() const
+            {
+                return heat_flow_field->axes2_as_face_normal_neg;
+            }
 
             const auto get_temperature() const
             {
@@ -102,14 +106,15 @@ namespace GPN
             {
                 return pressure_field->current_pressure();
             }
+
         protected:
             const cptr<Grid2D_t> grid2D;
             const Well_t &well;
             const History &history;
             const Fluid_t &fluid;
             cptr<Hydrodynamics_t> pressure_field;
-            cptr<FaceProperties::ReservoirFlowField> heat_flow_field;
-        //    cptr<FaceProperties::ReservoirFlowField> volumetric_flow_field;
+            cptr<FaceProperties::HeatFlowField> heat_flow_field;
+            //    cptr<FaceProperties::ReservoirFlowField> volumetric_flow_field;
 
         private:
             std::ptrdiff_t pos{-1ll};
@@ -124,11 +129,11 @@ namespace GPN
                 const cptr<Grid2D_t> grid2D,
                 const Logs::IsPermeable &is_permeable)
                 : heat_flow_field{
-                      std::make_shared<FaceProperties::ReservoirFlowField>(
+                      std::make_shared<FaceProperties::HeatFlowField>(
                           FaceProperties::FlowFactory::horizontal_flow(
-                              well_rate, is_permeable, *grid2D))}
+                              well_rate, is_permeable, *grid2D),
+                            fluid.volumetric_heat_capacity)}
             {
-                FaceProperties::multiply(*heat_flow_field, fluid.volumetric_heat_capacity);
             }
 
             void set_flow_field(
@@ -144,10 +149,26 @@ namespace GPN
             {
                 return heat_flow_field->axes2_as_face_normal;
             }
+            const auto &get_heat_flow_in_axes1_pos() const
+            {
+                return heat_flow_field->axes1_as_face_normal_pos;
+            }
+            const auto &get_heat_flow_in_axes2_pos() const
+            {
+                return heat_flow_field->axes2_as_face_normal_pos;
+            }
+            const auto &get_heat_flow_in_axes1_neg() const
+            {
+                return heat_flow_field->axes1_as_face_normal_neg;
+            }
+            const auto &get_heat_flow_in_axes2_neg() const
+            {
+                return heat_flow_field->axes2_as_face_normal_neg;
+            }
 
         protected:
             const cptr<Grid2D_t> grid2D;
-            const cptr<FaceProperties::ReservoirFlowField> heat_flow_field;
+            const cptr<FaceProperties::HeatFlowField> heat_flow_field;
         };
 
         template <typename Grid2D_t>
@@ -158,10 +179,11 @@ namespace GPN
                 const Logs::IsPermeable &is_permeable,
                 const Logs::ExternalPressure &ext_pressure)
                 : heat_flow_field{
-                      std::make_shared<FaceProperties::ReservoirFlowField>(
+                      std::make_shared<FaceProperties::HeatFlowField>(
                           FaceProperties::FlowFactory::zero_flow(
-                              is_permeable, *grid2D))},
-                P_ext{Properties::FieldFactory::create(ext_pressure, grid2D)}
+                              is_permeable, *grid2D),
+                          1.0)},
+                  P_ext{Properties::FieldFactory::create(ext_pressure, grid2D)}
             {
             }
 
@@ -169,7 +191,7 @@ namespace GPN
             {
             }
 
-            const auto &get_heat_flow_in_axes1() const
+const auto &get_heat_flow_in_axes1() const
             {
                 return heat_flow_field->axes1_as_face_normal;
             }
@@ -177,6 +199,23 @@ namespace GPN
             {
                 return heat_flow_field->axes2_as_face_normal;
             }
+            const auto &get_heat_flow_in_axes1_pos() const
+            {
+                return heat_flow_field->axes1_as_face_normal_pos;
+            }
+            const auto &get_heat_flow_in_axes2_pos() const
+            {
+                return heat_flow_field->axes2_as_face_normal_pos;
+            }
+            const auto &get_heat_flow_in_axes1_neg() const
+            {
+                return heat_flow_field->axes1_as_face_normal_neg;
+            }
+            const auto &get_heat_flow_in_axes2_neg() const
+            {
+                return heat_flow_field->axes2_as_face_normal_neg;
+            }
+
 
             const auto get_pressure_field() const
             {
@@ -184,8 +223,8 @@ namespace GPN
             }
 
         protected:
-            const cptr<FaceProperties::ReservoirFlowField> heat_flow_field;
-            
+            const cptr<FaceProperties::HeatFlowField> heat_flow_field;
+
             const Properties::Pressure<Grid2D_t> P_ext;
         };
     } // Properties
