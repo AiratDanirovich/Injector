@@ -17,6 +17,7 @@
 #include <Injector/Model/Well/Well.hpp>
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
+#include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleFluid.hpp>
 #include <Injector/Model/Completion.hpp>
 #include <Injector/Model/ExtrudedCasingFactory.hpp>
 
@@ -51,6 +52,7 @@ using namespace GPN::CrossFlow;
 using namespace GPN::Grids;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
+using namespace GPN::Hydrodynamic;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::FullImplicit;
 
@@ -80,6 +82,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto from_coords{data["collector"]["cross_flow"]["from_coord"].get<VR>()};
   const auto to_layers{data["collector"]["cross_flow"]["to_layers"].get<std::vector<std::ptrdiff_t>>()};
   const auto is_permeable_stencils{set_is_permeable_stencils(is_perforated_stencils, to_layers)};
+  const auto ext_pressure_stencils{transfer_to_eigen(data["collector"]["external_pressure"].get<VR>(), 1e5)};
   // heat logs
   const auto solid_heatconductivity_stencils{transfer_to_eigen(data["collector"]["heatConductivity"].get<VR>())};
   const auto solid_density_stencils{transfer_to_eigen(data["collector"]["solidDensity"].get<VR>())};
@@ -204,6 +207,20 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   heat_face_props.apply_well(extr_completion, well);
   // history
   const History history{make_history(data)};
+  // external pressure log
+  const auto external_pressure{
+      Logs::ExtPressureFactory::create(
+          ext_pressure_stencils,
+          is_permeable_stencils,
+          grid_z)};
+  // fluid model for the pressure field
+  auto pressure_field{IncompressibleFluidField{
+      start_time,
+      water,
+      core_data.permeability,
+      external_pressure,
+      well,
+      grid2D}};
   // rates field factory
   FaceProperties::IncompressibleRatesFactory rates_factory{
       grid2D, well, history, water};
@@ -271,14 +288,14 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     CHECK_THAT(v1(row, col), WithinRel(v1(row + 1, col) + v2(row, col + 1ll), tol));
   }
   // compare against WFP
-  const auto WFP{(water.volumetric_heat_capacity*well.get_WFP(rates_factory.get_history_record())).eval()};
+  const auto WFP{(water.volumetric_heat_capacity * well.get_WFP(rates_factory.get_history_record())).eval()};
   for (auto row{0ll}, col{1ll}; row < v2.rows(); ++row)
   {
     CHECK(v2(row, col) == v2(row, 2ll));
     CHECK(v2(row, col) == WFP(row));
   }
   // compare against RFP
-  const auto RFP{(water.volumetric_heat_capacity*well.get_RFP(rates_factory.get_history_record())).eval()};
+  const auto RFP{(water.volumetric_heat_capacity * well.get_RFP(rates_factory.get_history_record())).eval()};
   for (auto row{0ll}; row < v2.rows(); ++row)
   {
     CHECK(v2(row, 3ll) == RFP(row));
