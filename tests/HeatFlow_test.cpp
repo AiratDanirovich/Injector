@@ -24,8 +24,6 @@
 #include <Injector/Properties/FlowField.hpp>
 #include <Injector/Properties/Factory.hpp>
 #include <Injector/Solver/BoundaryConditions.hpp>
-#include <Injector/Solver/State2D.hpp>
-#include <Injector/Solver/InitialCondition.hpp>
 #include <Injector/Solver/FullImplicit/Solver.hpp>
 #include <Injector/Solver/SolverManager.hpp>
 
@@ -36,6 +34,7 @@
 #include "includes/get_completion.hpp"
 #include "includes/generate_stencils_and_steps.hpp"
 #include "includes/set_is_permeable_stencils.hpp"
+#include "includes/IC_BC.hpp"
 
 #include <nlohmann/json.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -55,75 +54,6 @@ using namespace GPN::Completion;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::FullImplicit;
 
-/// @brief Initial temperature is assumed to be constant
-struct FunctorIC : public InitialConditions::ICFunctorBase
-{
-  FunctorIC(const Logs::Geotherma &geotherma)
-      : geotherma{geotherma}
-  {
-  }
-  RealType operator()(const ptrdiff_t z_id, const ptrdiff_t, RealType) const override
-  {
-    return geotherma(z_id);
-  }
-
-protected:
-  const Logs::Geotherma &geotherma;
-};
-
-template <typename Grid_t_ptr>
-auto ICFactory(RealType t0, const Grid_t_ptr grid, const Logs::Geotherma &geotherma)
-{
-  return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{geotherma}, t0)};
-}
-
-template <typename Well_t>
-struct FunctorBC : public BoundaryConditions::BCFunctorBase
-{
-  using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
-  using ConvectionFieldFactory_t =
-      GPN::FaceProperties::RatesFactory<
-          Grid2D_t, Well_t, PhaseProperties>;
-  FunctorBC(
-      const Logs::IsPermeable &is_permeable,
-      const ConvectionFieldFactory_t &flow_field, // volumetric heat flow rate
-      const cptr<const Grid2D_t> grid_ptr)
-      : flow_field{flow_field},
-        is_permeable{is_permeable},
-        grid_ptr{grid_ptr}
-  {
-  }
-
-  RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t) const override
-  {
-    if (r == grid_ptr->second_coord.dual_front())
-      return flow_field.get_flow_in_axes2()(z_id, 0ll) * flow_field.get_temperature();
-
-    if (r == grid_ptr->second_coord.dual_back())
-      return 0.0;
-
-    assert(false);
-    return 0.0;
-  }
-
-  RealType operator()(const RealType z, const ptrdiff_t r_id, const RealType t) const override
-  {
-    if (z == grid_ptr->first_coord.dual_front())
-      return flow_field.get_flow_in_axes1()(0ll, r_id) * flow_field.get_temperature();
-
-    if (z == grid_ptr->first_coord.dual_back())
-      return 0.0;
-
-    assert(false);
-    return 0.0;
-  }
-
-protected:
-  const Logs::IsPermeable &is_permeable;
-  const cptr<const Grid2D_t> grid_ptr;
-  const ConvectionFieldFactory_t &flow_field;
-};
-
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
   ifstream f("heatflow_test_data.json");
@@ -137,9 +67,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       viscosity{data["fluid"]["viscosity"]},
       density{data["fluid"]["density"]},
       capacity{data["fluid"]["specific_heat_capacity"]},
-      heat_conductivity{data["fluid"]["heat_conductivity"]};
+      heat_conductivity{data["fluid"]["heat_conductivity"]},
+      joule_thomson{data["fluid"]["joule_thomson"]};
   /*collector*/
-  const VR thickness{data["collector"]["thickness"].get<VR>()};
+  const auto thickness{data["collector"]["thickness"].get<VR>()};
   // const ptrdiff_t nLayers{thickness.size()};
   // hydrodynamic logs
   const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"].get<VR>())};
@@ -223,12 +154,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       grid_z};
 
   // make fluid
-  const PhaseProperties water{
-      FluidFactory::create_water(
+  const PhasePropertiesJT water{
+      FluidFactory::create_water_JT(
           Viscosity{viscosity},
           GPN::Density{density},
           GPN::SpecificHeatCapacity{capacity},
-          GPN::HeatConductivity{heat_conductivity})};
+          GPN::HeatConductivity{heat_conductivity},
+          JouleThomson{joule_thomson})};
   // well
   // const Well_KH well{
   //     water, core_data.is_permeable, core_data.is_perforated, core_data.permeability, well_holes, rMax};
@@ -312,9 +244,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   {
     string path{std::string{"flow_field.txt"}};
     ofstream f{path};
-    f << (rates_factory.get_flow_in_axes1() / precision).round() * precision << endl
+    f << (rates_factory.get_heat_flow_in_axes1() / precision).round() * precision << endl
       << endl;
-    f << (rates_factory.get_flow_in_axes2() / precision).round() * precision << endl
+    f << (rates_factory.get_heat_flow_in_axes2() / precision).round() * precision << endl
       << endl;
     f.close();
   }
@@ -322,7 +254,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const auto rate{rates_factory.get_rate()};
   const auto pressure{rates_factory.get_pressure()};
   // verify flow field
-  const auto &v1 = rates_factory.get_flow_in_axes1(); // verticle flow
+  const auto &v1 = rates_factory.get_heat_flow_in_axes1(); // verticle flow
   for (auto row{0ll}; row < v1.rows(); ++row)
   {
     CHECK(v1(row, 0ll) * rate >= 0.0); // flow in tube
@@ -331,7 +263,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     for (auto col{3ll}; col < v1.cols(); ++col)
       CHECK(v1(row, col) == 0.0);
   }
-  const auto &v2 = rates_factory.get_flow_in_axes2(); // horizontal flow
+  const auto &v2 = rates_factory.get_heat_flow_in_axes2(); // horizontal flow
   // boundary conditions at r = 0.0
   for (auto row{0ll}, col{0ll}; row < v2.rows(); ++row)
   {
