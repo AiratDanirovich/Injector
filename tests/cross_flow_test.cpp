@@ -164,17 +164,29 @@ TEST_CASE("CrossFlow", "")
             is_permeable_stencils,
             grid_z)};
     // fluid model for the pressure field
-    auto pressure_field{
-        IncompressibleFluidField(
+
+    using IncompressibleFluidField_t =
+        decltype(IncompressibleFluidField{
             start_time,
             water,
             permeability,
             external_pressure,
             well,
-            grid2D)};
+            grid2D});
+
+    shared_ptr<IncompressibleFluidField_t>
+        ptr_pressure_field{
+            make_shared<IncompressibleFluidField_t>(
+                start_time,
+                water,
+                permeability,
+                external_pressure,
+                well,
+                grid2D)};
+
     // rates field factory
     FaceProperties::IncompressibleRatesFactory rates_factory{
-        pressure_field,
+        ptr_pressure_field,
         grid2D, well, history, water};
 
     rates_factory.set_flow_field(0.0, 1800.0);

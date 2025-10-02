@@ -15,7 +15,7 @@ namespace GPN
         struct IncompressibleRatesFactory
         {
             IncompressibleRatesFactory(
-                const Hydrodynamics_t& pressure_field,
+                cptr<Hydrodynamics_t> pressure_field,
                 const cptr<Grid2D_t> grid2D,
                 const Well_t &well,
                 const History &history,
@@ -24,7 +24,7 @@ namespace GPN
                   well{well},
                   history{history},
                   fluid{fluid},
-                  pressure_field{std::make_shared<Hydrodynamics_t>(pressure_field)},
+                  pressure_field{pressure_field},
                   pos{-1ll}
             {
             }
@@ -58,6 +58,8 @@ namespace GPN
                     // Second, the flow files is multiplied by volumetric heat capacity of fluid
                     FaceProperties::multiply(*heat_flow_field, fluid.volumetric_heat_capacity);
                 }
+
+                pressure_field->set_pressure_field(well.get_RFP(get_history_record()));
             }
 
             const auto &get_heat_flow_in_axes1() const

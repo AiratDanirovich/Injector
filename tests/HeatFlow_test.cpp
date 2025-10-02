@@ -215,16 +215,36 @@ TEST_CASE("Solver", "SelfSimilarCyl")
           grid_z)};
   // fluid model for the pressure field
   auto pressure_field{
-    IncompressibleFluidField(
-      start_time,
-      water,
-      core_data.permeability,
-      external_pressure,
-      well,
-      grid2D)};
+      IncompressibleFluidField{
+          start_time,
+          water,
+          core_data.permeability,
+          external_pressure,
+          well,
+          grid2D}};
+
+  using IncompressibleFluidField_t =
+      decltype(IncompressibleFluidField{
+          start_time,
+          water,
+          core_data.permeability,
+          external_pressure,
+          well,
+          grid2D});
+
+  shared_ptr<IncompressibleFluidField_t>
+      ptr_pressure_field{
+          make_shared<IncompressibleFluidField_t>(
+              start_time,
+              water,
+              core_data.permeability,
+              external_pressure,
+              well,
+              grid2D)};
+
   // rates field factory
   FaceProperties::IncompressibleRatesFactory rates_factory{
-    pressure_field,
+      ptr_pressure_field,
       grid2D, well, history, water};
   // initial condition
   const auto initial_state{ICFactory(start_time, grid2D, *geotherma)};
@@ -232,8 +252,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   const GPN::BoundaryConditions::BoundaryConditions bc{
       *grid2D,
       std::make_shared<FunctorBC<
-        std::remove_const<decltype(well)>::type, 
-        std::remove_const<decltype(pressure_field)>::type>>(
+          std::remove_const<decltype(well)>::type,
+          std::remove_const<decltype(pressure_field)>::type>>(
           core_data.is_permeable, rates_factory, grid2D),
       BoundaryConditions::BoundaryCondition::second};
   // solver
