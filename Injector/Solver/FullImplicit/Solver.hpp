@@ -253,7 +253,7 @@ namespace GPN
                 }
 
                 void assemble_y(auto &tripletList)
-                {                        
+                {
                     const auto &split_flow_field{
                         convection_factory.get_heat_flow_in_axes1()};
                     const auto &split_flow_field_pos{
