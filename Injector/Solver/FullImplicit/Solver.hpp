@@ -142,8 +142,8 @@ namespace GPN
 
                     // tau_factor multiplies Delta_u at different time moments,
                     // i.e., t and t+tau
-                    const Eigen::ArrayX<RealType> tau_factor{
-                        time_factor.Divide(tau).reshaped(A_size, 1ll).eval()};
+                    const Eigen::ArrayXX<RealType> tau_factor{
+                        time_factor.Divide(tau).eval()};
 
                     assert(A_size == tau_factor.size());
 
@@ -151,7 +151,7 @@ namespace GPN
                     assemble_x(tripletList);
 
                     A.setFromTriplets(tripletList.begin(), tripletList.end());
-                    A.diagonal() = A.diagonal() + tau_factor.matrix();
+                    A.diagonal() = A.diagonal() + tau_factor.reshaped(A_size, 1ll).matrix();
 
                     RHS_t rhs{assemble_RHS(state, tau_factor, A_size)};
                     // BC
@@ -170,8 +170,8 @@ namespace GPN
                     const auto A_size) const
                 {
                     return 
-                        (state.cur_state.reshaped(A_size, 1ll).array() * tau_factor +
-                        convection_factory.get_spatial_JT_contribution().reshaped(A_size, 1ll).array())
+                        (state.cur_state.array() * tau_factor +
+                        convection_factory.get_spatial_JT_contribution()).reshaped(A_size, 1ll)
                             .matrix();
                 }
 
