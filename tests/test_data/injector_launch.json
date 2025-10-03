@@ -3,7 +3,8 @@
     "density": 1000,
     "viscosity": 6e-4,
     "specific_heat_capacity": 4200,
-    "heat_conductivity": 1.00000
+    "heat_conductivity": 1.00000,
+    "joule_thomson": -0.02
   },
   "collector": {
     "thickness": [   100, 2,   3,    21],
