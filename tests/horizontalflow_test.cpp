@@ -76,7 +76,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   {
     if (r == grid_ptr->second_coord.dual_front())
     {
-      return flow_field.get_flow_in_axes2()(z_id, 0ll) * inlet_temp;
+      return flow_field.get_heat_flow_in_axes2()(z_id, 0ll) * inlet_temp;
     }
 
     return 0.0;
@@ -202,12 +202,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     solver.save_state();
   }
 
-  const auto &v1 = rates_factory.get_flow_in_axes1();
+  const auto &v1 = rates_factory.get_heat_flow_in_axes1();
   for (auto col{0ll}; col < v1.cols(); ++col)
     for (auto row{0ll}; row < v1.rows(); ++row)
       CHECK(v1(row, col) == 0.0);
 
-  const auto &v2 = rates_factory.get_flow_in_axes2();
+  const auto &v2 = rates_factory.get_heat_flow_in_axes2();
   for (auto col{0ll}; col < v2.cols(); ++col)
     for (auto row{0ll}; row < v2.rows(); ++row)
       CHECK(((v2(row, col) > 0.0) || ((v2(row, col) == 0.0) && (hydrodynamics_logs.is_permeable.log_vals(row) == 0.0))));
@@ -234,9 +234,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     f << states.back().cur_state << endl << endl;
 
-    f << rates_factory.get_flow_in_axes2() << endl << endl;
+    f << rates_factory.get_heat_flow_in_axes2() << endl << endl;
     
-    f << rates_factory.get_flow_in_axes1() << endl << endl;
+    f << rates_factory.get_heat_flow_in_axes1() << endl << endl;
 
     f.close();
   }

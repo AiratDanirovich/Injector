@@ -32,6 +32,7 @@ add_catch2_test(cross_flow_test)
 
 add_catch2_test(grid_test)
 add_catch2_test(initialstate_test)
+add_catch2_test(incompressible_fluid_field_test)
 add_catch2_test(boundaryconditions_test)
 add_catch2_test(interpolator_test)
 add_catch2_test(fields_test)

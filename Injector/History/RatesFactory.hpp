@@ -6,15 +6,18 @@
 
 #include <Injector/History/History.hpp>
 #include <Injector/Properties/FlowField.hpp>
+#include <Injector/Properties/PhysicalField.hpp>
+#include <Injector/Properties/JT_FieldFactory.hpp>
 
 namespace GPN
 {
     namespace FaceProperties
     {
-        template <typename Grid2D_t, typename Well_t, typename Fluid_t>
-        struct RatesFactory
+        template <typename Grid2D_t, typename Well_t, typename Fluid_t, typename Hydrodynamics_t>
+        struct IncompressibleRatesFactory
         {
-            RatesFactory(
+            IncompressibleRatesFactory(
+                cptr<Hydrodynamics_t> pressure_field,
                 const cptr<Grid2D_t> grid2D,
                 const Well_t &well,
                 const History &history,
@@ -23,8 +26,8 @@ namespace GPN
                   well{well},
                   history{history},
                   fluid{fluid},
-                  pos{-1ll},
-                  inlet_temperature{std::numeric_limits<RealType>::lowest()}
+                  pressure_field{pressure_field},
+                  pos{-1ll}
             {
             }
 
@@ -45,56 +48,84 @@ namespace GPN
                     // this method only works at FixedRate injection
                     assert(history.regimes[pos] == InjectorRegimes::FixedRate);
 
+                    // volumetric flow field in two directions
                     heat_flow_field =
-                        std::make_shared<FaceProperties::ReservoirFlowField>(
+                        std::make_shared<FaceProperties::HeatFlowField>(
+                            // create ReservoirFlowField
                             FaceProperties::FlowFactory::create_from_well(
-                                history.get_record(pos), well, *grid2D));
-
-                    FaceProperties::multiply(*heat_flow_field, fluid.volumetric_heat_capacity);
-
-                    inlet_temperature = history.temps(pos);
-                    rate = history.rates(pos);
-                    pressure = history.pressure(pos);
+                                history.get_record(pos), well, *grid2D),
+                            // multiple by heat capaity
+                            fluid.volumetric_heat_capacity);
                 }
+
+                pressure_field->set_pressure_field(well.get_RFP(get_history_record()));
             }
 
-            const auto &get_flow_in_axes1() const
+            const auto get_spatial_JT_contribution() const
+            {
+                return Properties::JT_FieldFactory::create(*this).its_values;
+            }
+
+            const auto &get_heat_flow_in_axes1() const
             {
                 return heat_flow_field->axes1_as_face_normal;
             }
-            const auto &get_flow_in_axes2() const
+            const auto &get_heat_flow_in_axes2() const
             {
                 return heat_flow_field->axes2_as_face_normal;
+            }
+            const auto &get_heat_flow_in_axes1_pos() const
+            {
+                return heat_flow_field->axes1_as_face_normal_pos;
+            }
+            const auto &get_heat_flow_in_axes2_pos() const
+            {
+                return heat_flow_field->axes2_as_face_normal_pos;
+            }
+            const auto &get_heat_flow_in_axes1_neg() const
+            {
+                return heat_flow_field->axes1_as_face_normal_neg;
+            }
+            const auto &get_heat_flow_in_axes2_neg() const
+            {
+                return heat_flow_field->axes2_as_face_normal_neg;
             }
 
             const auto get_temperature() const
             {
-                return inlet_temperature;
+                return history.temps(pos);
             }
             const auto get_rate() const
             {
-                return rate;
+                return history.rates(pos);
             }
             const auto get_pressure() const
             {
-                return pressure;
+                return history.pressure(pos);
             }
             const auto get_history_record() const
             {
                 return history.get_record(pos);
             }
 
-        protected:
+            const auto get_pressure_field() const
+            {
+                return pressure_field->current_pressure();
+            }
+
+        public:
             const cptr<Grid2D_t> grid2D;
             const Well_t &well;
             const History &history;
             const Fluid_t &fluid;
-            cptr<FaceProperties::ReservoirFlowField> heat_flow_field;
+            cptr<Hydrodynamics_t> pressure_field;
+
+        protected:
+            cptr<FaceProperties::HeatFlowField> heat_flow_field;
+            //    cptr<FaceProperties::ReservoirFlowField> volumetric_flow_field;
 
         private:
             std::ptrdiff_t pos{-1ll};
-            RealType inlet_temperature;
-            RealType rate, pressure;
         };
 
         template <typename Grid2D_t, typename Fluid_t>
@@ -106,11 +137,11 @@ namespace GPN
                 const cptr<Grid2D_t> grid2D,
                 const Logs::IsPermeable &is_permeable)
                 : heat_flow_field{
-                      std::make_shared<FaceProperties::ReservoirFlowField>(
+                      std::make_shared<FaceProperties::HeatFlowField>(
                           FaceProperties::FlowFactory::horizontal_flow(
-                              well_rate, is_permeable, *grid2D))}
+                              well_rate, is_permeable, *grid2D),
+                          fluid.volumetric_heat_capacity)}
             {
-                FaceProperties::multiply(*heat_flow_field, fluid.volumetric_heat_capacity);
             }
 
             void set_flow_field(
@@ -118,48 +149,35 @@ namespace GPN
             {
             }
 
-            const auto &get_flow_in_axes1() const
+            const auto &get_heat_flow_in_axes1() const
             {
                 return heat_flow_field->axes1_as_face_normal;
             }
-            const auto &get_flow_in_axes2() const
+            const auto &get_heat_flow_in_axes2() const
             {
                 return heat_flow_field->axes2_as_face_normal;
+            }
+            const auto &get_heat_flow_in_axes1_pos() const
+            {
+                return heat_flow_field->axes1_as_face_normal_pos;
+            }
+            const auto &get_heat_flow_in_axes2_pos() const
+            {
+                return heat_flow_field->axes2_as_face_normal_pos;
+            }
+            const auto &get_heat_flow_in_axes1_neg() const
+            {
+                return heat_flow_field->axes1_as_face_normal_neg;
+            }
+            const auto &get_heat_flow_in_axes2_neg() const
+            {
+                return heat_flow_field->axes2_as_face_normal_neg;
             }
 
         protected:
             const cptr<Grid2D_t> grid2D;
-            const cptr<FaceProperties::ReservoirFlowField> heat_flow_field;
+            const cptr<FaceProperties::HeatFlowField> heat_flow_field;
         };
 
-        template <typename Grid2D_t>
-        struct ZeroRatesFactory
-        {
-            ZeroRatesFactory(
-                const cptr<Grid2D_t> grid2D,
-                const Logs::IsPermeable &is_permeable)
-                : heat_flow_field{
-                      std::make_shared<FaceProperties::ReservoirFlowField>(
-                          FaceProperties::FlowFactory::zero_flow(
-                              is_permeable, *grid2D))}
-            {
-            }
-
-            void set_flow_field(double, RealType)
-            {
-            }
-
-            const auto &get_flow_in_axes1() const
-            {
-                return heat_flow_field->axes1_as_face_normal;
-            }
-            const auto &get_flow_in_axes2() const
-            {
-                return heat_flow_field->axes2_as_face_normal;
-            }
-
-        protected:
-            const cptr<FaceProperties::ReservoirFlowField> heat_flow_field;
-        };
-    } // Properties
+    } // FaceProperties
 } // GPN

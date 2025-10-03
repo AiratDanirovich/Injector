@@ -21,6 +21,9 @@ namespace GPN
     struct HeatConductivity : public SomeProperty
     {
     };
+    struct JouleThomson : public SomeProperty
+    {
+    };
 
     struct StationaryPhaseProperties
     {
@@ -59,10 +62,32 @@ namespace GPN
         const RealType viscosity;
     };
 
+    struct PhasePropertiesJT
+    : public PhaseProperties
+    {
+        PhasePropertiesJT( 
+            const PhaseProperties& props,
+            JouleThomson JT) noexcept
+            : PhaseProperties{props},
+              JT{JT}
+        {
+        }
+
+        const RealType JT;
+    };
+
     struct Water : public PhaseProperties
     {
         Water(const PhaseProperties &props) noexcept
             : PhaseProperties{props}
+        {
+        }
+    };
+
+    struct WaterJT : public PhasePropertiesJT
+    {
+        WaterJT(const PhasePropertiesJT &props) noexcept
+            : PhasePropertiesJT{props}
         {
         }
     };

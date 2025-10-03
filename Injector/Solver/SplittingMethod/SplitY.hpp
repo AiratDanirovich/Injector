@@ -10,7 +10,7 @@
 #include <Eigen/SparseCore>
 
 #include <Injector/Grids/Defines.h>
-#include <Injector/Solver/State2D.hpp>
+// #include <Injector/Solver/State2D.hpp>
 
 #include <Injector/Solver/SplittingMethod/BaseSplit.hpp>
 

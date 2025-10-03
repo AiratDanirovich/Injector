@@ -56,7 +56,7 @@ namespace GPN
 
     namespace FaceProperties
     {
-        struct FlowFieldFactory // FaceInterpolatedField_1D
+        struct FlowFieldFactory
         {
             template <typename Grid2D_t>
             static auto flow_in_dir1(
@@ -91,6 +91,8 @@ namespace GPN
 
         struct ReservoirFlowField
         {
+            ReservoirFlowField(ReservoirFlowField &&) noexcept = default;
+
             ReservoirFlowField(
                 const FaceValuesContainer &axes1_value,
                 const FaceValuesContainer &axes2_value)
@@ -202,6 +204,43 @@ namespace GPN
                               is_permeable},
                     grid2D};
             }
+        };
+
+        struct HeatFlowField
+            : public ReservoirFlowField
+        {
+            HeatFlowField(
+                ReservoirFlowField &&flow_field,
+                const RealType volumetric_heat_capacity)
+                : ReservoirFlowField{std::move(flow_field)}
+            {
+                multiply(*this, volumetric_heat_capacity);
+
+                axes2_as_face_normal_pos = (axes2_as_face_normal + axes2_as_face_normal.abs()) / 2.0;
+                axes2_as_face_normal_neg = (axes2_as_face_normal - axes2_as_face_normal.abs()) / 2.0;
+
+                axes1_as_face_normal_pos = (axes1_as_face_normal + axes1_as_face_normal.abs()) / 2.0;
+                axes1_as_face_normal_neg = (axes1_as_face_normal - axes1_as_face_normal.abs()) / 2.0;
+                {
+                    assert(axes2_as_face_normal_pos.cols() == axes2_as_face_normal.cols());
+                    // assert(std::all_of(axes2_as_face_normal_pos.cbegin(), axes2_as_face_normal_pos.cend(), [](const RealType v)
+                    //                    { return v >= 0.0; }));
+                    assert(axes2_as_face_normal_neg.cols() == axes2_as_face_normal.cols());
+                    // assert(std::all_of(axes2_as_face_normal_neg.cbegin(), axes2_as_face_normal_neg.cend(), [](const RealType v)
+                    //                    { return v <= 0.0; }));
+
+                    assert(axes1_as_face_normal_pos.cols() == axes1_as_face_normal.cols());
+                    // assert(std::all_of(axes1_as_face_normal_pos.cbegin(), axes1_as_face_normal_pos.cend(), [](const RealType v)
+                    //                    { return v >= 0.0; }));
+                    assert(axes1_as_face_normal_neg.cols() == axes1_as_face_normal.cols());
+                    // assert(std::all_of(axes1_as_face_normal_neg.cbegin(), axes1_as_face_normal_neg.cend(), [](const RealType v)
+                    //                    { return v <= 0.0; }));
+                }
+            }
+
+            // pos and neg components of flux
+            FaceValuesContainer axes1_as_face_normal_pos, axes1_as_face_normal_neg;
+            FaceValuesContainer axes2_as_face_normal_pos, axes2_as_face_normal_neg;
         };
 
     } // Properties

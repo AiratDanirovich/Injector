@@ -53,6 +53,14 @@ namespace GPN
             {
                 return its_values.col(i);
             }
+            // auto row(auto i)
+            // {
+            //     return its_values.row(i);
+            // }
+            const auto row(auto i) const
+            {
+                return its_values.row(i);
+            }
             
             auto rows() const
             {
@@ -137,6 +145,10 @@ namespace GPN
         template <typename Grid2D_t>
         using Permeability = Field<Grid2D_t>;
 #pragma endregion
+#pragma region HYDRODYNAMIC-PROPERTIES
+        template <typename Grid2D_t>
+        using Pressure = Field<Grid2D_t>;
+#pragma endregion
 #pragma region HEAT-PROPERTIES
         template <typename Grid2D_t>
         using MediumHeatVolumetricCapacity = Field<Grids::StructuredCylinderGrid2DAxisymmetric>;
@@ -158,6 +170,9 @@ namespace GPN
             {
             }
         };
+
+        template<typename Grid2D_t>
+        using JT_SpatialComponent = Field<Grid2D_t>;
 #pragma endregion
     } // Properties
 } // GPN

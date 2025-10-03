@@ -6,7 +6,7 @@
 #include <Injector/Grids/Defines.h>
 
 #include <Injector/Properties/Factory.hpp>
-#include <Injector/History/RatesFactory.hpp>
+#include <Injector/History/ZeroRatesFactory.hpp>
 
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
@@ -15,6 +15,9 @@
 #include <Injector/Solver/InitialCondition.hpp>
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
 #include <Injector/Solver/SolverManager.hpp>
+
+#include "includes/transfer_to_eigen.hpp"
+#include "includes/generate_stencils_and_steps.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
@@ -131,33 +134,6 @@ protected:
 };
 
 using VR = std::vector<RealType>;
-LogValuesContainer transfer_to_eigen(const VR &data, const RealType factor = 1.0)
-{
-  LogValuesContainer out(data.size());
-  for (auto i{0ull}; i < data.size(); ++i)
-    out(i) = factor * data[i];
-  return out;
-}
-
-VR generate_stencils(RealType t0, RealType t1, RealType t_step_major)
-{
-  auto segm_count{static_cast<size_t>(std::ceil(t1 - t0) / t_step_major)};
-  double step = (t1 - t0) / (segm_count);
-  VR out(segm_count + 1ll);
-
-  for (auto i{0ull}; i < out.size(); ++i)
-    out[i] = t0 + i * step;
-  return out;
-}
-
-VR generate_steps(const VR &dual_nodes)
-{
-  VR out(dual_nodes.size() - 1ll);
-
-  for (auto i{0ull}; i < out.size(); ++i)
-    out[i] = dual_nodes[i + 1] - dual_nodes[i];
-  return out;
-}
 
 TEST_CASE("SolverManager", "SelfSimilarCyl")
 {
@@ -176,6 +152,7 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
   const VR porosity(nLayers, 1e-16);
   const VR is_permeable_stencils(nLayers, 1.0);
   const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 0.0)};
+  const LogValuesContainer ext_pressure_stencils{LogValuesContainer::Constant(nLayers, 260 * 1e5)};
   const LogValuesContainer solid_heatconductivity_stencils{LogValuesContainer::Constant(nLayers, 3.9)};
   const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 3.9 /*should be 2600 in SI*/)};
   const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
@@ -204,7 +181,7 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
       Grids::Factory::generate_dual_grid_stencils_uniform(
           Segment{rMin, rMax}, rNodes)};
   const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
-  const auto &grid{grid2D->first_coord};
+  const auto &grid_z{grid2D->first_coord};
   // make fluid
   const PhaseProperties water{
       FluidFactory::create_water(
@@ -215,7 +192,7 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
   // solver
   const Logs::Rocks::IsPermeableLog core_data{
       is_permeable_stencils,
-      grid};
+      grid_z};
 
   const auto flow_field{
       FaceProperties::FlowFactory::zero_flow(
@@ -227,7 +204,7 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
       solid_heatconductivity_stencils,
       porosity_stencils,
       water,
-      grid};
+      grid_z};
 
   const Properties::Rocks::HeatProps heat_props{
       heat_logs, grid2D};
@@ -248,9 +225,15 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
   // boundary conditions
   const GPN::BoundaryConditions::BoundaryConditions bc{
       *grid2D, std::make_shared<FunctorBC>(es, grid2D)};
+  // external pressure log
+  const auto external_pressure{
+      Logs::ExtPressureFactory::create(
+          ext_pressure_stencils,
+          is_permeable_stencils,
+          grid_z)};
   // rates field factory
   FaceProperties::ZeroRatesFactory rates_factory{
-      grid2D, core_data.is_permeable};
+      grid2D, core_data.is_permeable, external_pressure};
 
   // solver
   using Solver_t = decltype(Solver{
