@@ -231,10 +231,41 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         ptr_pressure_field,
         grid2D, well, history, water};
 
+    //   const auto tol{1e-12};
+
     for (auto t{0ull}; t < history.size(); ++t)
     {
         rates_factory.set_flow_field(history.time_moments[t], history.time_steps[t]);
 
+        const auto &flux2_pos{rates_factory.get_heat_flow_in_axes2_pos()};
+        const auto &flux2_neg{rates_factory.get_heat_flow_in_axes2_neg()};
+        const auto &pressure{rates_factory.get_pressure_field().its_values};
+
         const auto JT_term{Properties::JT_FieldFactory::create(rates_factory)};
+
+        for (auto row{0ll}; row < JT_term.rows(); ++row)
+        {
+            {
+                const auto col{0ll};
+                CHECK_THAT(
+                    flux2_pos(row, col) * (pressure(row, col)) +
+                        flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col)),
+                    WithinRel(JT_term.its_values(row, col), tol));
+            }
+            for (auto col{1ll}; col < JT_term.cols() - 1ll; ++col)
+            {
+                CHECK_THAT(
+                    flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
+                        flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col)),
+                    WithinRel(JT_term.its_values(row, col), tol));
+            }
+            {
+                const auto col{JT_term.cols() - 1ll};
+                CHECK_THAT(
+                    flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
+                        flux2_neg(row, col + 1ll) * ( - pressure(row, col)),
+                    WithinRel(JT_term.its_values(row, col), tol));
+            }
+        }
     }
 }

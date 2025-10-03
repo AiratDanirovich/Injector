@@ -12,9 +12,9 @@ namespace GPN
         struct JT_FieldFactory
         {
             static auto create(
-                const auto &flow)
+                const auto &rates_factory)
             {
-                const auto /*&*/ grid2D_ptr{flow.grid2D};
+                const auto /*&*/ grid2D_ptr{rates_factory.grid2D};
                 const auto first_coord_size{
                     grid2D_ptr->first_coord.mesh_size()};
                 const auto second_coord_size{
@@ -24,10 +24,10 @@ namespace GPN
                         first_coord_size,
                         second_coord_size)};
 
-                const auto &flux2_pos{flow.get_heat_flow_in_axes2_pos()};
-                const auto &flux2_neg{flow.get_heat_flow_in_axes2_neg()};
-                const auto &permeability{flow.pressure_field->permeability};
-                const auto &pressure{flow.get_pressure_field()};
+                const auto &flux2_pos{rates_factory.get_heat_flow_in_axes2_pos()};
+                const auto &flux2_neg{rates_factory.get_heat_flow_in_axes2_neg()};
+                const auto &permeability{rates_factory.pressure_field->permeability};
+                const auto &pressure{rates_factory.get_pressure_field().its_values};
 
                 assert(flux2_pos.cols() == flux2_neg.cols());
                 assert(flux2_pos.cols() == second_coord_size + 1ll);
