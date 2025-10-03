@@ -53,6 +53,14 @@ namespace GPN
             {
                 return its_values.col(i);
             }
+            // auto row(auto i)
+            // {
+            //     return its_values.row(i);
+            // }
+            const auto row(auto i) const
+            {
+                return its_values.row(i);
+            }
             
             auto rows() const
             {
@@ -162,6 +170,9 @@ namespace GPN
             {
             }
         };
+
+        template<typename Grid2D_t>
+        using JT_SpatialComponent = Field<Grid2D_t>;
 #pragma endregion
     } // Properties
 } // GPN
