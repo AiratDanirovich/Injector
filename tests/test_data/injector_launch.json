@@ -7,7 +7,9 @@
     "joule_thomson": -0.02
   },
   "collector": {
-    "thickness": [   100, 2,   3,    21],
+    "external_pressure": 
+                 [   0.0, 260, 260,  0.0],
+    "thickness": [   100, 2,   3,    21 ],
     "is_perforated":[0.0, 0.0, 1.0,  0.0],
     "cross_flow":{
       "__comment": "from_coord is in meters; to_layers is in the layer of <collector> section starting from Zero",
