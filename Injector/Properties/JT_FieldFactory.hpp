@@ -50,7 +50,7 @@ namespace GPN
                             flux2_pos.block(row, 1ll, 1ll, second_coord_size - 1ll) *
                             pressure.row(row).head(second_coord_size - 1ll);
 
-                        values.row(row) = buffer;
+                        values.row(row) = buffer*rates_factory.fluid.JT;
                     }
                 }
 

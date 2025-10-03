@@ -13,6 +13,7 @@
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/Grids1D.hpp>
 #include <Injector/Properties/PhysicalField.hpp>
+#include <Injector/Properties/JT_FieldFactory.hpp>
 
 #include <Injector/Solver/CapacityTerm.hpp>
 #include <Injector/Solver/SplittingMethod/SplitX.hpp>
@@ -168,10 +169,10 @@ namespace GPN
                     const auto tau_factor,
                     const auto A_size) const
                 {
-                    RHS_t rhs{
-                        (state.cur_state.reshaped(A_size, 1ll).array() * tau_factor).matrix()};
-
-                    return rhs;
+                    return 
+                        (state.cur_state.reshaped(A_size, 1ll).array() * tau_factor +
+                        convection_factory.get_spatial_JT_contribution().reshaped(A_size, 1ll).array())
+                            .matrix();
                 }
 
                 struct Solution

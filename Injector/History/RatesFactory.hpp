@@ -7,6 +7,7 @@
 #include <Injector/History/History.hpp>
 #include <Injector/Properties/FlowField.hpp>
 #include <Injector/Properties/PhysicalField.hpp>
+#include <Injector/Properties/JT_FieldFactory.hpp>
 
 namespace GPN
 {
@@ -58,6 +59,11 @@ namespace GPN
                 }
 
                 pressure_field->set_pressure_field(well.get_RFP(get_history_record()));
+            }
+
+            const auto get_spatial_JT_contribution() const
+            {
+                return Properties::JT_FieldFactory::create(*this).its_values;
             }
 
             const auto &get_heat_flow_in_axes1() const

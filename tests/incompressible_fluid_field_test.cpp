@@ -250,21 +250,21 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 CHECK_THAT(
                     flux2_pos(row, col) * (pressure(row, col)) +
                         flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col)),
-                    WithinRel(JT_term.its_values(row, col), tol));
+                    WithinRel(JT_term.its_values(row, col)/water.JT, tol));
             }
             for (auto col{1ll}; col < JT_term.cols() - 1ll; ++col)
             {
                 CHECK_THAT(
                     flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
                         flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col)),
-                    WithinRel(JT_term.its_values(row, col), tol));
+                    WithinRel(JT_term.its_values(row, col)/water.JT, tol));
             }
             {
                 const auto col{JT_term.cols() - 1ll};
                 CHECK_THAT(
                     flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
                         flux2_neg(row, col + 1ll) * ( - pressure(row, col)),
-                    WithinRel(JT_term.its_values(row, col), tol));
+                    WithinRel(JT_term.its_values(row, col)/water.JT, tol));
             }
         }
     }
