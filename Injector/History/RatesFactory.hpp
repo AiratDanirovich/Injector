@@ -107,12 +107,14 @@ namespace GPN
                 return pressure_field->current_pressure();
             }
 
-        protected:
+        public:
             const cptr<Grid2D_t> grid2D;
             const Well_t &well;
             const History &history;
             const Fluid_t &fluid;
             cptr<Hydrodynamics_t> pressure_field;
+
+        protected:
             cptr<FaceProperties::HeatFlowField> heat_flow_field;
             //    cptr<FaceProperties::ReservoirFlowField> volumetric_flow_field;
 
@@ -132,7 +134,7 @@ namespace GPN
                       std::make_shared<FaceProperties::HeatFlowField>(
                           FaceProperties::FlowFactory::horizontal_flow(
                               well_rate, is_permeable, *grid2D),
-                            fluid.volumetric_heat_capacity)}
+                          fluid.volumetric_heat_capacity)}
             {
             }
 
@@ -191,7 +193,7 @@ namespace GPN
             {
             }
 
-const auto &get_heat_flow_in_axes1() const
+            const auto &get_heat_flow_in_axes1() const
             {
                 return heat_flow_field->axes1_as_face_normal;
             }
@@ -215,7 +217,6 @@ const auto &get_heat_flow_in_axes1() const
             {
                 return heat_flow_field->axes2_as_face_normal_neg;
             }
-
 
             const auto get_pressure_field() const
             {
