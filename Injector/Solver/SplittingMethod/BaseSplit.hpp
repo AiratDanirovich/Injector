@@ -6,7 +6,6 @@
 #include <Eigen/SparseCore>
 
 #include <Injector/Grids/Defines.h>
-//#include <Injector/Properties/Coefficients.hpp>
 
 namespace GPN
 {

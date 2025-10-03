@@ -4,7 +4,7 @@
 #include <Injector/Grids/Defines.h>
 #include <Injector/Properties/FaceProperties.hpp>
 
-#include <Injector/History/RatesFactory.hpp>
+#include <Injector/History/ZeroRatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 

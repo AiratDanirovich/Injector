@@ -12,8 +12,6 @@
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/Grids1D.hpp>
-#include <Injector/Properties/PhysicalField.hpp>
-#include <Injector/Properties/JT_FieldFactory.hpp>
 
 #include <Injector/Solver/CapacityTerm.hpp>
 #include <Injector/Solver/SplittingMethod/SplitX.hpp>

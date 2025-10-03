@@ -5,7 +5,7 @@
 #include <Injector/Grids/Defines.h>
 #include <Injector/Properties/FaceProperties.hpp>
 
-#include <Injector/History/RatesFactory.hpp>
+#include <Injector/History/ZeroRatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 
@@ -16,6 +16,9 @@
 #include <catch2/catch_test_macros.hpp>
 
 using namespace GPN;
+using namespace std;
+using namespace GPN::EqSolver;
+using namespace GPN::EqSolver::FullImplicit;
 
 struct BCFunctor : public GPN::BoundaryConditions::BCFunctorBase
 {
@@ -35,9 +38,6 @@ protected:
     RealType val;
 };
 
-using namespace std;
-using namespace GPN::EqSolver;
-using namespace GPN::EqSolver::FullImplicit;
 
 void print_A(const auto &fname, const auto &A, const auto &b)
 {

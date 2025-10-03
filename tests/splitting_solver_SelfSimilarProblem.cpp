@@ -5,7 +5,7 @@
 
 #include <Injector/Grids/Grids2D.hpp>
 
-#include <Injector/History/RatesFactory.hpp>
+#include <Injector/History/ZeroRatesFactory.hpp>
 
 #include <Injector/Properties/Logs.hpp>
 #include <Injector/Properties/FlowField.hpp>
