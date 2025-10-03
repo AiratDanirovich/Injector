@@ -4,7 +4,7 @@
 #include <Injector/Grids/Defines.h>
 
 #include <Injector/Properties/FlowField.hpp>
-#include <Injector/History/RatesFactory.hpp>
+#include <Injector/History/ZeroRatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 
@@ -47,12 +47,13 @@ using VR = std::vector<RealType>;
 const auto box{Box{Segment{0, 1}, Segment{0, 1}}};
 const auto nLayers{31ll}, nR{51ll};
 
-const VR is_permeable_stencils(nLayers-1ll, 1.0);
-const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers-1ll, 1e-16)};
+const VR is_permeable_stencils(nLayers - 1ll, 1.0);
+const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers - 1ll, 1e-16)};
+const LogValuesContainer ext_pressure_stencils{LogValuesContainer::Constant(nLayers-1ll, 260 * 1e5)};
 
-const LogValuesContainer solid_heatconductivity_stencils(LogValuesContainer::Constant(nLayers-1ll,3.9));
-const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers-1ll,3.9 /*should be 2600 in SI*/)};
-const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers-1ll, 1.0 /*should be 770 in SI*/)};
+const LogValuesContainer solid_heatconductivity_stencils(LogValuesContainer::Constant(nLayers - 1ll, 3.9));
+const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers - 1ll, 3.9 /*should be 2600 in SI*/)};
+const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers - 1ll, 1.0 /*should be 770 in SI*/)};
 
 TEST_CASE("Solver")
 {
@@ -62,7 +63,7 @@ TEST_CASE("Solver")
   RealType well_rate{0.0};
 
   const auto grid2D{Grids::CylinderGridFactory::create(box, nLayers, nR)};
-  const auto &grid{grid2D->first_coord};
+  const auto &grid_z{grid2D->first_coord};
 
   const State::State2D initial_state{State::State2D::FillWithConst(*grid2D, val)};
 
@@ -72,29 +73,35 @@ TEST_CASE("Solver")
 
   const Logs::Rocks::IsPermeableLog core_data{
       is_permeable_stencils,
-      grid};
+      grid_z};
 
   const auto flow_field{
       FaceProperties::FlowFactory::zero_flow(
           core_data.is_permeable, *grid2D)};
 
-          
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
       solid_specific_heatcapacity_stencils,
       solid_heatconductivity_stencils,
       porosity_stencils,
       Phases::FluidFactory::create_water(1.0, 1.0),
-      grid};
+      grid_z};
 
   const Properties::Rocks::HeatProps heat_props{
       heat_logs, grid2D};
 
   const FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
-    // rates field factory
-    FaceProperties::ZeroRatesFactory rates_factory{
-        grid2D, core_data.is_permeable};
+
+  // external pressure log
+  const auto external_pressure{
+      Logs::ExtPressureFactory::create(
+          ext_pressure_stencils,
+          is_permeable_stencils,
+          grid_z)};
+  // rates field factory
+  FaceProperties::ZeroRatesFactory rates_factory{
+      grid2D, core_data.is_permeable, external_pressure};
 
   Solver solver{
       heat_face_props.medium_heat_conductivity,

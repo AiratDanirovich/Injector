@@ -143,6 +143,10 @@ namespace GPN
         {
             return Record{Pressure{pressure(idx)}, Rate{rates(idx)}, regimes[idx]};
         }
+        const auto size() const
+        { 
+            return regimes.size();
+        }
 
         const Logs::InjectorRate rates;
         const Logs::SurfacePressure pressure;
