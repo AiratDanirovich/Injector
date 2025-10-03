@@ -157,13 +157,25 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
-    auto pressure_field{IncompressibleFluidField{
-        start_time,
-        water,
-        permeability,
-        external_pressure,
-        well,
-        grid2D}};
+    using IncompressibleFluidField_t =
+        decltype(IncompressibleFluidField{
+            start_time,
+            water,
+            permeability,
+            external_pressure,
+            well,
+            grid2D});
+
+    auto ptr_pressure_field{
+        make_shared<IncompressibleFluidField_t>(
+            start_time,
+            water,
+            permeability,
+            external_pressure,
+            well,
+            grid2D)};
+
+    auto &pressure_field{*ptr_pressure_field};
 
     // history
     const History history{make_history(data)};
@@ -214,5 +226,15 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         }
     }
 
-    //    Properties::JT_FieldFactory::create(pressure_field);
+    // rates field factory
+    FaceProperties::IncompressibleRatesFactory rates_factory{
+        ptr_pressure_field,
+        grid2D, well, history, water};
+
+    for (auto t{0ull}; t < history.size(); ++t)
+    {
+        rates_factory.set_flow_field(history.time_moments[t], history.time_steps[t]);
+
+        const auto JT_term{Properties::JT_FieldFactory::create(rates_factory)};
+    }
 }
