@@ -32,6 +32,7 @@ public:
         const RealType capacity,                // J/(kg*K) /* specific heat capacity */
         const RealType viscosity,               // Pa*s
         const RealType heat_conductivity_fluid, // W/(m*K)
+        const RealType joule_thomson,           // K/bar
         // grid
         const RealType rMin,         // m /* typically would be zero */
         const RealType rMax,         // m
@@ -41,6 +42,7 @@ public:
         // eight vectors of the same size
         // values are in SI
         const VR &thickness,                   // meter
+        const VR &ext_pressure,                // bar
         const VR &conductivity,                // W/(m*K)
         const VR &porosity,                    // --
         const VR &permeability,                // m^2

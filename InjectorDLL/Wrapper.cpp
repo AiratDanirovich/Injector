@@ -20,6 +20,7 @@
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Well/WellFactory.hpp>
+#include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleFluid.hpp>
 #include <Injector/Model/Completion.hpp>
 #include <Injector/Model/ExtrudedCasingFactory.hpp>
 
@@ -49,6 +50,7 @@ using namespace GPN;
 using namespace GPN::CrossFlow;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
+using namespace GPN::Hydrodynamic;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::FullImplicit;
 
@@ -76,13 +78,13 @@ auto ICFactory(RealType t_start, const Grid_t_ptr grid, const Logs::Geotherma &g
     return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{geotherma}, t_start)};
 }
 
-template <typename Well_t>
+template <typename Well_t, typename Hydro_t>
 struct FunctorBC : public GPN::BoundaryConditions::BCFunctorBase
 {
     using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
     using ConvectionFieldFactory_t =
-        GPN::FaceProperties::RatesFactory<
-            Grid2D_t, Well_t, PhaseProperties>;
+        GPN::FaceProperties::IncompressibleRatesFactory<
+            Grid2D_t, Well_t, PhasePropertiesJT, Hydro_t>;
 
     FunctorBC(
         const Logs::IsPermeable &is_permeable,
@@ -97,7 +99,7 @@ struct FunctorBC : public GPN::BoundaryConditions::BCFunctorBase
     RealType operator()(ptrdiff_t z_id, RealType r, RealType t) const override
     {
         if (r == grid_ptr->second_coord.dual_front())
-            return flow_field.get_flow_in_axes2()(z_id, 0ll) * flow_field.get_temperature();
+            return flow_field.get_heat_flow_in_axes2()(z_id, 0ll) * flow_field.get_temperature();
 
         if (r == grid_ptr->second_coord.dual_back())
             return 0.0;
@@ -109,7 +111,7 @@ struct FunctorBC : public GPN::BoundaryConditions::BCFunctorBase
     RealType operator()(RealType z, ptrdiff_t r_id, RealType t) const override
     {
         if (z == grid_ptr->first_coord.dual_front())
-            return flow_field.get_flow_in_axes1()(0ll, r_id) * flow_field.get_temperature();
+            return flow_field.get_heat_flow_in_axes1()(0ll, r_id) * flow_field.get_temperature();
 
         if (z == grid_ptr->first_coord.dual_back())
             return 0.0;
@@ -130,6 +132,7 @@ Wrapper::Wrapper(
     const RealType capacity,                // J/(kg*K) /* specific heat capacity */
     const RealType viscosity,               // Pa*s
     const RealType heat_conductivity_fluid, // Watt/(m*K)
+    const RealType joule_thomson,           // K/bar
     // grid
     const RealType rMin,         // m /* typically would be zero */
     const RealType rMax,         // m
@@ -139,6 +142,7 @@ Wrapper::Wrapper(
     // eight vectors of the same size
     // values are in SI
     const VR &thickness,                     // meter
+    const VR &ext_pressure,                  // bar
     const VR &solid_heatconductivity,        // Watt/(m*K)
     const VR &porosity,                      // 0.0 < porosity <= 1.0, --
     const VR &permeability_stencils,         // m^2
@@ -171,6 +175,7 @@ Wrapper::Wrapper(
         is_perforated.cbegin(),
         is_perforated.cend(),
         is_perforated_stencils.begin());
+    LogValuesContainer ext_pressure_stencils{transfer_to_eigen(ext_pressure, 1e5)};
     LogValuesContainer solid_density_stencils(solid_density.size());
     std::copy(
         solid_density.begin(),
@@ -237,12 +242,13 @@ Wrapper::Wrapper(
         permeability_stencils,
         grid_z};
     // make fluid
-    const PhaseProperties water{
-        FluidFactory::create_water(
+    const PhasePropertiesJT water{
+        FluidFactory::create_water_JT(
             Viscosity{viscosity},
             GPN::Density{density},
             GPN::SpecificHeatCapacity{capacity},
-            GPN::HeatConductivity{heat_conductivity_fluid})};
+            GPN::HeatConductivity{heat_conductivity_fluid},
+            JouleThomson{joule_thomson})};
 
     const auto RFP_weights{
         Logs::RFPFactory::create_from_container(
@@ -277,8 +283,34 @@ Wrapper::Wrapper(
     // history
     const History history{
         HistoryFactory::createFixedRate(time_intervals, well_rates, inlet_temperatures)};
+    // external pressure log
+    const auto external_pressure{
+        Logs::ExtPressureFactory::create(
+            ext_pressure_stencils,
+            is_permeable_stencils,
+            grid_z)};
+    // fluid model for the pressure field
+    using IncompressibleFluidField_t =
+        decltype(IncompressibleFluidField{
+            t_start,
+            water,
+            core_data.permeability,
+            external_pressure,
+            well,
+            grid2D});
+
+    auto ptr_pressure_field{
+        make_shared<IncompressibleFluidField_t>(
+            t_start,
+            water,
+            core_data.permeability,
+            external_pressure,
+            well,
+            grid2D)};
+
     // rates field factory
-    FaceProperties::RatesFactory rates_factory{
+    FaceProperties::IncompressibleRatesFactory rates_factory{
+        ptr_pressure_field,
         grid2D, well, history, water};
     // initial condition
     Logs::Geotherma geotherma{
@@ -291,7 +323,9 @@ Wrapper::Wrapper(
     // boundary conditions
     const GPN::BoundaryConditions::BoundaryConditions bc{
         *grid2D,
-        std::make_shared<FunctorBC<std::remove_const<decltype(well)>::type>>(
+        std::make_shared<FunctorBC<
+            Well_CrossFlow,
+            IncompressibleFluidField_t>>(
             core_data.is_permeable, rates_factory, grid2D),
         BoundaryConditions::BoundaryCondition::second};
     // solver

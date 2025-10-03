@@ -28,12 +28,12 @@ int main()
         viscosity{data["fluid"]["viscosity"]},
         density{data["fluid"]["density"]},
         capacity{data["fluid"]["specific_heat_capacity"]},
-        heat_conductivity{data["fluid"]["heat_conductivity"]};
+        heat_conductivity{data["fluid"]["heat_conductivity"]},
+        joule_thomson{data["fluid"]["joule_thomson"]};
     /*collector*/
     const VR thickness = data["collector"]["thickness"];
-    //  const ptrdiff_t nLayers{thickness.size()};
+    const VR ext_pressure_stencils{data["collector"]["external_pressure"].get<VR>()};
     // hydrodynamic logs
-//    const VR is_permeable_stencils = data["collector"]["is_permeable"];
     const VR is_perforated_stencils = data["collector"]["is_perforated"];
     const VR porosity_stencils = data["collector"]["porosity"];
     const VR permeability_stencils = data["collector"]["permeability"];
@@ -94,6 +94,7 @@ int main()
         capacity,          // J/(kg*K) /* specific heat capacity */
         viscosity,         // Pa*s
         heat_conductivity, // W/(m*K)
+        joule_thomson,     // K/bar
         // grid
         rMin,         // m /* typically would be zero */
         rMax,         // m
@@ -102,13 +103,14 @@ int main()
         z_minor_step, // m, /*maximum step within impermeable layers*/
         // eight vectors of the same size
         // values are in SI
-        thickness,                            // meter
-        heatconductivity_stencils,            // Watt/(m*K)
-        porosity_stencils,                    // --
-        permeability_stencils,                // m^2
-        RFP_weights_stencils,                 // -- /*rate distribution between layers of reservoir*/
-        is_perforated_stencils,               // {0, 1}, --
-        from_coords,                          // coordinates of column corrosion, m
+        thickness,                 // meter
+        ext_pressure_stencils,     // bar
+        heatconductivity_stencils, // Watt/(m*K)
+        porosity_stencils,         // --
+        permeability_stencils,     // m^2
+        RFP_weights_stencils,      // -- /*rate distribution between layers of reservoir*/
+        is_perforated_stencils,    // {0, 1}, --
+        from_coords,               // coordinates of column corrosion, m
         to_layers,
         solid_density_stencils,               // kg/(m^3)
         solid_specific_heatcapacity_stencils, // J/(kg*K)
