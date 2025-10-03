@@ -23,6 +23,10 @@ namespace GPN
     };
     struct JouleThomson : public SomeProperty
     {
+        // change units 
+        JouleThomson(RealType value)
+        : SomeProperty{value*1e-5}
+        {}
     };
 
     struct StationaryPhaseProperties
