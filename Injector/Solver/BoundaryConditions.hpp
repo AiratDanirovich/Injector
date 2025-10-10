@@ -25,7 +25,7 @@ namespace GPN
                   functor{functor}
             {
                 assert(south_vals.size() == north_vals.size());
-            //    set_vals(t);
+                //    set_vals(t);
             }
 
             BCSouth south;
@@ -62,7 +62,7 @@ namespace GPN
                   functor{functor}
             {
                 assert(east_vals.size() == west_vals.size());
-            //    set_vals(t);
+                //    set_vals(t);
             }
 
             BCEast east;
@@ -92,14 +92,25 @@ namespace GPN
                 const Grid_t &grid,
                 cptr<const BCFunctorBase> functor,
                 BoundaryCondition::BCType bc_type = BoundaryCondition::first)
+                : BoundaryConditions{
+                      grid, functor,
+                      std::array<BoundaryCondition::BCType, 4ull>{bc_type, bc_type, bc_type, bc_type}}
+            {
+            }
+
+            template <typename Grid_t>
+            BoundaryConditions(
+                const Grid_t &grid,
+                cptr<const BCFunctorBase> functor,
+                std::array<BoundaryCondition::BCType, 4ull> bc_types)
                 : south_north{
-                      BCSouth{grid.first_coord.dual_front(), bc_type},
-                      BCNorth{grid.first_coord.dual_back(), bc_type},
+                      BCSouth{grid.first_coord.dual_front(), bc_types[0ull]},
+                      BCNorth{grid.first_coord.dual_back(), bc_types[1ull]},
                       grid.second_coord,
                       functor},
                   east_west{
-                    BCEast{grid.second_coord.dual_back(), bc_type}, 
-                    BCWest{grid.second_coord.dual_front(), bc_type}, 
+                    BCEast{grid.second_coord.dual_back(), bc_types[3ull]}, 
+                    BCWest{grid.second_coord.dual_front(), bc_types[2ull]}, 
                     grid.first_coord, 
                     functor}
             {
@@ -132,7 +143,7 @@ namespace GPN
                 south_north.set_vals(t);
             }
 
-            template<typename MatrixView_t>
+            template <typename MatrixView_t>
             void set_west_val(MatrixView_t &view, auto i) const
             {
                 if (east_west.west.type == BoundaryCondition::BCType::first)
@@ -149,7 +160,7 @@ namespace GPN
                 assert(false && "Boundary condition is not properly set");
             }
 
-            template<typename MatrixView_t>
+            template <typename MatrixView_t>
             void set_east_val(MatrixView_t &view, auto i) const
             {
                 if (east_west.east.type == BoundaryCondition::BCType::first)
@@ -166,7 +177,7 @@ namespace GPN
                 assert(false && "Boundary condition is not properly set");
             }
 
-            template<typename MatrixView_t>
+            template <typename MatrixView_t>
             void set_south_val(MatrixView_t &view, auto i) const
             {
                 if (south_north.south.type == BoundaryCondition::BCType::first)
@@ -183,7 +194,7 @@ namespace GPN
                 assert(false && "Boundary condition is not properly set");
             }
 
-            template<typename MatrixView_t>
+            template <typename MatrixView_t>
             void set_north_val(MatrixView_t &view, auto i) const
             {
                 if (south_north.north.type == BoundaryCondition::BCType::first)
