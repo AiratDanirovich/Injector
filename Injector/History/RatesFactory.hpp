@@ -62,7 +62,7 @@ namespace GPN
                             fluid.volumetric_heat_capacity);
                 }
 
-                pressure_field->set_pressure_field(well.get_RFP(get_history_record()));
+                pressure_field->set_pressure_field(t_step, get_history_record());
             }
 
             const auto get_spatial_JT_contribution() const

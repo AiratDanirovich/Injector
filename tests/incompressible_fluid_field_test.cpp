@@ -187,7 +187,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         const auto r{history.get_record(i)};
         const auto rfp{well.get_RFP(r)};
 
-        pressure_field.set_pressure_field(rfp);
+        pressure_field.set_pressure_field(0.0, r);
 
         const auto &P{pressure_field.current_pressure()};
 
