@@ -61,6 +61,22 @@ namespace GPN
                 return vals;
             }
 
+            static auto generate_medium_compressibility(
+                const auto &dual_stencils,
+                const auto &is_permeable)
+            {
+                constexpr RealType BarToPa = 1e5;
+                auto size{dual_stencils.size() - 1};
+                std::vector<RealType> vals(size);
+
+                for (auto id{size - size}; id < size; ++id)
+                {
+                    vals[id] = (id % 2 == 1) ? 1e-8 : 2e-8;
+                    vals[id] *= is_permeable[id];
+                }
+                return vals;
+            }
+
             static auto generate_ext_pressure(
                 const auto &dual_stencils,
                 const auto &is_permeable)

@@ -181,6 +181,23 @@ namespace GPN
             IsPerforated is_permeable;
         };
 
+        struct MediumCompressibilityFactory
+        {
+            template <typename Grid_t>
+            static MediumCompressibility create(
+                const auto &medium_compressibility,
+                const auto &is_permeable,
+                const Grid_t &grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            medium_compressibility},
+                        grid},
+                    IsPermeableFactory::create(is_permeable, grid)};
+            }
+        };
+
         struct PermeabilityFactory
         {
             template <typename Grid_t>

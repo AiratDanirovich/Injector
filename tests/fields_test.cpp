@@ -10,19 +10,14 @@
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 
+#include "includes/transfer_to_eigen.hpp"
+
 #include <catch2/catch_test_macros.hpp>
 
 using namespace GPN;
 using namespace std;
 
 using VR = std::vector<RealType>;
-LogValuesContainer transfer_to_eigen(const VR &data)
-{
-    LogValuesContainer out(data.size());
-    for (auto i{0ull}; i < data.size(); ++i)
-        out(i) = data[i];
-    return out;
-}
 
 /*input data*/
 // z-grid data
@@ -39,6 +34,8 @@ const auto porosity_stencils{
 const auto permeability_stencils{
     Logs::RawDataFactory::generate_permeability(grid_stencils, is_permeable_stencils)};
 
+const auto medium_compressibility_stencils{
+    Logs::RawDataFactory::generate_medium_compressibility(grid_stencils, is_permeable_stencils)};
 const auto ext_pressure_stencils{
     Logs::RawDataFactory::generate_ext_pressure(grid_stencils, is_permeable_stencils)};
 const auto skin_stencils{
@@ -72,9 +69,16 @@ TEST_CASE("FieldsTest")
             permeability_stencils,
             grid};
 
+        const Logs::Hydrodynamics::BaseHydrodynamics hydrodynamics{
+            is_permeable_stencils,
+            permeability_stencils,
+            medium_compressibility_stencils,
+            ext_pressure_stencils,
+            grid};
+
         const Logs::Hydrodynamics::Hydrodynamics hydrodynamics_logs{
             is_permeable_stencils,
-            ext_pressure_stencils,
+            //    ext_pressure_stencils,
             skin_stencils, grid};
 
         const Logs::Rocks::HeatLogs heat_logs{
@@ -119,10 +123,10 @@ TEST_CASE("FieldsTest")
 
         const Logs::Hydrodynamics::Hydrodynamics hydrodynamics_logs{
             is_permeable_stencils,
-            ext_pressure_stencils,
+            //        ext_pressure_stencils,
             skin_stencils, grid};
 
-        cout << "refined ext pressure: " << hydrodynamics_logs.ext_pressure.log_vals.transpose().format(CommaInitFmt) << endl;
+        //     cout << "refined ext pressure: " << hydrodynamics_logs.ext_pressure.log_vals.transpose().format(CommaInitFmt) << endl;
         cout << "refined skin:         " << hydrodynamics_logs.skin.log_vals.transpose().format(CommaInitFmt) << endl;
 
         const Logs::Rocks::HeatLogs heat_logs{
