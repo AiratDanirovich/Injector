@@ -129,7 +129,7 @@ TEST_CASE("FieldsTest")
             hydrodynamics,
             skin_stencils, grid};
 
-        //     cout << "refined ext pressure: " << hydrodynamics_logs.ext_pressure.log_vals.transpose().format(CommaInitFmt) << endl;
+        cout << "refined ext pressure: " << hydrodynamics_logs.ext_pressure.log_vals.transpose().format(CommaInitFmt) << endl;
         cout << "refined skin:         " << hydrodynamics_logs.skin.log_vals.transpose().format(CommaInitFmt) << endl;
 
         const Logs::Rocks::HeatLogs heat_logs{
