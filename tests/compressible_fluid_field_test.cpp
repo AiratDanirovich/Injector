@@ -16,7 +16,6 @@
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Well/Well.hpp>
-#include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleFluid.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluid.hpp>
 
 #include <Injector/Properties/LogsFactory.hpp>
@@ -158,8 +157,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
-    using IncompressibleFluidField_t =
-        decltype(IncompressibleFluidField{
+    using CompressibleFluidField_t =
+        decltype(CompressibleFluidField{
             start_time,
             water,
             permeability,
@@ -168,7 +167,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             grid2D});
 
     auto ptr_pressure_field{
-        make_shared<IncompressibleFluidField_t>(
+        make_shared<CompressibleFluidField_t>(
             start_time,
             water,
             permeability,

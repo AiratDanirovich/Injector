@@ -126,7 +126,6 @@ namespace GPN
 
         protected:
             cptr<FaceProperties::HeatFlowField> heat_flow_field;
-            //    cptr<FaceProperties::ReservoirFlowField> volumetric_flow_field;
 
         private:
             std::ptrdiff_t pos{-1ll};
