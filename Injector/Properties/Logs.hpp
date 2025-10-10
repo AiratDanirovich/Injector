@@ -191,12 +191,13 @@ namespace GPN
             AssertNonNegative(const StepPropertyGrid &vals)
             {
                 const auto &data{vals.log_vals};
-                std::for_each(data.cbegin(), data.cend(),
-                              [](RealType x)
-                              { assert(x >= 0.0); });
+                assert(std::all_of(
+                    data.cbegin(), data.cend(),
+                    [](const RealType x)
+                    { return x >= 0.0; }));
             }
         };
-
+#pragma region INDICATORS
         /// @brief Property that must only contain {0; 1} values
         struct IndicatorProperty
             : public StepPropertyGrid,
@@ -244,6 +245,28 @@ namespace GPN
         {
             using IndicatorProperty::IndicatorProperty;
         };
+#pragma endregion
+
+#pragma region HYDRODYNAMICS-LOGS
+        /// @brief Pressure at the external boundary of the
+        /// computation domain. far from the well
+        struct ExternalPressure
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            ExternalPressure(
+                const StepPropertyGrid &pressure,
+                const IsPermeable &is_permeable)
+                : StepPropertyGrid{pressure},
+                  AssertNonNegative{pressure}
+            {
+                assert(pressure.size() == is_permeable.size());
+                for (std::ptrdiff_t id{0ll}; id < pressure.size(); ++id)
+                    assert(
+                        ((is_permeable(id) == 1.0) && (pressure(id) > 0.0)) ||
+                        ((is_permeable(id) == 0.0) && (pressure(id) == 0.0)));
+            }
+        };
 
         namespace InternalUse
         {
@@ -279,26 +302,6 @@ namespace GPN
                 }
             };
         } // InternalUse
-
-        /// @brief Pressure at the external boundary of the 
-        /// computation domain. far from the well
-        struct ExternalPressure
-            : public StepPropertyGrid,
-              private AssertNonNegative
-        {
-            ExternalPressure(
-                const StepPropertyGrid &pressure,
-                const IsPermeable &is_permeable)
-                : StepPropertyGrid{pressure},
-                  AssertNonNegative{pressure}
-            {
-                assert(pressure.size() == is_permeable.size());
-                for (std::ptrdiff_t id{0ll}; id < pressure.size(); ++id)
-                    assert(
-                        ((is_permeable(id) == 1.0) && (pressure(id) > 0.0)) ||
-                        ((is_permeable(id) == 0.0) && (pressure(id) == 0.0)));
-            }
-        };
 
         struct RFP
             : public InternalUse::RateWeights
@@ -338,6 +341,41 @@ namespace GPN
             }
         };
 
+        struct MediumCompressibility
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            MediumCompressibility(
+                const StepPropertyGrid &compressibility,
+                const IsPermeable &is_permeable)
+                : StepPropertyGrid{compressibility},
+                  AssertNonNegative{compressibility}
+            {
+                assert(compressibility.size() == is_permeable.size());
+                for (std::ptrdiff_t id{0ll}; id < compressibility.size(); ++id)
+                    assert(
+                        ((is_permeable(id) == 1.0) && (compressibility(id) > 0.0)) ||
+                        ((is_permeable(id) == 0.0) && (compressibility(id) == 0.0)));
+            }
+        };
+
+        struct SkinFactor
+            : public StepPropertyGrid
+        {
+            SkinFactor(
+                const StepPropertyGrid &skin,
+                const IsPermeable &is_permeable)
+                : StepPropertyGrid{skin}
+            {
+                assert(skin.size() == is_permeable.size());
+                for (std::ptrdiff_t id{0ll}; id < skin.size(); ++id)
+                    assert(
+                        ((is_permeable(id) == 1.0)) ||
+                        ((is_permeable(id) == 0.0) && (skin(id) == 0.0)));
+            }
+        };
+#pragma endregion
+#pragma region HEAT-LOGS
         struct Porosity
             : public StepPropertyGrid,
               private AssertNonNegative
@@ -368,22 +406,6 @@ namespace GPN
                 : StepPropertyGrid{temperature},
                   AssertNonNegative{temperature}
             {
-            }
-        };
-
-        struct SkinFactor
-            : public StepPropertyGrid
-        {
-            SkinFactor(
-                const StepPropertyGrid &skin,
-                const IsPermeable &is_permeable)
-                : StepPropertyGrid{skin}
-            {
-                assert(skin.size() == is_permeable.size());
-                for (std::ptrdiff_t id{0ll}; id < skin.size(); ++id)
-                    assert(
-                        ((is_permeable(id) == 1.0)) ||
-                        ((is_permeable(id) == 0.0) && (skin(id) == 0.0)));
             }
         };
 
@@ -462,7 +484,7 @@ namespace GPN
             {
             }
         };
-
+#pragma endregion
         template <typename Property_t, typename Grid_t>
         [[deprecated]]
         auto generate_log(
