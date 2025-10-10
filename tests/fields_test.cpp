@@ -76,8 +76,7 @@ TEST_CASE("FieldsTest")
             grid};
 
         const Logs::Hydrodynamics::Hydrodynamics hydrodynamics_logs{
-            is_permeable_stencils,
-            //    ext_pressure_stencils,
+            hydrodynamics,
             skin_stencils, grid};
 
         const Logs::Rocks::HeatLogs heat_logs{
@@ -120,9 +119,14 @@ TEST_CASE("FieldsTest")
         cout << "refined permeability: " << core_data.permeability.log_vals.transpose().format(CommaInitFmt) << endl;
         cout << "refined porosity:     " << core_data.porosity.log_vals.transpose().format(CommaInitFmt) << endl;
 
+        const Logs::Hydrodynamics::BaseHydrodynamics hydrodynamics{
+            core_data,
+            medium_compressibility_stencils,
+            ext_pressure_stencils,
+            grid};
+
         const Logs::Hydrodynamics::Hydrodynamics hydrodynamics_logs{
-            is_permeable_stencils,
-            //        ext_pressure_stencils,
+            hydrodynamics,
             skin_stencils, grid};
 
         //     cout << "refined ext pressure: " << hydrodynamics_logs.ext_pressure.log_vals.transpose().format(CommaInitFmt) << endl;
