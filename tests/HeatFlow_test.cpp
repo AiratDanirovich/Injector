@@ -158,8 +158,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         grid_z};
 
     const Logs::Hydrodynamics::BaseHydrodynamics hydrodynamics{
-        is_permeable_stencils,
-        permeability_stencils,
+        core_data,
         medium_compressibility_stencils,
         ext_pressure_stencils,
         grid_z};

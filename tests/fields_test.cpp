@@ -70,8 +70,7 @@ TEST_CASE("FieldsTest")
             grid};
 
         const Logs::Hydrodynamics::BaseHydrodynamics hydrodynamics{
-            is_permeable_stencils,
-            permeability_stencils,
+            core_data,
             medium_compressibility_stencils,
             ext_pressure_stencils,
             grid};
@@ -97,11 +96,11 @@ TEST_CASE("FieldsTest")
     }
     {
         Eigen::IOFormat CommaInitFmt(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", " << ", ";");
-        Grids::RefinerVerticle refiner{0.1, transfer_to_eigen(is_permeable_stencils)};
+        Grids::RefinerVerticle refiner{0.1, is_permeable_stencils};
 
         auto temp = Grids::Factory::create_axes<CoordinateTypes::Z>(refiner, grid_stencils);
 
-        cout << "is permeable:   " << transfer_to_eigen(is_permeable_stencils).transpose().format(CommaInitFmt) << endl;
+        cout << "is permeable:   " << is_permeable_stencils.transpose().format(CommaInitFmt) << endl;
         cout << "refined nodes:  " << temp.dual_nodes.transpose().format(CommaInitFmt) << endl;
         cout << "dual nodes:     " << temp.dual_stencils.dual_nodes.transpose().format(CommaInitFmt) << endl;
 

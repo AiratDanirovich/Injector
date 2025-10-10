@@ -16,7 +16,7 @@ namespace GPN
                 const auto &dual_stencils)
             {
                 auto size{dual_stencils.size() - 1};
-                std::vector<RealType> vals(size, val);
+                LogValuesContainer vals{LogValuesContainer::Constant(size, val)};
                 return vals;
             }
 
@@ -24,7 +24,7 @@ namespace GPN
                 const auto &dual_stencils)
             {
                 auto size{dual_stencils.size() - 1};
-                std::vector<RealType> vals(size);
+                LogValuesContainer vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
                     vals[id] = (id % 2 == 1) ? 0.0 : 1.0;
@@ -51,7 +51,7 @@ namespace GPN
                 const auto &is_permeable)
             {
                 auto size{dual_stencils.size() - 1};
-                std::vector<RealType> vals(size);
+                LogValuesContainer vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
                 {
@@ -67,7 +67,7 @@ namespace GPN
             {
                 constexpr RealType BarToPa = 1e5;
                 auto size{dual_stencils.size() - 1};
-                std::vector<RealType> vals(size);
+                LogValuesContainer vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
                 {
@@ -83,7 +83,7 @@ namespace GPN
             {
                 constexpr RealType BarToPa = 1e5;
                 auto size{dual_stencils.size() - 1};
-                std::vector<RealType> vals(size);
+                LogValuesContainer vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
                 {
@@ -98,7 +98,7 @@ namespace GPN
                 const auto &is_permeable)
             {
                 auto size{dual_stencils.size() - 1};
-                std::vector<RealType> vals(size);
+                LogValuesContainer vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
                 {
@@ -150,7 +150,7 @@ namespace GPN
                 const auto &dual_stencils)
             {
                 auto size{dual_stencils.size() - 1};
-                std::vector<RealType> vals(size);
+                LogValuesContainer vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
                     vals[id] = (id % 2 == 1) ? 50.0 : 10.0;
@@ -161,7 +161,7 @@ namespace GPN
                 const auto &dual_stencils)
             {
                 auto size{dual_stencils.size() - 1};
-                std::vector<RealType> vals(size);
+                LogValuesContainer vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
                     vals[id] = (30/*atm*/)*1e5/*Pa*/;
@@ -172,7 +172,7 @@ namespace GPN
                 const auto &dual_stencils)
             {
                 auto size{dual_stencils.size() - 1};
-                std::vector<RealType> vals(size);
+                LogValuesContainer vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
                     vals[id] = (id % 2 == 1) ? 293.0 : 273.0;
@@ -184,7 +184,7 @@ namespace GPN
                 const auto &periodic_data)
             {
                 auto size{dual_stencils.size() - 1};
-                std::vector<RealType> vals(size);
+                LogValuesContainer vals(size);
 
                 for (auto id{size - size}; id < size; ++id)
                     vals[id] = periodic_data[id % periodic_data.size()];
@@ -196,7 +196,7 @@ namespace GPN
                 const RealType end,
                 const ptrdiff_t amount)
             {
-                std::vector<RealType> out(amount);
+                LogValuesContainer out(amount);
                 const RealType step{(end - begin) / (amount - 1ll)};
 
                 for (auto id{0ll}; id < amount; ++id)
@@ -210,9 +210,9 @@ namespace GPN
                 const RealType ref_val,
                 const RealType slope)
             {
-                std::vector<RealType> out(nodes.size());
+                LogValuesContainer out(nodes.size());
 
-                for (auto id{0ull}; id < nodes.size(); ++id)
+                for (auto id{0ll}; id < nodes.size(); ++id)
                     out[id] = ref_val + slope * (nodes[id] - ref_node);
                 return out;
             }

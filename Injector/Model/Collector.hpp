@@ -2,6 +2,8 @@
 #include <cassert>
 #include <iterator>
 
+#include <Injector/Grids/Defines.h>
+
 #include <Injector/Properties/LogsFactory.hpp>
 #include <Injector/Properties/FaceProperties.hpp>
 
@@ -33,7 +35,8 @@ namespace GPN
                     : is_permeable{IsPermeableFactory::create(is_permeable_stencils, grid)},
                       is_perforated{IsPerforatedFactory::create(is_perforated_stencils, is_permeable_stencils, grid)},
                       permeability{PermeabilityFactory::create(permeability_stencils, is_permeable_stencils, grid)},
-                      porosity{PorosityFactory::create(porosity_stencils, is_permeable_stencils, grid)}
+                      porosity{PorosityFactory::create(porosity_stencils, is_permeable_stencils, grid)},
+                      is_permeable_stencils{is_permeable_stencils}
                 {
                     assert(is_permeable_stencils.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
                     assert(porosity_stencils.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
@@ -51,10 +54,11 @@ namespace GPN
                     }
                 }
 
-                IsPermeable is_permeable;
-                IsPerforated is_perforated;
-                Permeability permeability;
-                Porosity porosity;
+                const IsPermeable is_permeable;
+                const IsPerforated is_perforated;
+                const Permeability permeability;
+                const Porosity porosity;
+                const LogValuesContainer is_permeable_stencils;
             };
 
             struct HeatLogs
@@ -95,21 +99,23 @@ namespace GPN
         namespace Hydrodynamics
         {
             struct BaseHydrodynamics
+                : public Rocks::CoreSampleLogs
             {
                 BaseHydrodynamics(
-                    const auto &is_permeable_stencils,
-                    const auto &permeability_stencils,
+                    const Rocks::CoreSampleLogs &core_logs,
                     const auto &medium_compressibility_stencils,
                     const auto &ext_pressure_stencils,
                     const auto &grid)
-                    : ext_pressure{ExtPressureFactory::create(ext_pressure_stencils, is_permeable_stencils, grid)},
-                      permeability{PermeabilityFactory::create(permeability_stencils, is_permeable_stencils, grid)},
-                      medium_compressibility{MediumCompressibilityFactory::create(medium_compressibility_stencils, is_permeable_stencils, grid)}
+                    : Rocks::CoreSampleLogs{core_logs},
+                      ext_pressure{ExtPressureFactory::create(
+                          ext_pressure_stencils, core_logs.is_permeable_stencils, grid)},
+                      medium_compressibility{MediumCompressibilityFactory::create(
+                          medium_compressibility_stencils, core_logs.is_permeable_stencils, grid)}
                 {
-                    const auto is_permeable{IsPermeableFactory::create(is_permeable_stencils, grid)};
-
                     assert(ext_pressure_stencils.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
-                    assert(this->ext_pressure.size() == grid.dual_nodes.size() - 1ll);
+                    assert(ext_pressure.size() == grid.dual_nodes.size() - 1ll);
+                    assert(medium_compressibility_stencils.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
+                    assert(medium_compressibility.size() == grid.dual_nodes.size() - 1ll);
                     for (auto i{0ll}; i < is_permeable.size(); ++i)
                     {
                         assert(
@@ -117,11 +123,10 @@ namespace GPN
                             ((is_permeable(i) == 0.0) && (ext_pressure(i) == 0.0)));
                         assert(
                             (is_permeable(i) == 1.0) ||
-                            ((is_permeable(i) == 0.0) && (permeability(i) == 0.0)));
+                            ((is_permeable(i) == 0.0) && (medium_compressibility(i) == 0.0)));
                     }
                 }
 
-                const Permeability permeability;
                 const ExternalPressure ext_pressure;
                 const MediumCompressibility medium_compressibility;
             };
