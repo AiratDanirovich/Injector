@@ -89,16 +89,29 @@ namespace GPN
         struct Rate : public SomeProperty
         {
         };
+        struct TimeStep : public SomeProperty
+        {
+        };
+        struct StartTime : public SomeProperty
+        {
+        };
 
         struct Record
         {
-            Record(Pressure pressure, Rate rate, const InjectorRegimes::Type type)
-                : pressure{pressure}, rate{rate}, type{type}
+            Record(
+                Pressure pressure,
+                Rate rate,
+                const InjectorRegimes::Type type,
+                StartTime start_time,
+                TimeStep time_step)
+                : pressure{pressure}, rate{rate}, type{type},
+                  start_time{start_time}, time_step{time_step}
             {
             }
             const RealType rate;
             const RealType pressure;
             const InjectorRegimes::Type type;
+            const RealType start_time, time_step;
         };
 
         History(const Logs::InjectorRate &rates,
@@ -141,10 +154,15 @@ namespace GPN
 
         const auto get_record(auto idx) const
         {
-            return Record{Pressure{pressure(idx)}, Rate{rates(idx)}, regimes[idx]};
+            return Record{
+                Pressure{pressure(idx)}, 
+                Rate{rates(idx)}, 
+                regimes[idx],
+                StartTime{time_moments[idx]},
+                TimeStep{time_steps(idx)}};
         }
         const auto size() const
-        { 
+        {
             return regimes.size();
         }
 
