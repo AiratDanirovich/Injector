@@ -13,7 +13,11 @@ namespace GPN
 {
     namespace FaceProperties
     {
-        template <typename Grid2D_t, typename Well_t, typename Fluid_t, typename Hydrodynamics_t>
+        template <
+            typename Grid2D_t,
+            typename Well_t,
+            typename Fluid_t,
+            typename Hydrodynamics_t>
         struct IncompressibleRatesFactory
         {
             IncompressibleRatesFactory(
