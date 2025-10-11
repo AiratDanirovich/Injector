@@ -87,8 +87,8 @@ TEST_CASE("FieldsTest")
             Phases::FluidFactory::create_water(1.0, 1.0),
             grid};
 
-        const Properties::Rocks::Rocks collector_field{
-            core_data, grid2D};
+        const Properties::Rocks::RocksProps collector_field{
+            hydrodynamics, grid2D};
 
         const Properties::Rocks::HeatProps heat_props{
             heat_logs, grid2D};
