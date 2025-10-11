@@ -19,7 +19,10 @@ namespace GPN
 
             Grid2DMap(const cptr<Grid2D_t> grid2D)
                 : grid2D{grid2D},
-                its_volumes{grid2D->volumes().data(), 10ll, 10ll},
+                its_volumes{
+                    grid2D->volumes().data()+left_margin*grid2D->first_coord().mesh_size(), 
+                    grid2D->first_coord().mesh_size(), 
+                    grid2D->second_coord().mesh_size()-left_margin},
                 its_first_coord{grid2D->first_coord()},
                 its_second_coord{AxesGridMap<Axes2, left_margin>{grid2D->second_coord()}}
             {
@@ -44,12 +47,12 @@ namespace GPN
             }
 
         private:
-            using cMarginMap = Eigen::Map<const CellVolumeContainer2D>;
+            using cMarginMap2D = Eigen::Map<const CellVolumeContainer2D>;
 
             const AxesGrid<Axes1>& its_first_coord;
             const AxesGridMap<Axes2, left_margin> its_second_coord;
             const cptr<Grid2D_t> grid2D;
-            const cMarginMap its_volumes;
+            const cMarginMap2D its_volumes;
         };
 
         using CylinderGridRock =
