@@ -109,7 +109,22 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto &grid_r{grid2D->second_coord()};
 
 #pragma region MAP-GRID
+    constexpr std::ptrdiff_t left_margin{3ll};
     const cptr<Grids::CylinderGridRock> grid2D_rocks{make_shared<Grids::CylinderGridRock>(grid2D)};
+    const auto &grid_rocks_z{grid2D_rocks->first_coord()};
+    const auto &grid_rocks_r{grid2D_rocks->second_coord()};
+    CHECK(grid_rocks_z.mesh_size() == grid_z.mesh_size()-left_margin);
+    CHECK(grid_rocks_r.mesh_size() == grid_r.mesh_size());
+    for(auto row{0ll}; row < grid_rocks_r.mesh_size(); ++row)
+    {
+        CHECK(grid_rocks_r.mesh_nodes(row) == grid_r.mesh_nodes(row+left_margin));
+        CHECK(grid_rocks_r.control_volumes(row) == grid_r.control_volumes(row+left_margin));
+    }
+    for(auto col{0ll}; col < grid_rocks_z.mesh_size(); ++col)
+    {
+        CHECK(grid_rocks_z.mesh_nodes(col) == grid_z.mesh_nodes(col));
+        CHECK(grid_rocks_z.control_volumes(col) == grid_z.control_volumes(col));
+    }
 
     Logs::Rocks::CoreSampleLogs
         core_logs{
@@ -123,6 +138,19 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         rock_field_props{
             core_logs,
             grid2D_rocks};
+
+    CHECK(rock_field_props.permeability.rows() == grid_z.mesh_size());
+    CHECK(rock_field_props.permeability.cols() == grid_r.mesh_size() - left_margin);
+    CHECK(rock_field_props.porosity.rows() == grid_z.mesh_size());
+    CHECK(rock_field_props.porosity.cols() == grid_r.mesh_size() - left_margin);
+
+    for(auto col{0ll}; col < grid_rocks_z.mesh_size(); ++col)
+    {
+        for(auto row{0ll}; row < grid_rocks_r.mesh_size(); ++row)
+        {
+
+        }
+    }
 
 #pragma endregion
 

@@ -16,9 +16,9 @@ namespace GPN
             GridDualStencilsMap(
                 const GridDualStencils &
                     grid_dual_stencils)
-            : dual_nodes{
-                  grid_dual_stencils.dual_nodes.data() + start_margin,
-                  grid_dual_stencils.dual_nodes.size() - start_margin}
+                : dual_nodes{
+                      grid_dual_stencils.dual_nodes.data() + start_margin,
+                      grid_dual_stencils.dual_nodes.size() - start_margin}
             {
             }
 
@@ -51,7 +51,10 @@ namespace GPN
                   dual_stencils{axes_grid.dual_stencils},
                   control_volumes{
                       axes_grid.volumes().data() + start_margin,
-                      axes_grid.volumes().size() - start_margin}
+                      axes_grid.volumes().size() - start_margin},
+                  mesh_nodes{
+                      axes_grid.mesh_nodes.data() + start_margin,
+                      axes_grid.mesh_nodes.size() - start_margin}
             {
             }
 
@@ -66,6 +69,8 @@ namespace GPN
 
             const GridDualStencilsMap<start_margin> dual_stencils;
             const cMarginMap1D control_volumes;
+
+            const cMarginMap1D mesh_nodes;
 
         private:
             const AxesGrid<CoordinateType_t> &axes_grid;

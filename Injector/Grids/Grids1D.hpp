@@ -188,9 +188,9 @@ namespace GPN
             // Here, jumps of physical properties occur.
             // These nodes must be included in the dual_nodes
             // container. So, that operator==() returns true.
-            GridDualStencils dual_stencils;
+            const GridDualStencils dual_stencils;
             // Dual mesh to be used in simulation
-            DualNodesContainer dual_nodes;
+            const DualNodesContainer dual_nodes;
             // centers of control volumes
             const MeshNodesContainer mesh_nodes;
             // steps between dual nodes
