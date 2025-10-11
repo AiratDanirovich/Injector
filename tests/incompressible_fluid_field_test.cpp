@@ -239,7 +239,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
         const auto &flux2_pos{rates_factory.get_heat_flow_in_axes2_pos()};
         const auto &flux2_neg{rates_factory.get_heat_flow_in_axes2_neg()};
-        const auto &pressure{rates_factory.get_pressure_field().its_values};
+        const auto &pressure{rates_factory.get_pressure_field().values()};
 
         const auto JT_term{Properties::JT_FieldFactory::create(rates_factory)};
 
@@ -250,21 +250,21 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 CHECK_THAT(
                     flux2_pos(row, col) * (pressure(row, col)) +
                         flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col)),
-                    WithinRel(JT_term.its_values(row, col)/water.JT, tol));
+                    WithinRel(JT_term.value(row, col)/water.JT, tol));
             }
             for (auto col{1ll}; col < JT_term.cols() - 1ll; ++col)
             {
                 CHECK_THAT(
                     flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
                         flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col)),
-                    WithinRel(JT_term.its_values(row, col)/water.JT, tol));
+                    WithinRel(JT_term.value(row, col)/water.JT, tol));
             }
             {
                 const auto col{JT_term.cols() - 1ll};
                 CHECK_THAT(
                     flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
                         flux2_neg(row, col + 1ll) * ( - pressure(row, col)),
-                    WithinRel(JT_term.its_values(row, col)/water.JT, tol));
+                    WithinRel(JT_term.value(row, col)/water.JT, tol));
             }
         }
     }

@@ -359,16 +359,16 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   //  cout << "volumetric heat capacity\n"
   //       << heat_props.medium_vol_heatcapacity.its_values << endl;
 
-  for (auto t{1ll}; t < (ptrdiff_t)times.size(); ++t)
-  {
-    cur_heat_incr +=
-        ((states[t].cur_state - states[t - 1ll].cur_state) *
-         heat_props.medium_vol_heatcapacity.its_values * grid2D->volumes())
-            .sum();
-    cum_inlet_heat +=
-        (times[t] - times[t - 1ll]) *
-        history.rates(t - 1ll) *
-        water.volumetric_heat_capacity * (history.temps(t - 1ll) /*- initial_temperature*/);
+    for (auto t{1ll}; t < (ptrdiff_t)times.size(); ++t)
+    {
+        cur_heat_incr +=
+            ((states[t].cur_state - states[t - 1ll].cur_state) *
+             heat_props.medium_vol_heatcapacity.values() * grid2D->volumes())
+                .sum();
+        cum_inlet_heat +=
+            (times[t] - times[t - 1ll]) *
+            history.rates(t - 1ll) *
+            water.volumetric_heat_capacity * (history.temps(t - 1ll) /*- initial_temperature*/);
 
     RealType rel_tol = std::abs(2.0 * (cur_heat_incr - cum_inlet_heat) / (cur_heat_incr + cum_inlet_heat));
     //    CHECK(rel_tol < 0.05);

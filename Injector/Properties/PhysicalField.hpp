@@ -61,7 +61,7 @@ namespace GPN
             {
                 return its_values.row(i);
             }
-            
+
             auto rows() const
             {
                 return its_values.rows();
@@ -73,8 +73,10 @@ namespace GPN
 
             using Grid_type = Grid_t;
 
-            GridNodeValues2D its_values;
             const cptr<Grid_type> grid;
+
+        protected:
+            GridNodeValues2D its_values;
         };
 
         template <typename Grid2D_t>
@@ -95,7 +97,7 @@ namespace GPN
                 // check that interpolation was correct
                 for (std::ptrdiff_t col{1ll}; col < field.values().cols(); ++col)
                     for (std::ptrdiff_t row{0ll}; row < field.values().rows(); ++row)
-                        assert(field.its_values(row, 0) == field.value(row, col));
+                        assert(field.value(row, 0) == field.value(row, col));
 
                 return field;
             }
@@ -155,7 +157,7 @@ namespace GPN
 
         template <typename Grid2D_t>
         using HeatConductivity = Field<Grid2D_t>;
-        
+
         template <typename Grid2D_t>
         using MediumHeatConductivity = HeatConductivity<Grid2D_t>;
 
@@ -171,7 +173,7 @@ namespace GPN
             }
         };
 
-        template<typename Grid2D_t>
+        template <typename Grid2D_t>
         using JT_SpatialComponent = Field<Grid2D_t>;
 #pragma endregion
     } // Properties
