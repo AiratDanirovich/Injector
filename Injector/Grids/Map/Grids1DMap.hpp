@@ -10,16 +10,15 @@ namespace GPN
         struct GridDualStencilsMap
         {
         private:
-            using cMarginMap1D = Eigen::Map<const DualNodesContainer>;
+            using cMarginMap1D = Eigen::Map<const DualNodesContainer::Base>;
 
         public:
             GridDualStencilsMap(
                 const GridDualStencils &
                     grid_dual_stencils)
-                : dual_nodes{grid_dual_stencils.dual_nodes}
-            // : dual_nodes{
-            //       grid_dual_stencils.dual_nodes.data() + start_margin,
-            //       grid_dual_stencils.dual_nodes - start_margin}
+            : dual_nodes{
+                  grid_dual_stencils.dual_nodes.data() + start_margin,
+                  grid_dual_stencils.dual_nodes.size() - start_margin}
             {
             }
 
@@ -39,7 +38,7 @@ namespace GPN
                 return dual_nodes.size();
             }
 
-            const DualNodesContainer dual_nodes;
+            const cMarginMap1D dual_nodes;
         };
 
         template <typename CoordinateType_t, ptrdiff_t start_margin>
