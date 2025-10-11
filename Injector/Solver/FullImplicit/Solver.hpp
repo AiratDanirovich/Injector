@@ -138,7 +138,7 @@ namespace GPN
                     std::vector<Eigen::Triplet<RealType, ptrdiff_t>> tripletList;
                     tripletList.reserve(6ll * A_size);
 
-                    // tau_factor multiplies Delta_u at different time moments,
+                    // tau_factor = capacity/tau multiplies Delta_u at different time moments,
                     // i.e., t and t+tau
                     const Eigen::ArrayXX<RealType> tau_factor{
                         time_factor.Divide(tau).eval()};
