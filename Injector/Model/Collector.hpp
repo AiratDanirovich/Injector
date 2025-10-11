@@ -132,14 +132,14 @@ namespace GPN
             };
 
             struct Hydrodynamics
-            : public BaseHydrodynamics
+                : public BaseHydrodynamics
             {
                 Hydrodynamics(
-                    const BaseHydrodynamics& base_hydrodynamics,
+                    const BaseHydrodynamics &base_hydrodynamics,
                     const auto &skin_stencils,
                     const auto &grid)
                     : BaseHydrodynamics{base_hydrodynamics},
-                    skin{SkinFactory::create(skin_stencils, base_hydrodynamics.is_permeable_stencils, grid)}
+                      skin{SkinFactory::create(skin_stencils, base_hydrodynamics.is_permeable_stencils, grid)}
                 {
                     assert(is_permeable_stencils.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
                     assert(skin_stencils.size() == grid.dual_stencils.dual_nodes.size() - 1ll);

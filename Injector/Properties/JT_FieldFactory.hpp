@@ -27,7 +27,7 @@ namespace GPN
                 const auto &flux2_pos{rates_factory.get_heat_flow_in_axes2_pos()};
                 const auto &flux2_neg{rates_factory.get_heat_flow_in_axes2_neg()};
                 const auto &permeability{rates_factory.pressure_field->permeability};
-                const auto &pressure{rates_factory.get_pressure_field().its_values};
+                const auto &pressure{rates_factory.get_pressure_field().values()};
 
                 assert(flux2_pos.cols() == flux2_neg.cols());
                 assert(flux2_pos.cols() == second_coord_size + 1ll);

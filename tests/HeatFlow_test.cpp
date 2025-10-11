@@ -369,7 +369,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     {
         cur_heat_incr +=
             ((states[t].cur_state - states[t - 1ll].cur_state) *
-             heat_props.medium_vol_heatcapacity.its_values * grid2D->volumes())
+             heat_props.medium_vol_heatcapacity.values() * grid2D->volumes())
                 .sum();
         cum_inlet_heat +=
             (times[t] - times[t - 1ll]) *
