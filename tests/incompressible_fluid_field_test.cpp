@@ -144,9 +144,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     CHECK(rock_field_props.porosity.rows() == grid_z.mesh_size());
     CHECK(rock_field_props.porosity.cols() == grid_r.mesh_size() - left_margin);
 
-    for(auto col{0ll}; col < grid_rocks_z.mesh_size(); ++col)
+    for(auto col{0ll}; col < grid_rocks_r.mesh_size(); ++col)
     {
-        for(auto row{0ll}; row < grid_rocks_r.mesh_size(); ++row)
+        for(auto row{0ll}; row < grid_rocks_z.mesh_size(); ++row)
         {
             CHECK(rock_field_props.permeability.value(row, col) == core_logs.permeability(row));
             CHECK(rock_field_props.porosity.value(row, col) == core_logs.porosity(row));
