@@ -136,8 +136,8 @@ namespace GPN
                 const AxesGrid<Axes1> &first_coord,
                 const AxesGrid<Axes2> &second_coord)
                 : StructuredGrid2D<CylinderCoordinates>{first_coord, second_coord},
-                  face_area_axes1{set_axes1_area()},
-                  face_area_axes2{set_axes2_area()}
+                  face_area_axes1{set_axes1_area(second_coord)},
+                  face_area_axes2{set_axes2_area(first_coord)}
             {
                 // take axial symmetry into account,
                 // multiply 2D-volumes by 2Pi
@@ -147,12 +147,12 @@ namespace GPN
             const FaceAreaAxes1 face_area_axes1;
             const FaceAreaAxes2 face_area_axes2;
 
-        protected:
-            FaceAreaAxes1 set_axes1_area() const
+        private:
+            static FaceAreaAxes1 set_axes1_area(const auto& second_coord)
             {
                 return FaceAreaAxes1{second_coord.volumes() * TwoPI()};
             }
-            FaceAreaAxes2 set_axes2_area() const
+            static FaceAreaAxes2 set_axes2_area(const auto& first_coord)
             {
                 return FaceAreaAxes1{first_coord.volumes() * TwoPI()};
             }
