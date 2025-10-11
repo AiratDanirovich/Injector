@@ -35,11 +35,11 @@ const auto solid_heatconductivity_stencils{
 TEST_CASE("Solver", "splitY")
 {
     const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
-    const auto &grid{grid2D->first_coord};
+    const auto &grid_z{grid2D->first_coord()};
 
     const auto conductivity{
         Logs::HeatConductivityFactory::create(
-            solid_heatconductivity_stencils, grid)};
+            solid_heatconductivity_stencils, grid_z)};
 
     const Properties::HeatConductivity conductivity_field{
         Properties::FieldFactory::create(

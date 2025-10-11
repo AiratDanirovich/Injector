@@ -33,8 +33,8 @@ namespace GPN
             const auto get_spatial_JT_contribution() const
             {
                 return GridNodeValues2D::Zero(
-                    grid2D->first_coord.mesh_size(),
-                    grid2D->second_coord.mesh_size());
+                    grid2D->first_coord().mesh_size(),
+                    grid2D->second_coord().mesh_size());
             }
 
             const auto &get_heat_flow_in_axes1() const

@@ -53,10 +53,10 @@ namespace GPN
 
     RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t) const override
     {
-      if (r == grid_ptr->second_coord.dual_front())
+      if (r == grid_ptr->second_coord().dual_front())
         return flow_field.get_heat_flow_in_axes2()(z_id, 0ll) * flow_field.get_temperature();
 
-      if (r == grid_ptr->second_coord.dual_back())
+      if (r == grid_ptr->second_coord().dual_back())
         return 0.0;
 
       assert(false);
@@ -65,10 +65,10 @@ namespace GPN
 
     RealType operator()(const RealType z, const ptrdiff_t r_id, const RealType t) const override
     {
-      if (z == grid_ptr->first_coord.dual_front())
+      if (z == grid_ptr->first_coord().dual_front())
         return flow_field.get_heat_flow_in_axes1()(0ll, r_id) * flow_field.get_temperature();
 
-      if (z == grid_ptr->first_coord.dual_back())
+      if (z == grid_ptr->first_coord().dual_back())
         return 0.0;
 
       assert(false);
