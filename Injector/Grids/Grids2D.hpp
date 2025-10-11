@@ -115,13 +115,16 @@ namespace GPN
                 return its_volumes;
             }
 
-            const auto& first_coord() const
-            {return its_first_coord;}
-            const auto& second_coord() const
+            const auto &first_coord() const
+            {
+                return its_first_coord;
+            }
+            const auto &second_coord() const
             {
                 return its_second_coord;
             }
-protected:
+
+        protected:
             const AxesGrid<Axes1> its_first_coord;
             const AxesGrid<Axes2> its_second_coord;
             CellVolumeContainer2D its_volumes;
@@ -150,11 +153,11 @@ protected:
             const FaceAreaAxes2 face_area_axes2;
 
         private:
-            static FaceAreaAxes1 set_axes1_area(const auto& second_coord)
+            static FaceAreaAxes1 set_axes1_area(const auto &second_coord)
             {
                 return FaceAreaAxes1{second_coord.volumes() * TwoPI()};
             }
-            static FaceAreaAxes2 set_axes2_area(const auto& first_coord)
+            static FaceAreaAxes2 set_axes2_area(const auto &first_coord)
             {
                 return FaceAreaAxes1{first_coord.volumes() * TwoPI()};
             }
@@ -224,8 +227,8 @@ protected:
 
             template <typename Refiner_t>
             static auto create_cylinder_grid_2D_ptr(
-                Refiner_t &&refiner, 
-                const auto &z_stencils, 
+                Refiner_t &&refiner,
+                const auto &z_stencils,
                 const auto &r_stencils)
             {
                 auto z_grid{Factory::create_axes<CoordinateTypes::Z>(refiner, z_stencils)};

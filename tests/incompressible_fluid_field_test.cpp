@@ -7,11 +7,12 @@
 
 #include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Grids/Grids2D.hpp>
-#include <Injector/Grids/Grids2DMap.hpp>
+#include <Injector/Grids/Map/Grids2DMap.hpp>
 #include <Injector/Grids/GridRefiners.hpp>
 
 #include <Injector/History/RatesFactory.hpp>
 
+#include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Well/WellHoles.hpp>
 #include <Injector/Model/Well/WellFactory.hpp>
@@ -69,6 +70,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto
         z_minor_step{data["grid"]["z_minor_step"].get<RealType>()}; // m
     const auto thickness{data["collector"]["thickness"].get<VR>()};
+    const auto porosity_stencils{transfer_to_eigen(data["collector"]["porosity"].get<VR>())};
     const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"].get<VR>(), 1e-12)};
     const auto RFP_weights_stencils{transfer_to_eigen(data["collector"]["explicit"]["weights"].get<VR>())};
     const auto ext_pressure_stencils{transfer_to_eigen(data["collector"]["external_pressure"].get<VR>(), 1e5)};
@@ -107,7 +109,21 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto &grid_r{grid2D->second_coord()};
 
 #pragma region MAP-GRID
-    const Grids::CylinderGridRock grid2D_rocks{grid2D};
+    const cptr<Grids::CylinderGridRock> grid2D_rocks{make_shared<Grids::CylinderGridRock>(grid2D)};
+
+    Logs::Rocks::CoreSampleLogs
+        core_logs{
+            is_permeable_stencils,
+            is_perforated_stencils,
+            porosity_stencils,
+            permeability_stencils,
+            grid_z};
+
+    Properties::Rocks::Rocks
+        rock_field_props{
+            core_logs,
+            grid2D_rocks};
+
 #pragma endregion
 
     const auto rMin{grid_r.dual_front()};
