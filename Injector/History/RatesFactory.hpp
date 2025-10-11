@@ -108,7 +108,7 @@ namespace GPN
                 return history.get_record(pos);
             }
 
-            const auto get_pressure_field() const
+            const auto& get_pressure_field() const
             {
                 return pressure_field->current_pressure();
             }

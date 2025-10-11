@@ -42,22 +42,19 @@ namespace GPN
                 RealType x, y;
             };
 
-            const AxesGrid<Axes1> first_coord;
-            const AxesGrid<Axes2> second_coord;
-
             auto mesh_size() const
             {
-                return first_coord.mesh_size() * second_coord.mesh_size();
+                return first_coord().mesh_size() * second_coord().mesh_size();
             }
 
             template <typename Axes_t>
             const auto &coordinate() const
             {
                 if constexpr (std::is_same<Axes_t, Axes1>::value)
-                    return first_coord;
+                    return first_coord();
 
                 if constexpr (std::is_same<Axes_t, Axes2>::value)
-                    return second_coord;
+                    return second_coord();
             }
 
             /// @brief Rowmajor linear enumeration of mesh nodes
@@ -68,9 +65,9 @@ namespace GPN
             {
                 assert(first >= 0ll);
                 assert(second >= 0ll);
-                assert(first < first_coord.mesh_size());
-                assert(second < second_coord.mesh_size());
-                return first + second * first_coord.mesh_size();
+                assert(first < first_coord().mesh_size());
+                assert(second < second_coord().mesh_size());
+                return first + second * first_coord().mesh_size();
             }
 
             /// @brief Get 2-indexed structured numbering of 2D mesh nodes
@@ -80,14 +77,14 @@ namespace GPN
             {
                 assert(linear >= 0ll);
                 assert(linear < mesh_size());
-                return {linear % first_coord.mesh_size(), linear / first_coord.mesh_size()};
+                return {linear % first_coord().mesh_size(), linear / first_coord().mesh_size()};
             }
 
             StructuredGrid2D(
                 const AxesGrid<Axes1> &first_coord,
                 const AxesGrid<Axes2> &second_coord)
-                : first_coord{first_coord},
-                  second_coord{second_coord},
+                : its_first_coord{first_coord},
+                  its_second_coord{second_coord},
                   its_volumes(
                       first_coord.volumes().matrix() *
                       second_coord.volumes().transpose().matrix())
@@ -96,7 +93,7 @@ namespace GPN
 
             auto coordinates(auto id1, auto id2) const
             {
-                return Point{first_coord.mesh_nodes(id1), second_coord.mesh_nodes(id2)};
+                return Point{first_coord().mesh_nodes(id1), second_coord().mesh_nodes(id2)};
             }
 
             // // steps in two directions,
@@ -110,7 +107,7 @@ namespace GPN
             /// @brief cell volume at node ids {id1, id2}
             auto volume(const auto id1, const auto id2) const
             {
-                return its_volumes(id1, id2);
+                return volumes()(id1, id2);
             }
 
             const auto &volumes() const
@@ -118,6 +115,18 @@ namespace GPN
                 return its_volumes;
             }
 
+            const auto &first_coord() const
+            {
+                return its_first_coord;
+            }
+            const auto &second_coord() const
+            {
+                return its_second_coord;
+            }
+
+        protected:
+            const AxesGrid<Axes1> its_first_coord;
+            const AxesGrid<Axes2> its_second_coord;
             CellVolumeContainer2D its_volumes;
         };
 
@@ -128,16 +137,12 @@ namespace GPN
         {
             using StructuredGrid2D<CylinderCoordinates>::coordinate;
 
-            constexpr static auto TwoPI()
-            {
-                return static_cast<RealType>(2.0 * std::numbers::pi);
-            }
             StructuredCylinderGrid2DAxisymmetric(
                 const AxesGrid<Axes1> &first_coord,
                 const AxesGrid<Axes2> &second_coord)
                 : StructuredGrid2D<CylinderCoordinates>{first_coord, second_coord},
-                  face_area_axes1{set_axes1_area()},
-                  face_area_axes2{set_axes2_area()}
+                  face_area_axes1{set_axes1_area(second_coord)},
+                  face_area_axes2{set_axes2_area(first_coord)}
             {
                 // take axial symmetry into account,
                 // multiply 2D-volumes by 2Pi
@@ -147,14 +152,18 @@ namespace GPN
             const FaceAreaAxes1 face_area_axes1;
             const FaceAreaAxes2 face_area_axes2;
 
-        protected:
-            FaceAreaAxes1 set_axes1_area() const
+        private:
+            static FaceAreaAxes1 set_axes1_area(const auto &second_coord)
             {
                 return FaceAreaAxes1{second_coord.volumes() * TwoPI()};
             }
-            FaceAreaAxes2 set_axes2_area() const
+            static FaceAreaAxes2 set_axes2_area(const auto &first_coord)
             {
                 return FaceAreaAxes1{first_coord.volumes() * TwoPI()};
+            }
+            constexpr static RealType TwoPI()
+            {
+                return static_cast<RealType>(2.0 * std::numbers::pi);
             }
         };
 
@@ -218,8 +227,8 @@ namespace GPN
 
             template <typename Refiner_t>
             static auto create_cylinder_grid_2D_ptr(
-                Refiner_t &&refiner, 
-                const auto &z_stencils, 
+                Refiner_t &&refiner,
+                const auto &z_stencils,
                 const auto &r_stencils)
             {
                 auto z_grid{Factory::create_axes<CoordinateTypes::Z>(refiner, z_stencils)};

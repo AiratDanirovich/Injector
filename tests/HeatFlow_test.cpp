@@ -123,8 +123,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         Grids::CylinderGridFactory::create(
             z_refiner, z_stencils,
             r_nodes)};
-    const auto &grid_z{grid2D->first_coord};
-    const auto &grid_r{grid2D->second_coord};
+    const auto &grid_z{grid2D->first_coord()};
+    const auto &grid_r{grid2D->second_coord()};
 
     const auto rMin{grid_r.dual_front()};
     const auto rMax{grid_r.dual_back()};
@@ -202,7 +202,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         solid_heatconductivity_stencils,
         porosity_stencils,
         water,
-        grid2D->first_coord};
+        grid_z};
 
     std::unique_ptr<const Logs::Geotherma> geotherma{
         make_unique<Logs::Geotherma>(
@@ -324,9 +324,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     }
 
     // flow volume balance
-    for (auto row{0ll}; row < grid2D->first_coord.mesh_size(); ++row)
+    for (auto row{0ll}; row < grid2D->first_coord().mesh_size(); ++row)
     {
-        for (auto col{0ll}; col < grid2D->second_coord.mesh_size(); ++col)
+        for (auto col{0ll}; col < grid2D->second_coord().mesh_size(); ++col)
         {
             INFO("" << "col: " << col << ", row: " << row << ", bottom: " << -v1(row + 1ll, col) << ", top: " << v1(row, col) << ", right: " << v2(row, col + 1ll) << ", left: " << -v2(row, col));
             CHECK_THAT(-v1(row + 1ll, col) + v1(row, col), WithinRel(v2(row, col + 1ll) - v2(row, col), tol));
@@ -334,37 +334,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     }
     // maximum principle
     const auto &[times, states] = solver.solution();
-    // for (size_t i{0ll}; i < times.size(); ++i)
-    // {
-    //   const auto &state = states[i];
-    //   for (auto row{0ll}; row < state.rows(); ++row)
-    //   {
-    //     CHECK(state(row, 0ll) >= inlet_temperature - tol);
-    //     for (auto col{1ll}; col < state.cols(); ++col)
-    //     {
-    //       INFO("time: " << i << ", col: " << col << ", row: " << row);
-    //       CHECK(state(row, col) >= inlet_temperature);
-    //     }
-    //   }
-    // }
-    // for (size_t i{1ull}; i < times.size(); ++i)
-    // {
-    //   const auto &state = states[i];
-    //   for (auto row{0ll}; row < state.rows(); ++row)
-    //   {
-    //     for (auto col{1ll}; col < state.cols(); ++col)
-    //     {
-    //       CHECK((states[i](row, col) - states[i - 1ull](row, col)) / (states[i](row, col) + states[i - 1ull](row, col)) <= tol);
-    //     }
-    //   }
-    // }
-
     // overall heat balance
     RealType cur_heat_incr = 0.0;
     RealType cum_inlet_heat = 0.0;
     //  cout << "volumetric heat capacity\n"
     //       << heat_props.medium_vol_heatcapacity.its_values << endl;
-
     for (auto t{1ll}; t < (ptrdiff_t)times.size(); ++t)
     {
         cur_heat_incr +=
@@ -376,8 +350,20 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             history.rates(t - 1ll) *
             water.volumetric_heat_capacity * (history.temps(t - 1ll) /*- initial_temperature*/);
 
-        RealType rel_tol = std::abs(2.0 * (cur_heat_incr - cum_inlet_heat) / (cur_heat_incr + cum_inlet_heat));
-        //    CHECK(rel_tol < 0.05);
+        for (auto t{1ll}; t < (ptrdiff_t)times.size(); ++t)
+        {
+            cur_heat_incr +=
+                ((states[t].cur_state - states[t - 1ll].cur_state) *
+                 heat_props.medium_vol_heatcapacity.values() * grid2D->volumes())
+                    .sum();
+            cum_inlet_heat +=
+                (times[t] - times[t - 1ll]) *
+                history.rates(t - 1ll) *
+                water.volumetric_heat_capacity * (history.temps(t - 1ll) /*- initial_temperature*/);
+
+            RealType rel_tol = std::abs(2.0 * (cur_heat_incr - cum_inlet_heat) / (cur_heat_incr + cum_inlet_heat));
+            //    CHECK(rel_tol < 0.05);
+        }
     }
 #pragma endregion
     {

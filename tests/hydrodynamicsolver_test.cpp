@@ -40,22 +40,21 @@ TEST_CASE("HydrodynamicsSolverTest")
     (*it) = 0.0;
 
     const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
-    const auto &grid{grid2D->first_coord};
+    const auto &grid_z{grid2D->first_coord()};
 
-    const Logs::Rocks::CoreSampleLogs
-        core_data{
-            is_permeable_stencils,
-            is_perforated_stencils,
-            porosity_stencils,
-            permeability_stencils,
-            grid};
+    const Logs::Rocks::CoreSampleLogs core_data{
+        is_permeable_stencils,
+        is_perforated_stencils,
+        porosity_stencils,
+        permeability_stencils,
+        grid_z};
 
     const Logs::Hydrodynamics::BaseHydrodynamics
         base_hydrodynamics{
             core_data,
             medium_compressibility_stencils,
             ext_pressure_stencils,
-            grid};
+            grid_z};
 
     const Properties::Rocks::RocksProps
         collector_field{
@@ -68,7 +67,7 @@ TEST_CASE("HydrodynamicsSolverTest")
             solid_heatconductivity_stencils,
             porosity_stencils,
             Phases::FluidFactory::create_water(1.0, 1.0),
-            grid};
+            grid_z};
 
     const Properties::Rocks::HeatProps
         heat_props{

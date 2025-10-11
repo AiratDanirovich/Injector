@@ -71,19 +71,19 @@ TEST_CASE("RFP_reservoir")
     const auto is_permeable{
         Logs::IsPermeableFactory::create(
             is_permeable_stencils,
-            grid2D->first_coord)};
+            grid2D->first_coord())};
 
     const auto is_perforated{
         Logs::IsPerforatedFactory::create(
             is_perforated_stencils,
             is_permeable_stencils,
-            grid2D->first_coord)};
+            grid2D->first_coord())};
 
     const auto permeability{
         Logs::PermeabilityFactory::create(
             permeability_stencils,
             is_permeable_stencils,
-            grid2D->first_coord)};
+            grid2D->first_coord())};
 
     const auto water{FluidFactory::create_water(1.0, 1.0)};
 
@@ -111,7 +111,7 @@ TEST_CASE("RFP_reservoir")
             CHECK(
                 rfp(i) ==
                 is_permeable(i) * well_rate / (z_thickness * is_permeable.log_vals).sum() *
-                    grid2D->first_coord.dual_steps(i));
+                    grid2D->first_coord().dual_steps(i));
         }
 
         CHECK(rfp.log_vals.sum() == well_rate);
@@ -122,8 +122,8 @@ TEST_CASE("RFP_reservoir")
                 *grid2D)};
 
         // check the first column of verticle flow
-        REQUIRE(flow_field.axes1_as_face_normal.rows() == grid2D->first_coord.dual_size());
-        REQUIRE(flow_field.axes1_as_face_normal.cols() == grid2D->second_coord.mesh_size());
+        REQUIRE(flow_field.axes1_as_face_normal.rows() == grid2D->first_coord().dual_size());
+        REQUIRE(flow_field.axes1_as_face_normal.cols() == grid2D->second_coord().mesh_size());
         for (auto row{0ll}, col{0ll}; row < flow_field.axes1_as_face_normal.rows(); ++row)
         {
             CHECK(flow_field.axes1_as_face_normal(row, col) == flow_field.axes1_as_face_normal(0, col));
@@ -138,8 +138,8 @@ TEST_CASE("RFP_reservoir")
             }
 
         // check columns of horizontal flow
-        REQUIRE(flow_field.axes2_as_face_normal.rows() == grid2D->first_coord.mesh_size());
-        REQUIRE(flow_field.axes2_as_face_normal.cols() == grid2D->second_coord.dual_size());
+        REQUIRE(flow_field.axes2_as_face_normal.rows() == grid2D->first_coord().mesh_size());
+        REQUIRE(flow_field.axes2_as_face_normal.cols() == grid2D->second_coord().dual_size());
         for (auto col{1ll}; col < flow_field.axes2_as_face_normal.cols(); ++col)
             for (auto row{0ll}; row < flow_field.axes2_as_face_normal.rows(); ++row)
             {
@@ -159,9 +159,9 @@ TEST_CASE("RFP_reservoir")
         cout << "vertical flow:\n"
              << flow_field.axes1_as_face_normal << endl;
 
-        for (auto col{0ll}; col < grid2D->second_coord.mesh_size(); ++col)
+        for (auto col{0ll}; col < grid2D->second_coord().mesh_size(); ++col)
         {
-            for (auto row{0ll}; row < grid2D->first_coord.mesh_size(); ++row)
+            for (auto row{0ll}; row < grid2D->first_coord().mesh_size(); ++row)
             {
                 CHECK_THAT(
                     flow_field.axes2_as_face_normal(row, col) - flow_field.axes2_as_face_normal(row, col + 1ll),

@@ -63,7 +63,7 @@ TEST_CASE("Solver")
   RealType well_rate{0.0};
 
   const auto grid2D{Grids::CylinderGridFactory::create(box, nLayers, nR)};
-  const auto &grid_z{grid2D->first_coord};
+  const auto &grid_z{grid2D->first_coord()};
 
   const State::State2D initial_state{State::State2D::FillWithConst(*grid2D, val)};
 

@@ -177,57 +177,6 @@ namespace GPN
 
                 const Logs::Hydrodynamics::BaseHydrodynamics &base_hydrodynamics;
 
-                template <
-                    typename Completion_t,
-                    typename Well_t>
-                void apply_well(
-                    const Completion_t &completion,
-                    const Well_t &well)
-                {
-#pragma region SET-MEDIUM-COMPRESSIBILITY
-                    // // first column -- inside the tube, contains only water
-                    // medium_vol_heatcapacity.col(0ll) =
-                    //     completion.flow().volumetric_heat_capacity() *
-                    //     completion.flow().area() /
-                    //     grid2D->face_area_axes1(0ll);
-                    // // second column -- from tube inner radius to column outer radius
-                    // medium_vol_heatcapacity.col(1ll) =
-                    //     completion.casing_volumetric_heat_capacity() *
-                    //     completion.casing_area() /
-                    //     grid2D->face_area_axes1(1ll);
-                    // // third column -- cement cross-section
-                    // medium_vol_heatcapacity.col(2ll) =
-                    //     completion.cement_volumetric_heat_capacity();
-#pragma endregion
-#pragma region SET-PERMEABILITY-CONDUCTIVITY
-                    // // heat conductivity of flowing water in r-direction is infinite
-                    // this->medium_heat_conductivity_axes2.col(0ll) =
-                    //     std::numeric_limits<RealType>::infinity();
-                    // // put values for cementOuter at medium_vol_heatcapacity.col(1ll).
-                    // // CementOuter is a part of col(1ll)
-                    // //    const auto &grid_r = grid2D->second_coord;
-                    // const auto &sandface = completion.back();
-                    // medium_heat_conductivity_axes2.col(2ll) =
-                    //     sandface.heat_conductivity();
-                    // // r_{1/2} is fixed at HeatFaceProps container
-
-                    // // interpolate verticle heat conductivity:
-                    // // (1) modify water heat conductivity in col(0ll)
-                    // const auto &flow = completion.front();
-                    // medium_heat_conductivity_axes1.col(0ll) =
-                    //     flow.heat_conductivity() *
-                    //     flow.area() / grid2D->face_area_axes1(0ll);
-                    // // (2) set casing heat conductivity in col(1ll)
-                    // medium_heat_conductivity_axes1.col(1ll) =
-                    //     completion.integral_vertical_casing_heat_conductivity() *
-                    //     completion.casing_area() / grid2D->face_area_axes1(1ll);
-                    // // (3) set cement heat conductivity in col(2ll)
-                    // medium_heat_conductivity_axes1.col(2ll) =
-                    //     completion.integral_vertical_cement_heat_conductivity() *
-                    //     completion.cement_area() / grid2D->face_area_axes1(2ll);
-#pragma endregion
-                }
-
             protected:
                 RocksProps(
                     const Logs::Hydrodynamics::BaseHydrodynamics &base_hydrodynamics,
@@ -235,7 +184,7 @@ namespace GPN
                     const Logs::Permeability &a_permeability,
                     const cptr<Grid2D_t> grid2D)
                     : RocksProps{
-                        base_hydrodynamics,
+                          base_hydrodynamics,
                           FieldFactory::create(a_medium_compressibility, grid2D),
                           FieldFactory::create(a_permeability, grid2D),
                           grid2D}
@@ -251,21 +200,28 @@ namespace GPN
                       medium_compressibility{a_medium_compressibility},
                       permeability_axes1{
                           GridNodeValues2D::Zero(
-                              grid2D->first_coord.mesh_size(),
-                              grid2D->second_coord.mesh_size()),
+                              grid2D->first_coord().mesh_size(),
+                              grid2D->second_coord().mesh_size()),
                           grid2D},
                       permeability_axes2{a_permeability},
                       grid2D{grid2D}
                 {
-                    assert(grid2D->first_coord.dual_stencils.dual_nodes.size() <=
-                           grid2D->first_coord.dual_size());
-                    assert(grid2D->second_coord.dual_stencils.dual_nodes.size() <=
-                           grid2D->second_coord.dual_size());
+                    assert(grid2D->first_coord().dual_stencils.dual_nodes.size() <=
+                           grid2D->first_coord().dual_size());
+                    assert(grid2D->second_coord().dual_stencils.dual_nodes.size() <=
+                           grid2D->second_coord().dual_size());
 
-                    assert(a_permeability.rows() == grid2D->first_coord.mesh_size());
-                    assert(a_permeability.cols() == grid2D->second_coord.mesh_size());
-                    assert(medium_compressibility.rows() == grid2D->first_coord.mesh_size());
-                    assert(medium_compressibility.cols() == grid2D->second_coord.mesh_size());
+                    assert(a_permeability.rows() == grid2D->first_coord().mesh_size());
+                    assert(a_permeability.cols() == grid2D->second_coord().mesh_size());
+                    assert(medium_compressibility.rows() == grid2D->first_coord().mesh_size());
+                    assert(medium_compressibility.cols() == grid2D->second_coord().mesh_size());
+
+                    assert(permeability_axes1.rows() == grid2D->first_coord().mesh_size());
+                    assert(permeability_axes1.cols() == grid2D->second_coord().mesh_size());
+                    assert(permeability_axes2.rows() == grid2D->first_coord().mesh_size());
+                    assert(permeability_axes2.cols() == grid2D->second_coord().mesh_size());
+                //    assert(porosity.rows() == grid2D->first_coord().mesh_size());
+                //    assert(porosity.cols() == grid2D->second_coord().mesh_size());
                 }
             };
 
@@ -392,9 +348,9 @@ namespace GPN
                     const Well_t &well)
                 {
                     using namespace std;
-                    const auto &grid_r{grid2D->second_coord};
+                    const auto &grid_r{grid2D->second_coord()};
                     const auto r1{completion.radial_node_position()};
-                    const auto &grid_z{grid2D->first_coord};
+                    const auto &grid_z{grid2D->first_coord()};
 
 #pragma region SET-HEAT-CONDUCTIVITY
                     const Eigen::ArrayX<RealType> zeta_0{completion.zeta_0(r1)};

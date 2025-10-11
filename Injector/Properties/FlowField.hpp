@@ -63,8 +63,8 @@ namespace GPN
                 const Logs::StepPropertyGrid &log,
                 const Grid2D_t &grid2D)
             {
-                assert(grid2D.second_coord.mesh_size() == log.size());
-                FaceValuesContainer face_vals(grid2D.first_coord.dual_size(), log.size());
+                assert(grid2D.second_coord().mesh_size() == log.size());
+                FaceValuesContainer face_vals(grid2D.first_coord().dual_size(), log.size());
                 face_vals.rowwise() = log.log_vals.transpose();
                 return face_vals;
             }
@@ -74,8 +74,8 @@ namespace GPN
                 const StepPropertyContainer &log,
                 const Grid2D_t &grid2D)
             {
-                assert(grid2D.first_coord.mesh_size() == log.size());
-                FaceValuesContainer face_vals(log.size(), grid2D.second_coord.dual_size());
+                assert(grid2D.first_coord().mesh_size() == log.size());
+                FaceValuesContainer face_vals(log.size(), grid2D.second_coord().dual_size());
                 face_vals.colwise() = log;
                 return face_vals;
             }
@@ -146,12 +146,12 @@ namespace GPN
                 // assume by default zero verticle flux in the entire domain
                 FaceValuesContainer axes1_as_face_normal{
                     FaceValuesContainer::Zero(
-                        grid2D.first_coord.dual_size(),
-                        grid2D.second_coord.mesh_size())};
+                        grid2D.first_coord().dual_size(),
+                        grid2D.second_coord().mesh_size())};
 
                 { // set the flow in tube
                     // cumsum of rfp flow rates
-                    LogValuesContainer cum_sum{LogValuesContainer::Zero(grid2D.first_coord.dual_size())};
+                    LogValuesContainer cum_sum{LogValuesContainer::Zero(grid2D.first_coord().dual_size())};
                     std::partial_sum(wfp_vals.cbegin(), wfp_vals.cend(), cum_sum.begin() + 1ll, std::plus<RealType>());
                     // residual flowrate along the well
                     const LogValuesContainer z_flow{history_record.rate - cum_sum};
@@ -179,7 +179,7 @@ namespace GPN
             {
                 assert(std::isnormal(history_record.rate));
                 return ReservoirFlowField{
-                    Logs::ZFlowRateLogFactory::create(history_record.rate, grid2D.second_coord),
+                    Logs::ZFlowRateLogFactory::create(history_record.rate, grid2D.second_coord()),
                     axes1_value,
                     grid2D};
             }
@@ -197,9 +197,9 @@ namespace GPN
                 const IsPermeable_t &is_permeable,
                 const Grid2D_t &grid2D)
             {
-                const Logs::StepProperty rfp{(is_permeable.log_vals * StepPropertyContainer::Constant(grid2D.first_coord.mesh_size(), rate)).eval()};
+                const Logs::StepProperty rfp{(is_permeable.log_vals * StepPropertyContainer::Constant(grid2D.first_coord().mesh_size(), rate)).eval()};
                 return ReservoirFlowField{
-                    Logs::ZFlowRateLogFactory::create(0.0, grid2D.second_coord),
+                    Logs::ZFlowRateLogFactory::create(0.0, grid2D.second_coord()),
                     Logs::RFP{Logs::StepPropertyGrid{rfp, is_permeable.grid},
                               is_permeable},
                     grid2D};
