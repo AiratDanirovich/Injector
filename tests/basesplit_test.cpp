@@ -21,7 +21,7 @@ const auto solid_heatconductivity_stencils{
 TEST_CASE("BaseSplitTest")
 {
     const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
-    const auto &grid{grid2D->first_coord};
+    const auto &grid{grid2D->first_coord()};
 
     const auto conductivity{
         Logs::HeatConductivityFactory::create(
@@ -39,11 +39,11 @@ TEST_CASE("BaseSplitTest")
 
     BaseSplit base_split1{
         conductivity_field_face.face_vals_axes2,
-        grid2D->first_coord.mesh_size(),
-        grid2D->second_coord.mesh_size()};
+        grid2D->first_coord().mesh_size(),
+        grid2D->second_coord().mesh_size()};
 
     BaseSplit base_split2{
         conductivity_field_face.face_vals_axes1,
-        grid2D->second_coord.mesh_size(),
-        grid2D->first_coord.mesh_size()};
+        grid2D->second_coord().mesh_size(),
+        grid2D->first_coord().mesh_size()};
 }

@@ -125,8 +125,8 @@ TEST_CASE("apply_well_test", "apply_well_test")
           Grids::Factory::generate_dual_grid_stencils_from_steps(
               0.0, thickness),
           r_stencils)};
-  const auto &grid_z{grid2D->first_coord};
-  const auto &grid_r{grid2D->second_coord};
+  const auto &grid_z{grid2D->first_coord()};
+  const auto &grid_r{grid2D->second_coord()};
 
   const ExtrudedCasing extr_completion{VarExtrudedCasingFactory::create(completion)};
   const auto &Flow{extr_completion[MaterialType::Flow]};
@@ -287,7 +287,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
       solid_heatconductivity_stencils,
       porosity_stencils,
       water,
-      grid2D->first_coord};
+      grid_z};
 
   // CHECK heat_logs
   {

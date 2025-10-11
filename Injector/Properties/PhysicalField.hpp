@@ -36,9 +36,9 @@ namespace GPN
                 : its_values{vals},
                   grid{grid}
             {
-                assert(its_values.rows() == grid->first_coord.mesh_size());
-                assert(its_values.cols() == grid->second_coord.mesh_size());
-                assert(grid->second_coord.mesh_size() > 0ll);
+                assert(its_values.rows() == grid->first_coord().mesh_size());
+                assert(its_values.cols() == grid->second_coord().mesh_size());
+                assert(grid->second_coord().mesh_size() > 0ll);
             }
 
             const auto &values() const { return its_values; }
@@ -131,10 +131,10 @@ namespace GPN
                 const Logs::StepPropertyGrid &property,
                 const cptr<Grid_t> grid)
             {
-                assert(property.log_vals.size() == grid->first_coord.mesh_size());
-                assert(grid->second_coord.mesh_size() > 0ll);
+                assert(property.log_vals.size() == grid->first_coord().mesh_size());
+                assert(grid->second_coord().mesh_size() > 0ll);
 
-                GridNodeValues2D out(grid->first_coord.mesh_size(), grid->second_coord.mesh_size());
+                GridNodeValues2D out(grid->first_coord().mesh_size(), grid->second_coord().mesh_size());
                 out.colwise() = property.log_vals;
                 return out;
             }

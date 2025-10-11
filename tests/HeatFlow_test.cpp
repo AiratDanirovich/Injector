@@ -122,8 +122,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       Grids::CylinderGridFactory::create(
           z_refiner, z_stencils,
           r_nodes)};
-  const auto &grid_z{grid2D->first_coord};
-  const auto &grid_r{grid2D->second_coord};
+  const auto &grid_z{grid2D->first_coord()};
+  const auto &grid_r{grid2D->second_coord()};
 
   const auto rMin{grid_r.dual_front()};
   const auto rMax{grid_r.dual_back()};
@@ -190,7 +190,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       solid_heatconductivity_stencils,
       porosity_stencils,
       water,
-      grid2D->first_coord};
+      grid_z};
 
   std::unique_ptr<const Logs::Geotherma> geotherma{
       make_unique<Logs::Geotherma>(
@@ -318,9 +318,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   }
 
   // flow volume balance
-  for (auto row{0ll}; row < grid2D->first_coord.mesh_size(); ++row)
+  for (auto row{0ll}; row < grid2D->first_coord().mesh_size(); ++row)
   {
-    for (auto col{0ll}; col < grid2D->second_coord.mesh_size(); ++col)
+    for (auto col{0ll}; col < grid2D->second_coord().mesh_size(); ++col)
     {
       INFO("" << "col: " << col << ", row: " << row << ", bottom: " << -v1(row + 1ll, col) << ", top: " << v1(row, col) << ", right: " << v2(row, col + 1ll) << ", left: " << -v2(row, col));
       CHECK_THAT(-v1(row + 1ll, col) + v1(row, col), WithinRel(v2(row, col + 1ll) - v2(row, col), tol));

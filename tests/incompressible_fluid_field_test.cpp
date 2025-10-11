@@ -7,6 +7,7 @@
 
 #include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Grids/Grids2D.hpp>
+#include <Injector/Grids/Grids2DMap.hpp>
 #include <Injector/Grids/GridRefiners.hpp>
 
 #include <Injector/History/RatesFactory.hpp>
@@ -102,8 +103,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         Grids::CylinderGridFactory::create(
             z_refiner, z_stencils,
             r_nodes)};
-    const auto &grid_z{grid2D->first_coord};
-    const auto &grid_r{grid2D->second_coord};
+    const auto &grid_z{grid2D->first_coord()};
+    const auto &grid_r{grid2D->second_coord()};
+
+#pragma region MAP-GRID
+    const Grids::CylinderGridRock grid2D_rocks{grid2D};
+#pragma endregion
 
     const auto rMin{grid_r.dual_front()};
     const auto rMax{grid_r.dual_back()};
@@ -250,21 +255,21 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 CHECK_THAT(
                     flux2_pos(row, col) * (pressure(row, col)) +
                         flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col)),
-                    WithinRel(JT_term.value(row, col)/water.JT, tol));
+                    WithinRel(JT_term.value(row, col) / water.JT, tol));
             }
             for (auto col{1ll}; col < JT_term.cols() - 1ll; ++col)
             {
                 CHECK_THAT(
                     flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
                         flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col)),
-                    WithinRel(JT_term.value(row, col)/water.JT, tol));
+                    WithinRel(JT_term.value(row, col) / water.JT, tol));
             }
             {
                 const auto col{JT_term.cols() - 1ll};
                 CHECK_THAT(
                     flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
-                        flux2_neg(row, col + 1ll) * ( - pressure(row, col)),
-                    WithinRel(JT_term.value(row, col)/water.JT, tol));
+                        flux2_neg(row, col + 1ll) * (-pressure(row, col)),
+                    WithinRel(JT_term.value(row, col) / water.JT, tol));
             }
         }
     }

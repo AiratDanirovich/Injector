@@ -16,9 +16,9 @@ namespace GPN
             {
                 const auto /*&*/ grid2D_ptr{rates_factory.grid2D};
                 const auto first_coord_size{
-                    grid2D_ptr->first_coord.mesh_size()};
+                    grid2D_ptr->first_coord().mesh_size()};
                 const auto second_coord_size{
-                    grid2D_ptr->second_coord.mesh_size()};
+                    grid2D_ptr->second_coord().mesh_size()};
                 GridNodeValues2D values{
                     GridNodeValues2D::Zero(
                         first_coord_size,

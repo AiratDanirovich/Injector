@@ -44,8 +44,8 @@ TEST_CASE("InterpolatorTest")
 {
     // create 2D grid
     const auto grid2D{Grids::CylinderGridFactory::create(grid_stencils, grid_stencils)};
-    const auto &grid_z{grid2D->first_coord};
-    const auto &grid_r{grid2D->second_coord};
+    const auto &grid_z{grid2D->first_coord()};
+    const auto &grid_r{grid2D->second_coord()};
 
     const Logs::Permeability permeability{
         Logs::PermeabilityFactory::create(
