@@ -73,8 +73,8 @@ struct FunctorIC : public InitialConditions::ICFunctorBase
   }
   RealType operator()(ptrdiff_t z_id, ptrdiff_t r_id, RealType t0) const override
   {
-    const RealType z = es.grid.first_coord.mesh_nodes(z_id);
-    const RealType r = es.grid.second_coord.mesh_nodes(r_id);
+    const RealType z = es.grid.first_coord().mesh_nodes(z_id);
+    const RealType r = es.grid.second_coord().mesh_nodes(r_id);
     return es(z, r, t0);
   }
 
@@ -101,11 +101,11 @@ struct AFunctorBC : public GPN::BoundaryConditions::BCFunctorBase
 
   RealType operator()(const ptrdiff_t z_id, RealType r, const RealType t) const override
   {
-    RealType z{grid2D->first_coord.mesh_nodes(z_id)};
-    if (r == grid2D->second_coord.dual_front())
-      r = grid2D->second_coord.mesh_front();
-    else if (r == grid2D->second_coord.dual_back())
-      r = grid2D->second_coord.mesh_back();
+    RealType z{grid2D->first_coord().mesh_nodes(z_id)};
+    if (r == grid2D->second_coord().dual_front())
+      r = grid2D->second_coord().mesh_front();
+    else if (r == grid2D->second_coord().dual_back())
+      r = grid2D->second_coord().mesh_back();
     else
       assert(false);
 
@@ -114,11 +114,11 @@ struct AFunctorBC : public GPN::BoundaryConditions::BCFunctorBase
 
   RealType operator()(RealType z, const ptrdiff_t r_id, const RealType t) const override
   {
-    RealType r{grid2D->second_coord.mesh_nodes(r_id)};
-    if (z == grid2D->first_coord.dual_front())
-      z = grid2D->first_coord.mesh_front();
-    else if (z == grid2D->first_coord.dual_back())
-      z = grid2D->first_coord.mesh_back();
+    RealType r{grid2D->second_coord().mesh_nodes(r_id)};
+    if (z == grid2D->first_coord().dual_front())
+      z = grid2D->first_coord().mesh_front();
+    else if (z == grid2D->first_coord().dual_back())
+      z = grid2D->first_coord().mesh_back();
     else
       assert(false);
 
@@ -169,7 +169,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       Grids::Factory::generate_dual_grid_stencils_uniform(
           Segment{rMin, rMax}, rNodes)};
   const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
-  const auto &grid_z{grid2D->first_coord};
+  const auto &grid_z{grid2D->first_coord()};
   // make fluid
   const PhaseProperties water{
       FluidFactory::create_water(

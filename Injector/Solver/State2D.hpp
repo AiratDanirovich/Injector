@@ -35,8 +35,8 @@ namespace GPN
                     RealType val)
                 {
                     State_Container cur_state{
-                        grid2D.first_coord.mesh_size(),
-                        grid2D.second_coord.mesh_size()};
+                        grid2D.first_coord().mesh_size(),
+                        grid2D.second_coord().mesh_size()};
                     cur_state.fill(val);
 
                     return cur_state;
@@ -49,8 +49,8 @@ namespace GPN
                     const InitialConditions::ICFunctorBase &f, RealType initial_moment = 0.0)
                 {
                     State_Container cur_state{
-                        grid2D.first_coord.mesh_size(),
-                        grid2D.second_coord.mesh_size()};
+                        grid2D.first_coord().mesh_size(),
+                        grid2D.second_coord().mesh_size()};
 
                     for (std::ptrdiff_t j = 0; j < cur_state.outerSize(); ++j)
                         for (std::ptrdiff_t i = 0; i < cur_state.innerSize(); ++i)

@@ -146,13 +146,13 @@ namespace GPN
                           FieldFactory::create(logs.permeability, grid2D)},
                       porosity{FieldFactory::create(logs.porosity, grid2D)}
                 {
-                    assert(grid2D->first_coord.dual_stencils.dual_nodes.size() <= grid2D->first_coord.dual_size());
-                    assert(grid2D->second_coord.dual_stencils.dual_nodes.size() <= grid2D->second_coord.dual_size());
+                    assert(grid2D->first_coord().dual_stencils.dual_nodes.size() <= grid2D->first_coord().dual_size());
+                    assert(grid2D->second_coord().dual_stencils.dual_nodes.size() <= grid2D->second_coord().dual_size());
 
-                    assert(permeability.rows() == grid2D->first_coord.mesh_size());
-                    assert(permeability.cols() == grid2D->second_coord.mesh_size());
-                    assert(porosity.rows() == grid2D->first_coord.mesh_size());
-                    assert(porosity.cols() == grid2D->second_coord.mesh_size());
+                    assert(permeability.rows() == grid2D->first_coord().mesh_size());
+                    assert(permeability.cols() == grid2D->second_coord().mesh_size());
+                    assert(porosity.rows() == grid2D->first_coord().mesh_size());
+                    assert(porosity.cols() == grid2D->second_coord().mesh_size());
                 }
 
                 Permeability<Grid2D_t> permeability;
@@ -282,9 +282,9 @@ namespace GPN
                     const Well_t &well)
                 {
                     using namespace std;
-                    const auto &grid_r{grid2D->second_coord};
+                    const auto &grid_r{grid2D->second_coord()};
                     const auto r1{completion.radial_node_position()};
-                    const auto &grid_z{grid2D->first_coord};
+                    const auto &grid_z{grid2D->first_coord()};
 
 #pragma region SET-HEAT-CONDUCTIVITY
                     const Eigen::ArrayX<RealType> zeta_0{completion.zeta_0(r1)};

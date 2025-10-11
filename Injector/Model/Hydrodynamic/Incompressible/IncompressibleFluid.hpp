@@ -27,7 +27,7 @@ namespace GPN
                   permeability{permeability},
                   ext_pressure{ext_pressure},
                   P_ext{Properties::FieldFactory::create(ext_pressure, grid2D)},
-                  thickness_log{grid2D->first_coord.control_volumes},
+                  thickness_log{grid2D->first_coord().control_volumes},
                   well{well},
                   grid2D{grid2D},
                   auxillary_term{set_auxillary_term(fluid, ext_pressure, permeability, grid2D)}
@@ -66,8 +66,8 @@ namespace GPN
             static CellNodesContainer2D set_auxillary_term(
                 const auto &fluid, const auto &ext_pressure, const auto &permeability, const auto grid2D)
             {
-                const auto thickness_log{grid2D->first_coord.control_volumes};
-                const auto &r_grid{grid2D->second_coord};
+                const auto thickness_log{grid2D->first_coord().control_volumes};
+                const auto &r_grid{grid2D->second_coord()};
                 const auto r_max{r_grid.dual_back()};
                 const auto pi{std::numbers::pi_v<RealType>};
 
@@ -86,8 +86,8 @@ namespace GPN
 
                 const CellNodesContainer2D temp{(temp2.matrix() * temp1.transpose().matrix()).array()};
 
-                assert(temp.rows() == grid2D->first_coord.mesh_size());
-                assert(temp.cols() == grid2D->second_coord.mesh_size());
+                assert(temp.rows() == grid2D->first_coord().mesh_size());
+                assert(temp.cols() == grid2D->second_coord().mesh_size());
 
                 return temp;
             }
