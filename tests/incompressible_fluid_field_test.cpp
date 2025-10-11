@@ -113,8 +113,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const cptr<Grids::CylinderGridRock> grid2D_rocks{make_shared<Grids::CylinderGridRock>(grid2D)};
     const auto &grid_rocks_z{grid2D_rocks->first_coord()};
     const auto &grid_rocks_r{grid2D_rocks->second_coord()};
-    CHECK(grid_rocks_z.mesh_size() == grid_z.mesh_size()-left_margin);
-    CHECK(grid_rocks_r.mesh_size() == grid_r.mesh_size());
+    CHECK(grid_rocks_z.mesh_size() == grid_z.mesh_size());
+    CHECK(grid_rocks_r.mesh_size() == grid_r.mesh_size()-left_margin);
     for(auto row{0ll}; row < grid_rocks_r.mesh_size(); ++row)
     {
         CHECK(grid_rocks_r.mesh_nodes(row) == grid_r.mesh_nodes(row+left_margin));
@@ -148,7 +148,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     {
         for(auto row{0ll}; row < grid_rocks_r.mesh_size(); ++row)
         {
-
+            CHECK(rock_field_props.permeability.value(row, col) == core_logs.permeability(row));
+            CHECK(rock_field_props.porosity.value(row, col) == core_logs.porosity(row));
         }
     }
 

@@ -76,7 +76,7 @@ namespace GPN
             const cptr<Grid_type> grid;
 
         protected:
-            GridNodeValues2D its_values;
+            const GridNodeValues2D its_values;
         };
 
         template <typename Grid2D_t>
