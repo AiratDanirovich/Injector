@@ -208,6 +208,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         RFPFactory::create_from_container(
             RFP_weights_stencils,
             core_logs.is_permeable)};
+    CHECK(RFP_weights.log_vals.sum() == 1.0);
+
     const CrossFlows cross_flows{
         RFP_weights, from_coords, to_layers};
     const auto WFP_weights{
@@ -215,6 +217,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             core_logs.is_perforated,
             RFP_weights,
             cross_flows)};
+    CHECK(WFP_weights.log_vals.sum() == 1.0);
 
     const Well_Explicit well_explicit{
         core_logs.is_permeable, core_logs.is_perforated, RFP_weights};
@@ -295,8 +298,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         ptr_pressure_field,
         grid2D, well, history, water};
 
-    //   const auto tol{1e-12};
-
     for (auto t{0ull}; t < history.size(); ++t)
     {
         rates_factory.set_flow_field(history.time_moments[t], history.time_steps[t]);
@@ -312,23 +313,23 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             {
                 const auto col{0ll};
                 CHECK_THAT(
-                    flux2_pos(row, col) * (pressure(row, col)) +
-                        flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col)),
-                    WithinRel(JT_term.value(row, col) / water.JT, tol));
+                    water.JT * (flux2_pos(row, col) * (pressure(row, col)) +
+                                flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col))),
+                    WithinRel(JT_term.value(row, col), tol));
             }
             for (auto col{1ll}; col < JT_term.cols() - 1ll; ++col)
             {
                 CHECK_THAT(
-                    flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
-                        flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col)),
-                    WithinRel(JT_term.value(row, col) / water.JT, tol));
+                    water.JT * (flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
+                                flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col))),
+                    WithinRel(JT_term.value(row, col), tol));
             }
             {
                 const auto col{JT_term.cols() - 1ll};
                 CHECK_THAT(
-                    flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
-                        flux2_neg(row, col + 1ll) * (-pressure(row, col)),
-                    WithinRel(JT_term.value(row, col) / water.JT, tol));
+                    water.JT * (flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
+                                flux2_neg(row, col + 1ll) * (-pressure(row, col))),
+                    WithinRel(JT_term.value(row, col), tol));
             }
         }
     }
