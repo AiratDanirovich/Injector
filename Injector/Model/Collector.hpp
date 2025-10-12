@@ -220,8 +220,6 @@ namespace GPN
                     assert(permeability_axes1.cols() == grid2D->second_coord().mesh_size());
                     assert(permeability_axes2.rows() == grid2D->first_coord().mesh_size());
                     assert(permeability_axes2.cols() == grid2D->second_coord().mesh_size());
-                //    assert(porosity.rows() == grid2D->first_coord().mesh_size());
-                //    assert(porosity.cols() == grid2D->second_coord().mesh_size());
                 }
             };
 
@@ -325,6 +323,29 @@ namespace GPN
     {
         namespace Rocks
         {
+            template <typename Grid2D_t>
+            struct RocksFaceProps
+            {
+                RocksFaceProps(
+                    const Properties::Rocks::RocksProps<Grid2D_t> &props,
+                    const cptr<Grid2D_t> grid2D)
+                    : permeability{
+                          FaceInterpolatedFieldFactory::create(
+                              props.permeability_axes1,
+                              props.permeability_axes2,
+                              grid2D)},
+                      grid2D{grid2D}
+                {
+                    assert(permeability.face_vals_axes1.rows() == grid2D->first_coord().dual_size()-2ll);
+                    assert(permeability.face_vals_axes1.cols() == grid2D->second_coord().mesh_size());
+                    assert(permeability.face_vals_axes2.rows() == grid2D->first_coord().mesh_size());
+                    assert(permeability.face_vals_axes2.cols() == grid2D->second_coord().dual_size()-2ll);
+                }
+
+                const Permeability<Grid2D_t> permeability;
+                const cptr<Grid2D_t> grid2D;
+            };
+
             template <typename Grid2D_t>
             struct HeatFaceProps
             {
