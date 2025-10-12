@@ -17,7 +17,7 @@ auto make_history(const json &data)
     using namespace GPN;
     using namespace GPN::Logs;
 
-    const std::string t_unit = data["history"]["t_unit"];
+    const std::string t_unit = data["history"]["t_unit"].get<std::string>();
     RealType factor{1.0};
     if (t_unit == "d")
         factor = 24 * 60 * 60;
@@ -34,11 +34,11 @@ auto make_history(const json &data)
     if (history_type == "dynamic")
     {
         const auto &data2 = data["history"]["dynamic"];
-        VR t_major_steps = data2["t_major_step"];
+        VR t_major_steps = data2["t_major_step"].get<VR>();
         for (auto &v : t_major_steps)
             v = v * factor;
-        const VR well_rates = data2["well_rate"];
-        const VR inlet_temps = data2["inlet_temperature"];
+        const VR well_rates = data2["well_rate"].get<VR>();
+        const VR inlet_temps = data2["inlet_temperature"].get<VR>();
 
         return HistoryFactory::createFixedRate(t_major_steps, well_rates, inlet_temps);
     }
@@ -49,12 +49,12 @@ auto make_history(const json &data)
             t0{data2["t_start"] * factor},
             t1{data2["t_end"] * factor};
 
-        const RealType t_major_step = std::min(t1 - t0, (RealType)data2["t_major_step"] * factor);
+        const RealType t_major_step = std::min(t1 - t0, data2["t_major_step"].get<RealType>() * factor);
 
         const VR t_stencils{generate_stencils(t0, t1, t_major_step)};
 
-        const RealType well_rate{data2["well_rate"]}; // m^3/s
-        const RealType inlet_temperature{data2["inlet_temperature"]};
+        const RealType well_rate{data2["well_rate"].get<RealType>()}; // m^3/s
+        const RealType inlet_temperature{data2["inlet_temperature"].get<RealType>()};
 
         const std::vector<RealType> t_major_steps{generate_steps(t_stencils)};
         const std::vector<RealType> well_rates(t_major_steps.size(), well_rate);
