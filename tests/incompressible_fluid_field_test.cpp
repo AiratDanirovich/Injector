@@ -46,7 +46,7 @@ using namespace GPN::Phases;
 using namespace GPN::Completion;
 using namespace GPN::Hydrodynamic;
 
-using VR = std::vector<GPN::RealType>;
+const RealType tol = 1e-12;
 
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
@@ -74,6 +74,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"].get<VR>(), 1e-12)};
     const auto RFP_weights_stencils{transfer_to_eigen(data["collector"]["explicit"]["weights"].get<VR>())};
     const auto ext_pressure_stencils{transfer_to_eigen(data["collector"]["external_pressure"].get<VR>(), 1e5)};
+    const auto medium_compressibility_stencils{transfer_to_eigen(data["collector"]["medium_compressibility"].get<VR>())};
     const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"].get<VR>())};
     const auto is_permeable_stencils{set_is_permeable_stencils(is_perforated_stencils, to_layers)};
 
@@ -108,19 +109,19 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto &grid_z{grid2D->first_coord()};
     const auto &grid_r{grid2D->second_coord()};
 
-#pragma region MAP-GRID
+#pragma region CHECK-MAP-GRID
     constexpr std::ptrdiff_t left_margin{3ll};
     const cptr<Grids::CylinderGridRock> grid2D_rocks{make_shared<Grids::CylinderGridRock>(grid2D)};
     const auto &grid_rocks_z{grid2D_rocks->first_coord()};
     const auto &grid_rocks_r{grid2D_rocks->second_coord()};
     CHECK(grid_rocks_z.mesh_size() == grid_z.mesh_size());
-    CHECK(grid_rocks_r.mesh_size() == grid_r.mesh_size()-left_margin);
-    for(auto row{0ll}; row < grid_rocks_r.mesh_size(); ++row)
+    CHECK(grid_rocks_r.mesh_size() == grid_r.mesh_size() - left_margin);
+    for (auto row{0ll}; row < grid_rocks_r.mesh_size(); ++row)
     {
-        CHECK(grid_rocks_r.mesh_nodes(row) == grid_r.mesh_nodes(row+left_margin));
-        CHECK(grid_rocks_r.control_volumes(row) == grid_r.control_volumes(row+left_margin));
+        CHECK(grid_rocks_r.mesh_nodes(row) == grid_r.mesh_nodes(row + left_margin));
+        CHECK(grid_rocks_r.control_volumes(row) == grid_r.control_volumes(row + left_margin));
     }
-    for(auto col{0ll}; col < grid_rocks_z.mesh_size(); ++col)
+    for (auto col{0ll}; col < grid_rocks_z.mesh_size(); ++col)
     {
         CHECK(grid_rocks_z.mesh_nodes(col) == grid_z.mesh_nodes(col));
         CHECK(grid_rocks_z.control_volumes(col) == grid_z.control_volumes(col));
@@ -134,22 +135,58 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             permeability_stencils,
             grid_z};
 
-    Properties::Rocks::Rocks
-        rock_field_props{
+    Logs::Hydrodynamics::BaseHydrodynamics
+        base_hydrodynamics(
             core_logs,
+            medium_compressibility_stencils,
+            ext_pressure_stencils,
+            grid_z);
+
+    Properties::Rocks::RocksProps
+        rock_field_props{
+            base_hydrodynamics,
             grid2D_rocks};
 
-    CHECK(rock_field_props.permeability.rows() == grid_z.mesh_size());
-    CHECK(rock_field_props.permeability.cols() == grid_r.mesh_size() - left_margin);
-    CHECK(rock_field_props.porosity.rows() == grid_z.mesh_size());
-    CHECK(rock_field_props.porosity.cols() == grid_r.mesh_size() - left_margin);
+    CHECK(rock_field_props.permeability_axes1.rows() == grid_z.mesh_size());
+    CHECK(rock_field_props.permeability_axes1.cols() == grid_r.mesh_size() - left_margin);
+    CHECK(rock_field_props.permeability_axes2.rows() == grid_z.mesh_size());
+    CHECK(rock_field_props.permeability_axes2.cols() == grid_r.mesh_size() - left_margin);
 
-    for(auto col{0ll}; col < grid_rocks_r.mesh_size(); ++col)
+    for (auto col{0ll}; col < grid_rocks_r.mesh_size(); ++col)
     {
-        for(auto row{0ll}; row < grid_rocks_z.mesh_size(); ++row)
+        for (auto row{0ll}; row < grid_rocks_z.mesh_size(); ++row)
         {
-            CHECK(rock_field_props.permeability.value(row, col) == core_logs.permeability(row));
-            CHECK(rock_field_props.porosity.value(row, col) == core_logs.porosity(row));
+            CHECK(rock_field_props.permeability_axes1.value(row, col) == 0.0);
+            CHECK(rock_field_props.permeability_axes2.value(row, col) == core_logs.permeability(row));
+        }
+    }
+
+    FaceProperties::Rocks::RocksFaceProps
+        rock_face_props{
+            rock_field_props,
+            grid2D_rocks};
+    CHECK(rock_face_props.permeability.face_vals_axes1.rows() == grid_rocks_z.dual_size() - 2ll);
+    CHECK(rock_face_props.permeability.face_vals_axes1.cols() == grid_rocks_r.mesh_size());
+    CHECK(rock_face_props.permeability.face_vals_axes2.rows() == grid_rocks_z.mesh_size());
+    CHECK(rock_face_props.permeability.face_vals_axes2.cols() == grid_rocks_r.dual_size() - 2ll);
+
+    for (auto col{0ll}; col < rock_face_props.permeability.face_vals_axes1.cols(); ++col)
+    {
+        for (auto row{0ll}; row < rock_face_props.permeability.face_vals_axes1.rows(); ++row)
+        {
+            CHECK(rock_face_props.permeability.face_vals_axes1(row, col) == 0.0);
+        }
+    }
+    for (auto col{0ll}; col < rock_face_props.permeability.face_vals_axes2.cols(); ++col)
+    {
+        for (auto row{0ll}; row < rock_face_props.permeability.face_vals_axes1.rows(); ++row)
+        {
+            CHECK_THAT(rock_face_props.permeability.face_vals_axes2(row, col),
+                       WithinRel(
+                           core_logs.permeability(row) /
+                               std::log(grid_rocks_r.mesh_nodes(col + 1ll) /
+                                        grid_rocks_r.mesh_nodes(col)),
+                           tol));
         }
     }
 
@@ -157,12 +194,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     const auto rMin{grid_r.dual_front()};
     const auto rMax{grid_r.dual_back()};
-
-    const auto external_pressure{
-        Logs::ExtPressureFactory::create(
-            ext_pressure_stencils,
-            is_permeable_stencils,
-            grid_z)};
 
     // make fluid
     const PhasePropertiesJT water{
@@ -177,6 +208,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         RFPFactory::create_from_container(
             RFP_weights_stencils,
             core_logs.is_permeable)};
+    CHECK(RFP_weights.log_vals.sum() == 1.0);
+
     const CrossFlows cross_flows{
         RFP_weights, from_coords, to_layers};
     const auto WFP_weights{
@@ -184,6 +217,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             core_logs.is_perforated,
             RFP_weights,
             cross_flows)};
+    CHECK(WFP_weights.log_vals.sum() == 1.0);
 
     const Well_Explicit well_explicit{
         core_logs.is_permeable, core_logs.is_perforated, RFP_weights};
@@ -195,7 +229,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             start_time,
             water,
             core_logs.permeability,
-            external_pressure,
+            base_hydrodynamics.ext_pressure,
             well,
             grid2D});
 
@@ -204,7 +238,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             start_time,
             water,
             core_logs.permeability,
-            external_pressure,
+            base_hydrodynamics.ext_pressure,
             well,
             grid2D)};
 
@@ -234,7 +268,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     auto col{2ll};
                     CHECK(grid_r.dual_nodes(col + 1ll) == completion.sandface_radius(row));
                     CHECK(P.value(row, col) ==
-                          external_pressure(row) -
+                          base_hydrodynamics.ext_pressure(row) -
                               rfp(row) * water.viscosity /
                                   (2.0 * pi * core_logs.permeability(row) * grid_z.control_volumes(row)) *
                                   std::log(completion.sandface_radius(row) / rMax));
@@ -244,7 +278,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     CHECK_THAT(
                         P.value(row, col),
                         WithinRel(
-                            external_pressure(row) -
+                            base_hydrodynamics.ext_pressure(row) -
                                 rfp(row) * water.viscosity /
                                     (2.0 * pi * core_logs.permeability(row) * grid_z.control_volumes(row)) *
                                     std::log(grid_r.mesh_nodes(col) / rMax),
@@ -254,7 +288,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             {
                 for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
                     CHECK(
-                        P.value(row, col) == external_pressure(row));
+                        P.value(row, col) == base_hydrodynamics.ext_pressure(row));
             }
         }
     }
@@ -263,8 +297,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     FaceProperties::IncompressibleRatesFactory rates_factory{
         ptr_pressure_field,
         grid2D, well, history, water};
-
-    //   const auto tol{1e-12};
 
     for (auto t{0ull}; t < history.size(); ++t)
     {
@@ -281,23 +313,23 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             {
                 const auto col{0ll};
                 CHECK_THAT(
-                    flux2_pos(row, col) * (pressure(row, col)) +
-                        flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col)),
-                    WithinRel(JT_term.value(row, col) / water.JT, tol));
+                    water.JT * (flux2_pos(row, col) * (pressure(row, col)) +
+                                flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col))),
+                    WithinRel(JT_term.value(row, col), tol));
             }
             for (auto col{1ll}; col < JT_term.cols() - 1ll; ++col)
             {
                 CHECK_THAT(
-                    flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
-                        flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col)),
-                    WithinRel(JT_term.value(row, col) / water.JT, tol));
+                    water.JT * (flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
+                                flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col))),
+                    WithinRel(JT_term.value(row, col), tol));
             }
             {
                 const auto col{JT_term.cols() - 1ll};
                 CHECK_THAT(
-                    flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
-                        flux2_neg(row, col + 1ll) * (-pressure(row, col)),
-                    WithinRel(JT_term.value(row, col) / water.JT, tol));
+                    water.JT * (flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
+                                flux2_neg(row, col + 1ll) * (-pressure(row, col))),
+                    WithinRel(JT_term.value(row, col), tol));
             }
         }
     }

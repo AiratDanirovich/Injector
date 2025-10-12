@@ -36,6 +36,16 @@ namespace GPN
             {
                 return its_volumes;
             }
+            
+            template <typename Axes_t>
+            const auto &coordinate() const
+            {
+                if constexpr (std::is_same<Axes_t, Axes1>::value)
+                    return first_coord();
+
+                if constexpr (std::is_same<Axes_t, Axes2>::value)
+                    return second_coord();
+            }
 
             const auto &first_coord() const
             {

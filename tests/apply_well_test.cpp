@@ -505,7 +505,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
           log(grid_r.mesh_nodes(2ll) / Column.outer_radius) / Sandface.heat_conductivity() -
           zeta_0};
       {
-        const auto col{1ll}; // flow in the tube
+        const auto col{1ll}; // face between column and cement
         for (auto row{0ll}; row < f_conductivity_2.rows(); ++row)
         {
           CHECK_THAT(f_conductivity_2(row, col),

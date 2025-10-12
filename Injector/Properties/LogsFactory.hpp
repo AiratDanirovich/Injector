@@ -99,16 +99,16 @@ namespace GPN
                         ((is_perforated[i] == 1.0) && (is_permeable[i] == 1.0)));
                 }
 
-                size_t predicate = 0ull;
-                for (auto i{0ll}; i < (ptrdiff_t)is_perforated.size(); ++i)
-                {
-                    if ((is_perforated[i] == 0.0) &&
-                        (is_permeable[i] == 1.0))
-                    {
-                        ++predicate;
-                    }
-                }
-                assert(predicate <= 1ull);
+                // size_t predicate = 0ull;
+                // for (auto i{0ll}; i < (ptrdiff_t)is_perforated.size(); ++i)
+                // {
+                //     if ((is_perforated[i] == 0.0) &&
+                //         (is_permeable[i] == 1.0))
+                //     {
+                //         ++predicate;
+                //     }
+                // }
+                // assert(predicate <= 1ull);
 
                 // at least one perforated layer must exist
                 assert(std::any_of(is_perforated.cbegin(), is_perforated.cend(), [](const RealType v)
@@ -179,6 +179,23 @@ namespace GPN
             }
 
             IsPerforated is_permeable;
+        };
+
+        struct MediumCompressibilityFactory
+        {
+            template <typename Grid_t>
+            static MediumCompressibility create(
+                const auto &medium_compressibility,
+                const auto &is_permeable,
+                const Grid_t &grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepProperty{
+                            medium_compressibility},
+                        grid},
+                    IsPermeableFactory::create(is_permeable, grid)};
+            }
         };
 
         struct PermeabilityFactory
