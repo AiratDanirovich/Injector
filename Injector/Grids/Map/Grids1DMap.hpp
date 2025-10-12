@@ -45,6 +45,7 @@ namespace GPN
         struct AxesGridMap
         {
             using cMarginMap1D = Eigen::Map<const ControlVolumesContainer>;
+            using Axes = CoordinateType_t;
 
             AxesGridMap(const AxesGrid<CoordinateType_t> &axes_grid)
                 : axes_grid{axes_grid},
@@ -54,7 +55,11 @@ namespace GPN
                       axes_grid.volumes().size() - start_margin},
                   mesh_nodes{
                       axes_grid.mesh_nodes.data() + start_margin,
-                      axes_grid.mesh_nodes.size() - start_margin}
+                      axes_grid.mesh_nodes.size() - start_margin},
+                  dual_nodes{
+                      axes_grid.dual_nodes.data() + start_margin,
+                      axes_grid.dual_nodes.size() - start_margin
+                      }
             {
             }
 
@@ -71,6 +76,8 @@ namespace GPN
             const cMarginMap1D control_volumes;
 
             const cMarginMap1D mesh_nodes;
+            // Dual mesh to be used in simulation
+            const cMarginMap1D dual_nodes;
 
         private:
             const AxesGrid<CoordinateType_t> &axes_grid;
