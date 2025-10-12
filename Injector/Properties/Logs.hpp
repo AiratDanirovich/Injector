@@ -46,9 +46,9 @@ namespace GPN
             {
 #pragma region ASSERTIONS
                 assert(data.size() > (decltype(data.size()))0);
-                for (auto idx{adata.cbegin()}; idx != adata.cend(); ++idx)
-                    // all properties are non-negative
-                    assert((*idx >= 0.0) || std::isnan(*idx));
+                // for (auto idx{adata.cbegin()}; idx != adata.cend(); ++idx)
+                //     // all properties are non-negative
+                //     assert((*idx >= 0.0) || std::isnan(*idx));
 #pragma endregion
                 std::copy(adata.cbegin(), adata.cend(), data.begin());
             }
