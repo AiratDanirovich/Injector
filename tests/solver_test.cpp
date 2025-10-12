@@ -73,7 +73,7 @@ TEST_CASE("Solver")
     (*it) = 0.0;
 
     const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
-    const auto &grid_z{grid2D->first_coord};
+    const auto &grid_z{grid2D->first_coord()};
 
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,

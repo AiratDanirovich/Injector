@@ -16,9 +16,9 @@ namespace GPN
             {
                 const auto /*not &*/ grid2D_ptr{rates_factory.grid2D};
                 const auto first_coord_size{
-                    grid2D_ptr->first_coord.mesh_size()};
+                    grid2D_ptr->first_coord().mesh_size()};
                 const auto second_coord_size{
-                    grid2D_ptr->second_coord.mesh_size()};
+                    grid2D_ptr->second_coord().mesh_size()};
                 GridNodeValues2D values{
                     GridNodeValues2D::Zero(
                         first_coord_size,
@@ -27,7 +27,7 @@ namespace GPN
                 const auto &flux2_pos{rates_factory.get_heat_flow_in_axes2_pos()};
                 const auto &flux2_neg{rates_factory.get_heat_flow_in_axes2_neg()};
                 const auto &permeability{rates_factory.pressure_field->permeability};
-                const auto &pressure{rates_factory.get_pressure_field().its_values};
+                const auto &pressure{rates_factory.get_pressure_field().values()};
 
                 assert(flux2_pos.cols() == flux2_neg.cols());
                 assert(flux2_pos.cols() == second_coord_size + 1ll);

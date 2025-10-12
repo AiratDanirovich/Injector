@@ -70,8 +70,8 @@ namespace GPN
                       time_factor{time_factor, *grid},
                       grid{grid},
                       convection_factory{convection_factory},
-                      first_coord_size{grid->first_coord.mesh_size()},
-                      second_coord_size{grid->second_coord.mesh_size()},
+                      first_coord_size{grid->first_coord().mesh_size()},
+                      second_coord_size{grid->second_coord().mesh_size()},
                       state{initial_state}, // init with initial condition
                       bc{bc},
                       states(),

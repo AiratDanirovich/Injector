@@ -1,4 +1,5 @@
 #include <iostream>
+#include <numbers>
 
 #include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Grids/Grids2D.hpp>
@@ -75,11 +76,12 @@ TEST_CASE("GridTest", "GeneralCoordinate")
         for (auto col{0ll}; col < y_grid.mesh_nodes.size(); ++col)
         {
             for (auto row{0ll}; row < x_grid.mesh_nodes.size(); ++row)
-                CHECK(result.volume(row, col) == result.second_coord.control_volumes(col) * result.first_coord.control_volumes(row));
+                CHECK(result.volume(row, col) == result.second_coord().control_volumes(col) * result.first_coord().control_volumes(row));
         }
     }
 
     {
+        const RealType two_pi{2.0*std::numbers::pi};
         auto z_nodes{GridDual{z_stencils, CoordinateTypes::Z{}}};
         auto r_nodes{GridDual{r_stencils, CoordinateTypes::R_CylCoord{}}};
 
@@ -102,9 +104,9 @@ TEST_CASE("GridTest", "GeneralCoordinate")
             for (auto row{0ll}; row < z_grid.mesh_nodes.size(); ++row)
                 CHECK_THAT(result.volume(row, col),
                            WithinRel(
-                               StructuredCylinderGrid2DAxisymmetric::TwoPI() *
-                                   result.second_coord.control_volumes(col) *
-                                   result.first_coord.control_volumes(row),
+                               two_pi *
+                                   result.second_coord().control_volumes(col) *
+                                   result.first_coord().control_volumes(row),
                                tol));
         }
     }

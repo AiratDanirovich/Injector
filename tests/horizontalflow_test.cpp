@@ -74,7 +74,7 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
 
   RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t) const override
   {
-    if (r == grid_ptr->second_coord.dual_front())
+    if (r == grid_ptr->second_coord().dual_front())
     {
       return flow_field.get_heat_flow_in_axes2()(z_id, 0ll) * inlet_temp;
     }
@@ -139,13 +139,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
               zTop, thickness),
           Grids::Factory::generate_dual_grid_stencils_uniform(
               Segment{rMin, rMax}, rNodes))};
-  const auto &grid{grid2D->first_coord};
+  const auto &grid_z{grid2D->first_coord()};
 
   is_permeable_stencils[nLayers / 2] = 0.0;
   porosity_stencils(nLayers / 2) = 0.0;
 
   const Logs::Porosity porosity{
-      PorosityFactory::create(porosity_stencils, is_permeable_stencils, grid)};
+      PorosityFactory::create(porosity_stencils, is_permeable_stencils, grid_z)};
 
   // make fluid
   const PhaseProperties water{
@@ -157,7 +157,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
   const Logs::Rocks::IsPermeableLog hydrodynamics_logs{
       is_permeable_stencils,
-      grid2D->first_coord};
+      grid_z};
 
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
@@ -165,7 +165,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
       solid_heatconductivity_stencils,
       porosity.log_vals,
       water,
-      grid2D->first_coord};
+      grid_z};
 
   const Properties::Rocks::HeatProps heat_props{
       heat_logs, grid2D};

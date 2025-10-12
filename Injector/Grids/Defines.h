@@ -65,6 +65,7 @@ namespace GPN
     /// @brief Container for the dual nodes coordinates
     struct DualNodesContainer : public MeshNodesContainer
     {
+        using Base = MeshNodesContainer;
         using MeshNodesContainer::MeshNodesContainer;
     };
     using MeshStepsContainer = MeshNodesContainer;
