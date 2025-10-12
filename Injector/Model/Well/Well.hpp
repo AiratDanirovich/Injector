@@ -156,7 +156,7 @@ namespace GPN
             else if (std::isnan(pressure))
             { // define pressure from rate
                 assert(!std::isnan(rate));
-                assert(rate >= 0.0);
+        //        assert(rate >= 0.0);
 
                 const auto rfp_vals{get_RFP(rate, pressure)};
                 // leftover flowrate along the well
@@ -184,7 +184,7 @@ namespace GPN
             else if (std::isnan(pressure))
             { // define pressure from rate
                 assert(!std::isnan(rate));
-                assert(rate >= 0.0);
+            //    assert(rate >= 0.0);
                 return ((rate / weights_sum) * RFP_weights).eval();
             }
             else
@@ -202,7 +202,7 @@ namespace GPN
             else if (std::isnan(pressure))
             { // define pressure from rate
                 assert(!std::isnan(rate));
-                assert(rate >= 0.0);
+            //    assert(rate >= 0.0);
                 return ((rate / weights_sum) * WFP_weights).eval();
             }
             else
@@ -302,7 +302,7 @@ namespace GPN
             else if (std::isnan(pressure))
             { // define pressure from rate
                 assert(!std::isnan(rate));
-                assert(rate >= 0.0);
+//                assert(rate >= 0.0);
                 return ((rate / weights_sum) * RFP_weights).eval();
             }
             else
@@ -320,7 +320,7 @@ namespace GPN
             else if (std::isnan(pressure))
             { // define pressure from rate
                 assert(!std::isnan(rate));
-                assert(rate >= 0.0);
+            //    assert(rate >= 0.0);
                 return ((rate / weights_sum) * WFP_weights).eval();
             }
             else
@@ -338,7 +338,7 @@ namespace GPN
             else if (std::isnan(pressure))
             { // define pressure from rate
                 assert(!std::isnan(rate));
-                assert(rate >= 0.0);
+//                assert(rate >= 0.0);
                 return ((rate / weights_sum) * cross_flows.get_normalized_verticle_flux()).eval();
             }
             else

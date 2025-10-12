@@ -26,9 +26,9 @@ const GPN::Logs::Geotherma make_geotherma(const json &data, const auto grid2D)
     else if (geotherma_type == "interpolate")
     {
         const auto &data2 = data1["interpolate"];
-        const VR nodes = data2["z_nodes"];
-        const VR vals = data2["t_vals"];
-        const RealType z_top = data2["z_top"];
+        const VR nodes = data2["z_nodes"].get<VR>();
+        const VR vals = data2["t_vals"].get<VR>();
+        const RealType z_top = data2["z_top"].get<RealType>();
         return Logs::GeothermaFactory::create(
             nodes,
             vals,

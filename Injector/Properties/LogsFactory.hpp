@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cassert>
+
 #include <Injector/Properties/Logs.hpp>
 #include <Injector/Properties/Factory.hpp>
 
@@ -284,6 +286,11 @@ namespace GPN
                 const auto &nodes, const auto &vals, const RealType z_top, const auto &q_nodes)
             {
                 StepPropertyContainer out(q_nodes.size());
+                assert(nodes.size() >= 2ull);
+                assert(nodes.front() <= q_nodes.minCoeff());
+                assert(nodes.back()  >= q_nodes.maxCoeff());
+                for(auto i{1ull}; i < nodes.size(); ++i)
+                    assert(nodes[i] > nodes[i-1ll]);
 
                 ptrdiff_t left{0ll};
                 for (auto i{0ll}; i < q_nodes.size(); ++i)
