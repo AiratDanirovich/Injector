@@ -212,7 +212,7 @@ namespace GPN
             {
                 LogValuesContainer out(nodes.size());
 
-                for (auto id{0ll}; id < nodes.size(); ++id)
+                for (auto id{0ull}; id < nodes.size(); ++id)
                     out[id] = ref_val + slope * (nodes[id] - ref_node);
                 return out;
             }
