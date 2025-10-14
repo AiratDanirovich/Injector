@@ -25,34 +25,34 @@ int main()
     // input parameters
     /*fluid*/
     RealType
-        viscosity{data["fluid"]["viscosity"]},
-        density{data["fluid"]["density"]},
-        capacity{data["fluid"]["specific_heat_capacity"]},
-        heat_conductivity{data["fluid"]["heat_conductivity"]},
-        joule_thomson{data["fluid"]["joule_thomson"]};
+        viscosity{data["fluid"]["viscosity"].get<RealType>()},
+        density{data["fluid"]["density"].get<RealType>()},
+        capacity{data["fluid"]["specific_heat_capacity"].get<RealType>()},
+        heat_conductivity{data["fluid"]["heat_conductivity"].get<RealType>()},
+        joule_thomson{data["fluid"]["joule_thomson"].get<RealType>()};
     /*collector*/
-    const VR thickness = data["collector"]["thickness"];
+    const VR thickness = data["collector"]["thickness"].get<VR>();
     const VR ext_pressure_stencils{data["collector"]["external_pressure"].get<VR>()};
     // hydrodynamic logs
-    const VR is_perforated_stencils = data["collector"]["is_perforated"];
-    const VR porosity_stencils = data["collector"]["porosity"];
-    const VR permeability_stencils = data["collector"]["permeability"];
-    const VR RFP_weights_stencils = data["collector"]["explicit"]["weights"];
+    const VR is_perforated_stencils = data["collector"]["is_perforated"].get<VR>();
+    const VR porosity_stencils = data["collector"]["porosity"].get<VR>();
+    const VR permeability_stencils = data["collector"]["permeability"].get<VR>();
+    const VR RFP_weights_stencils = data["collector"]["explicit"]["weights"].get<VR>();
     const auto from_coords{data["collector"]["cross_flow"]["from_coord"].get<VR>()};
     const auto to_layers{data["collector"]["cross_flow"]["to_layers"].get<std::vector<std::ptrdiff_t>>()};
     // heat logs
-    const VR heatconductivity_stencils = data["collector"]["heatConductivity"];
-    const VR solid_density_stencils = data["collector"]["solidDensity"];
-    const VR solid_specific_heatcapacity_stencils = data["collector"]["solidSpecificHeatCapacity"];
+    const VR heatconductivity_stencils = data["collector"]["heatConductivity"].get<VR>();
+    const VR solid_density_stencils = data["collector"]["solidDensity"].get<VR>();
+    const VR solid_specific_heatcapacity_stencils = data["collector"]["solidSpecificHeatCapacity"].get<VR>();
     /*grid*/
     const RealType
-        rMin{data["grid"]["r_start"]},
-        rMax{data["grid"]["r_end"]},
-        q{data["grid"]["r_log_grid"]["q"]},
-        r_max_step{data["grid"]["r_log_grid"]["r_max_step"]},
-        z_minor_step{data["grid"]["z_minor_step"]}; // m
+        rMin{data["grid"]["r_start"].get<RealType>()},
+        rMax{data["grid"]["r_end"].get<RealType>()},
+        q{data["grid"]["r_log_grid"]["q"].get<RealType>()},
+        r_max_step{data["grid"]["r_log_grid"]["r_max_step"].get<RealType>()},
+        z_minor_step{data["grid"]["z_minor_step"].get<RealType>()}; // m
     /*history*/
-    const std::string t_unit = data["history"]["t_unit"];
+    const std::string t_unit = data["history"]["t_unit"].get<std::string>();
     RealType factor{1.0};
     if (t_unit == "d")
         factor = 24 * 60 * 60;
@@ -65,23 +65,23 @@ int main()
     else
         throw std::runtime_error("Incorrect unit of time.");
 
-    RealType
-        t0{factor * (RealType)data["history"]["start_time"]};
-    RealType t_minor_step = factor * (RealType)data["history"]["t_minor_step"];
-    VR t_major_steps = data["history"]["dynamic"]["t_major_step"];
+    const RealType
+        t0{factor * data["history"]["start_time"].get<RealType>()};
+    RealType t_minor_step {factor * data["history"]["t_minor_step"].get<RealType>()};
+    VR t_major_steps = data["history"]["dynamic"]["t_major_step"].get<VR>();
     for (auto &v : t_major_steps)
         v *= factor;
     /*temperatures*/
-    const VR well_rates = data["history"]["dynamic"]["well_rate"]; // m^3/s
-    const VR inlet_temperatures = data["history"]["dynamic"]["inlet_temperature"];
+    const VR well_rates = data["history"]["dynamic"]["well_rate"].get<VR>(); // m^3/s
+    const VR inlet_temperatures = data["history"]["dynamic"]["inlet_temperature"].get<VR>();
     /*well*/
     //    const auto casing{parse_completion(data)};
     /*END*/
 
     const auto &data2 = data["collector"]["geotherma"]["interpolate"];
-    const VR geotherma_nodes = data2["z_nodes"];
-    const VR geotherma_vals = data2["t_vals"];
-    const RealType z_top = data2["z_top"];
+    const VR geotherma_nodes = data2["z_nodes"].get<VR>();
+    const VR geotherma_vals = data2["t_vals"].get<VR>();
+    const RealType z_top = data2["z_top"].get<RealType>();
 
     cout << "Simulation is started." << endl;
     cout << "Please wait..." << endl;
