@@ -2,6 +2,7 @@
 
 #include <numbers>
 #include <algorithm>
+#include <cassert>
 #include <vector>
 #include <map>
 #include <exception>
@@ -1278,27 +1279,33 @@ namespace GPN
 
             const Eigen::ArrayX<RealType> area() const
             {
-                return cement_area() + casing_area();
+                const Eigen::ArrayX<RealType> out{cement_area() + casing_area()};
+                assert(std::all_of(out.cbegin(), out.cend(), [](const RealType v){return v >= 0.0;}));
+                return out;
             }
 
             const Eigen::ArrayX<RealType> I_tube() const
             {
                 const auto &tube{sandwich[MaterialType::Tube]};
-                return tube.outer_radius * tube.outer_radius *
+                const Eigen::ArrayX<RealType> out{ tube.outer_radius * tube.outer_radius *
                            log(tube.outer_radius / tube.inner_radius) -
-                       (tube.outer_radius - tube.inner_radius) * (tube.outer_radius + tube.inner_radius) / 2.0;
+                       (tube.outer_radius - tube.inner_radius) * (tube.outer_radius + tube.inner_radius) / 2.0};
+                assert(std::all_of(out.cbegin(), out.cend(), [](const RealType v){return v >= 0.0;}));
+                return out;
             }
 
             const Eigen::ArrayX<RealType> I_annulus() const
             {
                 const auto &tube{sandwich[MaterialType::Tube]};
                 const auto &annulus{sandwich[MaterialType::Annulus]};
-                return (annulus.area() / std::numbers::pi) *
+                const Eigen::ArrayX<RealType> out{ (annulus.area() / std::numbers::pi) *
                            log(tube.outer_radius / tube.inner_radius) +
                        tube.heat_conductivity() / annulus.heat_conductivity() *
                            (annulus.outer_radius * annulus.outer_radius *
                                 log(annulus.outer_radius / tube.outer_radius) -
-                            annulus.area() / 2.0 / std::numbers::pi);
+                            annulus.area() / 2.0 / std::numbers::pi)};
+                assert(std::all_of(out.cbegin(), out.cend(), [](const RealType v){return v >= 0.0;}));
+                return out;
             }
 
             const Eigen::ArrayX<RealType> I_column() const
@@ -1306,14 +1313,16 @@ namespace GPN
                 const auto &tube{sandwich[MaterialType::Tube]};
                 const auto &annulus{sandwich[MaterialType::Annulus]};
                 const auto &column{sandwich[MaterialType::Column]};
-                return (
+                const Eigen::ArrayX<RealType> out { (
                            log(tube.outer_radius / tube.inner_radius) +
                            tube.heat_conductivity() / annulus.heat_conductivity() *
                                log(annulus.outer_radius / annulus.inner_radius)) *
                            (column.area() / std::numbers::pi) +
                        tube.heat_conductivity() / column.heat_conductivity() *
                            (column.outer_radius * column.outer_radius * log(column.outer_radius / column.inner_radius) -
-                            column.area() / 2.0 / std::numbers::pi);
+                            column.area() / 2.0 / std::numbers::pi)};
+                assert(std::all_of(out.cbegin(), out.cend(), [](const RealType v){return v >= 0.0;}));
+                return out;
             }
 
             const Eigen::ArrayX<RealType> T_avg() const
@@ -1322,10 +1331,12 @@ namespace GPN
                 const auto &annulus{sandwich[MaterialType::Annulus]};
                 const auto &column{sandwich[MaterialType::Column]};
 
-                return (tube.volumetric_heat_capacity() * I_tube() +
+                const Eigen::ArrayX<RealType> out { (tube.volumetric_heat_capacity() * I_tube() +
                         annulus.volumetric_heat_capacity() * I_annulus() +
                         column.volumetric_heat_capacity() * I_column()) /
-                       (casing_area() * casing_volumetric_heat_capacity());
+                       (casing_area() * casing_volumetric_heat_capacity())};
+                assert(std::all_of(out.cbegin(), out.cend(), [](const RealType v){return v >= 0.0;}));
+                return out;
             }
 
             const Eigen::ArrayX<RealType> radial_node_position() const
