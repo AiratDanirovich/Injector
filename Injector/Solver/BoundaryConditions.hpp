@@ -34,7 +34,7 @@ namespace GPN
             const Grids::GridDual &grid;
 
             std::vector<RealType> south_vals, north_vals;
-            std::shared_ptr<const BCFunctorBase> functor;
+            cptr<const BCFunctorBase> functor;
 
             void set_vals(RealType t)
             {
@@ -71,7 +71,7 @@ namespace GPN
             const Grids::GridDual &grid;
 
             // f(x,y) for the first-type boundary condition
-            std::shared_ptr<const BCFunctorBase> functor;
+            cptr<const BCFunctorBase> functor;
 
             std::vector<RealType> east_vals, west_vals;
 

@@ -11,7 +11,6 @@ using VR = std::vector<GPN::RealType>;
 
 namespace GPN
 {
-
   /// @brief Initial temperature is assumed to be constant
   struct FunctorIC : public GPN::InitialConditions::ICFunctorBase
   {
@@ -42,28 +41,39 @@ namespace GPN
         FaceProperties::IncompressibleRatesFactory<
             Grid2D_t, Well_t, PhasePropertiesJT, Hydro_t>;
     FunctorBC(
-        const Logs::IsPermeable &is_permeable,
         const ConvectionFieldFactory_t &flow_field, // volumetric heat flow rate
         const cptr<const Grid2D_t> grid_ptr)
         : flow_field{flow_field},
-          is_permeable{is_permeable},
           grid_ptr{grid_ptr}
     {
     }
 
-    RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t) const override
+    RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t,
+                        const BoundaryConditions::BoundaryCondition::BCType bc_type =
+                            BoundaryConditions::BoundaryCondition::BCType::second) const override
     {
       if (r == grid_ptr->second_coord().dual_front())
         return flow_field.get_heat_flow_in_axes2()(z_id, 0ll) * flow_field.get_temperature();
 
       if (r == grid_ptr->second_coord().dual_back())
-        return 0.0;
+      {
+        if (bc_type ==
+            BoundaryConditions::BoundaryCondition::BCType::first)
+          return 0.0;
+        else if (bc_type ==
+                 BoundaryConditions::BoundaryCondition::BCType::second)
+          return 0.0;
+        else
+          return 0.0;
+      }
 
       assert(false);
       return 0.0;
     }
 
-    RealType operator()(const RealType z, const ptrdiff_t r_id, const RealType t) const override
+    RealType operator()(const RealType z, const ptrdiff_t r_id, const RealType t,
+                        const BoundaryConditions::BoundaryCondition::BCType bc_type =
+                            BoundaryConditions::BoundaryCondition::BCType::second) const override
     {
       if (z == grid_ptr->first_coord().dual_front())
         return flow_field.get_heat_flow_in_axes1()(0ll, r_id) * flow_field.get_temperature();
@@ -76,7 +86,6 @@ namespace GPN
     }
 
   protected:
-    const Logs::IsPermeable &is_permeable;
     const cptr<const Grid2D_t> grid_ptr;
     const ConvectionFieldFactory_t &flow_field;
   };

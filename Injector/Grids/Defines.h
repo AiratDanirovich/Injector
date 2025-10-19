@@ -54,7 +54,7 @@ namespace GPN
     };
 
     using RealType = double;
-    using MeshNodesContainer = Eigen::ArrayX<RealType>; // column array
+    using MeshNodesContainer = Eigen::ArrayX<RealType>;        // column array
     using MeshNodesContainerT = Eigen::Array<RealType, 1, -1>; // row array
     using LogValuesContainer = MeshNodesContainer;
 
@@ -221,7 +221,7 @@ namespace GPN
             };
             BoundaryCondition(BCType type) : type{type} {}
 
-            BCType type;
+            const BCType type;
         };
 
         struct BCSouth : public BoundaryCondition
@@ -266,8 +266,12 @@ namespace GPN
 
         struct BCFunctorBase
         {
-            virtual RealType operator()(const ptrdiff_t x, RealType y, const RealType t) const = 0;
-            virtual RealType operator()(RealType x, const ptrdiff_t y, const RealType t) const = 0;
+            virtual RealType operator()(
+                const ptrdiff_t x, RealType y, const RealType t,
+                const BoundaryCondition::BCType bc_type = BoundaryCondition::BCType::second) const = 0;
+            virtual RealType operator()(
+                RealType x, const ptrdiff_t y, const RealType t,
+                const BoundaryCondition::BCType bc_type = BoundaryCondition::BCType::second) const = 0;
         };
     } // BoundaryConditions
 } // EqSolver

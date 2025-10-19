@@ -55,6 +55,7 @@ using namespace GPN::Completion;
 using namespace GPN::Hydrodynamic;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::FullImplicit;
+using namespace GPN::BoundaryConditions;
 
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
@@ -250,8 +251,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         std::make_shared<FunctorBC<
             Well_CrossFlow,
             IncompressibleFluidField_t>>(
-            core_data.is_permeable, rates_factory, grid2D),
-        BoundaryConditions::BoundaryCondition::second};
+            rates_factory, grid2D),
+        std::array<BoundaryCondition::BCType, 4ull>{
+            BoundaryCondition::second,
+            BoundaryCondition::second,
+            BoundaryCondition::second,
+            BoundaryCondition::second}
+        };
     // solver
 
     using Solver_t = decltype(Solver{
