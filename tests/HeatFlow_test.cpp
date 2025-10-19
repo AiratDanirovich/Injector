@@ -66,11 +66,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     // input parameters
     /*fluid*/
     RealType
-        viscosity{data["fluid"]["viscosity"]},
-        density{data["fluid"]["density"]},
-        capacity{data["fluid"]["specific_heat_capacity"]},
-        heat_conductivity{data["fluid"]["heat_conductivity"]},
-        joule_thomson{data["fluid"]["joule_thomson"]};
+        viscosity{data["fluid"]["viscosity"].get<RealType>()},
+        density{data["fluid"]["density"].get<RealType>()},
+        capacity{data["fluid"]["specific_heat_capacity"].get<RealType>()},
+        heat_conductivity{data["fluid"]["heat_conductivity"].get<RealType>()},
+        joule_thomson{data["fluid"]["joule_thomson"].get<RealType>()};
     /*collector*/
     const auto thickness{data["collector"]["thickness"].get<VR>()};
     // const ptrdiff_t nLayers{thickness.size()};
@@ -111,8 +111,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     // r_stencils
     const VR r_stencils{
         WellHoles{WellHolesFactory::create(completion)}.get_stencils(
-            data["grid"]["r_start"],
-            data["grid"]["r_end"])};
+            data["grid"]["r_start"].get<RealType>(),
+            data["grid"]["r_end"].get<RealType>())};
     // r-refiner
     const AbstractRefinerRadial *r_refiner{
         make_r_refiner(data)};
@@ -246,7 +246,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto initial_state{ICFactory(start_time, grid2D, *geotherma)};
     // boundary conditions
     const GPN::BoundaryConditions::BoundaryConditions bc{
-        *grid2D,
+        grid2D,
         std::make_shared<FunctorBC<
             Well_CrossFlow,
             IncompressibleFluidField_t>>(
