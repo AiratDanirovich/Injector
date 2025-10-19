@@ -42,8 +42,10 @@ namespace GPN
             Grid2D_t, Well_t, PhasePropertiesJT, Hydro_t>;
     FunctorBC(
         const ConvectionFieldFactory_t &flow_field, // volumetric heat flow rate
+        const Logs::Geotherma &geotherm,
         const cptr<const Grid2D_t> grid_ptr)
         : flow_field{flow_field},
+          geotherma{geotherma},
           grid_ptr{grid_ptr}
     {
     }
@@ -53,17 +55,15 @@ namespace GPN
                             BoundaryConditions::BoundaryCondition::BCType::second) const override
     {
       if (r == grid_ptr->second_coord().dual_front())
-        return flow_field.get_heat_flow_in_axes2()(z_id, 0ll) * flow_field.get_temperature();
+        return 0.0; // bc at the axis of symmetry, r == 0.0
 
       if (r == grid_ptr->second_coord().dual_back())
-      {
-        if (bc_type ==
+      {                // bc at the external contour
+        if (bc_type == // geotherma is set for producer
             BoundaryConditions::BoundaryCondition::BCType::first)
-          return 0.0;
-        else if (bc_type ==
+          return geotherma(z_id);
+        else if (bc_type == // zero diffusion flux for injector
                  BoundaryConditions::BoundaryCondition::BCType::second)
-          return 0.0;
-        else
           return 0.0;
       }
 
@@ -76,16 +76,26 @@ namespace GPN
                             BoundaryConditions::BoundaryCondition::BCType::second) const override
     {
       if (z == grid_ptr->first_coord().dual_front())
-        return flow_field.get_heat_flow_in_axes1()(0ll, r_id) * flow_field.get_temperature();
+      { // inflow with temperature from history,
+        // outflow is accounted for in the matrix
+        return std::max(0.0, flow_field.get_heat_flow_in_axes1()(0ll, r_id)) * flow_field.get_temperature();
+      }
 
       if (z == grid_ptr->first_coord().dual_back())
-        return 0.0;
+      {
+        // outflow -- duffusion flux is zero, min -> 0.0
+        // inflow -- geotherm inflows from the bottom hole
+        return std::min(0.0, flow_field.get_heat_flow_in_axes1()(
+                                 grid_ptr->first_coord().dual_size() - 1ll, r_id)) *
+               geotherma.log_vals.tail(1ll)(0ll);
+      }
 
       assert(false);
       return 0.0;
     }
 
   protected:
+    const Logs::Geotherma &geotherma;
     const cptr<const Grid2D_t> grid_ptr;
     const ConvectionFieldFactory_t &flow_field;
   };
