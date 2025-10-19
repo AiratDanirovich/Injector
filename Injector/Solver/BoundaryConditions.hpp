@@ -9,7 +9,9 @@
 
 namespace GPN
 {
-        struct BoundaryConditions
+    namespace BoundaryConditions
+    {
+        struct GeneralBC
         {
             struct BoundaryCondition
             {
@@ -39,19 +41,19 @@ namespace GPN
             };
 
             template <typename Grid2D_t>
-            BoundaryConditions(
+            GeneralBC(
                 const cptr<Grid2D_t> &grid,
                 cptr<const BCFunctorBase> functor,
                 BoundaryCondition::BCType bc_type = BoundaryCondition::undef)
                 : 
-            BoundaryConditions(
+            GeneralBC(
                 grid, functor,
                 std::array<BoundaryCondition::BCType, 4ull>{bc_type,bc_type,bc_type,bc_type})
             {
             }
             
             template <typename Grid2D_t>
-            BoundaryConditions(
+            GeneralBC(
                 const cptr<Grid2D_t> &grid,
                 cptr<const BCFunctorBase> functor,
                 std::array<BoundaryCondition::BCType, 4ull> bc_types
@@ -67,7 +69,7 @@ namespace GPN
             {
             }
 
-            BoundaryConditions(const BoundaryConditions &) = default;
+        //    GeneralBC(const GeneralBC &) = default;
 
             void set_bc_type(const RealType t){
                 this->t = t;
@@ -159,4 +161,5 @@ namespace GPN
             const std::array<RealType, 4ull> fixed_coords;
             const cptr<const BCFunctorBase> functor;
         };
+    } // BoundaryConditions
 } // GPN

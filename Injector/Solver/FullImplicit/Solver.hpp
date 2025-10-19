@@ -29,7 +29,7 @@ namespace GPN
                 typename ConvectionTermFactory_t>
             struct Solver
             {
-                using BC_t = BoundaryConditions;
+                using BC_t = BoundaryConditions::GeneralBC;
 
                 using SpMatrix = SplittingMethod::SpMatrix;
 

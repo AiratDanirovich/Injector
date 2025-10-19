@@ -249,7 +249,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     // initial condition
     const auto initial_state{ICFactory(start_time, grid2D, *geotherma)};
     // boundary conditions
-    const GPN::BoundaryConditions bc{
+    const GPN::BoundaryConditions::GeneralBC bc{
         grid2D,
         std::make_shared<FunctorBC<
             Well_CrossFlow,

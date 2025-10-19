@@ -34,9 +34,10 @@ namespace GPN
   }
 
   template <typename Well_t, typename Hydro_t>
-  struct FunctorBC : public BoundaryConditions::BoundaryConditions::BCFunctorBase
+  struct FunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
   {
     using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
+    using BCType = BoundaryConditions::GeneralBC::BoundaryCondition::BCType;
     using ConvectionFieldFactory_t =
         FaceProperties::IncompressibleRatesFactory<
             Grid2D_t, Well_t, PhasePropertiesJT, Hydro_t>;
@@ -51,8 +52,7 @@ namespace GPN
     }
 
     RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t,
-                        const BoundaryConditions::BoundaryCondition::BCType bc_type =
-                            BoundaryConditions::BoundaryCondition::BCType::second) const override
+                        const BCType bc_type = BCType::second) const override
     {
       if (r == grid_ptr->second_coord().dual_front())
         return 0.0; // bc at the axis of symmetry, r == 0.0
@@ -60,10 +60,10 @@ namespace GPN
       if (r == grid_ptr->second_coord().dual_back())
       {                // bc at the external contour
         if (bc_type == // geotherma is set for producer
-            BoundaryConditions::BoundaryCondition::BCType::first)
+            BCType::first)
           return geotherma(z_id);
         else if (bc_type == // zero diffusion flux for injector
-                 BoundaryConditions::BoundaryCondition::BCType::second)
+                 BCType::second)
           return 0.0;
       }
 
@@ -72,7 +72,7 @@ namespace GPN
     }
 
     RealType operator()(const RealType z, const ptrdiff_t r_id, const RealType t,
-                        const BoundaryConditions::BoundaryCondition::BCType) const override
+                        const BCType) const override
     {
       if (z == grid_ptr->first_coord().dual_front())
       { // inflow with temperature from history,
