@@ -45,7 +45,7 @@ namespace GPN
                     ptr<ConvectionTermFactory_t> convection_factory,
                     const State::State2D &initial_state,
                     const BC_t &bc,
-                    RealType initial_moment)
+                    const RealType initial_moment)
                     : splitX{laplace_factor, grid},
                       splitY{laplace_factor, grid},
                       time_factor{time_factor, *grid},
@@ -63,8 +63,8 @@ namespace GPN
                     states.reserve(10ull);
                     save_state();
                 }
-                Solver(const Solver &) = default;
-                Solver(Solver &&) noexcept = default;
+        //        Solver(const Solver &) = default;
+        //        Solver(Solver &&) noexcept = default;
 
                 void save_state()
                 {

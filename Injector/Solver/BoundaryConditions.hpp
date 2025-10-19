@@ -32,6 +32,7 @@ namespace GPN
             
             struct BCFunctorBase
             {
+                using BCType = BoundaryConditions::GeneralBC::BoundaryCondition::BCType;
                 virtual RealType operator()(
                     const ptrdiff_t x, RealType y, const RealType t,
                     const BoundaryCondition::BCType bc_type = BoundaryCondition::BCType::second) const = 0;
