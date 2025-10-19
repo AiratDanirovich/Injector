@@ -72,8 +72,7 @@ namespace GPN
     }
 
     RealType operator()(const RealType z, const ptrdiff_t r_id, const RealType t,
-                        const BoundaryConditions::BoundaryCondition::BCType bc_type =
-                            BoundaryConditions::BoundaryCondition::BCType::second) const override
+                        const BoundaryConditions::BoundaryCondition::BCType) const override
     {
       if (z == grid_ptr->first_coord().dual_front())
       { // inflow with temperature from history,
