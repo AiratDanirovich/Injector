@@ -55,7 +55,6 @@ using namespace GPN::Completion;
 using namespace GPN::Hydrodynamic;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::FullImplicit;
-using namespace GPN::BoundaryConditions;
 
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
@@ -250,17 +249,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     // initial condition
     const auto initial_state{ICFactory(start_time, grid2D, *geotherma)};
     // boundary conditions
-    const GPN::BoundaryConditions::BoundaryConditions bc{
+    const GPN::BoundaryConditions bc{
         grid2D,
         std::make_shared<FunctorBC<
             Well_CrossFlow,
             IncompressibleFluidField_t>>(
-            ptr_rates_factory, *geotherma, grid2D),
-        std::array<BoundaryCondition::BCType, 4ull>{
-            BoundaryCondition::second,
-            BoundaryCondition::second,
-            BoundaryCondition::second,
-            BoundaryCondition::second}
+            ptr_rates_factory, *geotherma, grid2D)
         };
     // solver
 

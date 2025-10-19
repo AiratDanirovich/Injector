@@ -157,11 +157,6 @@ namespace GPN
         MeshNodesContainer values;
     };
 
-    /// @brief Reservoir Flow Profile (RFP)
-    struct RFP
-    {
-    };
-
     struct Segment
     {
         RealType start, end;
@@ -210,72 +205,4 @@ namespace GPN
             virtual RealType operator()(const ptrdiff_t, const ptrdiff_t, const RealType) const = 0;
         };
     } // InitialConditions
-
-    // x-axis goes up-down, South-North
-    // y-axis goes left-right, East-West
-    namespace BoundaryConditions
-    {
-        struct BoundaryCondition
-        {
-            enum BCType
-            {
-                first,
-                second,
-                third
-            };
-            BoundaryCondition(BCType type) : type{type} {}
-
-            const BCType type;
-        };
-
-        struct BCSouth : public BoundaryCondition
-        {
-            BCSouth(RealType fixed_x, BCType type)
-                : BoundaryCondition{type}, fixed_x{fixed_x}
-            {
-            }
-
-            RealType fixed_x;
-        };
-
-        struct BCNorth : public BoundaryCondition
-        {
-            BCNorth(RealType fixed_x, BCType type)
-                : BoundaryCondition{type}, fixed_x{fixed_x}
-            {
-            }
-
-            RealType fixed_x;
-        };
-
-        struct BCEast : public BoundaryCondition
-        {
-            BCEast(RealType fixed_y, BCType type)
-                : BoundaryCondition{type}, fixed_y{fixed_y}
-            {
-            }
-
-            RealType fixed_y;
-        };
-
-        struct BCWest : public BoundaryCondition
-        {
-            BCWest(RealType fixed_y, BCType type)
-                : BoundaryCondition{type}, fixed_y{fixed_y}
-            {
-            }
-
-            RealType fixed_y;
-        };
-
-        struct BCFunctorBase
-        {
-            virtual RealType operator()(
-                const ptrdiff_t x, RealType y, const RealType t,
-                const BoundaryCondition::BCType bc_type = BoundaryCondition::BCType::second) const = 0;
-            virtual RealType operator()(
-                RealType x, const ptrdiff_t y, const RealType t,
-                const BoundaryCondition::BCType bc_type = BoundaryCondition::BCType::second) const = 0;
-        };
-    } // BoundaryConditions
 } // EqSolver

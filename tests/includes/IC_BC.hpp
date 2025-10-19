@@ -34,7 +34,7 @@ namespace GPN
   }
 
   template <typename Well_t, typename Hydro_t>
-  struct FunctorBC : public BoundaryConditions::BCFunctorBase
+  struct FunctorBC : public BoundaryConditions::BoundaryConditions::BCFunctorBase
   {
     using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
     using ConvectionFieldFactory_t =
@@ -42,7 +42,7 @@ namespace GPN
             Grid2D_t, Well_t, PhasePropertiesJT, Hydro_t>;
     FunctorBC(
         const ptr<ConvectionFieldFactory_t> flow_field, // volumetric heat flow rate
-        const Logs::Geotherma &geotherm,
+        const Logs::Geotherma &geotherma,
         const cptr<const Grid2D_t> grid_ptr)
         : flow_field{flow_field},
           geotherma{geotherma},

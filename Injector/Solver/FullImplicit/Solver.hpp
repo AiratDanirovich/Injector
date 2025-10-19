@@ -29,7 +29,7 @@ namespace GPN
                 typename ConvectionTermFactory_t>
             struct Solver
             {
-                using BC_t = BoundaryConditions::BoundaryConditions;
+                using BC_t = BoundaryConditions;
 
                 using SpMatrix = SplittingMethod::SpMatrix;
 
@@ -124,8 +124,8 @@ namespace GPN
                 {
                     // update convection field
                     convection_factory->set_flow_field(cur_time, tau);
-                    // update boundary conditions
-                    bc.set_vals(cur_time + tau);
+                    // update types of boundary conditions
+                    bc.set_bc_type(cur_time+tau);
 
                     ptrdiff_t A_size{first_coord_size * second_coord_size};
                     assert(A_size == grid->mesh_size());
