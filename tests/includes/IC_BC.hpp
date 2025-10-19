@@ -52,7 +52,7 @@ namespace GPN
     }
 
     RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t,
-                        const BCType bc_type = BCType::second) const override
+                        const BCType bc_type) const override
     {
       if (r == grid_ptr->second_coord().dual_front())
         return 0.0; // bc at the axis of symmetry, r == 0.0

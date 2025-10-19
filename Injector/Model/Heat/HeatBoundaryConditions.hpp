@@ -10,15 +10,15 @@ namespace GPN
 {
     namespace Heat
     {
-        template <typename History_t>
+        template <typename Fieldfactory_t>
         struct HeatBC : public BoundaryConditions::GeneralBC
         {
             template <typename Grid2D_t>
             HeatBC(const cptr<Grid2D_t> &grid,
                    cptr<const BCFunctorBase> functor,
-                   const cptr<History_t> history)
+                   const cptr<Fieldfactory_t> field_factory)
                 : BoundaryConditions::GeneralBC{grid, functor, BoundaryCondition::BCType::second},
-                history{history}
+                field_factory{field_factory}
             {
             }
 
@@ -28,11 +28,14 @@ namespace GPN
             //    bc_types[south_id] = BoundaryCondition::BCType::second; // top boundary
             //    bc_types[north_id] = BoundaryCondition::BCType::second; // bottom boundary
             //    bc_types[west_id] = BoundaryCondition::BCType::second;  // well axis of symmetry
+            if(field_factory->get_rate() > 0.0)
                 bc_types[east_id] = BoundaryCondition::BCType::second;  // external contour
+            else
+                bc_types[east_id] = BoundaryCondition::BCType::first;  // external contour
             }
 
         protected:
-            const cptr<History_t> history;
+            const cptr<Fieldfactory_t> field_factory;
         };
     } // Heat
 } // GPN
