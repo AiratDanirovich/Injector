@@ -41,7 +41,7 @@ namespace GPN
         FaceProperties::IncompressibleRatesFactory<
             Grid2D_t, Well_t, PhasePropertiesJT, Hydro_t>;
     FunctorBC(
-        const ConvectionFieldFactory_t &flow_field, // volumetric heat flow rate
+        const ptr<ConvectionFieldFactory_t> flow_field, // volumetric heat flow rate
         const Logs::Geotherma &geotherm,
         const cptr<const Grid2D_t> grid_ptr)
         : flow_field{flow_field},
@@ -78,14 +78,14 @@ namespace GPN
       if (z == grid_ptr->first_coord().dual_front())
       { // inflow with temperature from history,
         // outflow is accounted for in the matrix
-        return std::max(0.0, flow_field.get_heat_flow_in_axes1()(0ll, r_id)) * flow_field.get_temperature();
+        return std::max(0.0, flow_field->get_heat_flow_in_axes1()(0ll, r_id)) * flow_field->get_temperature();
       }
 
       if (z == grid_ptr->first_coord().dual_back())
       {
         // outflow -- duffusion flux is zero, min -> 0.0
         // inflow -- geotherm inflows from the bottom hole
-        return std::min(0.0, flow_field.get_heat_flow_in_axes1()(
+        return std::min(0.0, flow_field->get_heat_flow_in_axes1()(
                                  grid_ptr->first_coord().dual_size() - 1ll, r_id)) *
                geotherma.log_vals.tail(1ll)(0ll);
       }
@@ -97,7 +97,7 @@ namespace GPN
   protected:
     const Logs::Geotherma &geotherma;
     const cptr<const Grid2D_t> grid_ptr;
-    const ConvectionFieldFactory_t &flow_field;
+    const ptr<ConvectionFieldFactory_t> flow_field;
   };
 
 } // GPN

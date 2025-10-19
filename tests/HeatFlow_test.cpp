@@ -240,9 +240,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             grid2D)};
 
     // rates field factory
-    FaceProperties::IncompressibleRatesFactory rates_factory{
+    using IncompressibleRatesFactory_t =
+        decltype(FaceProperties::IncompressibleRatesFactory{
         ptr_pressure_field,
-        grid2D, well, history, water};
+        grid2D, well, history, water});
+    auto ptr_rates_factory{make_shared<IncompressibleRatesFactory_t>(
+        ptr_pressure_field,
+        grid2D, well, history, water)};
     // initial condition
     const auto initial_state{ICFactory(start_time, grid2D, *geotherma)};
     // boundary conditions
@@ -251,7 +255,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         std::make_shared<FunctorBC<
             Well_CrossFlow,
             IncompressibleFluidField_t>>(
-            rates_factory, *geotherma, grid2D),
+            ptr_rates_factory, *geotherma, grid2D),
         std::array<BoundaryCondition::BCType, 4ull>{
             BoundaryCondition::second,
             BoundaryCondition::second,
@@ -264,14 +268,14 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         heat_face_props.medium_heat_conductivity,
         grid2D,
         heat_props.medium_vol_heatcapacity,
-        rates_factory, initial_state,
+        ptr_rates_factory, initial_state,
         bc, start_time});
 
     auto solver_ptr{std::make_shared<Solver_t>(
         heat_face_props.medium_heat_conductivity,
         grid2D,
         heat_props.medium_vol_heatcapacity,
-        rates_factory, initial_state,
+        ptr_rates_factory, initial_state,
         bc, start_time)};
 
     const auto &solver{*solver_ptr};
@@ -284,6 +288,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const double tol = 1E-11;
     const auto precision{1e-5};
 
+    const auto& rates_factory{*ptr_rates_factory};
     {
         string path{std::string{"flow_field.txt"}};
         ofstream f{path};

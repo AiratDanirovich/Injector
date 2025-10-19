@@ -91,6 +91,10 @@ namespace GPN
     using GridNodeValues2D = Eigen::ArrayXX<RealType>;
     using FaceValuesContainer = GridNodeValues2D;
 
+
+    template <typename T>
+    using ptr = std::shared_ptr<T>;
+
     template <typename T>
     using cptr = std::shared_ptr<T>;
 
