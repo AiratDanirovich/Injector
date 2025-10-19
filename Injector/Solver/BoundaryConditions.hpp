@@ -70,18 +70,22 @@ namespace GPN
             {
             }
 
-        //    GeneralBC(const GeneralBC &) = default;
+            GeneralBC(const GeneralBC &) = default;
 
             void set_bc_type(const RealType t){
                 this->t = t;
+                bc_types[south_id] = BoundaryCondition::BCType::second; // top boundary
+                bc_types[north_id] = BoundaryCondition::BCType::second; // bottom boundary
+                bc_types[west_id] = BoundaryCondition::BCType::second; // well axis of symmetry
+                bc_types[east_id] = BoundaryCondition::BCType::second; // external contour
             };
 
             template<typename MatrixView_t>
             void set_west_val(MatrixView_t &view, const auto i) const
             {
-                const RealType y{fixed_coords[2ull]};
+                const RealType y{fixed_coords[west_id]};
                 const BoundaryCondition::BCType 
-                    bc_type{bc_types[2ull]};
+                    bc_type{bc_types[west_id]};
                 if (bc_type == BoundaryCondition::BCType::first)
                 {
                     view.set_type_I((*functor)(i, y, t, bc_type));
@@ -99,9 +103,9 @@ namespace GPN
             template<typename MatrixView_t>
             void set_east_val(MatrixView_t &view, const auto i) const
             {
-                const RealType y{fixed_coords[3ull]};
+                const RealType y{fixed_coords[east_id]};
                 const BoundaryCondition::BCType 
-                    bc_type{bc_types[3ull]};
+                    bc_type{bc_types[east_id]};
                 if (bc_type == BoundaryCondition::BCType::first)
                 {
                     view.set_type_I((*functor)(i, y, t, bc_type));
@@ -119,9 +123,9 @@ namespace GPN
             template<typename MatrixView_t>
             void set_south_val(MatrixView_t &view, const auto i) const
             {
-                const RealType x{fixed_coords[0ull]};
+                const RealType x{fixed_coords[south_id]};
                 const BoundaryCondition::BCType 
-                    bc_type{bc_types[0ull]};
+                    bc_type{bc_types[south_id]};
                 if (bc_type == BoundaryCondition::BCType::first)
                 {
                     view.set_type_I((*functor)(x, i, t, bc_type));
@@ -139,9 +143,9 @@ namespace GPN
             template<typename MatrixView_t>
             void set_north_val(MatrixView_t &view, const auto i) const
             {
-                const RealType x{fixed_coords[1ull]};
+                const RealType x{fixed_coords[north_id]};
                 const BoundaryCondition::BCType 
-                    bc_type{bc_types[1ull]};
+                    bc_type{bc_types[north_id]};
                 if (bc_type == BoundaryCondition::BCType::first)
                 {
                     view.set_type_I((*functor)(x, i, t, bc_type));
@@ -161,6 +165,9 @@ namespace GPN
             std::array<BoundaryCondition::BCType, 4ull> bc_types;
             const std::array<RealType, 4ull> fixed_coords;
             const cptr<const BCFunctorBase> functor;
+
+        private:
+            const size_t west_id{2ull}, east_id{3ull}, south_id{0ull}, north_id{1ull};
         };
     } // BoundaryConditions
 } // GPN

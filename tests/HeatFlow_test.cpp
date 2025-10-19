@@ -254,8 +254,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         std::make_shared<FunctorBC<
             Well_CrossFlow,
             IncompressibleFluidField_t>>(
-            ptr_rates_factory, *geotherma, grid2D),
-        BoundaryConditions::GeneralBC::BoundaryCondition::second
+            ptr_rates_factory, *geotherma, grid2D)
         };
     // solver
 
