@@ -56,17 +56,7 @@ namespace GPN
                 cptr<const BCFunctorBase> functor,
                 std::array<BoundaryCondition::BCType, 4ull> bc_types
             )
-                ://  south_north{
-                //     BCSouth{grid->first_coord().dual_front(), bc_types[0ull]},
-                //     BCNorth{grid->first_coord().dual_back(), bc_types[1ull]},
-                //     grid->second_coord(),
-                //     functor},
-                //   east_west{
-                //     BCEast{grid->second_coord().dual_back(), bc_types[3ull]}, 
-                //     BCWest{grid->second_coord().dual_front(), bc_types[2ull]}, 
-                //     grid->first_coord(), 
-                //     functor},
-                    bc_types{bc_types},
+                :   bc_types{bc_types},
                     fixed_coords{
                         grid->first_coord().dual_front(),
                         grid->first_coord().dual_back(),
