@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include <array>
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/Grids2D.hpp>
@@ -87,53 +88,65 @@ namespace GPN
 
         struct BoundaryConditions
         {
-            template <typename Grid_t>
+            template <typename Grid2D_t>
             BoundaryConditions(
-                const Grid_t &grid,
+                const cptr<Grid2D_t> &grid,
                 cptr<const BCFunctorBase> functor,
                 BoundaryCondition::BCType bc_type = BoundaryCondition::first)
+                : 
+            BoundaryConditions(
+                grid, functor,
+                std::array<BoundaryCondition::BCType, 4ull>{bc_type,bc_type,bc_type,bc_type})
+            {
+            }
+            
+            template <typename Grid2D_t>
+            BoundaryConditions(
+                const cptr<Grid2D_t> &grid,
+                cptr<const BCFunctorBase> functor,
+                std::array<BoundaryCondition::BCType, 4ull> bc_types)
                 : south_north{
-                      BCSouth{grid.first_coord().dual_front(), bc_type},
-                      BCNorth{grid.first_coord().dual_back(), bc_type},
-                      grid.second_coord(),
-                      functor},
+                    BCSouth{grid->first_coord().dual_front(), bc_types[0ull]},
+                    BCNorth{grid->first_coord().dual_back(), bc_types[1ull]},
+                    grid->second_coord(),
+                    functor},
                   east_west{
-                    BCEast{grid.second_coord().dual_back(), bc_type}, 
-                    BCWest{grid.second_coord().dual_front(), bc_type}, 
-                    grid.first_coord(), 
+                    BCEast{grid->second_coord().dual_back(), bc_types[3ull]}, 
+                    BCWest{grid->second_coord().dual_front(), bc_types[2ull]}, 
+                    grid->first_coord(), 
                     functor}
             {
             }
 
             BoundaryConditions(const BoundaryConditions &) = default;
 
-            RealType east_vals(auto i) const
+            RealType east_vals(const auto i) const
             {
                 return east_west.east_vals[i];
             }
 
-            RealType west_vals(auto i) const
+            RealType west_vals(const auto i) const
             {
                 return east_west.west_vals[i];
             }
 
-            RealType south_vals(auto i) const
+            RealType south_vals(const auto i) const
             {
                 return south_north.south_vals[i];
             }
-            RealType north_vals(auto i) const
+            RealType north_vals(const auto i) const
             {
                 return south_north.north_vals[i];
             }
 
-            void set_vals(RealType t)
+            void set_vals(const RealType t)
             {
                 east_west.set_vals(t);
                 south_north.set_vals(t);
             }
 
             template<typename MatrixView_t>
-            void set_west_val(MatrixView_t &view, auto i) const
+            void set_west_val(MatrixView_t &view, const auto i) const
             {
                 if (east_west.west.type == BoundaryCondition::BCType::first)
                 {
@@ -150,7 +163,7 @@ namespace GPN
             }
 
             template<typename MatrixView_t>
-            void set_east_val(MatrixView_t &view, auto i) const
+            void set_east_val(MatrixView_t &view, const auto i) const
             {
                 if (east_west.east.type == BoundaryCondition::BCType::first)
                 {
@@ -167,7 +180,7 @@ namespace GPN
             }
 
             template<typename MatrixView_t>
-            void set_south_val(MatrixView_t &view, auto i) const
+            void set_south_val(MatrixView_t &view, const auto i) const
             {
                 if (south_north.south.type == BoundaryCondition::BCType::first)
                 {
@@ -184,7 +197,7 @@ namespace GPN
             }
 
             template<typename MatrixView_t>
-            void set_north_val(MatrixView_t &view, auto i) const
+            void set_north_val(MatrixView_t &view, const auto i) const
             {
                 if (south_north.north.type == BoundaryCondition::BCType::first)
                 {
