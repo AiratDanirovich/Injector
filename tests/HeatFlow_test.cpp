@@ -18,13 +18,13 @@
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleFluid.hpp>
+#include <Injector/Model/Heat/HeatBoundaryConditions.hpp>
 #include <Injector/Model/Completion.hpp>
 #include <Injector/Model/ExtrudedCasingFactory.hpp>
 
 #include <Injector/Properties/Logs.hpp>
 #include <Injector/Properties/FlowField.hpp>
 #include <Injector/Properties/Factory.hpp>
-#include <Injector/Solver/BoundaryConditions.hpp>
 #include <Injector/Solver/FullImplicit/Solver.hpp>
 #include <Injector/Solver/SolverManager.hpp>
 
@@ -249,7 +249,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     // initial condition
     const auto initial_state{ICFactory(start_time, grid2D, *geotherma)};
     // boundary conditions
-    const GPN::BoundaryConditions::GeneralBC bc{
+    const GPN::Heat::HeatBC bc{
         grid2D,
         std::make_shared<FunctorBC<
             Well_CrossFlow,

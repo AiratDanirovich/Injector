@@ -72,13 +72,14 @@ namespace GPN
 
             GeneralBC(const GeneralBC &) = default;
 
-            void set_bc_type(const RealType t){
-                this->t = t;
-                bc_types[south_id] = BoundaryCondition::BCType::second; // top boundary
-                bc_types[north_id] = BoundaryCondition::BCType::second; // bottom boundary
-                bc_types[west_id] = BoundaryCondition::BCType::second; // well axis of symmetry
-                bc_types[east_id] = BoundaryCondition::BCType::second; // external contour
-            };
+            void set_bc_type(const RealType t) = delete;
+            // {
+            //     this->t = t;
+            //     bc_types[south_id] = BoundaryCondition::BCType::second; // top boundary
+            //     bc_types[north_id] = BoundaryCondition::BCType::second; // bottom boundary
+            //     bc_types[west_id] = BoundaryCondition::BCType::second; // well axis of symmetry
+            //     bc_types[east_id] = BoundaryCondition::BCType::second; // external contour
+            // }
 
             template<typename MatrixView_t>
             void set_west_val(MatrixView_t &view, const auto i) const
@@ -166,7 +167,6 @@ namespace GPN
             const std::array<RealType, 4ull> fixed_coords;
             const cptr<const BCFunctorBase> functor;
 
-        private:
             const size_t west_id{2ull}, east_id{3ull}, south_id{0ull}, north_id{1ull};
         };
     } // BoundaryConditions

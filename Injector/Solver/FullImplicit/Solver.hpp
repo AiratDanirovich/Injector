@@ -26,11 +26,10 @@ namespace GPN
             template <
                 typename Grid_t,
                 typename Capacity_t,
-                typename ConvectionTermFactory_t>
+                typename ConvectionTermFactory_t,
+                typename BC_t>
             struct Solver
             {
-                using BC_t = BoundaryConditions::GeneralBC;
-
                 using SpMatrix = SplittingMethod::SpMatrix;
 
                 using cRHS_t = const Eigen::VectorX<RealType>;
