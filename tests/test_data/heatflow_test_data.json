@@ -8,9 +8,11 @@
   },
   "collector": {
     "external_pressure": 
-                 [    0.0, 0.0, 260,  0.0, 260,   0.0, 260, 260,  0.0],
-    "thickness": [    50,  3,   0.3,  3,   0.3,   3,   0.3, 0.3,  3],  
-    "is_perforated": [0.0, 0.0, 0.0,  0.0, 1.0,   0.0, 1.0, 1.0,  0.0],
+                 [    0.0, 0.0, 260,  0.0, 260,   0.0, 260,  260,  0.0],
+    "medium_compressibility": 
+                 [    0.0, 0.0, 2E-8, 0.0, 2E-8,  0.0, 2E-8, 2E-8, 0.0],
+    "thickness": [    50,  3,   0.3,  3,   0.3,   3,   0.3,  0.3,  3],  
+    "is_perforated": [0.0, 0.0, 0.0,  0.0, 1.0,   0.0, 1.0,  1.0,  0.0],
     "cross_flow":{
       "__comment": "from_coord is in meters; to_layers is in the geological section input starting from Zero",
       "from_coord": [40],

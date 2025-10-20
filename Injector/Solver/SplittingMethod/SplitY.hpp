@@ -31,11 +31,11 @@ namespace GPN
                     const cptr<Grid_t> &grid)
                     : BaseSplit{
                           laplace_factor.face_vals_axes1,
-                          grid->second_coord.mesh_size(), // nmbr of matricies
-                          grid->first_coord.mesh_size()}  // nmbr of unknowns
+                          grid->second_coord().mesh_size(), // nmbr of matricies
+                          grid->first_coord().mesh_size()}  // nmbr of unknowns
                 {
-                    assert(BaseSplit::laplace_factor.cols() == grid->second_coord.mesh_size());
-                    assert(BaseSplit::laplace_factor.rows() == grid->first_coord.dual_size() - 2ll);
+                    assert(BaseSplit::laplace_factor.cols() == grid->second_coord().mesh_size());
+                    assert(BaseSplit::laplace_factor.rows() == grid->first_coord().dual_size() - 2ll);
                     FillLaplaceTerm(*grid);
                 }
 

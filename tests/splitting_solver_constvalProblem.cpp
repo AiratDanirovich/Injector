@@ -12,33 +12,15 @@
 #include <Injector/Solver/InitialCondition.hpp>
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
 
+#include "includes/BCFunctor.hpp"
+
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
-
-using namespace GPN;
-
-struct ABCFunctor : public GPN::BoundaryConditions::BCFunctorBase
-{
-  ABCFunctor(RealType val) : val{val} {}
-
-  RealType operator()(const ptrdiff_t z, const RealType r, const RealType t) const override
-  {
-
-    return val;
-  }
-
-  RealType operator()(const RealType z, const ptrdiff_t r, const RealType t) const override
-  {
-    return val;
-  }
-
-protected:
-  RealType val;
-};
 
 using namespace Catch;
 using namespace Catch::Matchers;
 
+using namespace GPN;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
 
@@ -63,13 +45,14 @@ TEST_CASE("Solver")
   RealType well_rate{0.0};
 
   const auto grid2D{Grids::CylinderGridFactory::create(box, nLayers, nR)};
-  const auto &grid_z{grid2D->first_coord};
+  const auto &grid_z{grid2D->first_coord()};
 
   const State::State2D initial_state{State::State2D::FillWithConst(*grid2D, val)};
 
-  const BoundaryConditions::BoundaryConditions bc{
-      *grid2D,
-      std::make_shared<ABCFunctor>(ABCFunctor{val})};
+  const BoundaryConditions::GeneralBC bc{
+      grid2D,
+      std::make_shared<BCFunctor>(BCFunctor{val}),
+        BoundaryConditions::GeneralBC::BoundaryCondition::first};
 
   const Logs::Rocks::IsPermeableLog core_data{
       is_permeable_stencils,
