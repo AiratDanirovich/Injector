@@ -36,9 +36,9 @@ namespace GPN
                 : its_values{vals},
                   grid{grid}
             {
-                assert(its_values.rows() == grid->first_coord.mesh_size());
-                assert(its_values.cols() == grid->second_coord.mesh_size());
-                assert(grid->second_coord.mesh_size() > 0ll);
+                assert(its_values.rows() == grid->first_coord().mesh_size());
+                assert(its_values.cols() == grid->second_coord().mesh_size());
+                assert(grid->second_coord().mesh_size() > 0ll);
             }
 
             const auto &values() const { return its_values; }
@@ -61,7 +61,7 @@ namespace GPN
             {
                 return its_values.row(i);
             }
-            
+
             auto rows() const
             {
                 return its_values.rows();
@@ -73,8 +73,10 @@ namespace GPN
 
             using Grid_type = Grid_t;
 
-            GridNodeValues2D its_values;
             const cptr<Grid_type> grid;
+
+        protected:
+            GridNodeValues2D its_values;
         };
 
         template <typename Grid2D_t>
@@ -95,7 +97,7 @@ namespace GPN
                 // check that interpolation was correct
                 for (std::ptrdiff_t col{1ll}; col < field.values().cols(); ++col)
                     for (std::ptrdiff_t row{0ll}; row < field.values().rows(); ++row)
-                        assert(field.its_values(row, 0) == field.value(row, col));
+                        assert(field.value(row, 0) == field.value(row, col));
 
                 return field;
             }
@@ -129,10 +131,10 @@ namespace GPN
                 const Logs::StepPropertyGrid &property,
                 const cptr<Grid_t> grid)
             {
-                assert(property.log_vals.size() == grid->first_coord.mesh_size());
-                assert(grid->second_coord.mesh_size() > 0ll);
+                assert(property.log_vals.size() == grid->first_coord().mesh_size());
+                assert(grid->second_coord().mesh_size() > 0ll);
 
-                GridNodeValues2D out(grid->first_coord.mesh_size(), grid->second_coord.mesh_size());
+                GridNodeValues2D out(grid->first_coord().mesh_size(), grid->second_coord().mesh_size());
                 out.colwise() = property.log_vals;
                 return out;
             }
@@ -148,6 +150,9 @@ namespace GPN
 #pragma region HYDRODYNAMIC-PROPERTIES
         template <typename Grid2D_t>
         using Pressure = Field<Grid2D_t>;
+
+        template <typename Grid2D_t>
+        using MediumCompressibility = Field<Grid2D_t>;
 #pragma endregion
 #pragma region HEAT-PROPERTIES
         template <typename Grid2D_t>
@@ -155,7 +160,7 @@ namespace GPN
 
         template <typename Grid2D_t>
         using HeatConductivity = Field<Grid2D_t>;
-        
+
         template <typename Grid2D_t>
         using MediumHeatConductivity = HeatConductivity<Grid2D_t>;
 
@@ -171,7 +176,7 @@ namespace GPN
             }
         };
 
-        template<typename Grid2D_t>
+        template <typename Grid2D_t>
         using JT_SpatialComponent = Field<Grid2D_t>;
 #pragma endregion
     } // Properties

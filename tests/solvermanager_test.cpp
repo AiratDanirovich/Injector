@@ -76,8 +76,8 @@ struct FunctorIC : public InitialConditions::ICFunctorBase
   }
   RealType operator()(const ptrdiff_t z_id, const ptrdiff_t r_id, const RealType t0) const override
   {
-    const RealType z = es.grid.first_coord.mesh_nodes(z_id);
-    const RealType r = es.grid.second_coord.mesh_nodes(r_id);
+    const RealType z = es.grid.first_coord().mesh_nodes(z_id);
+    const RealType r = es.grid.second_coord().mesh_nodes(r_id);
     return es(z, r, t0);
   }
 
@@ -91,7 +91,7 @@ auto initialcondition_factory(RealType t0, const Grid_t_ptr grid, const ExactSol
   return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{es}, t0)};
 }
 
-struct FunctorBC : public GPN::BoundaryConditions::BCFunctorBase
+struct FunctorBC : public GPN::BoundaryConditions::GeneralBC::BCFunctorBase
 {
   using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
 
@@ -102,26 +102,28 @@ struct FunctorBC : public GPN::BoundaryConditions::BCFunctorBase
         grid2D{grid2D}
   {
   }
-  RealType operator()(const ptrdiff_t z_id, RealType r, const RealType t) const override
+  RealType operator()(const ptrdiff_t z_id, RealType r, const RealType t,
+                            const BCType) const override
   {
-    RealType z{grid2D->first_coord.mesh_nodes(z_id)};
-    if (r == grid2D->second_coord.dual_front())
-      r = grid2D->second_coord.mesh_front();
-    else if (r == grid2D->second_coord.dual_back())
-      r = grid2D->second_coord.mesh_back();
+    RealType z{grid2D->first_coord().mesh_nodes(z_id)};
+    if (r == grid2D->second_coord().dual_front())
+      r = grid2D->second_coord().mesh_front();
+    else if (r == grid2D->second_coord().dual_back())
+      r = grid2D->second_coord().mesh_back();
     else
       assert(false);
 
     return es(z, r, t);
   }
 
-  RealType operator()(RealType z, const ptrdiff_t r_id, const RealType t) const override
+  RealType operator()(RealType z, const ptrdiff_t r_id, const RealType t,
+                            const BCType) const override
   {
-    RealType r{grid2D->second_coord.mesh_nodes(r_id)};
-    if (z == grid2D->first_coord.dual_front())
-      z = grid2D->first_coord.mesh_front();
-    else if (z == grid2D->first_coord.dual_back())
-      z = grid2D->first_coord.mesh_back();
+    RealType r{grid2D->second_coord().mesh_nodes(r_id)};
+    if (z == grid2D->first_coord().dual_front())
+      z = grid2D->first_coord().mesh_front();
+    else if (z == grid2D->first_coord().dual_back())
+      z = grid2D->first_coord().mesh_back();
     else
       assert(false);
 
@@ -181,7 +183,7 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
       Grids::Factory::generate_dual_grid_stencils_uniform(
           Segment{rMin, rMax}, rNodes)};
   const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
-  const auto &grid_z{grid2D->first_coord};
+  const auto &grid_z{grid2D->first_coord()};
   // make fluid
   const PhaseProperties water{
       FluidFactory::create_water(
@@ -223,8 +225,9 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
   // initial conditions
   const auto initial_state{initialcondition_factory(t0, grid2D, es)};
   // boundary conditions
-  const GPN::BoundaryConditions::BoundaryConditions bc{
-      *grid2D, std::make_shared<FunctorBC>(es, grid2D)};
+  const GPN::BoundaryConditions::GeneralBC bc{
+      grid2D, std::make_shared<FunctorBC>(es, grid2D),
+        BoundaryConditions::GeneralBC::BoundaryCondition::first};
   // external pressure log
   const auto external_pressure{
       Logs::ExtPressureFactory::create(
@@ -243,14 +246,12 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
       rates_factory, initial_state,
       bc, t0});
 
-  const cptr<Solver_t> solver{std::make_shared<Solver_t>(
+  const ptr<Solver_t> solver{std::make_shared<Solver_t>(
       heat_face_props.medium_heat_conductivity,
       grid2D,
       heat_props.medium_vol_heatcapacity,
       rates_factory, initial_state,
       bc, t0)};
-
-  // const double tol = 1E-3;
 
   SolverManager manager{
       history,

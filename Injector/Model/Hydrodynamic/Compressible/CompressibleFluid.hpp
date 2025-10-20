@@ -41,7 +41,7 @@ namespace GPN
                 // calculate current pressure well and cement-sandwich
                 auto v{
                     ext_pressure.log_vals.replicate(
-                        1ll, grid2D->second_coord.mesh_size())};
+                        1ll, grid2D->second_coord().mesh_size())};
 
                 P = std::make_shared<Properties::Pressure<Grid2D_t>>(
                     v,

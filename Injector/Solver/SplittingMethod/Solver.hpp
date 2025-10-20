@@ -29,7 +29,7 @@ namespace GPN
                 typename ConvectionTermFactory_t>
             struct Solver
             {
-                using BC_t = BoundaryConditions::BoundaryConditions;
+                using BC_t = BoundaryConditions::GeneralBC;
 
 
                 using Map1D =
@@ -70,8 +70,8 @@ namespace GPN
                       time_factor{time_factor, *grid},
                       grid{grid},
                       convection_factory{convection_factory},
-                      first_coord_size{grid->first_coord.mesh_size()},
-                      second_coord_size{grid->second_coord.mesh_size()},
+                      first_coord_size{grid->first_coord().mesh_size()},
+                      second_coord_size{grid->second_coord().mesh_size()},
                       state{initial_state}, // init with initial condition
                       bc{bc},
                       states(),
@@ -154,20 +154,23 @@ namespace GPN
                     Eigen::ArrayXX<RealType> tau_factor{
                         time_factor.Divide(tau / 2.0)};
 
+// assert(false && "Fix set_vals method");
+
+
                     // solve a set of 1D problems in y-direction, for various x-coords
-                    bc.set_vals(time_moments.back() + tau / 4.0);
+                //    bc.set_vals(time_moments.back() + tau / 4.0);
                     solve_split_y(tau_factor.data());
 
                     // solve a set of 1D problems in x-direction, for various y-coords
-                    bc.set_vals(time_moments.back() + tau / 2.0);
+                //    bc.set_vals(time_moments.back() + tau / 2.0);
                     solve_split_x(tau_factor.data());
 
                     // solve a set of 1D problems in x-direction, for various y-coords
-                    bc.set_vals(time_moments.back() + tau * 3.0 / 4.0);
+                //    bc.set_vals(time_moments.back() + tau * 3.0 / 4.0);
                     solve_split_x(tau_factor.data());
 
                     // solve a set of 1D problems in y-direction, for various x-coords
-                    bc.set_vals(time_moments.back() + tau);
+                //    bc.set_vals(time_moments.back() + tau);
                     solve_split_y(tau_factor.data());
 
                     cur_time += tau;

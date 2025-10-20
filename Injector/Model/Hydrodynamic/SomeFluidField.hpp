@@ -27,7 +27,7 @@ namespace GPN
                   P_ext{set_initial_pressure(ext_pressure, grid2D)},
                   P{std::make_shared<Properties::Pressure<Grid2D_t>>(
                       set_initial_pressure(ext_pressure, grid2D))},
-                  thickness_log{grid2D->first_coord.control_volumes},
+                  thickness_log{grid2D->first_coord().control_volumes},
                   well{well},
                   grid2D{grid2D},
                   current_time{start_time}

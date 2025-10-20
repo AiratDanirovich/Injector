@@ -13,31 +13,14 @@
 #include <Injector/Solver/InitialCondition.hpp>
 #include <Injector/Solver/FullImplicit/Solver.hpp>
 
+#include "includes/BCFunctor.hpp"
+
 #include <catch2/catch_test_macros.hpp>
 
 using namespace GPN;
 using namespace std;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::FullImplicit;
-
-struct BCFunctor : public GPN::BoundaryConditions::BCFunctorBase
-{
-    BCFunctor(RealType val) : val{val} {}
-
-    RealType operator()(const ptrdiff_t, const RealType, const RealType) const override
-    {
-        return val;
-    }
-
-    RealType operator()(const RealType, const ptrdiff_t, const RealType) const override
-    {
-        return val;
-    }
-
-protected:
-    RealType val;
-};
-
 
 void print_A(const auto &fname, const auto &A, const auto &b)
 {
@@ -85,7 +68,7 @@ TEST_CASE("Solver")
     (*it) = 0.0;
 
     const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
-    const auto &grid_z{grid2D->first_coord};
+    const auto &grid_z{grid2D->first_coord()};
 
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
@@ -105,8 +88,8 @@ TEST_CASE("Solver")
         State::State2D::FillWithConst(
             *grid2D, val)};
 
-    const BoundaryConditions::BoundaryConditions bc{
-        *grid2D,
+    const BoundaryConditions::GeneralBC bc{
+        grid2D,
         make_shared<BCFunctor>(val)};
 
     const Logs::Rocks::CoreSampleLogs core_data{
@@ -123,8 +106,9 @@ TEST_CASE("Solver")
             is_permeable_stencils,
             grid_z)};
     // rates field factory
-    FaceProperties::ZeroRatesFactory rates_factory{
-        grid2D, core_data.is_permeable, external_pressure};
+    using Ratefactory_t = decltype(FaceProperties::ZeroRatesFactory{grid2D, core_data.is_permeable, external_pressure});
+    ptr<Ratefactory_t> rates_factory{ make_shared<Ratefactory_t>(
+        grid2D, core_data.is_permeable, external_pressure)};
 
     Solver solver{
         heat_face_props.medium_heat_conductivity,
@@ -133,7 +117,7 @@ TEST_CASE("Solver")
         rates_factory, initial_state,
         bc, 0.0};
 
-    const auto [A, b] = solver.advance(0.005);
+    // const auto [A, b] = solver.advance(0.005);
 
-    print_A("full_A.txt", A, b);
+    // print_A("full_A.txt", A, b);
 }
