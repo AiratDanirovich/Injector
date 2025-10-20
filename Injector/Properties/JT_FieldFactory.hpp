@@ -14,7 +14,7 @@ namespace GPN
             static auto create(
                 const auto &rates_factory)
             {
-                const auto /*&*/ grid2D_ptr{rates_factory.grid2D};
+                const auto /*not &*/ grid2D_ptr{rates_factory.grid2D};
                 const auto first_coord_size{
                     grid2D_ptr->first_coord().mesh_size()};
                 const auto second_coord_size{
