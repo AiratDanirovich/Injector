@@ -71,6 +71,5 @@ namespace GPN
                 current_time += time_step;
             }
         };
-
     } // Hydrodynamic
 } // GPN

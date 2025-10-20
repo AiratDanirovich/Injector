@@ -48,13 +48,5 @@ namespace GPN
                     grid2D);
             }
         };
-
-
-
-
-
-
-
-        
     } // Hydrodynamic
 } // GPN
