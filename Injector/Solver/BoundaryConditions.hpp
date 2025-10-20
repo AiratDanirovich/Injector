@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include <array>
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/Grids2D.hpp>
@@ -10,199 +11,163 @@ namespace GPN
 {
     namespace BoundaryConditions
     {
-        struct BCSouthNorth
+        struct GeneralBC
         {
-            BCSouthNorth(
-                const BCSouth &south,
-                const BCNorth &north,
-                const Grids::GridDual &grid,
-                std::shared_ptr<const BCFunctorBase> functor,
-                RealType t = 0.0)
-                : south{south}, north{north},
-                  grid{grid},
-                  south_vals(grid.mesh_size()),
-                  north_vals(grid.mesh_size()),
-                  functor{functor}
+            struct BoundaryCondition
             {
-                assert(south_vals.size() == north_vals.size());
-            //    set_vals(t);
-            }
-
-            BCSouth south;
-            BCNorth north;
-            const Grids::GridDual &grid;
-
-            std::vector<RealType> south_vals, north_vals;
-            std::shared_ptr<const BCFunctorBase> functor;
-
-            void set_vals(RealType t)
-            {
-                for (std::size_t i{0ull}; i < south_vals.size(); ++i)
+                enum Side
                 {
-                    south_vals[i] =
-                        (*functor)(south.fixed_x, i, t);
-                    north_vals[i] =
-                        (*functor)(north.fixed_x, i, t);
-                }
-            }
-        };
+                    East, West,
+                    North, South
+                };
 
-        struct BCEastWest
-        {
-            BCEastWest(const BCEast &east,
-                       const BCWest &west,
-                       const Grids::GridDual &grid,
-                       std::shared_ptr<const BCFunctorBase> functor,
-                       RealType t = 0.0)
-                : east{east},
-                  west{west},
-                  grid{grid},
-                  east_vals(grid.mesh_size()),
-                  west_vals(grid.mesh_size()),
-                  functor{functor}
-            {
-                assert(east_vals.size() == west_vals.size());
-            //    set_vals(t);
-            }
-
-            BCEast east;
-            BCWest west;
-            const Grids::GridDual &grid;
-
-            // f(x,y) for the first-type boundary condition
-            std::shared_ptr<const BCFunctorBase> functor;
-
-            std::vector<RealType> east_vals, west_vals;
-
-            // set values u(x,y) at fixed y = y_east and y = y_west
-            void set_vals(RealType t)
-            {
-                for (std::size_t i{0ull}; i < east_vals.size(); ++i)
+                enum BCType
                 {
-                    east_vals[i] = (*functor)(i, east.fixed_y, t);
-                    west_vals[i] = (*functor)(i, west.fixed_y, t);
-                }
-            }
-        };
+                    undef,
+                    first,
+                    second,
+                    third
+                };
+            };
+            
+            struct BCFunctorBase
+            {
+                using BCType = BoundaryConditions::GeneralBC::BoundaryCondition::BCType;
+                virtual RealType operator()(
+                    const ptrdiff_t x, RealType y, const RealType t,
+                    const BoundaryCondition::BCType bc_type = BoundaryCondition::BCType::second) const = 0;
+                virtual RealType operator()(
+                    RealType x, const ptrdiff_t y, const RealType t,
+                    const BoundaryCondition::BCType bc_type = BoundaryCondition::BCType::second) const = 0;
+            };
 
-        struct BoundaryConditions
-        {
-            template <typename Grid_t>
-            BoundaryConditions(
-                const Grid_t &grid,
+            template <typename Grid2D_t>
+            GeneralBC(
+                const cptr<Grid2D_t> &grid,
                 cptr<const BCFunctorBase> functor,
-                BoundaryCondition::BCType bc_type = BoundaryCondition::first)
-                : south_north{
-                      BCSouth{grid.first_coord().dual_front(), bc_type},
-                      BCNorth{grid.first_coord().dual_back(), bc_type},
-                      grid.second_coord(),
-                      functor},
-                  east_west{
-                    BCEast{grid.second_coord().dual_back(), bc_type}, 
-                    BCWest{grid.second_coord().dual_front(), bc_type}, 
-                    grid.first_coord(), 
-                    functor}
+                BoundaryCondition::BCType bc_type = BoundaryCondition::undef)
+                : 
+            GeneralBC(
+                grid, functor,
+                std::array<BoundaryCondition::BCType, 4ull>{bc_type,bc_type,bc_type,bc_type})
+            {
+            }
+            
+            template <typename Grid2D_t>
+            GeneralBC(
+                const cptr<Grid2D_t> &grid,
+                cptr<const BCFunctorBase> functor,
+                std::array<BoundaryCondition::BCType, 4ull> bc_types
+            )
+                :   bc_types{bc_types},
+                    fixed_coords{
+                        grid->first_coord().dual_front(),
+                        grid->first_coord().dual_back(),
+                        grid->second_coord().dual_front(), 
+                        grid->second_coord().dual_back()},
+                    functor{functor},
+                    t{0.0}
             {
             }
 
-            BoundaryConditions(const BoundaryConditions &) = default;
+            GeneralBC(const GeneralBC &) = default;
 
-            RealType east_vals(auto i) const
-            {
-                return east_west.east_vals[i];
-            }
+            void set_bc_type(const RealType t) = delete;
+            // {
+            //     this->t = t;
+            //     bc_types[south_id] = BoundaryCondition::BCType::second; // top boundary
+            //     bc_types[north_id] = BoundaryCondition::BCType::second; // bottom boundary
+            //     bc_types[west_id] = BoundaryCondition::BCType::second; // well axis of symmetry
+            //     bc_types[east_id] = BoundaryCondition::BCType::second; // external contour
+            // }
 
-            RealType west_vals(auto i) const
+            template<typename MatrixView_t>
+            void set_west_val(MatrixView_t &view, const auto i) const
             {
-                return east_west.west_vals[i];
-            }
+                const RealType y{fixed_coords[west_id]};
+                const BoundaryCondition::BCType 
+                    bc_type{bc_types[west_id]};
+                if (bc_type == BoundaryCondition::BCType::first)
+                {
+                    view.set_type_I((*functor)(i, y, t, bc_type));
+                    return;
+                }
+                else if (bc_type == BoundaryCondition::BCType::second)
+                {
+                    view.add_rhs_type_II((*functor)(i, y, t, bc_type));
+                    return;
+                }
 
-            RealType south_vals(auto i) const
-            {
-                return south_north.south_vals[i];
-            }
-            RealType north_vals(auto i) const
-            {
-                return south_north.north_vals[i];
-            }
-
-            void set_vals(RealType t)
-            {
-                east_west.set_vals(t);
-                south_north.set_vals(t);
+                assert(false && "West boundary condition is not properly set");
             }
 
             template<typename MatrixView_t>
-            void set_west_val(MatrixView_t &view, auto i) const
+            void set_east_val(MatrixView_t &view, const auto i) const
             {
-                if (east_west.west.type == BoundaryCondition::BCType::first)
+                const RealType y{fixed_coords[east_id]};
+                const BoundaryCondition::BCType 
+                    bc_type{bc_types[east_id]};
+                if (bc_type == BoundaryCondition::BCType::first)
                 {
-                    view.set_type_I(west_vals(i));
+                    view.set_type_I((*functor)(i, y, t, bc_type));
                     return;
                 }
-                else if (east_west.west.type == BoundaryCondition::BCType::second)
+                else if (bc_type == BoundaryCondition::BCType::second)
                 {
-                    view.add_rhs_type_II(west_vals(i));
+                    view.add_rhs_type_II((*functor)(i, y, t, bc_type));
                     return;
                 }
 
-                assert(false && "Boundary condition is not properly set");
+                assert(false && "East boundary condition is not properly set");
             }
 
             template<typename MatrixView_t>
-            void set_east_val(MatrixView_t &view, auto i) const
+            void set_south_val(MatrixView_t &view, const auto i) const
             {
-                if (east_west.east.type == BoundaryCondition::BCType::first)
+                const RealType x{fixed_coords[south_id]};
+                const BoundaryCondition::BCType 
+                    bc_type{bc_types[south_id]};
+                if (bc_type == BoundaryCondition::BCType::first)
                 {
-                    view.set_type_I(east_vals(i));
+                    view.set_type_I((*functor)(x, i, t, bc_type));
                     return;
                 }
-                else if (east_west.east.type == BoundaryCondition::BCType::second)
+                else if (bc_type == BoundaryCondition::BCType::second)
                 {
-                    view.add_rhs_type_II(east_vals(i));
+                    view.add_rhs_type_II((*functor)(x, i, t, bc_type));
                     return;
                 }
 
-                assert(false && "Boundary condition is not properly set");
+                assert(false && "South boundary condition is not properly set");
             }
 
             template<typename MatrixView_t>
-            void set_south_val(MatrixView_t &view, auto i) const
+            void set_north_val(MatrixView_t &view, const auto i) const
             {
-                if (south_north.south.type == BoundaryCondition::BCType::first)
+                const RealType x{fixed_coords[north_id]};
+                const BoundaryCondition::BCType 
+                    bc_type{bc_types[north_id]};
+                if (bc_type == BoundaryCondition::BCType::first)
                 {
-                    view.set_type_I(south_vals(i));
+                    view.set_type_I((*functor)(x, i, t, bc_type));
                     return;
                 }
-                else if (south_north.south.type == BoundaryCondition::BCType::second)
+                else if (bc_type == BoundaryCondition::BCType::second)
                 {
-                    view.add_rhs_type_II(south_vals(i));
-                    return;
-                }
-
-                assert(false && "Boundary condition is not properly set");
-            }
-
-            template<typename MatrixView_t>
-            void set_north_val(MatrixView_t &view, auto i) const
-            {
-                if (south_north.north.type == BoundaryCondition::BCType::first)
-                {
-                    view.set_type_I(north_vals(i));
-                    return;
-                }
-                else if (south_north.north.type == BoundaryCondition::BCType::second)
-                {
-                    view.add_rhs_type_II(north_vals(i));
+                    view.add_rhs_type_II((*functor)(x, i, t, bc_type));
                     return;
                 }
 
-                assert(false && "Boundary condition is not properly set");
+                assert(false && "North boundary condition is not properly set");
             }
 
         protected:
-            BCEastWest east_west;
-            BCSouthNorth south_north;
+            RealType t;
+            std::array<BoundaryCondition::BCType, 4ull> bc_types;
+            const std::array<RealType, 4ull> fixed_coords;
+            const cptr<const BCFunctorBase> functor;
+
+            const size_t west_id{2ull}, east_id{3ull}, south_id{0ull}, north_id{1ull};
         };
     } // BoundaryConditions
 } // GPN

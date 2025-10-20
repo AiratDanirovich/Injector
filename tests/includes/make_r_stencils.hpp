@@ -19,13 +19,13 @@ const GPN::Grids::AbstractRefinerRadial *make_r_refiner(
 
     const std::string r_grid_type = data["grid"]["r_grid_type"];
     const RealType
-        rMin{data["grid"]["r_start"]},
-        rMax{data["grid"]["r_end"]};
+        rMin{data["grid"]["r_start"].get<RealType>()},
+        rMax{data["grid"]["r_end"].get<RealType>()};
 
     if (r_grid_type == "uniform")
     {
         const auto &data2 = data["grid"]["r_uniform_grid"];
-        return new RefinerRadial_UniformWellHoles{data2["rNodes"]};
+        return new RefinerRadial_UniformWellHoles{data2["rNodes"].get<ptrdiff_t>()};
     }
     else if (r_grid_type == "log")
     {

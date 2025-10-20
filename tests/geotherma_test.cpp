@@ -9,6 +9,7 @@
 
 #include "includes/transfer_to_eigen.hpp"
 #include "includes/transfer_to_vector.hpp"
+#include "includes/generate_stencils_and_steps.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
@@ -17,19 +18,6 @@ using namespace std;
 using namespace GPN;
 using namespace Catch;
 using namespace Catch::Matchers;
-
-using VR = std::vector<RealType>;
-
-VR generate_stencils(const VR &steps, const RealType top = 0.0)
-{
-    VR out;
-    out.reserve(steps.size() + 1ull);
-    out.push_back(top);
-
-    for (auto i{0ull}; i < steps.size(); ++i)
-        out.push_back(out.back() + steps[i]);
-    return out;
-}
 
 /*input data*/
 // z-grid data
