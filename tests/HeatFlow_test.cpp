@@ -18,13 +18,13 @@
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleFluid.hpp>
+#include <Injector/Model/Heat/HeatBoundaryConditions.hpp>
 #include <Injector/Model/Completion.hpp>
 #include <Injector/Model/ExtrudedCasingFactory.hpp>
 
 #include <Injector/Properties/Logs.hpp>
 #include <Injector/Properties/FlowField.hpp>
 #include <Injector/Properties/Factory.hpp>
-#include <Injector/Solver/BoundaryConditions.hpp>
 #include <Injector/Solver/FullImplicit/Solver.hpp>
 #include <Injector/Solver/SolverManager.hpp>
 
@@ -66,11 +66,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     // input parameters
     /*fluid*/
     RealType
-        viscosity{data["fluid"]["viscosity"]},
-        density{data["fluid"]["density"]},
-        capacity{data["fluid"]["specific_heat_capacity"]},
-        heat_conductivity{data["fluid"]["heat_conductivity"]},
-        joule_thomson{data["fluid"]["joule_thomson"]};
+        viscosity{data["fluid"]["viscosity"].get<RealType>()},
+        density{data["fluid"]["density"].get<RealType>()},
+        capacity{data["fluid"]["specific_heat_capacity"].get<RealType>()},
+        heat_conductivity{data["fluid"]["heat_conductivity"].get<RealType>()},
+        joule_thomson{data["fluid"]["joule_thomson"].get<RealType>()};
     /*collector*/
     const auto thickness{data["collector"]["thickness"].get<VR>()};
     // const ptrdiff_t nLayers{thickness.size()};
@@ -111,8 +111,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     // r_stencils
     const VR r_stencils{
         WellHoles{WellHolesFactory::create(completion)}.get_stencils(
-            data["grid"]["r_start"],
-            data["grid"]["r_end"])};
+            data["grid"]["r_start"].get<RealType>(),
+            data["grid"]["r_end"].get<RealType>())};
     // r-refiner
     const AbstractRefinerRadial *r_refiner{
         make_r_refiner(data)};
@@ -239,33 +239,38 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             grid2D)};
 
     // rates field factory
-    FaceProperties::IncompressibleRatesFactory rates_factory{
+    using IncompressibleRatesFactory_t =
+        decltype(FaceProperties::IncompressibleRatesFactory{
         ptr_pressure_field,
-        grid2D, well, history, water};
+        grid2D, well, history, water});
+    auto ptr_rates_factory{make_shared<IncompressibleRatesFactory_t>(
+        ptr_pressure_field,
+        grid2D, well, history, water)};
     // initial condition
     const auto initial_state{ICFactory(start_time, grid2D, *geotherma)};
     // boundary conditions
-    const GPN::BoundaryConditions::BoundaryConditions bc{
-        *grid2D,
+    const GPN::Heat::HeatBC bc{
+        grid2D,
         std::make_shared<FunctorBC<
             Well_CrossFlow,
             IncompressibleFluidField_t>>(
-            core_data.is_permeable, rates_factory, grid2D),
-        BoundaryConditions::BoundaryCondition::second};
+            ptr_rates_factory, *geotherma, grid2D),
+        ptr_rates_factory
+        };
     // solver
 
     using Solver_t = decltype(Solver{
         heat_face_props.medium_heat_conductivity,
         grid2D,
         heat_props.medium_vol_heatcapacity,
-        rates_factory, initial_state,
+        ptr_rates_factory, initial_state,
         bc, start_time});
 
     auto solver_ptr{std::make_shared<Solver_t>(
         heat_face_props.medium_heat_conductivity,
         grid2D,
         heat_props.medium_vol_heatcapacity,
-        rates_factory, initial_state,
+        ptr_rates_factory, initial_state,
         bc, start_time)};
 
     const auto &solver{*solver_ptr};
@@ -278,6 +283,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const double tol = 1E-11;
     const auto precision{1e-5};
 
+    const auto& rates_factory{*ptr_rates_factory};
     {
         string path{std::string{"flow_field.txt"}};
         ofstream f{path};

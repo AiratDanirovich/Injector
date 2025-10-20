@@ -12,28 +12,11 @@
 #include <Injector/Solver/InitialCondition.hpp>
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
 
+#include "includes/BCFunctor.hpp"
+
 #include <catch2/catch_test_macros.hpp>
 
 using namespace GPN;
-
-struct ABCFunctor : public GPN::BoundaryConditions::BCFunctorBase
-{
-    ABCFunctor(RealType val) : val{val} {}
-
-    RealType operator()(const ptrdiff_t, const RealType, const RealType) const override
-    {
-        return val;
-    }
-
-    RealType operator()(const RealType, const ptrdiff_t, const RealType) const override
-    {
-        return val;
-    }
-
-protected:
-    RealType val;
-};
-
 using namespace std;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::SplittingMethod;
@@ -93,9 +76,10 @@ TEST_CASE("Solver")
         State::State2D::FillWithConst(
             *grid2D, val)};
 
-    const BoundaryConditions::BoundaryConditions bc{
-        *grid2D,
-        make_shared<ABCFunctor>(val)};
+    const BoundaryConditions::GeneralBC bc{
+        grid2D,
+        make_shared<BCFunctor>(val),
+        BoundaryConditions::GeneralBC::BoundaryCondition::first};
 
     const Logs::Rocks::CoreSampleLogs core_data{
         is_permeable_stencils,

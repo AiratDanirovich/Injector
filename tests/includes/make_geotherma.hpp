@@ -18,10 +18,10 @@ const GPN::Logs::Geotherma make_geotherma(const json &data, const auto grid2D)
 
     const auto &data1 = data["collector"]["geotherma"];
 
-    const std::string geotherma_type = data1["type"];
+    const std::string geotherma_type{data1["type"].get<std::string>()};
     if (geotherma_type == "const")
     {
-        return Logs::GeothermaFactory::create(data1["const"]["initTemperature"], grid2D->first_coord());
+        return Logs::GeothermaFactory::create(data1["const"]["initTemperature"].get<RealType>(), grid2D->first_coord());
     }
     else if (geotherma_type == "interpolate")
     {

@@ -26,11 +26,10 @@ namespace GPN
             template <
                 typename Grid_t,
                 typename Capacity_t,
-                typename ConvectionTermFactory_t>
+                typename ConvectionTermFactory_t,
+                typename BC_t>
             struct Solver
             {
-                using BC_t = BoundaryConditions::BoundaryConditions;
-
                 using SpMatrix = SplittingMethod::SpMatrix;
 
                 using cRHS_t = const Eigen::VectorX<RealType>;
@@ -42,10 +41,10 @@ namespace GPN
                     const LaplaceFactor_t &laplace_factor,
                     const cptr<Grid_t> grid,
                     const Capacity_t &time_factor,
-                    ConvectionTermFactory_t &convection_factory,
+                    ptr<ConvectionTermFactory_t> convection_factory,
                     const State::State2D &initial_state,
                     const BC_t &bc,
-                    RealType initial_moment)
+                    const RealType initial_moment)
                     : splitX{laplace_factor, grid},
                       splitY{laplace_factor, grid},
                       time_factor{time_factor, *grid},
@@ -63,8 +62,8 @@ namespace GPN
                     states.reserve(10ull);
                     save_state();
                 }
-                Solver(const Solver &) = default;
-                Solver(Solver &&) noexcept = default;
+        //        Solver(const Solver &) = default;
+        //        Solver(Solver &&) noexcept = default;
 
                 void save_state()
                 {
@@ -123,9 +122,9 @@ namespace GPN
                 auto advance(RealType tau)
                 {
                     // update convection field
-                    convection_factory.set_flow_field(cur_time, tau);
-                    // update boundary conditions
-                    bc.set_vals(cur_time + tau);
+                    convection_factory->set_flow_field(cur_time, tau);
+                    // update types of boundary conditions
+                    bc.set_bc_type(cur_time+tau);
 
                     ptrdiff_t A_size{first_coord_size * second_coord_size};
                     assert(A_size == grid->mesh_size());
@@ -169,7 +168,7 @@ namespace GPN
                 {
                     return 
                         (state.cur_state.array() * tau_factor +
-                        convection_factory.get_spatial_JT_contribution()).reshaped(A_size, 1ll)
+                        convection_factory->get_spatial_JT_contribution()).reshaped(A_size, 1ll)
                             .matrix();
                 }
 
@@ -200,11 +199,11 @@ namespace GPN
                 void assemble_x(auto &tripletList)
                 {
                     const auto &split_flow_field_pos{
-                        convection_factory.get_heat_flow_in_axes2_pos()};
+                        convection_factory->get_heat_flow_in_axes2_pos()};
                     const auto &split_flow_field_neg{
-                        convection_factory.get_heat_flow_in_axes2_neg()};
+                        convection_factory->get_heat_flow_in_axes2_neg()};
 
-                    const auto &pressure{convection_factory.get_pressure_field()};
+                    const auto &pressure{convection_factory->get_pressure_field()};
 
                     //  Take every line for a fixed x node.
                     //  It is a row of 2D grid representation
@@ -252,9 +251,9 @@ namespace GPN
                 void assemble_y(auto &tripletList)
                 {
                     const auto &split_flow_field_pos{
-                        convection_factory.get_heat_flow_in_axes1_pos()};
+                        convection_factory->get_heat_flow_in_axes1_pos()};
                     const auto &split_flow_field_neg{
-                        convection_factory.get_heat_flow_in_axes1_neg()};
+                        convection_factory->get_heat_flow_in_axes1_neg()};
 
                     // take every line for a fixed y-node.
                     // It is a col of 2D grid representation
@@ -304,7 +303,7 @@ namespace GPN
                 const TemporalTerm time_factor;
                 double cur_time;
                 // by reference!
-                ConvectionTermFactory_t &convection_factory;
+                ptr<ConvectionTermFactory_t> convection_factory;
                 // required to keep grid in memory ////
                 const cptr<Grid_t> grid; //////////////
                 ///////////////////////////////////////

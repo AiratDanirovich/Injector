@@ -54,7 +54,7 @@ namespace GPN
     };
 
     using RealType = double;
-    using MeshNodesContainer = Eigen::ArrayX<RealType>; // column array
+    using MeshNodesContainer = Eigen::ArrayX<RealType>;        // column array
     using MeshNodesContainerT = Eigen::Array<RealType, 1, -1>; // row array
     using LogValuesContainer = MeshNodesContainer;
 
@@ -90,6 +90,10 @@ namespace GPN
 
     using GridNodeValues2D = Eigen::ArrayXX<RealType>;
     using FaceValuesContainer = GridNodeValues2D;
+
+
+    template <typename T>
+    using ptr = std::shared_ptr<T>;
 
     template <typename T>
     using cptr = std::shared_ptr<T>;
@@ -153,11 +157,6 @@ namespace GPN
         MeshNodesContainer values;
     };
 
-    /// @brief Reservoir Flow Profile (RFP)
-    struct RFP
-    {
-    };
-
     struct Segment
     {
         RealType start, end;
@@ -206,68 +205,4 @@ namespace GPN
             virtual RealType operator()(const ptrdiff_t, const ptrdiff_t, const RealType) const = 0;
         };
     } // InitialConditions
-
-    // x-axis goes up-down, South-North
-    // y-axis goes left-right, East-West
-    namespace BoundaryConditions
-    {
-        struct BoundaryCondition
-        {
-            enum BCType
-            {
-                first,
-                second,
-                third
-            };
-            BoundaryCondition(BCType type) : type{type} {}
-
-            BCType type;
-        };
-
-        struct BCSouth : public BoundaryCondition
-        {
-            BCSouth(RealType fixed_x, BCType type)
-                : BoundaryCondition{type}, fixed_x{fixed_x}
-            {
-            }
-
-            RealType fixed_x;
-        };
-
-        struct BCNorth : public BoundaryCondition
-        {
-            BCNorth(RealType fixed_x, BCType type)
-                : BoundaryCondition{type}, fixed_x{fixed_x}
-            {
-            }
-
-            RealType fixed_x;
-        };
-
-        struct BCEast : public BoundaryCondition
-        {
-            BCEast(RealType fixed_y, BCType type)
-                : BoundaryCondition{type}, fixed_y{fixed_y}
-            {
-            }
-
-            RealType fixed_y;
-        };
-
-        struct BCWest : public BoundaryCondition
-        {
-            BCWest(RealType fixed_y, BCType type)
-                : BoundaryCondition{type}, fixed_y{fixed_y}
-            {
-            }
-
-            RealType fixed_y;
-        };
-
-        struct BCFunctorBase
-        {
-            virtual RealType operator()(const ptrdiff_t x, RealType y, const RealType t) const = 0;
-            virtual RealType operator()(RealType x, const ptrdiff_t y, const RealType t) const = 0;
-        };
-    } // BoundaryConditions
 } // EqSolver
