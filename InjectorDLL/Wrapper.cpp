@@ -21,6 +21,7 @@
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleFluid.hpp>
+#include <Injector/Model/Heat/HeatBoundaryConditions.hpp>
 #include <Injector/Model/Completion.hpp>
 #include <Injector/Model/ExtrudedCasingFactory.hpp>
 
@@ -37,6 +38,7 @@
 #include <tests/includes/transfer_to_eigen.hpp>
 #include <tests/includes/make_r_stencils.hpp>
 #include <tests/includes/set_is_permeable_stencils.hpp>
+#include <tests/includes/IC_BC.hpp>
 
 #include <Eigen/Core>
 
@@ -55,76 +57,6 @@ using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::FullImplicit;
 
 namespace fs = std::filesystem;
-
-/// @brief Initial temperature is assumed to be constant
-struct FunctorIC : public InitialConditions::ICFunctorBase
-{
-    FunctorIC(const Logs::Geotherma &geotherma)
-        : geotherma{geotherma}
-    {
-    }
-    RealType operator()(const ptrdiff_t z_id, const ptrdiff_t, RealType) const override
-    {
-        return geotherma(z_id);
-    }
-
-protected:
-    const Logs::Geotherma &geotherma;
-};
-
-template <typename Grid_t_ptr>
-auto ICFactory(RealType t_start, const Grid_t_ptr grid, const Logs::Geotherma &geotherma)
-{
-    return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{geotherma}, t_start)};
-}
-
-template <typename Well_t, typename Hydro_t>
-struct FunctorBC : public GPN::BoundaryConditions::BCFunctorBase
-{
-    using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
-    using ConvectionFieldFactory_t =
-        GPN::FaceProperties::IncompressibleRatesFactory<
-            Grid2D_t, Well_t, PhasePropertiesJT, Hydro_t>;
-
-    FunctorBC(
-        const Logs::IsPermeable &is_permeable,
-        const ConvectionFieldFactory_t &flow_field, // volumetric flow rate
-        const cptr<const Grid2D_t> grid_ptr)
-        : flow_field{flow_field},
-          is_permeable{is_permeable},
-          grid_ptr{grid_ptr}
-    {
-    }
-
-    RealType operator()(ptrdiff_t z_id, RealType r, RealType t) const override
-    {
-        if (r == grid_ptr->second_coord.dual_front())
-            return flow_field.get_heat_flow_in_axes2()(z_id, 0ll) * flow_field.get_temperature();
-
-        if (r == grid_ptr->second_coord.dual_back())
-            return 0.0;
-
-        assert(false);
-        return 0.0;
-    }
-
-    RealType operator()(RealType z, ptrdiff_t r_id, RealType t) const override
-    {
-        if (z == grid_ptr->first_coord.dual_front())
-            return flow_field.get_heat_flow_in_axes1()(0ll, r_id) * flow_field.get_temperature();
-
-        if (z == grid_ptr->first_coord.dual_back())
-            return 0.0;
-
-        assert(false);
-        return 0.0;
-    }
-
-protected:
-    const ConvectionFieldFactory_t &flow_field;
-    const Logs::IsPermeable &is_permeable;
-    const cptr<const Grid2D_t> grid_ptr;
-};
 
 Wrapper::Wrapper(
     // fluid params in SI
@@ -229,8 +161,8 @@ Wrapper::Wrapper(
         Grids::CylinderGridFactory::create(
             z_refiner, z_stencils,
             r_nodes)};
-    const auto &grid_r{grid2D->second_coord};
-    const auto &grid_z{grid2D->first_coord};
+    const auto &grid_r{grid2D->second_coord()};
+    const auto &grid_z{grid2D->first_coord()};
 
     const ExtrudedCasing extr_completion{
         VarExtrudedCasingFactory::create(completion)};
@@ -270,7 +202,7 @@ Wrapper::Wrapper(
         solid_heatconductivity_stencils,
         porosity_stencils,
         water,
-        grid2D->first_coord};
+        grid2D->first_coord()};
 
     Properties::Rocks::HeatProps heat_props{
         heat_logs, grid2D};
@@ -309,38 +241,44 @@ Wrapper::Wrapper(
             grid2D)};
 
     // rates field factory
-    FaceProperties::IncompressibleRatesFactory rates_factory{
+    using IncompressibleRatesFactory_t =
+        decltype(FaceProperties::IncompressibleRatesFactory{
         ptr_pressure_field,
-        grid2D, well, history, water};
+        grid2D, well, history, water});
+    auto ptr_rates_factory{make_shared<IncompressibleRatesFactory_t>(
+        ptr_pressure_field,
+        grid2D, well, history, water)};
     // initial condition
-    Logs::Geotherma geotherma{
-        Logs::GeothermaFactory::create(
-            geotherma_nodes,
-            geotherma_vals,
-            z_top,
-            grid2D->first_coord)};
-    const auto initial_state{ICFactory(t_start, grid2D, geotherma)};
+    std::unique_ptr<const Logs::Geotherma> geotherma{
+        make_unique<Logs::Geotherma>(
+            Logs::GeothermaFactory::create(
+                geotherma_nodes,
+                geotherma_vals,
+                z_top,
+                grid2D->first_coord()))};
+
+    const auto initial_state{ICFactory(t_start, grid2D, *geotherma)};
     // boundary conditions
-    const GPN::BoundaryConditions::BoundaryConditions bc{
-        *grid2D,
+    const GPN::Heat::HeatBC bc{
+        grid2D,
         std::make_shared<FunctorBC<
             Well_CrossFlow,
             IncompressibleFluidField_t>>(
-            core_data.is_permeable, rates_factory, grid2D),
-        BoundaryConditions::BoundaryCondition::second};
+            ptr_rates_factory, *geotherma, grid2D),
+        ptr_rates_factory};
     // solver
     using Solver_t = decltype(Solver{
         heat_face_props.medium_heat_conductivity,
         grid2D,
         heat_props.medium_vol_heatcapacity,
-        rates_factory, initial_state,
+        ptr_rates_factory, initial_state,
         bc, t_start});
 
     auto solver_ptr = std::make_shared<Solver_t>(
         heat_face_props.medium_heat_conductivity,
         grid2D,
         heat_props.medium_vol_heatcapacity,
-        rates_factory, initial_state,
+        ptr_rates_factory, initial_state,
         bc, t_start);
 
     const auto &solver{*solver_ptr};
@@ -364,11 +302,11 @@ Wrapper::Wrapper(
 
         const std::string sep = data["coeff_sep"];
 
-        auto grid{grid2D->second_coord.mesh_nodes};
+        auto grid{grid2D->second_coord().mesh_nodes};
         grid(0ll) = grid_r.dual_nodes(1ll);
 
         const Eigen::IOFormat commaFmt(Eigen::StreamPrecision, Eigen::DontAlignCols, sep, sep, "", "", "", "");
-        for (auto z{0ll}, layer_id{0ll}; z < grid2D->first_coord.mesh_nodes.size(); ++z)
+        for (auto z{0ll}, layer_id{0ll}; z < grid2D->first_coord().mesh_nodes.size(); ++z)
         {
             if (core_data.is_permeable(z) == 1.0)
             {
