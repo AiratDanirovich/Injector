@@ -7,6 +7,10 @@
 #include <Injector/Properties/Factory.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
 
+#include "includes/transfer_to_eigen.hpp"
+#include "includes/transfer_to_vector.hpp"
+#include "includes/generate_stencils_and_steps.hpp"
+
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
@@ -15,27 +19,6 @@ using namespace GPN;
 using namespace Catch;
 using namespace Catch::Matchers;
 
-using VR = std::vector<RealType>;
-
-VR generate_stencils(const VR &steps, const RealType top = 0.0)
-{
-    VR out;
-    out.reserve(steps.size() + 1ull);
-    out.push_back(top);
-
-    for (auto i{0ull}; i < steps.size(); ++i)
-        out.push_back(out.back() + steps[i]);
-    return out;
-}
-
-LogValuesContainer transfer_to_eigen(const VR &data)
-{
-    LogValuesContainer out(data.size());
-    for (auto i{0ull}; i < data.size(); ++i)
-        out(i) = data[i];
-    return out;
-}
-
 /*input data*/
 // z-grid data
 const auto nLayers{5ull};
@@ -43,8 +26,8 @@ const auto z_grid_stencils{
     Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, nLayers)};
 
 const RealType z_top{0.0};
-const auto geotherma_nodes{
-    Logs::RawDataFactory::generate_geotherma_nodes(z_top - 1.0, z_top + 2.0, 31)};
+const auto geotherma_nodes{transfer_to_vector(
+    Logs::RawDataFactory::generate_geotherma_nodes(z_top - 1.0, z_top + 2.0, 31))};
 const RealType ref_node{-2.0}, ref_val{0.0}, slope{1.5};
 const auto geotherma_vals{
     Logs::RawDataFactory::generate_geotherma_vals_linear(

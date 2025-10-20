@@ -88,7 +88,7 @@ auto initialcondition_factory(RealType t0, const Grid_t_ptr grid, const ExactSol
   return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{es}, t0)};
 }
 
-struct AFunctorBC : public GPN::BoundaryConditions::BCFunctorBase
+struct AFunctorBC : public GPN::BoundaryConditions::GeneralBC::BCFunctorBase
 {
   using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
   AFunctorBC(
@@ -99,7 +99,8 @@ struct AFunctorBC : public GPN::BoundaryConditions::BCFunctorBase
   {
   }
 
-  RealType operator()(const ptrdiff_t z_id, RealType r, const RealType t) const override
+  RealType operator()(const ptrdiff_t z_id, RealType r, const RealType t,
+                            const BCType) const override
   {
     RealType z{grid2D->first_coord().mesh_nodes(z_id)};
     if (r == grid2D->second_coord().dual_front())
@@ -112,7 +113,8 @@ struct AFunctorBC : public GPN::BoundaryConditions::BCFunctorBase
     return es(z, r, t);
   }
 
-  RealType operator()(RealType z, const ptrdiff_t r_id, const RealType t) const override
+  RealType operator()(RealType z, const ptrdiff_t r_id, const RealType t,
+                            const BCType) const override
   {
     RealType r{grid2D->second_coord().mesh_nodes(r_id)};
     if (z == grid2D->first_coord().dual_front())
@@ -210,8 +212,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // initial conditions
   const auto initial_state{initialcondition_factory(t0, grid2D, es)};
   // boundary conditions
-  const GPN::BoundaryConditions::BoundaryConditions bc{
-      *grid2D, std::make_shared<AFunctorBC>(es, grid2D)};
+  const GPN::BoundaryConditions::GeneralBC bc{
+      grid2D, std::make_shared<AFunctorBC>(es, grid2D),
+        BoundaryConditions::GeneralBC::BoundaryCondition::first};
 
   // external pressure log
   const auto external_pressure{

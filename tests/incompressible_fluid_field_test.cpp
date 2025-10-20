@@ -256,8 +256,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
         pressure_field.set_pressure_field(rfp);
 
+#pragma region VERIFY-PRESSURE
         const auto &P{pressure_field.current_pressure()};
-
         for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
         {
             for (auto col{0ll}; col < 2ll; ++col)
@@ -291,6 +291,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                         P.value(row, col) == base_hydrodynamics.ext_pressure(row));
             }
         }
+#pragma endregion
     }
 
     // rates field factory
@@ -310,6 +311,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
         for (auto row{0ll}; row < JT_term.rows(); ++row)
         {
+            if (core_logs.permeability(row) == 0.0)
+                for (auto col{0ll}; col < JT_term.cols(); ++col)
+                    CHECK(JT_term.value(row, col) == 0.0);
             {
                 const auto col{0ll};
                 CHECK_THAT(

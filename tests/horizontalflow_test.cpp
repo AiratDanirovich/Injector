@@ -53,7 +53,7 @@ auto ICFactory(RealType t0, const Grid_t_ptr grid, const RealType val)
   return State::State2D{State::State2D::FillWithFunctor(*grid, FunctorIC{val}, t0)};
 }
 
-struct FunctorBC : public BoundaryConditions::BCFunctorBase
+struct FunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
 {
   using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
   using ConvectionFieldFactory_t =
@@ -72,7 +72,8 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
   {
   }
 
-  RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t) const override
+  RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType,
+                      const BCType) const override
   {
     if (r == grid_ptr->second_coord().dual_front())
     {
@@ -82,7 +83,8 @@ struct FunctorBC : public BoundaryConditions::BCFunctorBase
     return 0.0;
   }
 
-  RealType operator()(const RealType z, const ptrdiff_t r, const RealType t) const override
+  RealType operator()(const RealType, const ptrdiff_t, const RealType,
+                      const BCType) const override
   {
     return 0.0;
   }
@@ -181,11 +183,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
   // initial condition
   const auto initial_state{ICFactory(t0, grid2D, initial_temperature)};
   // boundary conditions
-  const GPN::BoundaryConditions::BoundaryConditions bc{
-      *grid2D,
+  const GPN::BoundaryConditions::GeneralBC bc{
+      grid2D,
       std::make_shared<FunctorBC>(
           inlet_temperature, hydrodynamics_logs.is_permeable, rates_factory, grid2D),
-      BoundaryConditions::BoundaryCondition::second};
+      BoundaryConditions::GeneralBC::BoundaryCondition::second};
   // solver
   Solver solver{
       heat_face_props.medium_heat_conductivity,
