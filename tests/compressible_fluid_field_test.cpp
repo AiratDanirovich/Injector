@@ -17,6 +17,7 @@
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Well/Well.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluid.hpp>
+#include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluidSolver.hpp>
 
 #include <Injector/Properties/LogsFactory.hpp>
 #include <Injector/Properties/JT_FieldFactory.hpp>

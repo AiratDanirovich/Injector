@@ -101,7 +101,7 @@ namespace GPN
   protected:
     const Logs::Geotherma &geotherma;
     const cptr<const Grid2D_t> grid_ptr;
-    const ptr<ConvectionFieldFactory_t> flow_field;
+    const cptr<ConvectionFieldFactory_t> flow_field;
   };
 
 } // GPN

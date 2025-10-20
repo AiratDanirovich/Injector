@@ -122,10 +122,10 @@ namespace GPN
             const Well_t &well;
             const History &history;
             const Fluid_t &fluid;
-            cptr<Hydrodynamics_t> pressure_field;
+            ptr<Hydrodynamics_t> pressure_field;
 
         protected:
-            cptr<FaceProperties::HeatFlowField> heat_flow_field;
+            ptr<FaceProperties::HeatFlowField> heat_flow_field;
 
         private:
             std::ptrdiff_t pos{-1ll};
