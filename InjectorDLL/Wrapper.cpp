@@ -213,8 +213,9 @@ Wrapper::Wrapper(
     heat_face_props.apply_well(extr_completion, well);
 
     // history
-    const History history{
-        HistoryFactory::createFixedRate(time_intervals, well_rates, inlet_temperatures)};
+    const ptr<History> history{make_shared<History>(
+        HistoryFactory::createFixedRate(
+            time_intervals, well_rates, inlet_temperatures))};
     // external pressure log
     const auto external_pressure{
         Logs::ExtPressureFactory::create(
