@@ -3,8 +3,11 @@
 #include <limits>
 #include <cassert>
 
+#include <Injector/History/InjectorRegimes.hpp>
+
 #include <Injector/Properties/Logs.hpp>
 #include <Injector/History/TemporalGrid.hpp>
+#include <Injector/History/InjectorRegimes.hpp>
 
 namespace GPN
 {
@@ -67,15 +70,6 @@ namespace GPN
         };
     } // Logs
 
-    struct InjectorRegimes
-    {
-        enum Type
-        {
-            FixedRate,
-            FixedPressure
-        };
-    };
-
     struct History
     {
         struct SomeProperty
@@ -99,11 +93,11 @@ namespace GPN
         struct Record
         {
             Record(
-                Pressure pressure,
-                Rate rate,
+                const Pressure pressure,
+                const Rate rate,
                 const InjectorRegimes::Type type,
-                StartTime start_time,
-                TimeStep time_step)
+                const StartTime start_time,
+                const TimeStep time_step)
                 : pressure{pressure}, rate{rate}, type{type},
                   start_time{start_time}, time_step{time_step}
             {
@@ -115,18 +109,19 @@ namespace GPN
         };
 
         History(const Logs::InjectorRate &rates,
-                const Logs::SurfacePressure &pressure,
+                const Logs::SurfacePressure &pressures,
                 const Logs::InjectorTemperature &temps,
                 const std::vector<InjectorRegimes::Type> &regimes)
             : rates{rates},
-              pressure{pressure},
+              pressures{pressures},
               temps{temps},
               time_steps{rates.grid.dual_steps},
-              time_moments(time_steps.size() + 1ll, 0.0),
-              regimes{regimes}
+              time_moments{set_time_moments(rates.grid.dual_steps)},
+              regimes{regimes},
+              pos{-1ll}
         {
             assert(rates.size() == time_steps.size());
-            assert(pressure.size() == time_steps.size());
+            assert(pressures.size() == time_steps.size());
             assert(temps.size() == time_steps.size());
             assert(regimes.size() == time_steps.size());
 
@@ -135,44 +130,95 @@ namespace GPN
                 if (regimes[i] == InjectorRegimes::FixedPressure)
                 {
                     assert(std::isnan(rates.log_vals(i)));
-                    assert(pressure.log_vals(i) > 0.0);
+                    assert(pressures.log_vals(i) > 0.0);
                 }
                 else if (regimes[i] == InjectorRegimes::FixedRate)
                 {
-                    assert(std::isnan(pressure.log_vals(i)));
-                //    assert(rates.log_vals(i) >= 0.0);
+                    assert(std::isnan(pressures.log_vals(i)));
+                    //    assert(rates.log_vals(i) >= 0.0);
                 }
                 else
                     assert(false && "Wrong injector regime!");
             }
+        }
 
-            std::partial_sum(
-                time_steps.cbegin(),
-                time_steps.cend(),
-                time_moments.begin() + 1ull);
+        void advance()
+        {
+            ++pos;
+        }
+        const auto size() const
+        {
+            return rates.size();
+        }
+        const auto record_id() const
+        {
+            return pos;
+        }
+
+        const auto temperature() const
+        {
+            assert(pos >= 0ll);
+            assert(pos < (ptrdiff_t)size());
+            return temps(pos);
+        }
+        const auto pressure() const
+        {
+            assert(pos >= 0ll);
+            assert(pos < (ptrdiff_t)size());
+            return pressures(pos);
+        }
+
+        const auto regime() const
+        {
+            assert(pos >= 0ll);
+            assert(pos < (ptrdiff_t)size());
+            return regimes[pos];
+        }
+        const auto rate() const
+        {
+            assert(pos >= 0ll);
+            assert(pos < (ptrdiff_t)size());
+            return rates(pos);
         }
 
         const auto get_record(auto idx) const
         {
+            assert(idx >= 0ll);
+            assert(idx < (ptrdiff_t)size());
             return Record{
-                Pressure{pressure(idx)}, 
+                Pressure{pressures(idx)}, 
                 Rate{rates(idx)}, 
                 regimes[idx],
                 StartTime{time_moments[idx]},
                 TimeStep{time_steps(idx)}};
         }
-        const auto size() const
+
+        const auto get_current_record() const
         {
-            return regimes.size();
+            assert(pos >= 0ll);
+            assert(pos < (ptrdiff_t)size());
+            return get_record(pos);
         }
 
         const Logs::InjectorRate rates;
-        const Logs::SurfacePressure pressure;
+        const Logs::SurfacePressure pressures;
+        const std::vector<InjectorRegimes::Type> regimes;
         const Logs::InjectorTemperature temps;
         const DualStepsContainer time_steps;
-        std::vector<double> time_moments;
+        const std::vector<double> time_moments;
 
-        const std::vector<InjectorRegimes::Type> regimes;
+    private:
+        ptrdiff_t pos;
+
+        std::vector<double> set_time_moments(const DualStepsContainer &time_steps)
+        {
+            std::vector<double> time_moments(time_steps.size() + 1ll, 0.0);
+            std::partial_sum(
+                time_steps.cbegin(),
+                time_steps.cend(),
+                time_moments.begin() + 1ull);
+            return time_moments;
+        }
     };
 
     struct HistoryFactory
@@ -188,7 +234,8 @@ namespace GPN
 
             // nan-valued pressure.
             // can be calculated during the simulation
-            const std::vector<RealType> p(rates.size(), std::numeric_limits<double>::quiet_NaN());
+            const std::vector<RealType> p(rates.size(),
+                                          std::numeric_limits<double>::quiet_NaN());
 
             const auto time{Grids::TemporalGridDual{
                 Grids::GridDualStencils{
@@ -215,7 +262,8 @@ namespace GPN
 
             // nan-valued rate.
             // can be calculated during the simulation
-            const std::vector<RealType> q(pressure.size(), std::numeric_limits<double>::quiet_NaN());
+            const std::vector<RealType> q(pressure.size(),
+                                          std::numeric_limits<double>::quiet_NaN());
 
             const auto time{Grids::TemporalGridDual{
                 Grids::GridDualStencils{

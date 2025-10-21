@@ -2,6 +2,8 @@
 
 #include <Injector/Grids/Defines.h>
 
+#include <Injector/History/History.hpp>
+
 #include <Injector/Properties/Logs.hpp>
 
 #include <Injector/Model/Phases/PhaseProperties.hpp>
@@ -48,7 +50,7 @@ namespace GPN
             using BCType = BoundaryConditions::GeneralBC::BoundaryCondition::BCType;
             using ConvectionFieldFactory_t =
                 FaceProperties::IncompressibleRatesFactory<
-                    Grid2D_t, Well_t, PhasePropertiesJT, Hydro_t>;
+                    Grid2D_t, Well_t, History, PhasePropertiesJT, Hydro_t>;
             FunctorBC(
                 const ptr<ConvectionFieldFactory_t> flow_field, // volumetric heat flow rate
                 const Logs::ExternalPressure &ext_pressure, 

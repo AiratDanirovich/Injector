@@ -11,6 +11,7 @@
 #include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Grids/Grids2D.hpp>
 #include <Injector/Grids/GridRefiners.hpp>
+#include <Injector/History/History.hpp>
 #include <Injector/History/RatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
@@ -218,7 +219,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         heat_props, grid2D};
     heat_face_props.apply_well(extr_completion, well);
     // history
-    const History history{make_history(data)};
+    const shared_ptr<History> history{make_shared<History>(make_history(data))};
     // fluid model for the pressure field
     using IncompressibleFluidField_t =
         decltype(IncompressibleFluidField{
@@ -353,8 +354,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 .sum();
         cum_inlet_heat +=
             (times[t] - times[t - 1ll]) *
-            history.rates(t - 1ll) *
-            water.volumetric_heat_capacity * (history.temps(t - 1ll) /*- initial_temperature*/);
+            history->rates(t - 1ll) *
+            water.volumetric_heat_capacity * (history->temps(t - 1ll) /*- initial_temperature*/);
 
         for (auto t{1ll}; t < (ptrdiff_t)times.size(); ++t)
         {
@@ -364,8 +365,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     .sum();
             cum_inlet_heat +=
                 (times[t] - times[t - 1ll]) *
-                history.rates(t - 1ll) *
-                water.volumetric_heat_capacity * (history.temps(t - 1ll) /*- initial_temperature*/);
+                history->rates(t - 1ll) *
+                water.volumetric_heat_capacity * (history->temps(t - 1ll) /*- initial_temperature*/);
 
             RealType rel_tol = std::abs(2.0 * (cur_heat_incr - cum_inlet_heat) / (cur_heat_incr + cum_inlet_heat));
             //    CHECK(rel_tol < 0.05);
