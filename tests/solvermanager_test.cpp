@@ -6,6 +6,7 @@
 #include <Injector/Grids/Defines.h>
 
 #include <Injector/Properties/Factory.hpp>
+#include <Injector/History/History.hpp>
 #include <Injector/History/ZeroRatesFactory.hpp>
 
 #include <Injector/Model/Phases/FluidFactory.hpp>
@@ -25,6 +26,7 @@
 using namespace Catch;
 using namespace Catch::Matchers;
 
+using namespace std;
 using namespace GPN;
 using namespace GPN::Logs;
 using namespace GPN::Grids;
@@ -216,8 +218,8 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
   // history
   const std::vector<RealType> rates(time_intervals.size(), 1.0);
   const std::vector<RealType> inlet_temperature_set(time_intervals.size(), 0.0);
-  const History history{
-      HistoryFactory::createFixedRate(time_intervals, rates, inlet_temperature_set)};
+  const ptr<History> history{make_shared<History>(
+      HistoryFactory::createFixedRate(time_intervals, rates, inlet_temperature_set))};
 
   // exact solution
   ExactSolution es{heat_props.medium_vol_heatcapacity,

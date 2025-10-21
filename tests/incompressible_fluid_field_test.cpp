@@ -10,6 +10,7 @@
 #include <Injector/Grids/Map/Grids2DMap.hpp>
 #include <Injector/Grids/GridRefiners.hpp>
 
+#include <Injector/History/History.hpp>
 #include <Injector/History/RatesFactory.hpp>
 
 #include <Injector/Model/Collector.hpp>
@@ -245,13 +246,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     auto &pressure_field{*ptr_pressure_field};
 
     // history
-    const History history{make_history(data)};
+    const ptr<History> history{make_shared<History>(make_history(data))};
     const RealType pi{std::numbers::pi_v<RealType>};
     const RealType tol{1e-10};
 
-    for (auto i{0ll}; i < history.time_steps.size(); ++i)
+    for (auto i{0ll}; i < history->size(); ++i)
     {
-        const auto r{history.get_record(i)};
+        const auto r{history->get_record(i)};
         const auto rfp{well.get_RFP(r)};
 
         pressure_field.set_pressure_field(rfp);
@@ -299,9 +300,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         ptr_pressure_field,
         grid2D, well, history, water};
 
-    for (auto t{0ull}; t < history.size(); ++t)
+    // mock SolverManaer behavior
+    for (auto t{0ll}; t < history->size(); ++t)
     {
-        rates_factory.set_flow_field(history.time_moments[t], history.time_steps[t]);
+        history->advance();
+        rates_factory.set_flow_field(history->time_moments[t], history->time_steps[t]);
 
         const auto &flux2_pos{rates_factory.get_heat_flow_in_axes2_pos()};
         const auto &flux2_neg{rates_factory.get_heat_flow_in_axes2_neg()};
