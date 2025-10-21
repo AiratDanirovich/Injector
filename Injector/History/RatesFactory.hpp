@@ -4,7 +4,8 @@
 #include <memory>
 #include <limits>
 
-#include <Injector/History/History.hpp>
+#include <Injector/History/InjectorRegimes.hpp>
+
 #include <Injector/Properties/FlowField.hpp>
 #include <Injector/Properties/PhysicalField.hpp>
 #include <Injector/Properties/JT_FieldFactory.hpp>
@@ -13,50 +14,43 @@ namespace GPN
 {
     namespace FaceProperties
     {
-        template <typename Grid2D_t, typename Well_t, typename Fluid_t, typename Hydrodynamics_t>
+        template <
+            typename Grid2D_t, typename Well_t,
+            typename History_t, typename Fluid_t,
+            typename Hydrodynamics_t>
         struct IncompressibleRatesFactory
         {
             IncompressibleRatesFactory(
                 cptr<Hydrodynamics_t> pressure_field,
                 const cptr<Grid2D_t> grid2D,
                 const Well_t &well,
-                const History &history,
+                const ptr<History_t> history,
                 const Fluid_t &fluid)
                 : grid2D{grid2D},
                   well{well},
                   history{history},
                   fluid{fluid},
-                  pressure_field{pressure_field},
-                  pos{-1ll}
+                  pressure_field{pressure_field}
             {
             }
 
             void set_flow_field(
                 double t, RealType t_step)
-            {
-                // first history.time_moment greater than t_mid
-                const auto it{std::upper_bound(
-                    history.time_moments.cbegin(),
-                    history.time_moments.cend(),
-                    t + t_step / 2.0)};
-                // corresponding position in history.rates
-                const auto pos_new{std::distance(history.time_moments.cbegin(), it) - 1ll};
-                if (pos_new > pos)
-                { // the filed is only updated if a new history interval is set
-                    pos = pos_new;
-                    assert(pos >= 0ll);
-                    // this method only works at FixedRate injection
-                    assert(history.regimes[pos] == InjectorRegimes::FixedRate);
+            { 
+                // this method only works at FixedRate injection
+                assert(history->regime() == InjectorRegimes::FixedRate);
 
-                    // volumetric flow field in two directions
-                    heat_flow_field =
-                        std::make_shared<FaceProperties::HeatFlowField>(
-                            // create ReservoirFlowField
-                            FaceProperties::FlowFactory::create_from_well(
-                                history.get_record(pos), well, *grid2D),
-                            // multiple by heat capaity
-                            fluid.volumetric_heat_capacity);
-                }
+                // the filed is updated at every time step
+                // non-stationary hydrodynamics is assumed
+
+                // volumetric flow field in two directions
+                heat_flow_field =
+                    std::make_shared<FaceProperties::HeatFlowField>(
+                        // create ReservoirFlowField
+                        FaceProperties::FlowFactory::create_from_well(
+                            history->get_current_record(), well, *grid2D),
+                        // multiple by heat capaity
+                        fluid.volumetric_heat_capacity);
 
                 pressure_field->set_pressure_field(well.get_RFP(get_history_record()));
             }
@@ -93,22 +87,22 @@ namespace GPN
 
             const auto get_temperature() const
             {
-                return history.temps(pos);
+                return history->temperature();
             }
             const auto get_rate() const
             {
-                return history.rates(pos);
+                return history->rate();
             }
             const auto get_pressure() const
             {
-                return history.pressure(pos);
+                return history->pressure();
             }
             const auto get_history_record() const
             {
-                return history.get_record(pos);
+                return history->get_current_record();
             }
 
-            const auto& get_pressure_field() const
+            const auto &get_pressure_field() const
             {
                 return pressure_field->current_pressure();
             }
@@ -116,16 +110,13 @@ namespace GPN
         public:
             const cptr<Grid2D_t> grid2D;
             const Well_t &well;
-            const History &history;
+            const ptr<History_t> history;
             const Fluid_t &fluid;
             cptr<Hydrodynamics_t> pressure_field;
 
         protected:
             cptr<FaceProperties::HeatFlowField> heat_flow_field;
             //    cptr<FaceProperties::ReservoirFlowField> volumetric_flow_field;
-
-        private:
-            std::ptrdiff_t pos{-1ll};
         };
 
         template <typename Grid2D_t, typename Fluid_t>

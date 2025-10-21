@@ -147,7 +147,7 @@ TEST_CASE("CrossFlow", "")
             GPN::HeatConductivity{heat_conductivity})};
 
     // history
-    const History history{make_history(data)};
+    const ptr<History> history{make_shared<History>(make_history(data))};
 
     // z-refiner
     RefinerVerticle refiner{z_minor_step, is_permeable_stencils};
@@ -189,5 +189,6 @@ TEST_CASE("CrossFlow", "")
         ptr_pressure_field,
         grid2D, well, history, water};
 
+    history->advance();
     rates_factory.set_flow_field(0.0, 1800.0);
 }
