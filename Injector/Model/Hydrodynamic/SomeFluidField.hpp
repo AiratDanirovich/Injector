@@ -11,7 +11,9 @@ namespace GPN
 {
     namespace Hydrodynamic
     {
-        template <typename Grid2D_t, typename Fluid_t, typename Well_t>
+        template <
+            typename Grid2D_t, typename Fluid_t, 
+            typename Well_t, typename History_t>
         struct SomeFluidField
         {
             SomeFluidField(
@@ -20,6 +22,7 @@ namespace GPN
                 const Logs::Permeability &permeability,
                 const Logs::ExternalPressure &ext_pressure,
                 const Well_t &well,
+                const cptr<History_t> history,
                 const cptr<Grid2D_t> grid2D)
                 : fluid{fluid},
                   permeability{permeability},
@@ -30,6 +33,7 @@ namespace GPN
                   thickness_log{grid2D->first_coord().control_volumes},
                   well{well},
                   grid2D{grid2D},
+                  history{history},
                   current_time{start_time}
             {
             }
@@ -47,6 +51,7 @@ namespace GPN
             const ControlVolumesContainer &thickness_log;
             const Logs::Permeability &permeability;
             const Logs::ExternalPressure &ext_pressure;
+            const cptr<History_t> history;
 
         protected:
             std::shared_ptr<Properties::Pressure<Grid2D_t>> P;

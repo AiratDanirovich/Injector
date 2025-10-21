@@ -44,7 +44,7 @@ namespace GPN
             template <typename Grid2D_t>
             GeneralBC(
                 const cptr<Grid2D_t> &grid,
-                cptr<const BCFunctorBase> functor,
+                const cptr<const BCFunctorBase> functor,
                 BoundaryCondition::BCType bc_type = BoundaryCondition::undef)
                 : 
             GeneralBC(
@@ -56,7 +56,7 @@ namespace GPN
             template <typename Grid2D_t>
             GeneralBC(
                 const cptr<Grid2D_t> &grid,
-                cptr<const BCFunctorBase> functor,
+                const cptr<const BCFunctorBase> functor,
                 std::array<BoundaryCondition::BCType, 4ull> bc_types
             )
                 :   bc_types{bc_types},
@@ -73,13 +73,6 @@ namespace GPN
             GeneralBC(const GeneralBC &) = default;
 
             void set_bc_type(const RealType t) = delete;
-            // {
-            //     this->t = t;
-            //     bc_types[south_id] = BoundaryCondition::BCType::second; // top boundary
-            //     bc_types[north_id] = BoundaryCondition::BCType::second; // bottom boundary
-            //     bc_types[west_id] = BoundaryCondition::BCType::second; // well axis of symmetry
-            //     bc_types[east_id] = BoundaryCondition::BCType::second; // external contour
-            // }
 
             template<typename MatrixView_t>
             void set_west_val(MatrixView_t &view, const auto i) const

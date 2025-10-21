@@ -1,22 +1,24 @@
 #pragma once
 
-// #include <cassert>
-
 #include <Injector/Grids/Defines.h>
 
 #include <Injector/Model/Hydrodynamic/SomeFluidField.hpp>
+#include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluidSolver.hpp>
 
 namespace GPN
 {
     namespace Hydrodynamic
     {
-        template <typename Grid2D_t, typename Fluid_t, typename Well_t>
+        template <
+        typename Grid2D_t, typename Fluid_t, 
+        typename Well_t, typename History_t>
         struct CompressibleFluidField
-            : public SomeFluidField<Grid2D_t, Fluid_t, Well_t>
+            : public SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>
         {
-            using SomeFluidField<Grid2D_t, Fluid_t, Well_t>::ext_pressure;
-            using SomeFluidField<Grid2D_t, Fluid_t, Well_t>::P;
-            using SomeFluidField<Grid2D_t, Fluid_t, Well_t>::grid2D;
+            using SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>::ext_pressure;
+            using SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>::P;
+            using SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>::grid2D;
+            using SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>::well;
 
             CompressibleFluidField(
                 const RealType start_time,
@@ -24,13 +26,21 @@ namespace GPN
                 const Logs::Permeability &permeability,
                 const Logs::ExternalPressure &ext_pressure,
                 const Well_t &well,
+                const cptr<History_t> history,
                 const cptr<Grid2D_t> grid2D)
-                : SomeFluidField<Grid2D_t, Fluid_t, Well_t>{
+                : SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>{
                       start_time, fluid,
                       permeability,
                       ext_pressure,
-                      well, grid2D}
+                      well, history, grid2D}
             {
+                const HydroBC bc{
+                    grid2D,
+                    std::make_shared<const FunctorBC<
+                        Well_CrossFlow,
+                        History>>(
+                        history, ext_pressure, well.RFP_weights, grid2D)};
+                CompressibleFluidSolver solver{ext_pressure};
             }
 
             template <typename HistoryRecord_t>

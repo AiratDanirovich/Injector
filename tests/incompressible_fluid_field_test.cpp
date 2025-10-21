@@ -225,6 +225,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
+    // history
+    const shared_ptr<History> history{make_shared<History>(make_history(data))};
+
     using IncompressibleFluidField_t =
         decltype(IncompressibleFluidField{
             start_time,
@@ -232,6 +235,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             core_logs.permeability,
             base_hydrodynamics.ext_pressure,
             well,
+            history,
             grid2D});
 
     auto ptr_pressure_field{
@@ -241,12 +245,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             core_logs.permeability,
             base_hydrodynamics.ext_pressure,
             well,
+            history,
             grid2D)};
 
     auto &pressure_field{*ptr_pressure_field};
 
-    // history
-    const ptr<History> history{make_shared<History>(make_history(data))};
     const RealType pi{std::numbers::pi_v<RealType>};
     const RealType tol{1e-10};
 

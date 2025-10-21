@@ -43,34 +43,30 @@ namespace GPN
         }
 #pragma endregion
 #pragma region BOUNDARY-CONDITION
-        template <typename Well_t, typename Hydro_t>
+        template <typename Well_t, typename History_t>
         struct FunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
         {
             using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
-            using BCType = BoundaryConditions::GeneralBC::BoundaryCondition::BCType;
-            using ConvectionFieldFactory_t =
-                FaceProperties::IncompressibleRatesFactory<
-                    Grid2D_t, Well_t, History, PhasePropertiesJT, Hydro_t>;
             FunctorBC(
-                const ptr<ConvectionFieldFactory_t> flow_field, // volumetric heat flow rate
-                const Logs::ExternalPressure &ext_pressure, 
-                const Logs::RFP& rfp,
+                const cptr<History_t> history, 
+                const Logs::ExternalPressure &ext_pressure,
+                const StepPropertyContainer &rfp,
                 const cptr<const Grid2D_t> grid_ptr)
-                : flow_field{flow_field},
+                : history{history},
                   ext_pressure{ext_pressure},
                   grid_ptr{grid_ptr},
                   rfp{rfp}
             {
-                assert(rfp.log_vals.sum() == 1.0);
+                assert(rfp.sum() == 1.0);
             }
 
             RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t,
-                        const BCType bc_type) const override
+                                const BCType bc_type) const override
             {
                 if (r == grid_ptr->second_coord().dual_front())
                 {
                     assert(bc_type == BCType::second);
-                    return rfp(z_id) * flow_field->get_rate();
+                    return rfp(z_id) * history->rate();
                 }
 
                 if (r == grid_ptr->second_coord().dual_back())
@@ -84,28 +80,36 @@ namespace GPN
             }
 
             RealType operator()(const RealType z, const ptrdiff_t r_id, const RealType t,
-                        const BCType bc_type) const override
+                                const BCType bc_type) const override
             {
-                assert(bc_type == BCType::second);                
-                if (z == grid_ptr->first_coord().dual_front())
-                {
-                    return 0.0;
-                }
-
-                if (z == grid_ptr->first_coord().dual_back())
-                {
-                    return 0.0;
-                }
-
-                assert(false);
+                // boundary conditions are set exactly at domain boundaries
+                assert((z == grid_ptr->first_coord().dual_front()) || (z == grid_ptr->first_coord().dual_back()));
+                // assume zero diffusion flux in hydrodynamic equation
+                assert(bc_type == BCType::second);
                 return 0.0;
             }
 
         protected:
-            const Logs::ExternalPressure& ext_pressure;
+            const Logs::ExternalPressure &ext_pressure;
             const cptr<const Grid2D_t> grid_ptr;
-            const Logs::RFP rfp;
-            const cptr<ConvectionFieldFactory_t> flow_field;
+            const StepPropertyContainer& rfp;
+            const cptr<History_t> history;
+        };
+
+        struct HydroBC : public BoundaryConditions::GeneralBC
+        {
+            template <typename Grid2D_t>
+            HydroBC(const cptr<Grid2D_t> &grid,
+                    const cptr<const BCFunctorBase> functor)
+                : BoundaryConditions::GeneralBC{grid, functor, BoundaryCondition::BCType::second}
+            {
+                bc_types[east_id] = BoundaryCondition::BCType::first;
+            }
+
+            void set_bc_type(const RealType t)
+            {
+                this->t = t;
+            }
         };
 #pragma endregion
 

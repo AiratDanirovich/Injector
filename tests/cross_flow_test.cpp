@@ -172,6 +172,7 @@ TEST_CASE("CrossFlow", "")
             permeability,
             external_pressure,
             well,
+            history,
             grid2D});
 
     shared_ptr<IncompressibleFluidField_t>
@@ -182,6 +183,7 @@ TEST_CASE("CrossFlow", "")
                 permeability,
                 external_pressure,
                 well,
+                history,
                 grid2D)};
 
     // rates field factory

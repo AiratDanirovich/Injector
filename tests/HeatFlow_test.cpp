@@ -228,6 +228,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             hydrodynamics.permeability,
             hydrodynamics.ext_pressure,
             well,
+            history,
             grid2D});
 
     auto ptr_pressure_field{
@@ -237,6 +238,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             hydrodynamics.permeability,
             hydrodynamics.ext_pressure,
             well,
+            history,
             grid2D)};
 
     // rates field factory

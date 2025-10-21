@@ -9,14 +9,15 @@ namespace GPN
 {
     namespace Hydrodynamic
     {
-        template <typename Grid2D_t, typename Fluid_t, typename Well_t>
+        template <typename Grid2D_t, typename Fluid_t, typename Well_t, typename History_t>
         struct IncompressibleFluidField
-            : public SomeFluidField<Grid2D_t, Fluid_t, Well_t>
+            : public SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>
         {
-            using SomeFluidField<Grid2D_t, Fluid_t, Well_t>::ext_pressure;
-            using SomeFluidField<Grid2D_t, Fluid_t, Well_t>::P;
-            using SomeFluidField<Grid2D_t, Fluid_t, Well_t>::grid2D;
-            using SomeFluidField<Grid2D_t, Fluid_t, Well_t>::well;
+            using Base = SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>;
+            using Base::ext_pressure;
+            using Base::P;
+            using Base::grid2D;
+            using Base::well;
 
             IncompressibleFluidField(
                 const RealType start_time,
@@ -24,13 +25,16 @@ namespace GPN
                 const Logs::Permeability &permeability,
                 const Logs::ExternalPressure &ext_pressure,
                 const Well_t &well,
+                const cptr<History_t> history,
                 const cptr<Grid2D_t> grid2D)
-                : SomeFluidField<Grid2D_t, Fluid_t, Well_t>{
+                : Base{
                       start_time, fluid,
                       permeability,
                       ext_pressure,
-                      well, grid2D},
-                  auxillary_term{set_auxillary_term(fluid, ext_pressure, permeability, grid2D)}
+                      well, history, grid2D},
+                  auxillary_term{set_auxillary_term(
+                    fluid, ext_pressure, 
+                    permeability, grid2D)}
             {
             }
 
@@ -46,7 +50,7 @@ namespace GPN
                     v,
                     grid2D);
 
-                SomeFluidField<Grid2D_t, Fluid_t, Well_t>::set_time(time_step, history_record);
+                Base::set_time(time_step, history_record);
             }
 
             const CellNodesContainer2D auxillary_term;
