@@ -2,6 +2,7 @@
 #include <vector>
 #include <fstream>
 #include <numbers>
+#include <cmath>
 
 #include <Injector/Grids/Defines.h>
 
@@ -111,6 +112,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     const cptr<Grids::CylinderGridRock> grid2D_rocks{
         make_shared<Grids::CylinderGridRock>(grid2D)};
+    constexpr auto left_margin{3ll};
     const auto &grid_rocks_z{grid2D_rocks->first_coord()};
     const auto &grid_rocks_r{grid2D_rocks->second_coord()};
 
@@ -192,7 +194,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     //    const auto rMin{grid_r.dual_front()};
     const auto rMax{grid_r.dual_back()};
 
-    for (auto i{0ll}; i < history->time_steps.size(); ++i)
+    const auto mu{water.viscosity};
+    const auto &time_intervals{history->time_steps};
+    const auto numerical_step{data["history"]["t_minor_step"].get<RealType>()};
+    RealType cur_time{start_time};
+    for (auto t_step{0ll}; t_step < history->time_steps.size(); ++t_step)
     {
         history->advance();
 
