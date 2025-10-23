@@ -112,7 +112,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
 #pragma region CHECK-MAP-GRID
     constexpr std::ptrdiff_t left_margin{3ll};
-    const cptr<Grids::CylinderGridRock> grid2D_rocks{make_shared<Grids::CylinderGridRock>(grid2D)};
+    const cptr<Grids::CylinderGridRock> grid2D_rocks{
+        make_shared<Grids::CylinderGridRock>(grid2D)};
     const auto &grid_rocks_z{grid2D_rocks->first_coord()};
     const auto &grid_rocks_r{grid2D_rocks->second_coord()};
     CHECK(grid_rocks_z.mesh_size() == grid_z.mesh_size());
@@ -140,8 +141,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         base_hydrodynamics(
             core_logs,
             medium_compressibility_stencils,
-            ext_pressure_stencils,
-            grid_z);
+            ext_pressure_stencils);
 
     Properties::Rocks::RocksProps
         rock_field_props{

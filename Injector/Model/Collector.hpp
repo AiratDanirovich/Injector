@@ -117,7 +117,7 @@ namespace GPN
                     const Rocks::CoreSampleLogs<Grid1D_t> &core_logs,
                     const auto &medium_compressibility_stencils,
                     const auto &ext_pressure_stencils)
-                    : Rocks::CoreSampleLogs{core_logs},
+                    : Base{core_logs},
                       ext_pressure{ExtPressureFactory::create(
                           ext_pressure_stencils, core_logs.is_permeable_stencils, core_logs.grid)},
                       medium_compressibility{MediumCompressibilityFactory::create(
@@ -178,10 +178,10 @@ namespace GPN
             template <typename Grid2D_t>
             struct RocksProps
             {
-                using Grid1D_t = Grid2D_t::Axes1;
+            //    using Grid1D_t = Grid2D_t::Axes1;
 
                 RocksProps(
-                    const Logs::Hydrodynamics::BaseHydrodynamics<Grid1D_t> &base_hydrodynamics,
+                    const auto &base_hydrodynamics,
                     const cptr<Grid2D_t> grid2D)
                     : RocksProps(
                           base_hydrodynamics,
@@ -197,11 +197,11 @@ namespace GPN
                 MediumCompressibility<Grid2D_t> medium_compressibility;
                 const cptr<Grid2D_t> grid2D;
 
-                const Logs::Hydrodynamics::BaseHydrodynamics<Grid1D_t> &base_hydrodynamics;
+            //    const Logs::Hydrodynamics::BaseHydrodynamics<Grid1D_t> &base_hydrodynamics;
 
             protected:
                 RocksProps(
-                    const Logs::Hydrodynamics::BaseHydrodynamics<Grid1D_t> &base_hydrodynamics,
+                    const /*Logs::Hydrodynamics::BaseHydrodynamics<Grid1D_t>*/ auto &base_hydrodynamics,
                     const Logs::MediumCompressibility &a_medium_compressibility,
                     const Logs::Permeability &a_permeability,
                     const cptr<Grid2D_t> grid2D)
@@ -214,11 +214,11 @@ namespace GPN
                 }
 
                 RocksProps(
-                    const Logs::Hydrodynamics::BaseHydrodynamics<Grid1D_t> &base_hydrodynamics,
+                    const /*Logs::Hydrodynamics::BaseHydrodynamics<Grid1D_t>*/ auto &base_hydrodynamics,
                     const MediumCompressibility<Grid2D_t> &a_medium_compressibility,
                     const Permeability<Grid2D_t> &a_permeability,
                     const cptr<Grid2D_t> grid2D)
-                    : base_hydrodynamics{base_hydrodynamics},
+                    : //base_hydrodynamics{base_hydrodynamics},
                       medium_compressibility{a_medium_compressibility},
                       permeability_axes1{
                           GridNodeValues2D::Zero(
