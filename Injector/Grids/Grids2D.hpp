@@ -140,7 +140,9 @@ namespace GPN
             StructuredCylinderGrid2DAxisymmetric(
                 const AxesGrid<Axes1> &first_coord,
                 const AxesGrid<Axes2> &second_coord)
-                : StructuredGrid2D<CylinderCoordinates>{first_coord, second_coord},
+                : StructuredGrid2D<CylinderCoordinates>{
+                    first_coord, 
+                    second_coord},
                   face_area_axes1{set_axes1_area(second_coord)},
                   face_area_axes2{set_axes2_area(first_coord)}
             {
@@ -149,7 +151,9 @@ namespace GPN
                 its_volumes = its_volumes * TwoPI();
             }
 
+            // axes1 as face normal
             const FaceAreaAxes1 face_area_axes1;
+            // axes2 as face normal
             const FaceAreaAxes2 face_area_axes2;
 
         private:
