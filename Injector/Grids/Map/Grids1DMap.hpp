@@ -72,6 +72,15 @@ namespace GPN
                 return axes_grid.dual_size() - start_margin;
             }
 
+            auto dual_front() const
+            {
+                return dual_nodes(0ll);
+            }
+            auto dual_back() const
+            {
+                return dual_nodes(dual_nodes.size() - 1ll);
+            }
+
             const GridDualStencilsMap<start_margin> dual_stencils;
             const cMarginMap1D control_volumes;
 
