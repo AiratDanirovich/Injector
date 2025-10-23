@@ -106,7 +106,6 @@ namespace GPN
 
         namespace Hydrodynamics
         {
-
             template<typename Grid1D_t>
             struct BaseHydrodynamics
                 : public Rocks::CoreSampleLogs<Grid1D_t>

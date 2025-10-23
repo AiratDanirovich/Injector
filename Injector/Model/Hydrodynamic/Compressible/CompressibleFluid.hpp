@@ -25,7 +25,7 @@ namespace GPN
                 const RealType start_time,
                 const Fluid_t &fluid,
                 const Logs::Permeability &permeability,
-            //    const Properties::Rocks::RocksProps &rock_field_props,
+                const auto /*Properties::Rocks::RocksProps<Grid2D_t>*/ &rock_field_props,
                 const Logs::ExternalPressure &ext_pressure,
                 const Well_t &well,
                 const cptr<History_t> history,

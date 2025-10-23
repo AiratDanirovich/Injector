@@ -112,31 +112,19 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto &grid_z{grid2D->first_coord()};
     const auto &grid_r{grid2D->second_coord()};
 
-    const auto rMin{grid_r.dual_front()};
+//    const auto rMin{grid_r.dual_front()};
     const auto rMax{grid_r.dual_back()};
-
-    const auto is_permeable{
-        Logs::IsPermeableFactory::create(
-            is_permeable_stencils,
-            grid_z)};
-
-    const auto is_perforated{
-        Logs::IsPerforatedFactory::create(
-            is_perforated_stencils,
-            is_permeable_stencils,
-            grid_z)};
-
-    const auto permeability{
-        Logs::PermeabilityFactory::create(
-            permeability_stencils,
-            is_permeable_stencils,
-            grid_z)};
+    
+    const cptr<Grids::CylinderGridRock> grid2D_rocks{
+        make_shared<Grids::CylinderGridRock>(grid2D)};
+    const auto &grid_rocks_z{grid2D_rocks->first_coord()};
+    const auto &grid_rocks_r{grid2D_rocks->second_coord()};
 
     const auto external_pressure{
         Logs::ExtPressureFactory::create(
             ext_pressure_stencils,
             is_permeable_stencils,
-            grid_z)};
+            grid_rocks_z)};
 
     Logs::Rocks::CoreSampleLogs
         core_logs{
@@ -151,11 +139,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             core_logs,
             medium_compressibility_stencils,
             ext_pressure_stencils);
-
-    const cptr<Grids::CylinderGridRock> grid2D_rocks{
-        make_shared<Grids::CylinderGridRock>(grid2D)};
-    const auto &grid_rocks_z{grid2D_rocks->first_coord()};
-    const auto &grid_rocks_r{grid2D_rocks->second_coord()};
 
     Properties::Rocks::RocksProps
         rock_field_props{
@@ -174,17 +157,17 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto RFP_weights{
         RFPFactory::create_from_container(
             RFP_weights_stencils,
-            is_permeable)};
+            core_logs.is_permeable)};
     const CrossFlows cross_flows{
         RFP_weights, from_coords, to_layers};
     const auto WFP_weights{
         create_WFP(
-            is_perforated,
+            core_logs.is_perforated,
             RFP_weights,
             cross_flows)};
 
     const Well_Explicit well_explicit{
-        is_permeable, is_perforated, RFP_weights};
+        core_logs.is_permeable, core_logs.is_perforated, RFP_weights};
 
     const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
@@ -194,8 +177,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         decltype(CompressibleFluidField{
             start_time,
             water,
-            permeability,
-
+            core_logs.permeability,
+            rock_field_props,
             external_pressure,
             well,
             history,
@@ -205,7 +188,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         make_shared<CompressibleFluidField_t>(
             start_time,
             water,
-            permeability,
+            core_logs.permeability,
+            rock_field_props,
             external_pressure,
             well,
             history,
@@ -229,7 +213,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         {
             for (auto col{0ll}; col < 2ll; ++col)
                 CHECK(P.value(row, col) == P.value(row, 2ll));
-            if (is_permeable(row) == 1.0)
+            if (core_logs.is_permeable(row) == 1.0)
             {
                 {
                     auto col{2ll};
@@ -237,7 +221,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     CHECK(P.value(row, col) ==
                           external_pressure(row) -
                               rfp(row) * water.viscosity /
-                                  (2.0 * pi * permeability(row) * grid_z.control_volumes(row)) *
+                                  (2.0 * pi * core_logs.permeability(row) * grid_z.control_volumes(row)) *
                                   std::log(completion.sandface_radius(row) / rMax));
                 }
 
@@ -247,7 +231,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                         WithinRel(
                             external_pressure(row) -
                                 rfp(row) * water.viscosity /
-                                    (2.0 * pi * permeability(row) * grid_z.control_volumes(row)) *
+                                    (2.0 * pi * core_logs.permeability(row) * grid_z.control_volumes(row)) *
                                     std::log(grid_r.mesh_nodes(col) / rMax),
                             tol));
             }
