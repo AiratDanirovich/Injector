@@ -4,6 +4,7 @@
 #include <array>
 #include <tuple>
 #include <cassert>
+#include <type_traits>
 
 #include <Eigen/Dense>
 #include <Eigen/Core>
@@ -66,8 +67,8 @@ namespace GPN
                     states.reserve(10ull);
                     save_state();
                 }
-        //        Solver(const Solver &) = default;
-        //        Solver(Solver &&) noexcept = default;
+                //        Solver(const Solver &) = default;
+                //        Solver(Solver &&) noexcept = default;
 
                 void save_state()
                 {
@@ -148,8 +149,16 @@ namespace GPN
 
                     assert(A_size == tau_factor.size());
 
-                    assemble_y(tripletList);
-                    assemble_x(tripletList);
+                    if constexpr (std::is_same_v<ConvectionTermFactory_t, EmptyConvectionField> == false)
+                    {// there is convection field
+                        assemble_y(tripletList);
+                        assemble_x(tripletList);
+                    }
+                    else
+                    {// there is no convection field
+                        assemble_y(tripletList);
+                        assemble_x(tripletList);
+                    }
 
                     A.setFromTriplets(tripletList.begin(), tripletList.end());
                     A.diagonal() = A.diagonal() + tau_factor.reshaped(A_size, 1ll).matrix();
@@ -200,6 +209,45 @@ namespace GPN
                 }
 
             protected:
+                void assemble_x_noconvection(auto &tripletList)
+                {
+                    //  Take every line for a fixed x node.
+                    //  It is a row of 2D grid representation
+                    for (auto row{0ll}; row < first_coord_size; ++row)
+                    {
+                        // copy Laplace term in y-direction for a fixed x
+                        const SpMatrix &A{splitX.LaplaceTerm(row)};
+
+                        // upper diagonal
+                        for (auto col{0ll}; col < second_coord_size - 1ll; ++col)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            tripletList.emplace_back(l, l + first_coord_size,
+                                                     A.coeff(col, col + 1ll));
+                        }
+
+                        // main diagonal
+                        const auto diag{(A.diagonal()).eval()};
+                        assert(diag.size() == second_coord_size);
+
+                        for (auto col{0ll}; col < second_coord_size; ++col)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            tripletList.emplace_back(l, l, diag(col));
+                        }
+
+                        // lower diagonal
+                        for (auto col{1ll}; col < second_coord_size; ++col)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            assert(l >= first_coord_size);
+                            tripletList.emplace_back(
+                                l, l - first_coord_size,
+                                A.coeff(col, col - 1ll));
+                        }
+                    }
+                }
+
                 void assemble_x(auto &tripletList)
                 {
                     const auto &split_flow_field_pos{
@@ -248,6 +296,44 @@ namespace GPN
                             tripletList.emplace_back(
                                 l, l - first_coord_size,
                                 A.coeff(col, col - 1ll) - flow_plus(col));
+                        }
+                    }
+                }
+
+                void assemble_y_noconvection(auto &tripletList)
+                {
+                    // take every line for a fixed y-node.
+                    // It is a col of 2D grid representation
+                    for (auto col{0ll}; col < second_coord_size; ++col)
+                    {
+                        // Laplace term
+                        const SpMatrix &A{splitY.LaplaceTerm(col)};
+
+                        // upper diagonal
+                        for (auto row{0ll}; row < first_coord_size - 1ll; ++row)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            tripletList.emplace_back(l, l + 1ll,
+                                                     A.coeff(row, row + 1ll));
+                        }
+
+                        // main diagonal
+                        const auto diag{(A.diagonal()).eval()};
+                        assert(diag.size() == first_coord_size);
+                        for (auto row{0ll}; row < first_coord_size; ++row)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            tripletList.emplace_back(l, l, diag(row));
+                        }
+
+                        // lower diagonal
+                        for (auto row{1ll}; row < first_coord_size; ++row)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            assert(l >= 1ll);
+                            tripletList.emplace_back(
+                                l, l - 1ll,
+                                A.coeff(row, row - 1ll));
                         }
                     }
                 }
