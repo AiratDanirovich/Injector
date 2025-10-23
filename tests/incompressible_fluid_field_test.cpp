@@ -117,6 +117,27 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto &grid_rocks_z{grid2D_rocks->first_coord()};
     const auto &grid_rocks_r{grid2D_rocks->second_coord()};
 
+    for (auto col{0ll}; col < grid_rocks_r.mesh_size(); ++col)
+    {
+        for (auto row{0ll}; row < grid_rocks_z.mesh_size(); ++row)
+        {
+            CHECK(grid2D_rocks->volume(row, col) == grid2D->volume(row, col + left_margin));
+        }
+    }
+
+    for (auto col{0ll}; col < grid_rocks_r.mesh_size(); ++col)
+    {
+        CHECK(
+            grid2D_rocks->face_area_axes1(col) == 
+            grid2D->face_area_axes1(col + left_margin));
+    }
+    for (auto row{0ll}; row < grid_rocks_z.mesh_size(); ++row)
+    {
+        CHECK(
+            grid2D_rocks->face_area_axes2(row) == 
+            grid2D->face_area_axes2(row));
+    }
+
     CHECK(grid_rocks_z.mesh_size() == grid_z.mesh_size());
     CHECK(grid_rocks_z.dual_front() == grid_z.dual_front());
     CHECK(grid_rocks_z.dual_back() == grid_z.dual_back());
