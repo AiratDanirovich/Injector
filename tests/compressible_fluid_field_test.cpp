@@ -202,44 +202,68 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     {
         history->advance();
 
-        const auto r{history->get_current_record()};
-        const auto rfp{well.get_RFP(r)};
+        const auto record{history->get_current_record()};
+        const auto rfp{well.get_RFP(record)};
 
-        pressure_field.set_pressure_field(history->time_steps(i), r);
+        const size_t internal_step_count{
+            static_cast<size_t>(
+                std::abs(std::ceil(time_intervals[t_step] / numerical_step)))};
+        const RealType step{time_intervals[t_step] / internal_step_count};
 
-        const auto &P{pressure_field.current_pressure()};
-
-        for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
+        for (size_t id{0ull}; id < internal_step_count; ++id)
         {
-            // for (auto col{0ll}; col < 2ll; ++col)
-            //     CHECK(P.value(row, col) == P.value(row, 2ll));
-            if (core_logs.is_permeable(row) == 1.0)
-            {
-                // {
-                //     auto col{2ll};
-                //     CHECK(grid_r.dual_nodes(col + 1ll) == completion.sandface_radius(row));
-                //     CHECK(P.value(row, col) ==
-                //           base_hydrodynamics.ext_pressure(row) -
-                //               rfp(row) * water.viscosity /
-                //                   (2.0 * pi * core_logs.permeability(row) * grid_z.control_volumes(row)) *
-                //                   std::log(completion.sandface_radius(row) / rMax));
-                // }
+            cur_time += step;
+            const auto t{cur_time};
 
-                // for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
-                //     CHECK_THAT(
-                //         P.value(row, col - grid2D_rocks->l_margin),
-                //         WithinRel(
-                //             base_hydrodynamics.ext_pressure(row) -
-                //                 rfp(row) * water.viscosity /
-                //                     (2.0 * pi * core_logs.permeability(row) * grid_z.control_volumes(row)) *
-                //                     std::log(grid_r.mesh_nodes(col) / rMax),
-                //             tol));
-            }
-            else
+            pressure_field.set_pressure_field(step, record);
+
+            const auto &P{pressure_field.current_pressure()};
+
+            for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
             {
-                for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
-                    CHECK(
-                        P.value(row, col - grid2D_rocks->l_margin) == base_hydrodynamics.ext_pressure(row));
+                // for (auto col{0ll}; col < 2ll; ++col)
+                //     CHECK(P.value(row, col) == P.value(row, 2ll));
+                if (core_logs.is_permeable(row) == 1.0)
+                {
+                    // {
+                    //     auto col{2ll};
+                    //     CHECK(grid_r.dual_nodes(col + 1ll) == completion.sandface_radius(row));
+                    //     CHECK(P.value(row, col) ==
+                    //           base_hydrodynamics.ext_pressure(row) -
+                    //               rfp(row) * water.viscosity /
+                    //                   (2.0 * pi * core_logs.permeability(row) * grid_z.control_volumes(row)) *
+                    //                   std::log(completion.sandface_radius(row) / rMax));
+                    // }
+
+                    const auto h{grid_z.control_volumes(row)};
+                    const auto k{core_logs.permeability(row)};
+                    const auto beta{base_hydrodynamics.medium_compressibility(row)};
+                    const auto piezo_cond{k / (mu * beta)};
+                    const auto rate{rfp(row)};
+
+                    for (auto col{left_margin}; col < grid_r.mesh_size(); ++col)
+                    {
+                        const auto r{grid_r.mesh_nodes(col)};
+                        const auto ei{-std::expint(-r * r / (4.0 * piezo_cond * t))};
+                        const auto p_ex{base_hydrodynamics.ext_pressure(row)};
+                        const auto ref_val{
+                            p_ex +
+                            rate * mu /
+                                (4.0 * piezo_cond * k * h) * ei};
+                        const auto calc_val{P.value(row, col - grid2D_rocks->l_margin)};
+                        CHECK_THAT(
+                            calc_val / 1e5,
+                            WithinRel(ref_val / 1e5,
+                                      tol));
+                        int k{0};
+                    }
+                }
+                else
+                {
+                    for (auto col{left_margin}; col < grid_r.mesh_size(); ++col)
+                        CHECK(
+                            P.value(row, col - grid2D_rocks->l_margin) == base_hydrodynamics.ext_pressure(row));
+                }
             }
         }
     }

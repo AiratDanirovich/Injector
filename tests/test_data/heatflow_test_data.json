@@ -12,14 +12,14 @@
     "medium_compressibility": 
                  [    0.0, 0.0, 2E-8, 0.0, 2E-8,  0.0, 2E-8, 2E-8, 0.0],
     "thickness": [    50,  3,   0.3,  3,   0.3,   3,   0.3,  0.3,  3],  
-    "is_perforated": [0.0, 0.0, 0.0,  0.0, 1.0,   0.0, 1.0,  1.0,  0.0],
+    "is_perforated": [0.0, 0.0, 1.0,  0.0, 1.0,   0.0, 1.0,  1.0,  0.0],
     "cross_flow":{
       "__comment": "from_coord is in meters; to_layers is in the geological section input starting from Zero",
-      "from_coord": [40],
-      "to_layers": [2]
+      "from_coord": [],
+      "to_layers": []
     },  
     "porosity":     [0.0, 0.0,  0.3,  0.0, 0.2,   0.0, 0.3, 0.25, 0.0],
-    "permeability": [0.0, 0.0,  0.5,  0.0, 0.07,  0.0, 0.2, 0.15, 0.0],
+    "permeability": [0.0, 0.0,  0.0005,  0.0, 0.00007,  0.0, 0.0002, 0.00015, 0.0],
     "rate_division_types": ["KH", "explicit"],
     "rate_division_type": "KH",
     "explicit":{
@@ -47,7 +47,7 @@
   "grid": {
     "z_minor_step": 1.1,
     "r_start": 0.0,
-    "r_end": 10.11,
+    "r_end": 100.11,
     "r_grid_type": "log",
     "r_grid_types": ["log", "uniform"],
     "r_uniform_grid":{
@@ -55,7 +55,7 @@
     },
     "r_log_grid": {
       "r_max_step": 1.0,
-      "q": 1.05
+      "q": 1.01
     }
   },
   "completion": {
