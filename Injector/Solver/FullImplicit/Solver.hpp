@@ -21,10 +21,14 @@ namespace GPN
 {
     namespace EqSolver
     {
+        struct EmptyConvectionField
+        {
+        };
+
         namespace FullImplicit
         {
             template <
-                typename Grid_t,
+                typename Grid2D_t,
                 typename Capacity_t,
                 typename ConvectionTermFactory_t,
                 typename BC_t>
@@ -39,7 +43,7 @@ namespace GPN
                     typename LaplaceFactor_t>
                 Solver(
                     const LaplaceFactor_t &laplace_factor,
-                    const cptr<Grid_t> grid,
+                    const cptr<Grid2D_t> grid,
                     const Capacity_t &time_factor,
                     ptr<ConvectionTermFactory_t> convection_factory,
                     const State::State2D &initial_state,
@@ -124,7 +128,7 @@ namespace GPN
                     // update convection field
                     convection_factory->set_flow_field(cur_time, tau);
                     // update types of boundary conditions
-                    bc.set_bc_type(cur_time+tau);
+                    bc.set_bc_type(cur_time + tau);
 
                     ptrdiff_t A_size{first_coord_size * second_coord_size};
                     assert(A_size == grid->mesh_size());
@@ -166,10 +170,10 @@ namespace GPN
                     const auto tau_factor,
                     const auto A_size) const
                 {
-                    return 
-                        (state.cur_state.array() * tau_factor +
-                        convection_factory->get_spatial_JT_contribution()).reshaped(A_size, 1ll)
-                            .matrix();
+                    return (state.cur_state.array() * tau_factor +
+                            convection_factory->get_spatial_JT_contribution())
+                        .reshaped(A_size, 1ll)
+                        .matrix();
                 }
 
                 struct Solution
@@ -305,7 +309,7 @@ namespace GPN
                 // by reference!
                 ptr<ConvectionTermFactory_t> convection_factory;
                 // required to keep grid in memory ////
-                const cptr<Grid_t> grid; //////////////
+                const cptr<Grid2D_t> grid; //////////////
                 ///////////////////////////////////////
                 const std::ptrdiff_t first_coord_size;
                 const std::ptrdiff_t second_coord_size;
