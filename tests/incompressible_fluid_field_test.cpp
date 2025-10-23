@@ -116,16 +116,27 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         make_shared<Grids::CylinderGridRock>(grid2D)};
     const auto &grid_rocks_z{grid2D_rocks->first_coord()};
     const auto &grid_rocks_r{grid2D_rocks->second_coord()};
+
     CHECK(grid_rocks_z.mesh_size() == grid_z.mesh_size());
+    CHECK(grid_rocks_z.dual_front() == grid_z.dual_front());
+    CHECK(grid_rocks_z.dual_back() == grid_z.dual_back());
+    CHECK(grid_rocks_z.dual_size() == grid_z.dual_size());
+
     CHECK(grid_rocks_r.mesh_size() == grid_r.mesh_size() - left_margin);
+    CHECK(grid_rocks_r.dual_front() == grid_r.dual_nodes(left_margin));
+    CHECK(grid_rocks_r.dual_back() == grid_r.dual_back());
+    CHECK(grid_rocks_r.dual_size() == grid_r.dual_size() - left_margin);
+
     for (auto row{0ll}; row < grid_rocks_r.mesh_size(); ++row)
     {
         CHECK(grid_rocks_r.mesh_nodes(row) == grid_r.mesh_nodes(row + left_margin));
+        CHECK(grid_rocks_r.dual_nodes(row) == grid_r.dual_nodes(row + left_margin));
         CHECK(grid_rocks_r.control_volumes(row) == grid_r.control_volumes(row + left_margin));
     }
     for (auto col{0ll}; col < grid_rocks_z.mesh_size(); ++col)
     {
         CHECK(grid_rocks_z.mesh_nodes(col) == grid_z.mesh_nodes(col));
+        CHECK(grid_rocks_z.dual_nodes(col) == grid_z.dual_nodes(col));
         CHECK(grid_rocks_z.control_volumes(col) == grid_z.control_volumes(col));
     }
 

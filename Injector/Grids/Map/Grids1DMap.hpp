@@ -44,7 +44,10 @@ namespace GPN
         template <typename CoordinateType_t, ptrdiff_t start_margin>
         struct AxesGridMap
         {
+        private:
             using cMarginMap1D = Eigen::Map<const ControlVolumesContainer>;
+
+        public:
             using Axes = CoordinateType_t;
 
             AxesGridMap(const AxesGrid<CoordinateType_t> &axes_grid)
@@ -58,8 +61,7 @@ namespace GPN
                       axes_grid.mesh_nodes.size() - start_margin},
                   dual_nodes{
                       axes_grid.dual_nodes.data() + start_margin,
-                      axes_grid.dual_nodes.size() - start_margin
-                      }
+                      axes_grid.dual_nodes.size() - start_margin}
             {
             }
 
