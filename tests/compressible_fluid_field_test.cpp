@@ -190,10 +190,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             history,
             grid2D_rocks)};
 
-    // auto &pressure_field{*ptr_pressure_field};
+    auto &pressure_field{*ptr_pressure_field};
 
-    // const RealType pi{std::numbers::pi_v<RealType>};
-    // const RealType tol{1e-10};
+    const RealType pi{std::numbers::pi_v<RealType>};
+    const RealType tol{1e-10};
 
     
     const auto &grid_z{grid2D->first_coord()};
@@ -202,91 +202,89 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 //    const auto rMin{grid_r.dual_front()};
     const auto rMax{grid_r.dual_back()};
 
-    // for (auto i{0ll}; i < history->time_steps.size(); ++i)
-    // {
-    //     const auto r{history->get_record(i)};
-    //     const auto rfp{well.get_RFP(r)};
+    for (auto i{0ll}; i < history->time_steps.size(); ++i)
+    {
+        const auto r{history->get_record(i)};
+        const auto rfp{well.get_RFP(r)};
 
-    //     pressure_field.set_pressure_field(0.0, r);
+        pressure_field.set_pressure_field(0.0, r);
 
-    //     const auto &P{pressure_field.current_pressure()};
+        const auto &P{pressure_field.current_pressure()};
 
-    //     for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
-    //     {
-    //         for (auto col{0ll}; col < 2ll; ++col)
-    //             CHECK(P.value(row, col) == P.value(row, 2ll));
-    //         if (core_logs.is_permeable(row) == 1.0)
-    //         {
-    //             {
-    //                 auto col{2ll};
-    //                 CHECK(grid_r.dual_nodes(col + 1ll) == completion.sandface_radius(row));
-    //                 CHECK(P.value(row, col) ==
-    //                       external_pressure(row) -
-    //                           rfp(row) * water.viscosity /
-    //                               (2.0 * pi * core_logs.permeability(row) * grid_z.control_volumes(row)) *
-    //                               std::log(completion.sandface_radius(row) / rMax));
-    //             }
+        for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
+        {
+            for (auto col{0ll}; col < 2ll; ++col)
+                CHECK(P.value(row, col) == P.value(row, 2ll));
+            if (core_logs.is_permeable(row) == 1.0)
+            {
+                {
+                    auto col{2ll};
+                    CHECK(grid_r.dual_nodes(col + 1ll) == completion.sandface_radius(row));
+                    CHECK(P.value(row, col) ==
+                          external_pressure(row) -
+                              rfp(row) * water.viscosity /
+                                  (2.0 * pi * core_logs.permeability(row) * grid_z.control_volumes(row)) *
+                                  std::log(completion.sandface_radius(row) / rMax));
+                }
 
-    //             for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
-    //                 CHECK_THAT(
-    //                     P.value(row, col),
-    //                     WithinRel(
-    //                         external_pressure(row) -
-    //                             rfp(row) * water.viscosity /
-    //                                 (2.0 * pi * core_logs.permeability(row) * grid_z.control_volumes(row)) *
-    //                                 std::log(grid_r.mesh_nodes(col) / rMax),
-    //                         tol));
-    //         }
-    //         else
-    //         {
-    //             for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
-    //                 CHECK(
-    //                     P.value(row, col) == external_pressure(row));
-    //         }
-    //     }
-    // }
+                for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
+                    CHECK_THAT(
+                        P.value(row, col),
+                        WithinRel(
+                            external_pressure(row) -
+                                rfp(row) * water.viscosity /
+                                    (2.0 * pi * core_logs.permeability(row) * grid_z.control_volumes(row)) *
+                                    std::log(grid_r.mesh_nodes(col) / rMax),
+                            tol));
+            }
+            else
+            {
+                for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
+                    CHECK(
+                        P.value(row, col) == external_pressure(row));
+            }
+        }
+    }
 
-    // // rates field factory
-    // FaceProperties::IncompressibleRatesFactory rates_factory{
-    //     ptr_pressure_field,
-    //     grid2D_rocks, well, history, water};
+    // rates field factory
+    FaceProperties::IncompressibleRatesFactory rates_factory{
+        ptr_pressure_field,
+        grid2D_rocks, well, history, water};
 
-    // //   const auto tol{1e-12};
+    for (auto t{0ll}; t < history->size(); ++t)
+    {
+        history->advance();
+        rates_factory.set_flow_field(history->time_moments[t], history->time_steps[t]);
 
-    // for (auto t{0ll}; t < history->size(); ++t)
-    // {
-    //     history->advance();
-    //     rates_factory.set_flow_field(history->time_moments[t], history->time_steps[t]);
+        const auto &flux2_pos{rates_factory.get_heat_flow_in_axes2_pos()};
+        const auto &flux2_neg{rates_factory.get_heat_flow_in_axes2_neg()};
+        const auto &pressure{rates_factory.get_pressure_field().values()};
 
-    //     const auto &flux2_pos{rates_factory.get_heat_flow_in_axes2_pos()};
-    //     const auto &flux2_neg{rates_factory.get_heat_flow_in_axes2_neg()};
-    //     const auto &pressure{rates_factory.get_pressure_field().values()};
+        const auto JT_term{Properties::JT_FieldFactory::create(rates_factory)};
 
-    //     const auto JT_term{Properties::JT_FieldFactory::create(rates_factory)};
-
-    //     for (auto row{0ll}; row < JT_term.rows(); ++row)
-    //     {
-    //         {
-    //             const auto col{0ll};
-    //             CHECK_THAT(
-    //                 flux2_pos(row, col) * (pressure(row, col)) +
-    //                     flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col)),
-    //                 WithinRel(JT_term.value(row, col) / water.JT, tol));
-    //         }
-    //         for (auto col{1ll}; col < JT_term.cols() - 1ll; ++col)
-    //         {
-    //             CHECK_THAT(
-    //                 flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
-    //                     flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col)),
-    //                 WithinRel(JT_term.value(row, col) / water.JT, tol));
-    //         }
-    //         {
-    //             const auto col{JT_term.cols() - 1ll};
-    //             CHECK_THAT(
-    //                 flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
-    //                     flux2_neg(row, col + 1ll) * (-pressure(row, col)),
-    //                 WithinRel(JT_term.value(row, col) / water.JT, tol));
-    //         }
-    //     }
-    // }
+        for (auto row{0ll}; row < JT_term.rows(); ++row)
+        {
+            {
+                const auto col{0ll};
+                CHECK_THAT(
+                    flux2_pos(row, col) * (pressure(row, col)) +
+                        flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col)),
+                    WithinRel(JT_term.value(row, col) / water.JT, tol));
+            }
+            for (auto col{1ll}; col < JT_term.cols() - 1ll; ++col)
+            {
+                CHECK_THAT(
+                    flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
+                        flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col)),
+                    WithinRel(JT_term.value(row, col) / water.JT, tol));
+            }
+            {
+                const auto col{JT_term.cols() - 1ll};
+                CHECK_THAT(
+                    flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
+                        flux2_neg(row, col + 1ll) * (-pressure(row, col)),
+                    WithinRel(JT_term.value(row, col) / water.JT, tol));
+            }
+        }
+    }
 }
