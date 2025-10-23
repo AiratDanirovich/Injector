@@ -166,8 +166,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             permeability_stencils,
             grid_z},
         medium_compressibility_stencils,
-        ext_pressure_stencils,
-        grid_z};
+        ext_pressure_stencils};
 
     // make fluid
     const PhasePropertiesJT water{
