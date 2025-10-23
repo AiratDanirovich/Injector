@@ -16,9 +16,10 @@ namespace GPN
             typename Grid2D_t, typename Fluid_t,
             typename Well_t, typename History_t>
         struct CompressibleFluidField
-            : public SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>
+            : public SomeFluidField<typename Grid2D_t::OriginalGrid, Fluid_t, Well_t, History_t>
         {
-            using Base = SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>;
+            using OriginalGrid = typename Grid2D_t::OriginalGrid;
+            using Base = SomeFluidField<OriginalGrid, Fluid_t, Well_t, History_t>;
             using Base::ext_pressure;
             using Base::grid2D;
             using Base::P;
@@ -40,12 +41,15 @@ namespace GPN
                 const Well_t &well,
                 const cptr<History_t> history,
                 const cptr<Grid2D_t> grid2D_rocks)
-                : SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>{
+                : Base{
                       start_time, fluid,
                       permeability,
                       ext_pressure,
-                      well, history, grid2D_rocks},
-                  solver{set_solver(start_time, history, rock_field_props, ext_pressure, well.RFP_weights, grid2D_rocks)}
+                      well, history, grid2D_rocks->grid2D},
+                  solver{set_solver(start_time, history, rock_field_props, ext_pressure, well.RFP_weights, grid2D_rocks)},
+                  first_size{grid2D_rocks->grid2D->first_coord().mesh_size()}, 
+                  second_size{grid2D_rocks->grid2D->second_coord().mesh_size()},
+                  grid2D_rocks{grid2D_rocks}
             {
             }
 
@@ -55,13 +59,20 @@ namespace GPN
                 const HistoryRecord_t &)
             {
                 solver.advance(time_step);
-                P = std::make_shared<Properties::Pressure<Grid2D_t>>(
-                    solver.get_state(),
+                const GridNodeValues2D& rock_P{solver.get_state().cur_state};
+                GridNodeValues2D out{GridNodeValues2D::Zero(first_size, second_size)};
+                out.leftCols(grid2D_rocks->l_margin).colwise() = rock_P.col(0ll);
+                out.rightCols(second_size - grid2D_rocks->l_margin) = rock_P;
+
+                P = std::make_shared<Properties::Pressure<OriginalGrid>>(
+                    std::move(out),
                     grid2D);
             }
 
         private:
             CompressibleFluidSolver<Solver_t> solver;
+            const ptrdiff_t first_size, second_size;
+            const cptr<Grid2D_t> grid2D_rocks;
 
             static auto set_solver(
                 const RealType start_time,

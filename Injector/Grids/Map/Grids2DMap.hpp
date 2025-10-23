@@ -24,6 +24,8 @@ namespace GPN
             using typename Base::Axes1;
             using typename Base::Axes2;
 
+            using OriginalGrid = Grid2D_t;
+
             const ptrdiff_t l_margin{left_margin};
 
             Grid2DMap(const cptr<Grid2D_t> grid2D)
@@ -89,11 +91,11 @@ namespace GPN
             using FaceAreaAxes2 = Grid2D_t::FaceAreaAxes2;
             const FaceAreaAxes1 face_area_axes1;
             const FaceAreaAxes2 &face_area_axes2;
+            const cptr<Grid2D_t> grid2D;
 
         private:
             const AxesGrid<Axes1> &its_first_coord;
             const AxesGridMap<Axes2, left_margin> its_second_coord;
-            const cptr<Grid2D_t> grid2D;
             const cMarginMap2D its_volumes;
         public:
             using Axes1Coordinate_t = decltype(its_first_coord);
