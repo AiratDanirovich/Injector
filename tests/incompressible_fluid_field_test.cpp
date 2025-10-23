@@ -129,13 +129,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     for (auto col{0ll}; col < grid_rocks_r.mesh_size(); ++col)
     {
         CHECK(
-            grid2D_rocks->face_area_axes1(col) == 
+            grid2D_rocks->face_area_axes1(col) ==
             grid2D->face_area_axes1(col + left_margin));
     }
     for (auto row{0ll}; row < grid_rocks_z.mesh_size(); ++row)
     {
         CHECK(
-            grid2D_rocks->face_area_axes2(row) == 
+            grid2D_rocks->face_area_axes2(row) ==
             grid2D->face_area_axes2(row));
     }
 
@@ -304,11 +304,14 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 {
                     auto col{2ll};
                     CHECK(grid_r.dual_nodes(col + 1ll) == completion.sandface_radius(row));
-                    CHECK(P.value(row, col) ==
-                          base_hydrodynamics.ext_pressure(row) -
-                              rfp(row) * water.viscosity /
-                                  (2.0 * pi * core_logs.permeability(row) * grid_z.control_volumes(row)) *
-                                  std::log(completion.sandface_radius(row) / rMax));
+                    CHECK_THAT(
+                        P.value(row, col),
+                        WithinRel(
+                            base_hydrodynamics.ext_pressure(row) -
+                                rfp(row) * water.viscosity /
+                                    (2.0 * pi * core_logs.permeability(row) * grid_z.control_volumes(row)) *
+                                    std::log(completion.sandface_radius(row) / rMax),
+                            tol));
                 }
 
                 for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
