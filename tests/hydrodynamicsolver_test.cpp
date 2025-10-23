@@ -53,8 +53,7 @@ TEST_CASE("HydrodynamicsSolverTest")
         base_hydrodynamics{
             core_data,
             medium_compressibility_stencils,
-            ext_pressure_stencils,
-            grid_z};
+            ext_pressure_stencils,};
 
     const Properties::Rocks::RocksProps
         collector_field{
@@ -68,6 +67,8 @@ TEST_CASE("HydrodynamicsSolverTest")
             porosity_stencils,
             Phases::FluidFactory::create_water(1.0, 1.0),
             grid_z};
+
+            
 
     const Properties::Rocks::HeatProps
         heat_props{

@@ -177,8 +177,6 @@ namespace GPN
             template <typename Grid2D_t>
             struct RocksProps
             {
-            //    using Grid1D_t = Grid2D_t::Axes1;
-
                 RocksProps(
                     const auto &base_hydrodynamics,
                     const cptr<Grid2D_t> grid2D)
@@ -247,10 +245,8 @@ namespace GPN
             template <typename Grid2D_t>
             struct HeatProps
             {
-                using Grid1D_t = Grid2D_t::Axes1;
-
                 HeatProps(
-                    const Logs::Rocks::HeatLogs<Grid1D_t> &logs,
+                    const auto &logs,
                     const cptr<Grid2D_t> grid2D)
                     : HeatProps{
                           logs.medium_vol_heatcapacity,
