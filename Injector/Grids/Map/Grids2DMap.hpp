@@ -13,6 +13,13 @@ namespace GPN
         template <ptrdiff_t left_margin, typename Grid2D_t>
         struct Grid2DMap : public CoordinateSystem2D<typename Grid2D_t::Axes1, typename Grid2D_t::Axes2>
         {
+
+        private:
+            using cMarginMap2D = Eigen::Map<const CellVolumeContainer2D>;
+            using cMarginMap1D = Eigen::Map<const typename Grid2D_t::FaceAreaAxes1>;
+            using cMarginMap1D_T = Eigen::Map<const typename Grid2D_t::FaceAreaAxes2>;
+
+        public:
             using Base = CoordinateSystem2D<typename Grid2D_t::Axes1, typename Grid2D_t::Axes2>;
             using typename Base::Axes1;
             using typename Base::Axes2;
@@ -21,12 +28,14 @@ namespace GPN
 
             Grid2DMap(const cptr<Grid2D_t> grid2D)
                 : grid2D{grid2D},
-                its_volumes{
-                    grid2D->volumes().data()+left_margin*grid2D->first_coord().mesh_size(), 
-                    grid2D->first_coord().mesh_size(), 
-                    grid2D->second_coord().mesh_size()-left_margin},
-                its_first_coord{grid2D->first_coord()},
-                its_second_coord{AxesGridMap<Axes2, left_margin>{grid2D->second_coord()}}
+                  its_volumes{
+                      grid2D->volumes().data() + left_margin * grid2D->first_coord().mesh_size(),
+                      grid2D->first_coord().mesh_size(),
+                      grid2D->second_coord().mesh_size() - left_margin},
+                  its_first_coord{grid2D->first_coord()},
+                  its_second_coord{AxesGridMap<Axes2, left_margin>{grid2D->second_coord()}},
+                  face_area_axes1{grid2D->face_area_axes1.data() + left_margin, grid2D->face_area_axes1.size() - left_margin},
+                  face_area_axes2{grid2D->face_area_axes2}
             {
             }
 
@@ -38,7 +47,7 @@ namespace GPN
             {
                 return its_volumes;
             }
-            
+
             template <typename Axes_t>
             const auto &coordinate() const
             {
@@ -58,10 +67,13 @@ namespace GPN
                 return its_second_coord;
             }
 
-        private:
-            using cMarginMap2D = Eigen::Map<const CellVolumeContainer2D>;
+            using FaceAreaAxes1 = cMarginMap1D;
+            using FaceAreaAxes2 = Grid2D_t::FaceAreaAxes2;
+            const FaceAreaAxes1 face_area_axes1;
+            const FaceAreaAxes2 &face_area_axes2;
 
-            const AxesGrid<Axes1>& its_first_coord;
+        private:
+            const AxesGrid<Axes1> &its_first_coord;
             const AxesGridMap<Axes2, left_margin> its_second_coord;
             const cptr<Grid2D_t> grid2D;
             const cMarginMap2D its_volumes;

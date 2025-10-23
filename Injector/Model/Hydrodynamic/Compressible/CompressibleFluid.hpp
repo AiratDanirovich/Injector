@@ -6,6 +6,8 @@
 #include <Injector/Model/Hydrodynamic/SomeFluidField.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluidSolver.hpp>
 
+#include <Injector/Solver/FullImplicit/Solver.hpp>
+
 namespace GPN
 {
     namespace Hydrodynamic
@@ -37,21 +39,11 @@ namespace GPN
                       ext_pressure,
                       well, history, grid2D_rocks}
             {
-                FaceProperties::Rocks::RocksFaceProps
-                    rock_face_props{
-                        rock_field_props,
-                        grid2D_rocks};
-
-                rock_field_props.medium_compressibility;
-
-                const HydroBC bc{
-                    grid2D,
-                    std::make_shared<const FunctorBC<
-                        Well_t, History_t, Grid2D_t>>(
-                        history, ext_pressure, well.RFP_weights, grid2D_rocks)};
-
-                const auto initial_state{ICFactory(start_time, grid2D, ext_pressure)};
-                CompressibleFluidSolver solver{ext_pressure, grid2D};
+                CompressibleFluidSolver solver{
+                    set_solver(
+                        start_time, history,
+                        rock_field_props, ext_pressure,
+                        well.RFP_weights, grid2D_rocks)};
             }
 
             template <typename HistoryRecord_t>
@@ -67,6 +59,47 @@ namespace GPN
                 P = std::make_shared<Properties::Pressure<Grid2D_t>>(
                     v,
                     grid2D);
+            }
+
+        private:
+            static auto set_solver(
+                const RealType start_time,
+                const cptr<History_t> history,
+                const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
+                const Logs::ExternalPressure &ext_pressure,
+                const auto rfp,
+                const cptr<Grid2D_t> grid2D_rocks)
+            {
+                FaceProperties::Rocks::RocksFaceProps
+                    rock_face_props{
+                        rock_field_props,
+                        grid2D_rocks};
+
+                const HydroBC bc{
+                    grid2D_rocks,
+                    std::make_shared<const FunctorBC<
+                        Well_t, History_t, Grid2D_t>>(
+                        history, ext_pressure, rfp, grid2D_rocks)};
+
+                const auto initial_state{ICFactory(start_time, grid2D_rocks, ext_pressure)};
+
+                const auto ptr_rates_factory{std::make_shared<EqSolver::EmptyConvectionField>()};
+
+                using Solver_t = decltype(EqSolver::FullImplicit::Solver{
+                    rock_face_props.permeability,
+                    grid2D_rocks,
+                    rock_field_props.medium_compressibility,
+                    ptr_rates_factory, initial_state,
+                    bc, start_time});
+
+                auto solver_ptr{std::make_shared<Solver_t>(
+                rock_face_props.permeability,
+                grid2D_rocks,
+                rock_field_props.medium_compressibility,
+                ptr_rates_factory, initial_state,
+                bc, start_time)};
+
+                return solver_ptr;
             }
         };
     } // Hydrodynamic

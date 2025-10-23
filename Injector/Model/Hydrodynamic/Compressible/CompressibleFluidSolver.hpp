@@ -46,7 +46,7 @@ namespace GPN
         template <typename Well_t, typename History_t, typename Grid2D_t>
         struct FunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
         {
-        //    using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
+            //    using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
             FunctorBC(
                 const cptr<History_t> history,
                 const Logs::ExternalPressure &ext_pressure,
@@ -113,19 +113,16 @@ namespace GPN
         };
 #pragma endregion
 
-        template <typename Grid2D_t>
+        template <typename Solver_t>
         struct CompressibleFluidSolver
         {
             CompressibleFluidSolver(
-                const Logs::ExternalPressure &ext_pressure,
-                const cptr<Grid2D_t> grid2D)
-                : initial_condition{FunctorIC{ext_pressure}},
-                  grid2D{grid2D}
+                const ptr<Solver_t> solver)
+                : solver{solver}
             {
             }
 
-            const FunctorIC initial_condition;
-            const cptr<Grid2D_t> grid2D;
+            const ptr<Solver_t> solver;
         };
     } // Hydrodynamic
 
