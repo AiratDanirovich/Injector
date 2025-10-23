@@ -11,15 +11,15 @@ namespace GPN
     namespace Hydrodynamic
     {
         template <
-        typename Grid2D_t, typename Fluid_t, 
-        typename Well_t, typename History_t>
+            typename Grid2D_t, typename Fluid_t,
+            typename Well_t, typename History_t>
         struct CompressibleFluidField
             : public SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>
         {
             using Base = SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>;
             using Base::ext_pressure;
-            using Base::P;
             using Base::grid2D;
+            using Base::P;
             using Base::well;
 
             CompressibleFluidField(
@@ -30,20 +30,25 @@ namespace GPN
                 const Logs::ExternalPressure &ext_pressure,
                 const Well_t &well,
                 const cptr<History_t> history,
-                const cptr<Grid2D_t> grid2D)
+                const cptr<Grid2D_t> grid2D_rocks)
                 : SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>{
                       start_time, fluid,
                       permeability,
                       ext_pressure,
-                      well, history, grid2D}
+                      well, history, grid2D_rocks}
             {
+                FaceProperties::Rocks::RocksFaceProps
+                    rock_face_props{
+                        rock_field_props,
+                        grid2D_rocks};
+
+                rock_field_props.medium_compressibility;
+
                 const HydroBC bc{
                     grid2D,
                     std::make_shared<const FunctorBC<
-                        Well_t,
-                        History_t,
-                       Grid2D_t>>(
-                        history, ext_pressure, well.RFP_weights, grid2D)};
+                        Well_t, History_t, Grid2D_t>>(
+                        history, ext_pressure, well.RFP_weights, grid2D_rocks)};
                 CompressibleFluidSolver solver{ext_pressure, grid2D};
             }
 
