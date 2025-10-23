@@ -126,8 +126,11 @@ namespace GPN
 
                 auto advance(RealType tau)
                 {
-                    // update convection field
-                    convection_factory->set_flow_field(cur_time, tau);
+                    if constexpr (std::is_same_v<ConvectionTermFactory_t, EmptyConvectionField> == false)
+                    { // there is convection field
+                        // update convection field
+                        convection_factory->set_flow_field(cur_time, tau);
+                    }
                     // update types of boundary conditions
                     bc.set_bc_type(cur_time + tau);
 
@@ -150,20 +153,29 @@ namespace GPN
                     assert(A_size == tau_factor.size());
 
                     if constexpr (std::is_same_v<ConvectionTermFactory_t, EmptyConvectionField> == false)
-                    {// there is convection field
+                    { // there is convection field
                         assemble_y(tripletList);
                         assemble_x(tripletList);
                     }
                     else
-                    {// there is no convection field
-                        assemble_y(tripletList);
-                        assemble_x(tripletList);
+                    { // there is no convection field
+                        assemble_y_noconvection(tripletList);
+                        assemble_x_noconvection(tripletList);
                     }
 
                     A.setFromTriplets(tripletList.begin(), tripletList.end());
                     A.diagonal() = A.diagonal() + tau_factor.reshaped(A_size, 1ll).matrix();
 
-                    RHS_t rhs{assemble_RHS(state, tau_factor, A_size)};
+                    RHS_t rhs{};
+                    if constexpr (std::is_same_v<ConvectionTermFactory_t, EmptyConvectionField> == false)
+                    { // there is convection field
+                        rhs = assemble_RHS(state, tau_factor, A_size);
+                    }
+                    else
+                    { // there is no convection field
+                        rhs = assemble_RHS_noconvection(state, tau_factor, A_size);
+                    }
+
                     // BC
                     applyBC(A, rhs);
 
@@ -181,6 +193,16 @@ namespace GPN
                 {
                     return (state.cur_state.array() * tau_factor +
                             convection_factory->get_spatial_JT_contribution())
+                        .reshaped(A_size, 1ll)
+                        .matrix();
+                }
+                
+                RHS_t assemble_RHS_noconvection(
+                    const auto state,
+                    const auto tau_factor,
+                    const auto A_size) const
+                {
+                    return (state.cur_state.array() * tau_factor)
                         .reshaped(A_size, 1ll)
                         .matrix();
                 }

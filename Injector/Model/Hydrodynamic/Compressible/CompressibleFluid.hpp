@@ -58,8 +58,10 @@ namespace GPN
             template <typename HistoryRecord_t>
             void set_pressure_field(
                 const RealType time_step,
-                const HistoryRecord_t &history_record)
+                const HistoryRecord_t &)
             {
+
+                solver.advance(time_step);
                 // calculate current pressure well and cement-sandwich
                 auto v{
                     ext_pressure.log_vals.replicate(
@@ -72,7 +74,7 @@ namespace GPN
 
         private:
             CompressibleFluidSolver<Solver_t> solver;
-            
+
             static auto set_solver(
                 const RealType start_time,
                 const cptr<History_t> history,

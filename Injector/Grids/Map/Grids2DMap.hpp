@@ -57,6 +57,19 @@ namespace GPN
                 if constexpr (std::is_same<Axes_t, Axes2>::value)
                     return second_coord();
             }
+            
+            /// @brief Rowmajor linear enumeration of mesh nodes
+            /// @param first Node index along the first coordinate
+            /// @param second Node index along the second coordinate
+            /// @return Linear index, continuos numbering of all 2D nodes
+            auto to_linear(const ptrdiff_t first, const ptrdiff_t second) const
+            {
+                assert(first >= 0ll);
+                assert(second >= 0ll);
+                assert(first < first_coord().mesh_size());
+                assert(second < second_coord().mesh_size());
+                return first + second * first_coord().mesh_size();
+            }
 
             const auto &first_coord() const
             {
@@ -65,6 +78,11 @@ namespace GPN
             const auto &second_coord() const
             {
                 return its_second_coord;
+            }
+            
+            auto mesh_size() const
+            {
+                return first_coord().mesh_size() * second_coord().mesh_size();
             }
 
             using FaceAreaAxes1 = cMarginMap1D;

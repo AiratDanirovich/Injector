@@ -122,6 +122,12 @@ namespace GPN
             {
             }
 
+            void advance(
+                const RealType time_step)
+            {
+                solver->advance(time_step);
+            }
+
             const ptr<Solver_t> solver;
         };
     } // Hydrodynamic
