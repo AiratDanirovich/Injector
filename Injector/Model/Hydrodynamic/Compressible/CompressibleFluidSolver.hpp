@@ -34,12 +34,12 @@ namespace GPN
             const Logs::ExternalPressure &ext_pressure;
         };
 
-        template <typename Grid_t_ptr>
-        auto ICFactory(RealType t0, const Grid_t_ptr grid, const Logs::Geotherma &geotherma)
+        template <typename Grid2D_t>
+        auto ICFactory(RealType t0, const cptr<Grid2D_t> grid, const auto &ext_pressure)
         {
             return EqSolver::State::State2D{
                 EqSolver::State::State2D::FillWithFunctor(
-                    *grid, FunctorIC{geotherma}, t0)};
+                    *grid, FunctorIC{ext_pressure}, t0)};
         }
 #pragma endregion
 #pragma region BOUNDARY-CONDITION

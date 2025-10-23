@@ -252,7 +252,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         grid2D_rocks, well, history, water};
 
     for (auto t{0ll}; t < history->size(); ++t)
-    {
+    { // mock SolverManager::run
         history->advance();
         rates_factory.set_flow_field(history->time_moments[t], history->time_steps[t]);
 

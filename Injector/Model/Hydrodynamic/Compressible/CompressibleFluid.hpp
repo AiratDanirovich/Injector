@@ -49,6 +49,8 @@ namespace GPN
                     std::make_shared<const FunctorBC<
                         Well_t, History_t, Grid2D_t>>(
                         history, ext_pressure, well.RFP_weights, grid2D_rocks)};
+
+                const auto initial_state{ICFactory(start_time, grid2D, ext_pressure)};
                 CompressibleFluidSolver solver{ext_pressure, grid2D};
             }
 
