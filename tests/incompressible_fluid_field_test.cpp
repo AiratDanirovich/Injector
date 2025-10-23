@@ -122,6 +122,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         for (auto row{0ll}; row < grid_rocks_z.mesh_size(); ++row)
         {
             CHECK(grid2D_rocks->volume(row, col) == grid2D->volume(row, col + left_margin));
+            CHECK(grid2D_rocks->to_linear(row, col) == grid2D->to_linear(row, col));
         }
     }
 
