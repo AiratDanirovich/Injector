@@ -37,20 +37,14 @@ namespace GPN
                       ext_pressure,
                       well, history, grid2D}
             {
-                 FunctorBC<
+                const HydroBC bc{
+                    grid2D,
+                    std::make_shared<const FunctorBC<
                         Well_t,
                         History_t,
-                        Grid2D_t> ff(
-                        history, ext_pressure, well.RFP_weights, grid2D);
-
-                // const HydroBC bc{
-                //     grid2D,
-                //     std::make_shared<const FunctorBC<
-                //         Well_t,
-                //         History_t,
-                //        Grid2D_t>>(
-                //         history, ext_pressure, well.RFP_weights, grid2D)};
-            //    CompressibleFluidSolver solver{ext_pressure, grid2D};
+                       Grid2D_t>>(
+                        history, ext_pressure, well.RFP_weights, grid2D)};
+                CompressibleFluidSolver solver{ext_pressure, grid2D};
             }
 
             template <typename HistoryRecord_t>
