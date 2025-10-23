@@ -16,16 +16,17 @@ namespace GPN
         struct CompressibleFluidField
             : public SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>
         {
-            using SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>::ext_pressure;
-            using SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>::P;
-            using SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>::grid2D;
-            using SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>::well;
+            using Base = SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>;
+            using Base::ext_pressure;
+            using Base::P;
+            using Base::grid2D;
+            using Base::well;
 
             CompressibleFluidField(
                 const RealType start_time,
                 const Fluid_t &fluid,
                 const Logs::Permeability &permeability,
-                const auto /*Properties::Rocks::RocksProps<Grid2D_t>*/ &rock_field_props,
+                const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
                 const Logs::ExternalPressure &ext_pressure,
                 const Well_t &well,
                 const cptr<History_t> history,
@@ -36,13 +37,13 @@ namespace GPN
                       ext_pressure,
                       well, history, grid2D}
             {
-                const HydroBC bc{
-                    grid2D,
-                    std::make_shared<const FunctorBC<
-                        Well_CrossFlow,
-                        History>>(
-                        history, ext_pressure, well.RFP_weights, grid2D)};
-                CompressibleFluidSolver solver{ext_pressure, grid2D};
+                // const HydroBC bc{
+                //     grid2D,
+                //     std::make_shared<const FunctorBC<
+                //         Well_CrossFlow,
+                //         History>>(
+                //         history, ext_pressure, well.RFP_weights, grid2D)};
+            //    CompressibleFluidSolver solver{ext_pressure, grid2D};
             }
 
             template <typename HistoryRecord_t>
