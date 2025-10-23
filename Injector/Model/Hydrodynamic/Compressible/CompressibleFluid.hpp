@@ -24,6 +24,13 @@ namespace GPN
             using Base::P;
             using Base::well;
 
+            using Solver_t =
+                EqSolver::FullImplicit::Solver<
+                    Grid2D_t,
+                    Properties::MediumCompressibility<Grid2D_t>,
+                    EqSolver::EmptyConvectionField,
+                    HydroBC>;
+
             CompressibleFluidField(
                 const RealType start_time,
                 const Fluid_t &fluid,
@@ -37,13 +44,15 @@ namespace GPN
                       start_time, fluid,
                       permeability,
                       ext_pressure,
-                      well, history, grid2D_rocks}
-            {
-                CompressibleFluidSolver solver{
+                      well, history, grid2D_rocks},
+                  solver{
                     set_solver(
-                        start_time, history,
-                        rock_field_props, ext_pressure,
-                        well.RFP_weights, grid2D_rocks)};
+                        start_time, history, 
+                        rock_field_props, 
+                        ext_pressure, 
+                        well.RFP_weights, 
+                        grid2D_rocks)}
+            {
             }
 
             template <typename HistoryRecord_t>
@@ -62,6 +71,8 @@ namespace GPN
             }
 
         private:
+            CompressibleFluidSolver<Solver_t> solver;
+            
             static auto set_solver(
                 const RealType start_time,
                 const cptr<History_t> history,
@@ -93,11 +104,11 @@ namespace GPN
                     bc, start_time});
 
                 auto solver_ptr{std::make_shared<Solver_t>(
-                rock_face_props.permeability,
-                grid2D_rocks,
-                rock_field_props.medium_compressibility,
-                ptr_rates_factory, initial_state,
-                bc, start_time)};
+                    rock_face_props.permeability,
+                    grid2D_rocks,
+                    rock_field_props.medium_compressibility,
+                    ptr_rates_factory, initial_state,
+                    bc, start_time)};
 
                 return solver_ptr;
             }
