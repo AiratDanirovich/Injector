@@ -52,7 +52,6 @@ namespace GPN
 
             AxesGridMap(const AxesGrid<CoordinateType_t> &axes_grid)
                 : axes_grid{axes_grid},
-                  dual_stencils{axes_grid.dual_stencils},
                   control_volumes{
                       axes_grid.volumes().data() + start_margin,
                       axes_grid.volumes().size() - start_margin},
@@ -83,7 +82,6 @@ namespace GPN
                 return dual_nodes(dual_nodes.size() - 1ll);
             }
 
-            const GridDualStencilsMap<start_margin> dual_stencils;
             const cMarginMap1D control_volumes;
 
             const cMarginMap1D mesh_nodes;

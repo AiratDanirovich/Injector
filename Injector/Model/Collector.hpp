@@ -227,8 +227,6 @@ namespace GPN
                 {
                     assert(grid2D->first_coord().dual_stencils.dual_nodes.size() <=
                            grid2D->first_coord().dual_size());
-                    assert(grid2D->second_coord().dual_stencils.dual_nodes.size() <=
-                           grid2D->second_coord().dual_size());
 
                     assert(a_permeability.rows() == grid2D->first_coord().mesh_size());
                     assert(a_permeability.cols() == grid2D->second_coord().mesh_size());
