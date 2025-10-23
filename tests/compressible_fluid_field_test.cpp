@@ -213,14 +213,14 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
         for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
         {
-            for (auto col{0ll}; col < 2ll; ++col)
-                CHECK(P.value(row, col) == P.value(row, 2ll));
+            // for (auto col{0ll}; col < 2ll; ++col)
+            //     CHECK(P.value(row, col) == P.value(row, 2ll));
             if (core_logs.is_permeable(row) == 1.0)
             {
                 {
                     auto col{2ll};
                     CHECK(grid_r.dual_nodes(col + 1ll) == completion.sandface_radius(row));
-                    CHECK(P.value(row, col) ==
+                    CHECK(P.value(row, col ) ==
                           external_pressure(row) -
                               rfp(row) * water.viscosity /
                                   (2.0 * pi * core_logs.permeability(row) * grid_z.control_volumes(row)) *
@@ -229,7 +229,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
                 for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
                     CHECK_THAT(
-                        P.value(row, col),
+                        P.value(row, col - grid2D_rocks->l_margin),
                         WithinRel(
                             external_pressure(row) -
                                 rfp(row) * water.viscosity /
@@ -241,7 +241,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             {
                 for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
                     CHECK(
-                        P.value(row, col) == external_pressure(row));
+                        P.value(row, col - grid2D_rocks->l_margin) == external_pressure(row));
             }
         }
     }

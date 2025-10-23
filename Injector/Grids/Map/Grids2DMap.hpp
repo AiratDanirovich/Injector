@@ -17,6 +17,8 @@ namespace GPN
             using typename Base::Axes1;
             using typename Base::Axes2;
 
+            const ptrdiff_t l_margin{left_margin};
+
             Grid2DMap(const cptr<Grid2D_t> grid2D)
                 : grid2D{grid2D},
                 its_volumes{
