@@ -123,11 +123,14 @@ namespace GPN
             {
                 return its_second_coord;
             }
-
+            
         protected:
             const AxesGrid<Axes1> its_first_coord;
             const AxesGrid<Axes2> its_second_coord;
             CellVolumeContainer2D its_volumes;
+        public:
+            using Axes1Coordinate_t = decltype(its_first_coord);
+            using Axes2Coordinate_t = decltype(its_second_coord);
         };
 
         // take the third -- phi -- axes into account and multiply

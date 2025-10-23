@@ -92,7 +92,7 @@ namespace GPN
         protected:
             const Logs::ExternalPressure &ext_pressure;
             const cptr<const Grid2D_t> grid_ptr;
-            const StepPropertyContainer &rfp;
+            const StepPropertyContainer rfp;
             const cptr<History_t> history;
         };
 
@@ -126,6 +126,11 @@ namespace GPN
                 const RealType time_step)
             {
                 solver->advance(time_step);
+            }
+
+            const auto get_state() const
+            {
+                return solver->get_state();
             }
 
             const ptr<Solver_t> solver;

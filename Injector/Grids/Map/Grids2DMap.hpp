@@ -95,6 +95,9 @@ namespace GPN
             const AxesGridMap<Axes2, left_margin> its_second_coord;
             const cptr<Grid2D_t> grid2D;
             const cMarginMap2D its_volumes;
+        public:
+            using Axes1Coordinate_t = decltype(its_first_coord);
+            using Axes2Coordinate_t = decltype(its_second_coord);
         };
 
         using CylinderGridRock =

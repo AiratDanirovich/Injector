@@ -230,6 +230,11 @@ namespace GPN
                     return {time_moments, states};
                 }
 
+                const State::State2D& get_state() const
+                {
+                    return state;
+                }
+
             protected:
                 void assemble_x_noconvection(auto &tripletList)
                 {

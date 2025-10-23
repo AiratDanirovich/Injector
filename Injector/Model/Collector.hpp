@@ -1,6 +1,7 @@
 #pragma once
 #include <cassert>
 #include <iterator>
+#include <type_traits>
 
 #include <Injector/Grids/Defines.h>
 
@@ -177,8 +178,10 @@ namespace GPN
             template <typename Grid2D_t>
             struct RocksProps
             {
+                using Grid1D_t = std::decay_t<typename Grid2D_t::Axes1Coordinate_t>;
+
                 RocksProps(
-                    const auto &base_hydrodynamics,
+                    const Logs::Hydrodynamics::BaseHydrodynamics<Grid1D_t> &base_hydrodynamics,
                     const cptr<Grid2D_t> grid2D)
                     : RocksProps(
                           base_hydrodynamics,
@@ -194,7 +197,7 @@ namespace GPN
                 MediumCompressibility<Grid2D_t> medium_compressibility;
                 const cptr<Grid2D_t> grid2D;
 
-            //    const Logs::Hydrodynamics::BaseHydrodynamics<Grid1D_t> &base_hydrodynamics;
+                const Logs::Hydrodynamics::BaseHydrodynamics<Grid1D_t> base_hydrodynamics;
 
             protected:
                 RocksProps(
@@ -215,7 +218,7 @@ namespace GPN
                     const MediumCompressibility<Grid2D_t> &a_medium_compressibility,
                     const Permeability<Grid2D_t> &a_permeability,
                     const cptr<Grid2D_t> grid2D)
-                    : //base_hydrodynamics{base_hydrodynamics},
+                    : base_hydrodynamics{base_hydrodynamics},
                       medium_compressibility{a_medium_compressibility},
                       permeability_axes1{
                           GridNodeValues2D::Zero(

@@ -45,13 +45,7 @@ namespace GPN
                       permeability,
                       ext_pressure,
                       well, history, grid2D_rocks},
-                  solver{
-                    set_solver(
-                        start_time, history, 
-                        rock_field_props, 
-                        ext_pressure, 
-                        well.RFP_weights, 
-                        grid2D_rocks)}
+                  solver{set_solver(start_time, history, rock_field_props, ext_pressure, well.RFP_weights, grid2D_rocks)}
             {
             }
 
@@ -60,15 +54,9 @@ namespace GPN
                 const RealType time_step,
                 const HistoryRecord_t &)
             {
-
                 solver.advance(time_step);
-                // calculate current pressure well and cement-sandwich
-                auto v{
-                    ext_pressure.log_vals.replicate(
-                        1ll, grid2D->second_coord().mesh_size())};
-
                 P = std::make_shared<Properties::Pressure<Grid2D_t>>(
-                    v,
+                    solver.get_state(),
                     grid2D);
             }
 
@@ -98,17 +86,26 @@ namespace GPN
 
                 const auto ptr_rates_factory{std::make_shared<EqSolver::EmptyConvectionField>()};
 
+                const auto& is_permeable{rock_field_props.base_hydrodynamics.is_permeable};
+
+                const Properties::MediumCompressibility corrected_compressibility{
+                    Properties::Field<Grid2D_t>{
+                    rock_field_props.medium_compressibility.values().colwise() + (1.0-is_permeable.log_vals),
+                    grid2D_rocks}
+                };
+
+
                 using Solver_t = decltype(EqSolver::FullImplicit::Solver{
                     rock_face_props.permeability,
                     grid2D_rocks,
-                    rock_field_props.medium_compressibility,
+                    corrected_compressibility,
                     ptr_rates_factory, initial_state,
                     bc, start_time});
 
                 auto solver_ptr{std::make_shared<Solver_t>(
                     rock_face_props.permeability,
                     grid2D_rocks,
-                    rock_field_props.medium_compressibility,
+                    corrected_compressibility,
                     ptr_rates_factory, initial_state,
                     bc, start_time)};
 
