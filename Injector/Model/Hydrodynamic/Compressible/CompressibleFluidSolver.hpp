@@ -48,7 +48,7 @@ namespace GPN
         {
             using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
             FunctorBC(
-                const cptr<History_t> history, 
+                const cptr<History_t> history,
                 const Logs::ExternalPressure &ext_pressure,
                 const StepPropertyContainer &rfp,
                 const cptr<const Grid2D_t> grid_ptr)
@@ -92,7 +92,7 @@ namespace GPN
         protected:
             const Logs::ExternalPressure &ext_pressure;
             const cptr<const Grid2D_t> grid_ptr;
-            const StepPropertyContainer& rfp;
+            const StepPropertyContainer &rfp;
             const cptr<History_t> history;
         };
 
@@ -113,15 +113,19 @@ namespace GPN
         };
 #pragma endregion
 
+        template <typename Grid2D_t>
         struct CompressibleFluidSolver
         {
             CompressibleFluidSolver(
-                const Logs::ExternalPressure &ext_pressure)
-                : initial_condition{FunctorIC{ext_pressure}}
+                const Logs::ExternalPressure &ext_pressure,
+                const cptr<Grid2D_t> grid2D)
+                : initial_condition{FunctorIC{ext_pressure}},
+                  grid2D{grid2D}
             {
             }
 
             const FunctorIC initial_condition;
+            const cptr<Grid2D_t> grid2D;
         };
     } // Hydrodynamic
 

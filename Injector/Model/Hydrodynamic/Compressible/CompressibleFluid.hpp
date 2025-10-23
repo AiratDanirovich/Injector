@@ -2,6 +2,7 @@
 
 #include <Injector/Grids/Defines.h>
 
+#include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Hydrodynamic/SomeFluidField.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluidSolver.hpp>
 
@@ -24,6 +25,7 @@ namespace GPN
                 const RealType start_time,
                 const Fluid_t &fluid,
                 const Logs::Permeability &permeability,
+            //    const Properties::Rocks::RocksProps &rock_field_props,
                 const Logs::ExternalPressure &ext_pressure,
                 const Well_t &well,
                 const cptr<History_t> history,
@@ -40,7 +42,7 @@ namespace GPN
                         Well_CrossFlow,
                         History>>(
                         history, ext_pressure, well.RFP_weights, grid2D)};
-                CompressibleFluidSolver solver{ext_pressure};
+                CompressibleFluidSolver solver{ext_pressure, grid2D};
             }
 
             template <typename HistoryRecord_t>
