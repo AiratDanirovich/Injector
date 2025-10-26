@@ -48,7 +48,7 @@ using namespace GPN::Phases;
 using namespace GPN::Completion;
 using namespace GPN::Hydrodynamic;
 
-const RealType tol = 1e-12;
+const RealType tol{1e-12};
 
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
@@ -189,7 +189,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         for (auto row{0ll}; row < grid_rocks_z.mesh_size(); ++row)
         {
             CHECK(rock_field_props.mobility_axes1.value(row, col) == 0.0);
-            CHECK(rock_field_props.mobility_axes2.value(row, col) == core_logs.permeability(row)/water.viscosity);
+            CHECK_THAT(rock_field_props.mobility_axes2.value(row, col),
+                       WithinRel(core_logs.permeability(row) / water.viscosity, tol));
         }
     }
 
@@ -215,7 +216,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         {
             CHECK_THAT(rock_face_props.mobility.face_vals_axes2(row, col),
                        WithinRel(
-                           core_logs.permeability(row) /
+                           core_logs.permeability(row)/ water.viscosity /
                                std::log(grid_rocks_r.mesh_nodes(col + 1ll) /
                                         grid_rocks_r.mesh_nodes(col)),
                            tol));
