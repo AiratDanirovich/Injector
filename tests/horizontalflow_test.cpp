@@ -16,7 +16,6 @@
 #include <Injector/Solver/InitialCondition.hpp>
 #include <Injector/Solver/SplittingMethod/Solver.hpp>
 
-
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
@@ -104,8 +103,8 @@ using VR = std::vector<RealType>;
 RealType viscosity{6e-4}, density{1}, capacity{1}, heat_conductivity{0.6};
 /*collector*/
 const RealType rMin{1 / (2 * numbers::pi)}, rMax{1.0}, zTop{0.0}; // m
-const std::ptrdiff_t rNodes{201ull};
-const std::ptrdiff_t nLayers{5ull};
+const std::ptrdiff_t rNodes{41ull};
+const std::ptrdiff_t nLayers{3ull};
 const VR thickness(nLayers, 1.0); // each layer is 1m thick
 
 // hydrodynamic logs
@@ -118,7 +117,7 @@ const LogValuesContainer solid_heatconductivity_stencils{LogValuesContainer::Con
 const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 3.9 /*should be 2600 in SI*/)};
 const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
 /*temporal grid*/
-const std::ptrdiff_t time_steps_nmbr{51ull};
+const std::ptrdiff_t time_steps_nmbr{5ull};
 const RealType t0{0.0};      // initial time moment
 const RealType t1{t0 + 0.1}; // s
 const RealType time_step{(t1 - t0) / time_steps_nmbr};

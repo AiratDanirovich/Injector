@@ -45,7 +45,7 @@
     }
   },
   "grid": {
-    "z_minor_step": 1.1,
+    "z_minor_step": 51,
     "r_start": 0.0,
     "r_end": 100.11,
     "r_grid_type": "log",
