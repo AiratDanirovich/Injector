@@ -187,6 +187,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto &time_intervals{history->time_steps};
     const auto numerical_step{data["history"]["t_minor_step"].get<RealType>()};
     RealType cur_time{start_time};
+    ptrdiff_t counter{0ll};
     for (auto t_step{0ll}; t_step < history->time_steps.size(); ++t_step)
     {
         history->advance();
@@ -231,6 +232,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     const auto piezo_cond{k / (mu * beta)};
                     if (r_well * r_well < 0.01 * piezo_cond * t)
                     {
+                        ++counter;
                         const auto rate{rfp(row)};
                         const auto p_ex{base_hydrodynamics.ext_pressure(row)};
 
@@ -275,6 +277,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             }
         }
     }
+    INFO("At least a single point should be checked by analytical expression!");
+    CHECK(counter > 0ll);
 
     // rates field factory
     // FaceProperties::IncompressibleRatesFactory rates_factory{
