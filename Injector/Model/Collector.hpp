@@ -182,33 +182,36 @@ namespace GPN
 
                 RocksProps(
                     const Logs::Hydrodynamics::BaseHydrodynamics<Grid1D_t> &base_hydrodynamics,
+                    const PhaseProperties& fluid,
                     const cptr<Grid2D_t> grid2D)
                     : RocksProps(
                           base_hydrodynamics,
                           base_hydrodynamics.medium_compressibility,
                           base_hydrodynamics.permeability,
+                          fluid,
                           grid2D)
                 {
                 }
 
-                Permeability<Grid2D_t>
-                    permeability_axes1,
-                    permeability_axes2;
+                Mobility<Grid2D_t>
+                    mobility_axes1,
+                    mobility_axes2;
                 MediumCompressibility<Grid2D_t> medium_compressibility;
                 const cptr<Grid2D_t> grid2D;
 
                 const Logs::Hydrodynamics::BaseHydrodynamics<Grid1D_t> base_hydrodynamics;
-
+ 
             protected:
                 RocksProps(
                     const /*Logs::Hydrodynamics::BaseHydrodynamics<Grid1D_t>*/ auto &base_hydrodynamics,
                     const Logs::MediumCompressibility &a_medium_compressibility,
                     const Logs::Permeability &a_permeability,
+                    const PhaseProperties& fluid,
                     const cptr<Grid2D_t> grid2D)
                     : RocksProps{
                           base_hydrodynamics,
                           FieldFactory::create(a_medium_compressibility, grid2D),
-                          FieldFactory::create(a_permeability, grid2D),
+                          FieldFactory::create(a_permeability/fluid.viscosity, grid2D),
                           grid2D}
                 {
                 }
@@ -216,30 +219,30 @@ namespace GPN
                 RocksProps(
                     const /*Logs::Hydrodynamics::BaseHydrodynamics<Grid1D_t>*/ auto &base_hydrodynamics,
                     const MediumCompressibility<Grid2D_t> &a_medium_compressibility,
-                    const Permeability<Grid2D_t> &a_permeability,
+                    const Mobility<Grid2D_t> &a_mobility,
                     const cptr<Grid2D_t> grid2D)
                     : base_hydrodynamics{base_hydrodynamics},
                       medium_compressibility{a_medium_compressibility},
-                      permeability_axes1{
+                      mobility_axes1{
                           GridNodeValues2D::Zero(
                               grid2D->first_coord().mesh_size(),
                               grid2D->second_coord().mesh_size()),
                           grid2D},
-                      permeability_axes2{a_permeability},
+                      mobility_axes2{a_mobility},
                       grid2D{grid2D}
                 {
                     assert(grid2D->first_coord().dual_stencils.dual_nodes.size() <=
                            grid2D->first_coord().dual_size());
 
-                    assert(a_permeability.rows() == grid2D->first_coord().mesh_size());
-                    assert(a_permeability.cols() == grid2D->second_coord().mesh_size());
+                    assert(a_mobility.rows() == grid2D->first_coord().mesh_size());
+                    assert(a_mobility.cols() == grid2D->second_coord().mesh_size());
                     assert(medium_compressibility.rows() == grid2D->first_coord().mesh_size());
                     assert(medium_compressibility.cols() == grid2D->second_coord().mesh_size());
 
-                    assert(permeability_axes1.rows() == grid2D->first_coord().mesh_size());
-                    assert(permeability_axes1.cols() == grid2D->second_coord().mesh_size());
-                    assert(permeability_axes2.rows() == grid2D->first_coord().mesh_size());
-                    assert(permeability_axes2.cols() == grid2D->second_coord().mesh_size());
+                    assert(mobility_axes1.rows() == grid2D->first_coord().mesh_size());
+                    assert(mobility_axes1.cols() == grid2D->second_coord().mesh_size());
+                    assert(mobility_axes1.rows() == grid2D->first_coord().mesh_size());
+                    assert(mobility_axes1.cols() == grid2D->second_coord().mesh_size());
                 }
             };
 
@@ -349,20 +352,20 @@ namespace GPN
                 RocksFaceProps(
                     const Properties::Rocks::RocksProps<Grid2D_t> &props,
                     const cptr<Grid2D_t> grid2D)
-                    : permeability{
+                    : mobility{
                           FaceInterpolatedFieldFactory::create(
-                              props.permeability_axes1,
-                              props.permeability_axes2,
+                              props.mobility_axes1,
+                              props.mobility_axes2,
                               grid2D)},
                       grid2D{grid2D}
                 {
-                    assert(permeability.face_vals_axes1.rows() == grid2D->first_coord().dual_size()-2ll);
-                    assert(permeability.face_vals_axes1.cols() == grid2D->second_coord().mesh_size());
-                    assert(permeability.face_vals_axes2.rows() == grid2D->first_coord().mesh_size());
-                    assert(permeability.face_vals_axes2.cols() == grid2D->second_coord().dual_size()-2ll);
+                    assert(mobility.face_vals_axes1.rows() == grid2D->first_coord().dual_size()-2ll);
+                    assert(mobility.face_vals_axes1.cols() == grid2D->second_coord().mesh_size());
+                    assert(mobility.face_vals_axes2.rows() == grid2D->first_coord().mesh_size());
+                    assert(mobility.face_vals_axes2.cols() == grid2D->second_coord().dual_size()-2ll);
                 }
 
-                const Permeability<Grid2D_t> permeability;
+                const Mobility<Grid2D_t> mobility;
                 const cptr<Grid2D_t> grid2D;
             };
 

@@ -107,14 +107,14 @@ namespace GPN
 
 
                 using Solver_t = decltype(EqSolver::FullImplicit::Solver{
-                    rock_face_props.permeability,
+                    rock_face_props.mobility,
                     grid2D_rocks,
                     corrected_compressibility,
                     ptr_rates_factory, initial_state,
                     bc, start_time});
 
                 auto solver_ptr{std::make_shared<Solver_t>(
-                    rock_face_props.permeability,
+                    rock_face_props.mobility,
                     grid2D_rocks,
                     corrected_compressibility,
                     ptr_rates_factory, initial_state,

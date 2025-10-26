@@ -146,6 +146,9 @@ namespace GPN
 
         template <typename Grid2D_t>
         using Permeability = Field<Grid2D_t>;
+        
+        template <typename Grid2D_t>
+        using Mobility = Field<Grid2D_t>;
 #pragma endregion
 #pragma region HYDRODYNAMIC-PROPERTIES
         template <typename Grid2D_t>

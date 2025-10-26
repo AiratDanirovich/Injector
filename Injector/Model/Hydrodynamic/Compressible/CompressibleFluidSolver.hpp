@@ -60,13 +60,14 @@ namespace GPN
                 assert(rfp.sum() == 1.0);
             }
 
-            RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t,
+            RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType,
                                 const BCType bc_type) const override
             {
                 if (r == grid_ptr->second_coord().dual_front())
                 {
                     assert(bc_type == BCType::second);
-                    return rfp(z_id) * history->rate();
+                    const auto out{rfp(z_id) * history->rate()};
+                    return out;
                 }
 
                 if (r == grid_ptr->second_coord().dual_back())
@@ -79,7 +80,7 @@ namespace GPN
                 return 0.0;
             }
 
-            RealType operator()(const RealType z, const ptrdiff_t r_id, const RealType t,
+            RealType operator()(const RealType z, const ptrdiff_t, const RealType,
                                 const BCType bc_type) const override
             {
                 // boundary conditions are set exactly at domain boundaries

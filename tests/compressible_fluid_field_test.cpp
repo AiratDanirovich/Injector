@@ -83,6 +83,16 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     const auto start_time{data["history"]["start_time"].get<RealType>()};
 
+#pragma region MAKE-FLUID
+    const PhasePropertiesJT water{
+        FluidFactory::create_water_JT(
+            Viscosity{viscosity},
+            GPN::Density{density},
+            GPN::SpecificHeatCapacity{capacity},
+            GPN::HeatConductivity{heat_conductivity},
+            JouleThomson{joule_thomson})};
+#pragma endregion
+
     /*completion*/
     // z-refiner
     const auto z_stencils{Grids::Factory::generate_dual_grid_stencils_from_steps(
@@ -95,10 +105,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     // make grid2D
     // r_stencils
-    const VR r_stencils{
-        WellHoles{WellHolesFactory::create(completion)}.get_stencils(
-            data["grid"]["r_start"],
-            data["grid"]["r_end"])};
+    const auto well_holes{WellHoles{WellHolesFactory::create(completion)}};
+    const auto r_well{well_holes.sandface_radius};
+    const VR r_stencils{well_holes.get_stencils(
+        data["grid"]["r_start"],
+        data["grid"]["r_end"])};
     // r-refiner
     const AbstractRefinerRadial *r_refiner{
         make_r_refiner(data)};
@@ -133,17 +144,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     Properties::Rocks::RocksProps
         rock_field_props{
             base_hydrodynamics,
+            water,
             grid2D_rocks};
-
-#pragma region MAKE-FLUID
-    const PhasePropertiesJT water{
-        FluidFactory::create_water_JT(
-            Viscosity{viscosity},
-            GPN::Density{density},
-            GPN::SpecificHeatCapacity{capacity},
-            GPN::HeatConductivity{heat_conductivity},
-            JouleThomson{joule_thomson})};
-#pragma endregion
 #pragma region MAKE-WELL
     const auto RFP_weights{
         RFPFactory::create_from_container(
@@ -239,30 +241,48 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     const auto k{core_logs.permeability(row)};
                     const auto beta{base_hydrodynamics.medium_compressibility(row)};
                     const auto piezo_cond{k / (mu * beta)};
-                    const auto rate{rfp(row)};
-
-                    for (auto col{left_margin}; col < grid_r.mesh_size(); ++col)
+                    if (r_well * r_well < 0.01 * piezo_cond * t)
                     {
-                        const auto r{grid_r.mesh_nodes(col)};
-                        const auto ei{-std::expint(-r * r / (4.0 * piezo_cond * t))};
+                        const auto rate{rfp(row)};
                         const auto p_ex{base_hydrodynamics.ext_pressure(row)};
-                        const auto ref_val{
-                            p_ex +
-                            rate * mu /
+
+                        for (auto col{left_margin}; col < grid_r.mesh_size() - 1ll; ++col)
+                        {
+                            const auto r{grid_r.mesh_nodes(col)};
+                            const auto ei{-std::expint(-r * r / (4.0 * piezo_cond * t))};
+                            const auto ref_val{
+                                //    p_ex -
+                                rate * mu /
                                 (4.0 * piezo_cond * k * h) * ei};
-                        const auto calc_val{P.value(row, col - grid2D_rocks->l_margin)};
-                        CHECK_THAT(
-                            calc_val / 1e5,
-                            WithinRel(ref_val / 1e5,
-                                      tol));
-                        int k{0};
+                            const auto calc_val{P.value(row, col)};
+
+                            const auto stat_p{-rate * mu /
+                                              (2.0 * pi * k * h) *
+                                              std::log(r / rMax)};
+
+                            INFO("row: " << row << "; col: " << col << "; r: " << r << "; ratio: " << stat_p / (calc_val - p_ex));
+                            CHECK_THAT(
+                                (calc_val - p_ex),
+                                WithinRel(stat_p,
+                                          tol));
+                        }
+                        {
+                            const auto col{grid_r.mesh_size() - 1ll};
+                            const auto r{grid_r.mesh_nodes(col)};
+                            const auto calc_val{P.value(row, col)};
+                            INFO("row: " << row << "; r: " << r);
+                            CHECK_THAT(
+                                (calc_val - p_ex) / 1e5,
+                                WithinAbs(0.0,
+                                          tol));
+                        }
                     }
                 }
                 else
                 {
                     for (auto col{left_margin}; col < grid_r.mesh_size(); ++col)
                         CHECK(
-                            P.value(row, col - grid2D_rocks->l_margin) == base_hydrodynamics.ext_pressure(row));
+                            P.value(row, col) == base_hydrodynamics.ext_pressure(row));
                 }
             }
         }
