@@ -29,6 +29,7 @@
 #include "includes/set_is_permeable_stencils.hpp"
 #include "includes/make_r_stencils.hpp"
 #include "includes/get_completion.hpp"
+#include "includes/make_water.hpp"
 
 #include <nlohmann/json.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -55,14 +56,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     REQUIRE(f.is_open());
     json data = json::parse(f);
 
-    /*fluid*/
-    RealType
-        viscosity{data["fluid"]["viscosity"]},
-        density{data["fluid"]["density"]},
-        capacity{data["fluid"]["specific_heat_capacity"]},
-        heat_conductivity{data["fluid"]["heat_conductivity"]},
-        joule_thomson{data["fluid"]["joule_thomson"]};
-
     /*collector*/
     const auto from_coords{data["collector"]["cross_flow"]["from_coord"].get<VR>()};
     const auto to_layers{data["collector"]["cross_flow"]["to_layers"].get<std::vector<std::ptrdiff_t>>()};
@@ -80,6 +73,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto is_permeable_stencils{set_is_permeable_stencils(is_perforated_stencils, to_layers)};
 
     const auto start_time{data["history"]["start_time"].get<RealType>()};
+
+#pragma region MAKE-FLUID
+    const PhasePropertiesJT water{make_water(data)};
+#pragma endregion
 
     /*completion*/
     // z-refiner
@@ -179,19 +176,20 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     Properties::Rocks::RocksProps
         rock_field_props{
             base_hydrodynamics,
+            water,
             grid2D_rocks};
 
-    CHECK(rock_field_props.permeability_axes1.rows() == grid_z.mesh_size());
-    CHECK(rock_field_props.permeability_axes1.cols() == grid_r.mesh_size() - left_margin);
-    CHECK(rock_field_props.permeability_axes2.rows() == grid_z.mesh_size());
-    CHECK(rock_field_props.permeability_axes2.cols() == grid_r.mesh_size() - left_margin);
+    CHECK(rock_field_props.mobility_axes1.rows() == grid_z.mesh_size());
+    CHECK(rock_field_props.mobility_axes1.cols() == grid_r.mesh_size() - left_margin);
+    CHECK(rock_field_props.mobility_axes2.rows() == grid_z.mesh_size());
+    CHECK(rock_field_props.mobility_axes2.cols() == grid_r.mesh_size() - left_margin);
 
     for (auto col{0ll}; col < grid_rocks_r.mesh_size(); ++col)
     {
         for (auto row{0ll}; row < grid_rocks_z.mesh_size(); ++row)
         {
-            CHECK(rock_field_props.permeability_axes1.value(row, col) == 0.0);
-            CHECK(rock_field_props.permeability_axes2.value(row, col) == core_logs.permeability(row));
+            CHECK(rock_field_props.mobility_axes1.value(row, col) == 0.0);
+            CHECK(rock_field_props.mobility_axes2.value(row, col) == core_logs.permeability(row)/water.viscosity);
         }
     }
 
@@ -199,23 +197,23 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         rock_face_props{
             rock_field_props,
             grid2D_rocks};
-    CHECK(rock_face_props.permeability.face_vals_axes1.rows() == grid_rocks_z.dual_size() - 2ll);
-    CHECK(rock_face_props.permeability.face_vals_axes1.cols() == grid_rocks_r.mesh_size());
-    CHECK(rock_face_props.permeability.face_vals_axes2.rows() == grid_rocks_z.mesh_size());
-    CHECK(rock_face_props.permeability.face_vals_axes2.cols() == grid_rocks_r.dual_size() - 2ll);
+    CHECK(rock_face_props.mobility.face_vals_axes1.rows() == grid_rocks_z.dual_size() - 2ll);
+    CHECK(rock_face_props.mobility.face_vals_axes1.cols() == grid_rocks_r.mesh_size());
+    CHECK(rock_face_props.mobility.face_vals_axes2.rows() == grid_rocks_z.mesh_size());
+    CHECK(rock_face_props.mobility.face_vals_axes2.cols() == grid_rocks_r.dual_size() - 2ll);
 
-    for (auto col{0ll}; col < rock_face_props.permeability.face_vals_axes1.cols(); ++col)
+    for (auto col{0ll}; col < rock_face_props.mobility.face_vals_axes1.cols(); ++col)
     {
-        for (auto row{0ll}; row < rock_face_props.permeability.face_vals_axes1.rows(); ++row)
+        for (auto row{0ll}; row < rock_face_props.mobility.face_vals_axes1.rows(); ++row)
         {
-            CHECK(rock_face_props.permeability.face_vals_axes1(row, col) == 0.0);
+            CHECK(rock_face_props.mobility.face_vals_axes1(row, col) == 0.0);
         }
     }
-    for (auto col{0ll}; col < rock_face_props.permeability.face_vals_axes2.cols(); ++col)
+    for (auto col{0ll}; col < rock_face_props.mobility.face_vals_axes2.cols(); ++col)
     {
-        for (auto row{0ll}; row < rock_face_props.permeability.face_vals_axes1.rows(); ++row)
+        for (auto row{0ll}; row < rock_face_props.mobility.face_vals_axes1.rows(); ++row)
         {
-            CHECK_THAT(rock_face_props.permeability.face_vals_axes2(row, col),
+            CHECK_THAT(rock_face_props.mobility.face_vals_axes2(row, col),
                        WithinRel(
                            core_logs.permeability(row) /
                                std::log(grid_rocks_r.mesh_nodes(col + 1ll) /
@@ -228,15 +226,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     const auto rMin{grid_r.dual_front()};
     const auto rMax{grid_r.dual_back()};
-
-    // make fluid
-    const PhasePropertiesJT water{
-        FluidFactory::create_water_JT(
-            Viscosity{viscosity},
-            GPN::Density{density},
-            GPN::SpecificHeatCapacity{capacity},
-            GPN::HeatConductivity{heat_conductivity},
-            JouleThomson{joule_thomson})};
 
     const auto RFP_weights{
         RFPFactory::create_from_container(

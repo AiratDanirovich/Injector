@@ -2,11 +2,18 @@
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 
-#include <catch2/catch_test_macros.hpp>
+#include "includes/make_water.hpp"
 
+#include <catch2/catch_test_macros.hpp>
+#include <fstream>
+
+using namespace std;
 using namespace GPN;
+using namespace GPN::Phases;
 using namespace GPN::Grids;
 using namespace GPN::CoordinateTypes;
+
+using json = nlohmann::json;
 
 const auto z_stencils{Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 5)};
 const auto r_stencils{Grids::Factory::generate_dual_grid_stencils_uniform(0, 1, 11)};
@@ -39,6 +46,14 @@ TEST_CASE("HydrodynamicsSolverTest")
         { return v == 1.0; });
     (*it) = 0.0;
 
+    ifstream f("heatflow_test_data.json");
+    REQUIRE(f.is_open());
+    json data = json::parse(f);
+
+#pragma region MAKE-FLUID
+    const PhasePropertiesJT water{make_water(data)};
+#pragma endregion
+
     const auto grid2D{Grids::CylinderGridFactory::create(z_stencils, r_stencils)};
     const auto &grid_z{grid2D->first_coord()};
 
@@ -53,11 +68,12 @@ TEST_CASE("HydrodynamicsSolverTest")
         base_hydrodynamics{
             core_data,
             medium_compressibility_stencils,
-            ext_pressure_stencils,};
+            ext_pressure_stencils,
+        };
 
     const Properties::Rocks::RocksProps
         collector_field{
-            base_hydrodynamics, grid2D};
+            base_hydrodynamics, water, grid2D};
 
     const Logs::Rocks::HeatLogs
         heat_logs{
@@ -67,8 +83,6 @@ TEST_CASE("HydrodynamicsSolverTest")
             porosity_stencils,
             Phases::FluidFactory::create_water(1.0, 1.0),
             grid_z};
-
-            
 
     const Properties::Rocks::HeatProps
         heat_props{

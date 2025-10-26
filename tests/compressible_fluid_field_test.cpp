@@ -30,6 +30,7 @@
 #include "includes/set_is_permeable_stencils.hpp"
 #include "includes/make_r_stencils.hpp"
 #include "includes/get_completion.hpp"
+#include "includes/make_water.hpp"
 
 #include <nlohmann/json.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -56,14 +57,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     REQUIRE(f.is_open());
     json data = json::parse(f);
 
-    /*fluid*/
-    RealType
-        viscosity{data["fluid"]["viscosity"]},
-        density{data["fluid"]["density"]},
-        capacity{data["fluid"]["specific_heat_capacity"]},
-        heat_conductivity{data["fluid"]["heat_conductivity"]},
-        joule_thomson{data["fluid"]["joule_thomson"]};
-
     /*collector*/
     const auto from_coords{data["collector"]["cross_flow"]["from_coord"].get<VR>()};
     const auto to_layers{data["collector"]["cross_flow"]["to_layers"].get<std::vector<std::ptrdiff_t>>()};
@@ -83,14 +76,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     const auto start_time{data["history"]["start_time"].get<RealType>()};
 
+
 #pragma region MAKE-FLUID
-    const PhasePropertiesJT water{
-        FluidFactory::create_water_JT(
-            Viscosity{viscosity},
-            GPN::Density{density},
-            GPN::SpecificHeatCapacity{capacity},
-            GPN::HeatConductivity{heat_conductivity},
-            JouleThomson{joule_thomson})};
+    const PhasePropertiesJT water{make_water(data)};
 #pragma endregion
 
     /*completion*/

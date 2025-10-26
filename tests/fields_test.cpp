@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 #include <Injector/Grids/CoordinateTypes.h>
 #include <Injector/Grids/GridsFactory.hpp>
@@ -11,6 +12,7 @@
 #include <Injector/Model/Phases/FluidFactory.hpp>
 
 #include "includes/transfer_to_eigen.hpp"
+#include "includes/make_water.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -18,6 +20,7 @@ using namespace GPN;
 using namespace std;
 
 using VR = std::vector<RealType>;
+using json = nlohmann::json;
 
 /*input data*/
 // z-grid data
@@ -57,6 +60,14 @@ TEST_CASE("FieldsTest")
             { return v == 1.0; });
         (*it) = 0.0;
 
+        ifstream f("heatflow_test_data.json");
+        REQUIRE(f.is_open());
+        json data = json::parse(f);
+
+#pragma region MAKE-FLUID
+        const PhasePropertiesJT water{make_water(data)};
+#pragma endregion
+
         const auto grid2D{
             Grids::CylinderGridFactory::create(grid_stencils, grid_stencils)};
 
@@ -84,7 +95,7 @@ TEST_CASE("FieldsTest")
             grid_z};
 
         const Properties::Rocks::RocksProps collector_field{
-            hydrodynamics, grid2D};
+            hydrodynamics, water, grid2D};
 
         const Properties::Rocks::HeatProps heat_props{
             heat_logs, grid2D};
