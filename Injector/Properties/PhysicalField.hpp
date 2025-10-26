@@ -49,7 +49,7 @@ namespace GPN
             {
                 return its_values.col(i);
             }
-            const auto &col(auto i) const
+            const auto col(auto i) const
             {
                 return its_values.col(i);
             }

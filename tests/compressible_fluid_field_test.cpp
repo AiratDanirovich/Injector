@@ -76,7 +76,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     const auto start_time{data["history"]["start_time"].get<RealType>()};
 
-
 #pragma region MAKE-FLUID
     const PhasePropertiesJT water{make_water(data)};
 #pragma endregion
@@ -215,15 +214,16 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     CHECK(P.value(row, col) == P.value(row, 2ll));
                 if (core_logs.is_permeable(row) == 1.0)
                 {
-                    // {
-                    //     auto col{2ll};
-                    //     CHECK(grid_r.dual_nodes(col + 1ll) == completion.sandface_radius(row));
-                    //     CHECK(P.value(row, col) ==
-                    //           base_hydrodynamics.ext_pressure(row) -
-                    //               rfp(row) * water.viscosity /
-                    //                   (2.0 * pi * core_logs.permeability(row) * grid_z.control_volumes(row)) *
-                    //                   std::log(completion.sandface_radius(row) / rMax));
-                    // }
+                    {
+                        auto col{2ll};
+                        CHECK(grid_r.dual_nodes(col + 1ll) == completion.sandface_radius(row));
+                        CHECK_THAT(P.value(row, col) - P.value(row, col+1ll),
+                        WithinRel(
+                                rfp(row) * water.viscosity /
+                                    (2.0 * pi * core_logs.permeability(row) * grid_z.control_volumes(row)) *
+                                    std::log(grid_r.mesh_nodes(3ll)/completion.sandface_radius(row)),
+                                tol));
+                    }
 
                     const auto h{grid_z.control_volumes(row)};
                     const auto k{core_logs.permeability(row)};

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <numbers>
+
 #include <Injector/Grids/Defines.h>
 
 #include <Injector/Model/Collector.hpp>
@@ -46,9 +48,18 @@ namespace GPN
                       permeability,
                       ext_pressure,
                       well, history, grid2D_rocks->grid2D},
-                  solver{set_solver(start_time, history, rock_field_props, ext_pressure, well.RFP_weights, grid2D_rocks)},
-                  first_size{grid2D_rocks->grid2D->first_coord().mesh_size()}, 
-                  second_size{grid2D_rocks->grid2D->second_coord().mesh_size()},
+                  solver{
+                    set_solver(
+                        start_time, history, 
+                        rock_field_props, 
+                        ext_pressure, 
+                        well.RFP_weights, 
+                        grid2D_rocks)}, 
+                  first_size{
+                    grid2D_rocks->grid2D->first_coord().mesh_size()}, 
+                  second_size{
+                    grid2D_rocks->grid2D->second_coord().mesh_size()},
+                  inv_mobility{set_inv_mobility(rock_field_props, well, grid2D_rocks)}, 
                   grid2D_rocks{grid2D_rocks}
             {
             }
@@ -56,13 +67,13 @@ namespace GPN
             template <typename HistoryRecord_t>
             void set_pressure_field(
                 const RealType time_step,
-                const HistoryRecord_t &)
+                const HistoryRecord_t &record)
             {
                 solver.advance(time_step);
-                const GridNodeValues2D& rock_P{solver.get_state().cur_state};
+                const GridNodeValues2D &rock_P{solver.get_state().cur_state};
                 GridNodeValues2D out{GridNodeValues2D::Zero(first_size, second_size)};
-                out.leftCols(grid2D_rocks->l_margin).colwise() = rock_P.col(0ll);
-                out.rightCols(second_size - grid2D_rocks->l_margin) = rock_P;
+                out.rightCols(second_size - Grid2D_t::l_margin) = rock_P;
+                out.leftCols(Grid2D_t::l_margin).colwise() = rock_P.col(0ll) + record.rate * inv_mobility;
 
                 P = std::make_shared<Properties::Pressure<OriginalGrid>>(
                     std::move(out),
@@ -70,9 +81,33 @@ namespace GPN
             }
 
         private:
+            const Eigen::ArrayX<RealType> inv_mobility;
             CompressibleFluidSolver<Solver_t> solver;
             const ptrdiff_t first_size, second_size;
             const cptr<Grid2D_t> grid2D_rocks;
+
+            static auto set_inv_mobility(
+                const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
+                const Well_t &well,
+                cptr<Grid2D_t> grid2D_rocks)
+            {
+                const auto r3{grid2D_rocks->second_coord().mesh_nodes(0ll)};
+                const auto r2_face{grid2D_rocks->second_coord().dual_nodes(0ll)};
+                const auto two_pi{2.0 * std::numbers::pi_v<RealType>};
+                const auto is_permeable{rock_field_props.base_hydrodynamics.is_permeable.log_vals};
+
+                Eigen::ArrayX<RealType> out{well.RFP_weights / (
+                    two_pi / std::log(r3 / r2_face) * 
+                    rock_field_props.mobility_axes2.col(Grid2D_t::l_margin) * 
+                    grid2D_rocks->first_coord().control_volumes)};
+
+                    for(auto row{0ll}; row < grid2D_rocks->first_coord().mesh_size(); ++row)
+                    {
+                        if(is_permeable(row) == 0.0)
+                            out(row) = 0.0;
+                    }
+                return out;
+            }
 
             static auto set_solver(
                 const RealType start_time,
@@ -97,14 +132,12 @@ namespace GPN
 
                 const auto ptr_rates_factory{std::make_shared<EqSolver::EmptyConvectionField>()};
 
-                const auto& is_permeable{rock_field_props.base_hydrodynamics.is_permeable};
+                const auto &is_permeable{rock_field_props.base_hydrodynamics.is_permeable};
 
                 const Properties::MediumCompressibility corrected_compressibility{
                     Properties::Field<Grid2D_t>{
-                    rock_field_props.medium_compressibility.values().colwise() + (1.0-is_permeable.log_vals),
-                    grid2D_rocks}
-                };
-
+                        rock_field_props.medium_compressibility.values().colwise() + (1.0 - is_permeable.log_vals),
+                        grid2D_rocks}};
 
                 using Solver_t = decltype(EqSolver::FullImplicit::Solver{
                     rock_face_props.mobility,

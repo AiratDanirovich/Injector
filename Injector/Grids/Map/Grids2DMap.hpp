@@ -26,7 +26,7 @@ namespace GPN
 
             using OriginalGrid = Grid2D_t;
 
-            const ptrdiff_t l_margin{left_margin};
+            const static ptrdiff_t l_margin{left_margin};
 
             Grid2DMap(const cptr<Grid2D_t> grid2D)
                 : grid2D{grid2D},

@@ -137,5 +137,4 @@ namespace GPN
             const ptr<Solver_t> solver;
         };
     } // Hydrodynamic
-
 } // GPN
