@@ -211,8 +211,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
             for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
             {
-                // for (auto col{0ll}; col < 2ll; ++col)
-                //     CHECK(P.value(row, col) == P.value(row, 2ll));
+                for (auto col{0ll}; col < 2ll; ++col)
+                    CHECK(P.value(row, col) == P.value(row, 2ll));
                 if (core_logs.is_permeable(row) == 1.0)
                 {
                     // {
