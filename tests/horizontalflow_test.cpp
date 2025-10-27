@@ -8,8 +8,8 @@
 #include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
+#include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleRatesFactory.hpp>
 
-#include <Injector/History/RatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Solver/BoundaryConditions.hpp>
 #include <Injector/Solver/State2D.hpp>

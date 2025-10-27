@@ -11,7 +11,6 @@
 #include <Injector/Grids/GridRefiners.hpp>
 
 #include <Injector/History/History.hpp>
-#include <Injector/History/RatesFactory.hpp>
 
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
@@ -19,6 +18,7 @@
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Well/Well.hpp>
+#include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleRatesFactory.hpp>
 #include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleFluid.hpp>
 
 #include <Injector/Properties/LogsFactory.hpp>

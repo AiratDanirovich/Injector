@@ -11,7 +11,7 @@
 #include <Injector/Grids/Map/Grids2DMap.hpp>
 #include <Injector/Grids/GridRefiners.hpp>
 
-#include <Injector/History/RatesFactory.hpp>
+#include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleRatesFactory.hpp>
 
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
