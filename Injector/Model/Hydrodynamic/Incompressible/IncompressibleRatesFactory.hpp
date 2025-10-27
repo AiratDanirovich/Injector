@@ -56,7 +56,6 @@ namespace GPN
                             history->get_current_record(), well, *grid2D),
                         // multiple by heat capaity
                         fluid.volumetric_heat_capacity);
-
             }
 
             const auto get_spatial_JT_contribution() const
@@ -173,6 +172,5 @@ namespace GPN
             const cptr<Grid2D_t> grid2D;
             const cptr<FaceProperties::HeatFlowField> heat_flow_field;
         };
-
     } // FaceProperties
 } // GPN

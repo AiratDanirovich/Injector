@@ -143,6 +143,11 @@ namespace GPN
             }
         }
 
+        void reset()
+        {
+            pos = -1ll;
+        }
+
         void advance()
         {
             ++pos;
