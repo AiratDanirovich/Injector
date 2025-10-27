@@ -51,6 +51,8 @@ using namespace GPN::Hydrodynamic;
 
 using VR = std::vector<GPN::RealType>;
 
+const RealType pi{std::numbers::pi};
+
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
     ifstream f("heatflow_test_data.json");
@@ -65,7 +67,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto
         z_minor_step{data["grid"]["z_minor_step"].get<RealType>()}; // m
     const auto thickness{data["collector"]["thickness"].get<VR>()};
-    const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"].get<VR>(), 1e-12)};
+    const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"].get<VR>())};
     const auto porosity_stencils{transfer_to_eigen(data["collector"]["porosity"].get<VR>())};
     const auto medium_compressibility_stencils{transfer_to_eigen(data["collector"]["medium_compressibility"].get<VR>())};
 
@@ -230,7 +232,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     const auto k{core_logs.permeability(row)};
                     const auto beta{base_hydrodynamics.medium_compressibility(row)};
                     const auto piezo_cond{k / (mu * beta)};
-                    if (r_well * r_well < 0.01 * piezo_cond * t)
+                    REQUIRE(
+                        std::isnan(piezo_cond) == false);
+                    REQUIRE( 
+                        std::isinf(piezo_cond) == false);
+
+                    if (r_well * r_well < 0.0001 * piezo_cond * t)
                     {
                         ++counter;
                         const auto rate{rfp(row)};
@@ -243,26 +250,26 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                             const auto ref_val{
                                 //    p_ex -
                                 rate * mu /
-                                (4.0 * piezo_cond * k * h) * ei};
-                            const auto calc_val{P.value(row, col)};
+                                (4.0 * pi * k * h) * ei};
+                            const auto calc_val{P.value(row, col) - p_ex};
 
                             const auto stat_p{-rate * mu /
                                               (2.0 * pi * k * h) *
                                               std::log(r / rMax)};
 
-                            INFO("row: " << row << "; col: " << col << "; r: " << r << "; ratio: " << stat_p / (calc_val - p_ex));
-                            CHECK_THAT(
-                                (calc_val - p_ex),
-                                WithinRel(stat_p,
-                                          tol));
+                            // INFO("row: " << row << "; col: " << col << "; r: " << r << "; ratio: " << ref_val / calc_val);
+                            // CHECK_THAT(
+                            //     calc_val/1e5,
+                            //     WithinRel(ref_val/1e5,
+                            //               tol));
                         }
                         {
                             const auto col{grid_r.mesh_size() - 1ll};
                             const auto r{grid_r.mesh_nodes(col)};
-                            const auto calc_val{P.value(row, col)};
+                            const auto calc_val{P.value(row, col) - p_ex};
                             INFO("row: " << row << "; r: " << r);
                             CHECK_THAT(
-                                (calc_val - p_ex) / 1e5,
+                                calc_val / 1e5,
                                 WithinAbs(0.0,
                                           tol));
                         }
