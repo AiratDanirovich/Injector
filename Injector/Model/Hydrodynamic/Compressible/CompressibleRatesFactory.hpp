@@ -7,6 +7,7 @@
 #include <Injector/History/InjectorRegimes.hpp>
 
 #include <Injector/Properties/FlowField.hpp>
+#include <Injector/Properties/FaceProperties.hpp>
 
 namespace GPN
 {
@@ -35,7 +36,8 @@ namespace GPN
                   first_size{
                     grid2D_rocks->grid2D->first_coord().mesh_size()}, 
                   second_size{
-                    grid2D_rocks->grid2D->second_coord().mesh_size()}
+                    grid2D_rocks->grid2D->second_coord().mesh_size()},
+                  mobility{pressure_field->mobility}
             {
             }
 
@@ -71,9 +73,12 @@ namespace GPN
                         grid2D->first_coord().mesh_size(),
                         grid2D->second_coord().dual_size())};
 
-                axes2_value.leftCols(Grid2D_t::l_margin+1ll).colwise() = well.get_RFP(get_history_record());
+                static_assert(Grid2D_t::l_margin == 3ll);
+                axes2_value.leftCols(Grid2D_t::l_margin).colwise() = 0.0;
+                axes2_value.col(Grid2D_t::l_margin+1ll).colwise() = 
+                    well.get_RFP(get_history_record());
                 
-            //    axes2_value.middleCols(second_size - Grid2D_t::l_margin) = rock_P;
+                axes2_value.middleCols(Grid2D_t::l_margin+1ll, second_size) = mobility.face_vals_axes2;
 
                 heat_flow_field =
                     std::make_shared<FaceProperties::HeatFlowField>(
@@ -88,6 +93,7 @@ namespace GPN
             const OriginalGrid &grid2D;
             const cptr<Grid2D_t> grid2D_rocks;
             const Well_t &well;
+            const FaceProperties::Mobility<Grid2D_t>& mobility;
             const ptr<History_t> history;
             const Fluid_t &fluid;
             ptr<Hydrodynamics_t> pressure_field;

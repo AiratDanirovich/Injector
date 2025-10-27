@@ -48,13 +48,9 @@ namespace GPN
                       permeability,
                       ext_pressure,
                       well, history, grid2D_rocks->grid2D},
-                  solver{
-                    set_solver(
-                        start_time, history, 
-                        rock_field_props, 
-                        ext_pressure, 
-                        well.RFP_weights, 
-                        grid2D_rocks)}, 
+                  mobility{FaceProperties::Rocks::RocksFaceProps{
+                      rock_field_props,
+                      grid2D_rocks}.mobility}, 
                   first_size{
                     grid2D_rocks->grid2D->first_coord().mesh_size()}, 
                   second_size{
@@ -62,6 +58,14 @@ namespace GPN
                   inv_mobility{set_inv_mobility(rock_field_props, well, grid2D_rocks)}, 
                   grid2D_rocks{grid2D_rocks}
             {
+                solver =
+                    std::make_unique<CompressibleFluidSolver<Solver_t>>(set_solver(
+                        start_time, history, 
+                        rock_field_props, 
+                        ext_pressure, 
+                        well.RFP_weights,
+                        mobility,
+                        grid2D_rocks));
             }
 
             template <typename HistoryRecord_t>
@@ -69,8 +73,8 @@ namespace GPN
                 const RealType time_step,
                 const HistoryRecord_t &record)
             {
-                solver.advance(time_step);
-                const GridNodeValues2D &rock_P{solver.get_state().cur_state};
+                solver->advance(time_step);
+                const GridNodeValues2D &rock_P{solver->get_state().cur_state};
                 GridNodeValues2D out{GridNodeValues2D::Zero(first_size, second_size)};
                 out.rightCols(second_size - Grid2D_t::l_margin) = rock_P;
                 out.leftCols(Grid2D_t::l_margin).colwise() = rock_P.col(0ll) + record.rate * inv_mobility;
@@ -80,9 +84,15 @@ namespace GPN
                     grid2D);
             }
 
+            const auto& get_mobility() const
+            {
+                return solver->mobility;
+            }
+
+            const FaceProperties::Mobility<Grid2D_t> mobility;
         private:
             const Eigen::ArrayX<RealType> inv_mobility;
-            CompressibleFluidSolver<Solver_t> solver;
+            std::unique_ptr<CompressibleFluidSolver<Solver_t>> solver;
             const ptrdiff_t first_size, second_size;
             const cptr<Grid2D_t> grid2D_rocks;
 
@@ -115,12 +125,13 @@ namespace GPN
                 const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
                 const Logs::ExternalPressure &ext_pressure,
                 const auto rfp,
+                const FaceProperties::Mobility<Grid2D_t>& mobility,
                 const cptr<Grid2D_t> grid2D_rocks)
             {
-                FaceProperties::Rocks::RocksFaceProps
-                    rock_face_props{
-                        rock_field_props,
-                        grid2D_rocks};
+                // FaceProperties::Rocks::RocksFaceProps
+                //     rock_face_props{
+                //         rock_field_props,
+                //         grid2D_rocks};
 
                 const HydroBC bc{
                     grid2D_rocks,
@@ -140,14 +151,14 @@ namespace GPN
                         grid2D_rocks}};
 
                 using Solver_t = decltype(EqSolver::FullImplicit::Solver{
-                    rock_face_props.mobility,
+                    /*rock_face_props.*/mobility,
                     grid2D_rocks,
                     corrected_compressibility,
                     ptr_rates_factory, initial_state,
                     bc, start_time});
 
                 auto solver_ptr{std::make_shared<Solver_t>(
-                    rock_face_props.mobility,
+                    /*rock_face_props.*/mobility,
                     grid2D_rocks,
                     corrected_compressibility,
                     ptr_rates_factory, initial_state,
