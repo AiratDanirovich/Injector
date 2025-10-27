@@ -11,16 +11,15 @@
 #include <Injector/Grids/Map/Grids2DMap.hpp>
 #include <Injector/Grids/GridRefiners.hpp>
 
-#include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleRatesFactory.hpp>
-
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Well/WellHoles.hpp>
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Well/Well.hpp>
+
+#include <Injector/Model/Hydrodynamic/Compressible/CompressibleRatesFactory.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluid.hpp>
-#include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluidSolver.hpp>
 
 #include <Injector/Properties/LogsFactory.hpp>
 #include <Injector/Properties/JT_FieldFactory.hpp>
@@ -288,9 +287,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     CHECK(counter > 0ll);
 
     // rates field factory
-    // FaceProperties::IncompressibleRatesFactory rates_factory{
-    //     ptr_pressure_field,
-    //     grid2D_rocks, well, history, water};
+    FaceProperties::CompressibleRatesFactory rates_factory{
+        ptr_pressure_field,
+        grid2D_rocks, well, history, water};
 
     // for (auto t{0ll}; t < history->size(); ++t)
     // { // mock SolverManager::run
