@@ -1,6 +1,7 @@
 #pragma once
 #include <cassert>
 #include <iterator>
+#include <type_traits>
 
 #include <Injector/Grids/Defines.h>
 
@@ -24,6 +25,8 @@ namespace GPN
                 }
                 IsPermeable is_permeable;
             };
+            
+            template<typename Grid1D_t>
             struct CoreSampleLogs
             {
                 CoreSampleLogs(
@@ -31,12 +34,13 @@ namespace GPN
                     const auto &is_perforated_stencils,
                     const auto &porosity_stencils,
                     const auto &permeability_stencils,
-                    const auto &grid)
+                    const Grid1D_t &grid)
                     : is_permeable{IsPermeableFactory::create(is_permeable_stencils, grid)},
                       is_perforated{IsPerforatedFactory::create(is_perforated_stencils, is_permeable_stencils, grid)},
                       permeability{PermeabilityFactory::create(permeability_stencils, is_permeable_stencils, grid)},
                       porosity{PorosityFactory::create(porosity_stencils, is_permeable_stencils, grid)},
-                      is_permeable_stencils{is_permeable_stencils}
+                      is_permeable_stencils{is_permeable_stencils},
+                      grid{grid}
                 {
                     assert(is_permeable_stencils.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
                     assert(porosity_stencils.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
@@ -59,8 +63,11 @@ namespace GPN
                 const Permeability permeability;
                 const Porosity porosity;
                 const LogValuesContainer is_permeable_stencils;
+                // respective grid in z-direction
+                const Grid1D_t &grid;
             };
 
+            template<typename Grid1D_t>
             struct HeatLogs
             {
                 HeatLogs(
@@ -69,10 +76,11 @@ namespace GPN
                     const auto &solid_heat_conductivity,
                     const auto &porosity,
                     const auto &fluid,
-                    const auto &grid)
+                    const Grid1D_t &grid)
                     : solid_density{
                           SolidDensityFactory::create(solid_density, grid)},
-                      solid_specific_heatcapacity{SolidSpecificHeatCapacityFactory::create(solid_specific_heatcapacity, grid)}, medium_heat_conductivity{HeatConductivityFactory::create(porosity, solid_heat_conductivity, fluid, grid)}, solid_heat_conductivity{HeatConductivityFactory::create(solid_heat_conductivity, grid)}, solid_vol_heatcapacity{SolidVolumetricHeatCapacityFactory::create(solid_density, solid_specific_heatcapacity, grid)}, medium_vol_heatcapacity{MediumHeatVolumetricCapacityFactory::create(porosity, solid_density, solid_specific_heatcapacity, fluid, grid)}
+                      solid_specific_heatcapacity{SolidSpecificHeatCapacityFactory::create(solid_specific_heatcapacity, grid)}, medium_heat_conductivity{HeatConductivityFactory::create(porosity, solid_heat_conductivity, fluid, grid)}, solid_heat_conductivity{HeatConductivityFactory::create(solid_heat_conductivity, grid)}, solid_vol_heatcapacity{SolidVolumetricHeatCapacityFactory::create(solid_density, solid_specific_heatcapacity, grid)}, medium_vol_heatcapacity{MediumHeatVolumetricCapacityFactory::create(porosity, solid_density, solid_specific_heatcapacity, fluid, grid)},
+                      grid{grid}
                 {
                     assert(solid_density.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
                     assert(solid_specific_heatcapacity.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
@@ -90,27 +98,31 @@ namespace GPN
                 const SolidSpecificHeatCapacity solid_specific_heatcapacity;
                 const HeatConductivity solid_heat_conductivity;
                 const SolidVolumetricHeatCapacity solid_vol_heatcapacity;
-
                 const HeatConductivity medium_heat_conductivity;
                 const MediumHeatVolumetricCapacity medium_vol_heatcapacity;
+                // respective grid in z-direction
+                const Grid1D_t &grid;
             };
         } // Rocks
 
         namespace Hydrodynamics
         {
+            template<typename Grid1D_t>
             struct BaseHydrodynamics
-                : public Rocks::CoreSampleLogs
+                : public Rocks::CoreSampleLogs<Grid1D_t>
             {
+                using Base = Rocks::CoreSampleLogs<Grid1D_t>;
+                using Base::is_permeable;
                 BaseHydrodynamics(
-                    const Rocks::CoreSampleLogs &core_logs,
+                    const Rocks::CoreSampleLogs<Grid1D_t> &core_logs,
                     const auto &medium_compressibility_stencils,
-                    const auto &ext_pressure_stencils,
-                    const auto &grid)
-                    : Rocks::CoreSampleLogs{core_logs},
+                    const auto &ext_pressure_stencils)
+                    : Base{core_logs},
                       ext_pressure{ExtPressureFactory::create(
-                          ext_pressure_stencils, core_logs.is_permeable_stencils, grid)},
+                          ext_pressure_stencils, core_logs.is_permeable_stencils, core_logs.grid)},
                       medium_compressibility{MediumCompressibilityFactory::create(
-                          medium_compressibility_stencils, core_logs.is_permeable_stencils, grid)}
+                          medium_compressibility_stencils, core_logs.is_permeable_stencils, core_logs.grid)},
+                          grid{core_logs.grid}
                 {
                     assert(ext_pressure_stencils.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
                     assert(ext_pressure.size() == grid.dual_nodes.size() - 1ll);
@@ -129,17 +141,23 @@ namespace GPN
 
                 const ExternalPressure ext_pressure;
                 const MediumCompressibility medium_compressibility;
+                // respective grid in z-direction
+                const Grid1D_t &grid;
             };
 
+            template<typename Grid1D_t>
             struct Hydrodynamics
-                : public BaseHydrodynamics
+                : public BaseHydrodynamics<Grid1D_t>
             {
+                using Base = BaseHydrodynamics<Grid1D_t>;
+                using Base::is_permeable_stencils;
+
                 Hydrodynamics(
-                    const BaseHydrodynamics &base_hydrodynamics,
-                    const auto &skin_stencils,
-                    const auto &grid)
+                    const BaseHydrodynamics<Grid1D_t> &base_hydrodynamics,
+                    const auto &skin_stencils)
                     : BaseHydrodynamics{base_hydrodynamics},
-                      skin{SkinFactory::create(skin_stencils, base_hydrodynamics.is_permeable_stencils, grid)}
+                      skin{SkinFactory::create(skin_stencils, base_hydrodynamics.is_permeable_stencils, base_hydrodynamics.grid)},
+                      grid{base_hydrodynamics.grid}
                 {
                     assert(is_permeable_stencils.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
                     assert(skin_stencils.size() == grid.dual_stencils.dual_nodes.size() - 1ll);
@@ -147,6 +165,8 @@ namespace GPN
                 }
 
                 const SkinFactor skin;
+                // respective grid in z-direction
+                const Grid1D_t &grid;
             };
         } // Hydrodynamics
     } // Logs
@@ -158,68 +178,71 @@ namespace GPN
             template <typename Grid2D_t>
             struct RocksProps
             {
+                using Grid1D_t = std::decay_t<typename Grid2D_t::Axes1Coordinate_t>;
+
                 RocksProps(
-                    const Logs::Hydrodynamics::BaseHydrodynamics &base_hydrodynamics,
+                    const Logs::Hydrodynamics::BaseHydrodynamics<Grid1D_t> &base_hydrodynamics,
+                    const PhaseProperties& fluid,
                     const cptr<Grid2D_t> grid2D)
                     : RocksProps(
                           base_hydrodynamics,
                           base_hydrodynamics.medium_compressibility,
                           base_hydrodynamics.permeability,
+                          fluid,
                           grid2D)
                 {
                 }
 
-                Permeability<Grid2D_t>
-                    permeability_axes1,
-                    permeability_axes2;
+                Mobility<Grid2D_t>
+                    mobility_axes1,
+                    mobility_axes2;
                 MediumCompressibility<Grid2D_t> medium_compressibility;
                 const cptr<Grid2D_t> grid2D;
 
-                const Logs::Hydrodynamics::BaseHydrodynamics &base_hydrodynamics;
-
+                const Logs::Hydrodynamics::BaseHydrodynamics<Grid1D_t> base_hydrodynamics;
+ 
             protected:
                 RocksProps(
-                    const Logs::Hydrodynamics::BaseHydrodynamics &base_hydrodynamics,
+                    const /*Logs::Hydrodynamics::BaseHydrodynamics<Grid1D_t>*/ auto &base_hydrodynamics,
                     const Logs::MediumCompressibility &a_medium_compressibility,
                     const Logs::Permeability &a_permeability,
+                    const PhaseProperties& fluid,
                     const cptr<Grid2D_t> grid2D)
                     : RocksProps{
                           base_hydrodynamics,
                           FieldFactory::create(a_medium_compressibility, grid2D),
-                          FieldFactory::create(a_permeability, grid2D),
+                          FieldFactory::create(a_permeability/fluid.viscosity, grid2D),
                           grid2D}
                 {
                 }
 
                 RocksProps(
-                    const Logs::Hydrodynamics::BaseHydrodynamics &base_hydrodynamics,
+                    const /*Logs::Hydrodynamics::BaseHydrodynamics<Grid1D_t>*/ auto &base_hydrodynamics,
                     const MediumCompressibility<Grid2D_t> &a_medium_compressibility,
-                    const Permeability<Grid2D_t> &a_permeability,
+                    const Mobility<Grid2D_t> &a_mobility,
                     const cptr<Grid2D_t> grid2D)
                     : base_hydrodynamics{base_hydrodynamics},
                       medium_compressibility{a_medium_compressibility},
-                      permeability_axes1{
+                      mobility_axes1{
                           GridNodeValues2D::Zero(
                               grid2D->first_coord().mesh_size(),
                               grid2D->second_coord().mesh_size()),
                           grid2D},
-                      permeability_axes2{a_permeability},
+                      mobility_axes2{a_mobility},
                       grid2D{grid2D}
                 {
                     assert(grid2D->first_coord().dual_stencils.dual_nodes.size() <=
                            grid2D->first_coord().dual_size());
-                    assert(grid2D->second_coord().dual_stencils.dual_nodes.size() <=
-                           grid2D->second_coord().dual_size());
 
-                    assert(a_permeability.rows() == grid2D->first_coord().mesh_size());
-                    assert(a_permeability.cols() == grid2D->second_coord().mesh_size());
+                    assert(a_mobility.rows() == grid2D->first_coord().mesh_size());
+                    assert(a_mobility.cols() == grid2D->second_coord().mesh_size());
                     assert(medium_compressibility.rows() == grid2D->first_coord().mesh_size());
                     assert(medium_compressibility.cols() == grid2D->second_coord().mesh_size());
 
-                    assert(permeability_axes1.rows() == grid2D->first_coord().mesh_size());
-                    assert(permeability_axes1.cols() == grid2D->second_coord().mesh_size());
-                    assert(permeability_axes2.rows() == grid2D->first_coord().mesh_size());
-                    assert(permeability_axes2.cols() == grid2D->second_coord().mesh_size());
+                    assert(mobility_axes1.rows() == grid2D->first_coord().mesh_size());
+                    assert(mobility_axes1.cols() == grid2D->second_coord().mesh_size());
+                    assert(mobility_axes1.rows() == grid2D->first_coord().mesh_size());
+                    assert(mobility_axes1.cols() == grid2D->second_coord().mesh_size());
                 }
             };
 
@@ -227,7 +250,7 @@ namespace GPN
             struct HeatProps
             {
                 HeatProps(
-                    const Logs::Rocks::HeatLogs &logs,
+                    const auto &logs,
                     const cptr<Grid2D_t> grid2D)
                     : HeatProps{
                           logs.medium_vol_heatcapacity,
@@ -329,20 +352,20 @@ namespace GPN
                 RocksFaceProps(
                     const Properties::Rocks::RocksProps<Grid2D_t> &props,
                     const cptr<Grid2D_t> grid2D)
-                    : permeability{
+                    : mobility{
                           FaceInterpolatedFieldFactory::create(
-                              props.permeability_axes1,
-                              props.permeability_axes2,
+                              props.mobility_axes1,
+                              props.mobility_axes2,
                               grid2D)},
                       grid2D{grid2D}
                 {
-                    assert(permeability.face_vals_axes1.rows() == grid2D->first_coord().dual_size()-2ll);
-                    assert(permeability.face_vals_axes1.cols() == grid2D->second_coord().mesh_size());
-                    assert(permeability.face_vals_axes2.rows() == grid2D->first_coord().mesh_size());
-                    assert(permeability.face_vals_axes2.cols() == grid2D->second_coord().dual_size()-2ll);
+                    assert(mobility.face_vals_axes1.rows() == grid2D->first_coord().dual_size()-2ll);
+                    assert(mobility.face_vals_axes1.cols() == grid2D->second_coord().mesh_size());
+                    assert(mobility.face_vals_axes2.rows() == grid2D->first_coord().mesh_size());
+                    assert(mobility.face_vals_axes2.cols() == grid2D->second_coord().dual_size()-2ll);
                 }
 
-                const Permeability<Grid2D_t> permeability;
+                const Mobility<Grid2D_t> mobility;
                 const cptr<Grid2D_t> grid2D;
             };
 

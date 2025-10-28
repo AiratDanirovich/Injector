@@ -19,7 +19,7 @@ namespace GPN
             {
             }
 
-            void run(RealType numerical_step = std::numeric_limits<RealType>::max())
+            void run(const RealType numerical_step = std::numeric_limits<RealType>::max())
             {
                 const ptrdiff_t size{history->size()};
                 const auto &time_intervals{history->time_steps};

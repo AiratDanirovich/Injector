@@ -3,62 +3,55 @@
 #include <numbers>
 #include <cassert>
 
-#include <Injector/Solver/State2D.hpp>
-
-#include <Injector/Model/Phases/PhaseProperties.hpp>
-#include <Injector/Properties/Logs.hpp>
-#include <Injector/Properties/PhysicalField.hpp>
+#include <Injector/Model/Hydrodynamic/SomeFluidField.hpp>
 
 namespace GPN
 {
     namespace Hydrodynamic
     {
-        template <typename Grid2D_t, typename Fluid_t, typename Well_t>
+        template <typename Grid2D_t, typename Fluid_t, typename Well_t, typename History_t>
         struct IncompressibleFluidField
+            : public SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>
         {
+            using Base = SomeFluidField<Grid2D_t, Fluid_t, Well_t, History_t>;
+            using Base::ext_pressure;
+            using Base::P;
+            using Base::grid2D;
+            using Base::well;
+
             IncompressibleFluidField(
                 const RealType start_time,
                 const Fluid_t &fluid,
                 const Logs::Permeability &permeability,
                 const Logs::ExternalPressure &ext_pressure,
                 const Well_t &well,
+                const cptr<History_t> history,
                 const cptr<Grid2D_t> grid2D)
-                : fluid{fluid},
-                  permeability{permeability},
-                  ext_pressure{ext_pressure},
-                  P_ext{Properties::FieldFactory::create(ext_pressure, grid2D)},
-                  thickness_log{grid2D->first_coord().control_volumes},
-                  well{well},
-                  grid2D{grid2D},
-                  auxillary_term{set_auxillary_term(fluid, ext_pressure, permeability, grid2D)}
+                : Base{
+                      start_time, fluid,
+                      permeability,
+                      ext_pressure,
+                      well, history, grid2D},
+                  auxillary_term{set_auxillary_term(
+                    fluid, ext_pressure, 
+                    permeability, grid2D)}
             {
             }
 
-            void set_pressure_field(const StepPropertyContainer &RFP)
+            template<typename HistoryRecord_t>
+            void set_pressure_field(
+                const RealType time_step, 
+                const HistoryRecord_t &history_record)
             {
+                const StepPropertyContainer RFP{well.get_RFP(history_record)};
                 // calculate current pressure well and cement-sandwich
                 auto v{((auxillary_term.colwise() * RFP).colwise() + ext_pressure.log_vals).eval()};
                 P = std::make_shared<Properties::Pressure<Grid2D_t>>(
                     v,
                     grid2D);
+
+                Base::set_time(time_step, history_record);
             }
-
-            const Properties::Pressure<Grid2D_t> &current_pressure() const
-            {
-                return *P;
-            }
-
-        private:
-            std::shared_ptr<Properties::Pressure<Grid2D_t>> P;
-
-        public:
-            const Properties::Pressure<Grid2D_t> P_ext;
-            const Fluid_t &fluid;
-            const Well_t &well;
-            const cptr<Grid2D_t> grid2D;
-            const ControlVolumesContainer &thickness_log;
-            const Logs::Permeability &permeability;
-            const Logs::ExternalPressure &ext_pressure;
 
             const CellNodesContainer2D auxillary_term;
 

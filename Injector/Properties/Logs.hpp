@@ -167,6 +167,10 @@ namespace GPN
         {
             return StepPropertyGrid{StepPropertyContainer{lhs.log_vals * c}, lhs.grid};
         }
+        auto operator/(const StepPropertyGrid &lhs, RealType c)
+        {
+            return lhs*(1/c);
+        }
         auto operator*(const StepPropertyGrid &lhs, const StepPropertyGrid &rhs)
         {
             return StepPropertyGrid{StepPropertyContainer{lhs.log_vals * rhs.log_vals}, lhs.grid};

@@ -83,16 +83,30 @@ namespace GPN
         struct Rate : public SomeProperty
         {
         };
+        struct TimeStep : public SomeProperty
+        {
+        };
+        struct StartTime : public SomeProperty
+        {
+        };
 
         struct Record
         {
-            Record(const Pressure pressure, const Rate rate, const InjectorRegimes::Type type)
-                : pressure{pressure}, rate{rate}, type{type}
+            Record(
+                const Pressure pressure,
+                const Rate rate,
+                const InjectorRegimes::Type type,
+                const StartTime start_time,
+                const TimeStep time_step)
+                : pressure{pressure}, rate{rate}, type{type},
+                  start_time{start_time}, time_step{time_step},
+                  end_time{start_time+time_step}
             {
             }
             const RealType rate;
             const RealType pressure;
             const InjectorRegimes::Type type;
+            const RealType start_time, time_step, end_time;
         };
 
         History(const Logs::InjectorRate &rates,
@@ -127,6 +141,11 @@ namespace GPN
                 else
                     assert(false && "Wrong injector regime!");
             }
+        }
+
+        void reset()
+        {
+            pos = -1ll;
         }
 
         void advance()
@@ -168,12 +187,18 @@ namespace GPN
             return rates(pos);
         }
 
-        const auto get_record(const auto idx) const
+        const auto get_record(auto idx) const
         {
             assert(idx >= 0ll);
             assert(idx < (ptrdiff_t)size());
-            return Record{Pressure{pressures(idx)}, Rate{rates(idx)}, regimes[idx]};
+            return Record{
+                Pressure{pressures(idx)}, 
+                Rate{rates(idx)}, 
+                regimes[idx],
+                StartTime{time_moments[idx]},
+                TimeStep{time_steps(idx)}};
         }
+
         const auto get_current_record() const
         {
             assert(pos >= 0ll);

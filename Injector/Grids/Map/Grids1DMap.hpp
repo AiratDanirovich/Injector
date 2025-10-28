@@ -44,12 +44,14 @@ namespace GPN
         template <typename CoordinateType_t, ptrdiff_t start_margin>
         struct AxesGridMap
         {
+        private:
             using cMarginMap1D = Eigen::Map<const ControlVolumesContainer>;
+
+        public:
             using Axes = CoordinateType_t;
 
             AxesGridMap(const AxesGrid<CoordinateType_t> &axes_grid)
                 : axes_grid{axes_grid},
-                  dual_stencils{axes_grid.dual_stencils},
                   control_volumes{
                       axes_grid.volumes().data() + start_margin,
                       axes_grid.volumes().size() - start_margin},
@@ -58,8 +60,7 @@ namespace GPN
                       axes_grid.mesh_nodes.size() - start_margin},
                   dual_nodes{
                       axes_grid.dual_nodes.data() + start_margin,
-                      axes_grid.dual_nodes.size() - start_margin
-                      }
+                      axes_grid.dual_nodes.size() - start_margin}
             {
             }
 
@@ -72,7 +73,15 @@ namespace GPN
                 return axes_grid.dual_size() - start_margin;
             }
 
-            const GridDualStencilsMap<start_margin> dual_stencils;
+            auto dual_front() const
+            {
+                return dual_nodes(0ll);
+            }
+            auto dual_back() const
+            {
+                return dual_nodes(dual_nodes.size() - 1ll);
+            }
+
             const cMarginMap1D control_volumes;
 
             const cMarginMap1D mesh_nodes;

@@ -12,12 +12,12 @@
 #include <Injector/Grids/Grids2D.hpp>
 #include <Injector/Grids/GridRefiners.hpp>
 #include <Injector/History/History.hpp>
-#include <Injector/History/RatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Well/Well.hpp>
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
+#include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleRatesFactory.hpp>
 #include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleFluid.hpp>
 #include <Injector/Model/Heat/HeatBoundaryConditions.hpp>
 #include <Injector/Model/Completion.hpp>
@@ -166,8 +166,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             permeability_stencils,
             grid_z},
         medium_compressibility_stencils,
-        ext_pressure_stencils,
-        grid_z};
+        ext_pressure_stencils};
 
     // make fluid
     const PhasePropertiesJT water{
@@ -228,6 +227,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             hydrodynamics.permeability,
             hydrodynamics.ext_pressure,
             well,
+            history,
             grid2D});
 
     auto ptr_pressure_field{
@@ -237,6 +237,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             hydrodynamics.permeability,
             hydrodynamics.ext_pressure,
             well,
+            history,
             grid2D)};
 
     // rates field factory

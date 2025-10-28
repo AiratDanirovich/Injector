@@ -7,10 +7,10 @@
 #include <Injector/Grids/Grids2D.hpp>
 #include <Injector/Grids/GridRefiners.hpp>
 #include <Injector/History/History.hpp>
-#include <Injector/History/RatesFactory.hpp>
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Well/Well.hpp>
+#include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleRatesFactory.hpp>
 #include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleFluid.hpp>
 #include <Injector/Properties/Logs.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
@@ -172,6 +172,7 @@ TEST_CASE("CrossFlow", "")
             permeability,
             external_pressure,
             well,
+            history,
             grid2D});
 
     shared_ptr<IncompressibleFluidField_t>
@@ -182,6 +183,7 @@ TEST_CASE("CrossFlow", "")
                 permeability,
                 external_pressure,
                 well,
+                history,
                 grid2D)};
 
     // rates field factory
