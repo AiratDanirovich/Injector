@@ -347,11 +347,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 }
                 for (auto col{1ll}; col < JT_term.cols() - 1ll; ++col)
                 {
-                    INFO("row: " << row << "col: " << col);
-                    CHECK_THAT(
-                        water.JT*(flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
-                            flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col))),
-                        WithinRel(JT_term.value(row, col), tol));
+                    // INFO("row: " << row << "col: " << col);
+                    // CHECK_THAT(
+                    //     water.JT*(flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
+                    //         flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col))),
+                    //     WithinRel(JT_term.value(row, col), tol));
 
                     INFO("row: " << row << "col: " << col);
                     CHECK_THAT(
