@@ -323,11 +323,15 @@ Wrapper::Wrapper(
     const auto &[times, states] = solver.solution();
     this->time = times;
     
-    // const auto &[p_times, p_states] = solver.solution();
+    const auto& [p_times, p_states] = ptr_rates_factory->solution;
 
     if (!fs::is_directory("output") || !fs::exists("output")) // Check if src folder exists
     {
         fs::create_directory("output"); // create src folder
+    }
+    if (!fs::is_directory("output/pressure") || !fs::exists("output/pressure")) // Check if src folder exists
+    {
+        fs::create_directory("output/pressure"); // create src folder
     }
 
     try
@@ -365,7 +369,7 @@ Wrapper::Wrapper(
                       << grid.transpose().format(commaFmt) << '\n';
                     for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
                     {
-                        f << t << sep << times[t] << sep
+                        f << t << sep << p_times[t] << sep
                           << p_states[t].cur_state.row(z).format(commaFmt) << '\n';
                     }
 
