@@ -81,8 +81,8 @@ namespace GPN
                 assert(mobility.face_vals_axes2.rows() == first_size);
                 const auto second_size_rock{second_size - Grid2D_t::l_margin - 1ll};
                 assert(mobility.face_vals_axes2.cols() == second_size_rock);
-                axes2_value.middleCols(Grid2D_t::l_margin + 1ll, second_size_rock) =
-                    mobility_factor;
+            //    axes2_value.middleCols(Grid2D_t::l_margin + 1ll, second_size_rock) =
+            //        mobility_factor;
 
                 const auto& P{get_pressure_field()};
                 for(auto col{Grid2D_t::l_margin + 1ll}, count{0ll}; count < second_size_rock; ++col, ++count)

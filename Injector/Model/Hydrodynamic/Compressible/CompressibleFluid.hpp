@@ -109,7 +109,7 @@ namespace GPN
                 Eigen::ArrayX<RealType> out{well.RFP_weights / (
                     two_pi / std::log(r3 / r2_face) * 
                     rock_field_props.mobility_axes2.col(Grid2D_t::l_margin) * 
-                    grid2D_rocks->first_coord().control_volumes)};
+                    grid2D_rocks->first_coord().volumes())};
 
                     for(auto row{0ll}; row < grid2D_rocks->first_coord().mesh_size(); ++row)
                     {

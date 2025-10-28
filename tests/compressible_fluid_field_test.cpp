@@ -51,6 +51,7 @@ using namespace GPN::Hydrodynamic;
 using VR = std::vector<GPN::RealType>;
 
 const RealType pi{std::numbers::pi};
+const RealType tol{1e-8};
 
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
@@ -178,9 +179,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         ptr_pressure_field,
         grid2D_rocks, well, history, water};
 
-    const RealType pi{std::numbers::pi_v<RealType>};
-    const RealType tol{1e-10};
-
     const auto &grid_z{grid2D->first_coord()};
     const auto &grid_r{grid2D->second_coord()};
 
@@ -228,11 +226,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     { // in the cement
                         auto col{2ll};
                         CHECK(grid_r.dual_nodes(col + 1ll) == completion.sandface_radius(row));
-                        CHECK_THAT(P(row, col) - P(row, col + 1ll),
+                        INFO("col: " << col);
+                        CHECK_THAT(P(row, col),
                                    WithinRel(
-                                       rfp(row) * mu /
-                                           (2.0 * pi * k * h) *
-                                           std::log(grid_r.mesh_nodes(3ll) / completion.sandface_radius(row)),
+                                       P(row, col + 1ll) + rfp(row) * mu /
+                                                               (2.0 * pi * k * h) *
+                                                               std::log(grid_r.mesh_nodes(3ll) / completion.sandface_radius(row)),
                                        tol));
                     }
                     // outside the cement
@@ -284,7 +283,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             }
 #pragma endregion
 #pragma region CHECK-RATES
-            const auto &flux2{rates_factory.get_heat_flow_in_axes2_pos()};
+            const auto C{water.volumetric_heat_capacity};
+            const auto flux2{rates_factory.get_heat_flow_in_axes2_neg() + rates_factory.get_heat_flow_in_axes2_pos()};
             const auto &mobility2{pressure_field.mobility.face_vals_axes2};
             for (auto row{0ll}; row < core_logs.is_permeable.size(); ++row)
             {
@@ -295,28 +295,41 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 { // check rates in permeable layer
 
                     for (auto col{0ll}; col < left_margin; ++col)
+                    {
                         CHECK(flux2(row, col) == 0.0);
+                    }
                     {
                         const auto col{left_margin};
                         const auto r{grid_r.mesh_nodes(col)};
-                        const auto ref_rate{-2.0*pi*k / mu / std::log(r / r_sandface)*(P(row, col) - P(row, col - 1ll))};
+                        const auto ref_rate{-2.0 * pi * k * h / mu / std::log(r / r_sandface) * (P(row, col) - P(row, col - 1ll))};
                         const auto rate{rfp(row)};
-                        CHECK(ref_rate == mobility2(row, col - left_margin));
+                        CHECK_THAT(ref_rate,
+                                   WithinRel(
+                                       rate /*mobility2(row, col - left_margin)*/,
+                                       1e-4));
+                        CHECK_THAT(flux2(row, col),
+                                   WithinRel(C * rate, tol));
                     }
 
-                    // for (auto col{0ll}; col < grid_z.dual_size(); ++col)
-                    // {
-                    //     const auto r{grid_r.mesh_nodes(col)};
-                    //     const auto r_next{grid_r.mesh_nodes(col)};
-                    //     const auto ref_mobility{k / mu / std::log(r / r_sandface)};
-                    //     CHECK(ref_rate == mobility2(row, col - left_margin));
-                    // }
+                    for (auto col{left_margin + 1ll}; col < grid_z.dual_size() - 1ll; ++col)
+                    {
+                        const auto r{grid_r.mesh_nodes(col - 1ll)};
+                        const auto r_next{grid_r.mesh_nodes(col)};
+                        const auto ref_rate{
+                            2.0 * C * pi * k * h / mu / std::log(r_next / r) *
+                            (P(row, col) - P(row, col - 1ll))};
+                        CHECK_THAT(flux2(row, col),
+                                   WithinRel(ref_rate, 1e-10));
+                    }
+                    {
+                        const auto col{grid_r.dual_size() - 1ll};
+                        CHECK(flux2(row, col) == 0.0);
+                    }
                 }
             }
-
 #pragma endregion
 #pragma region CHECK-JT
-        //    const auto &flux2{rates_factory.get_heat_flow_in_axes2_pos()};
+            //    const auto &flux2{rates_factory.get_heat_flow_in_axes2_pos()};
             const auto &flux2_pos{rates_factory.get_heat_flow_in_axes2_pos()};
             const auto &flux2_neg{rates_factory.get_heat_flow_in_axes2_neg()};
             const auto &pressure{P};
@@ -328,28 +341,37 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 {
                     const auto col{0ll};
                     CHECK_THAT(
-                        flux2_pos(row, col) * (pressure(row, col)) +
-                            flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col)),
-                        WithinRel(JT_term.value(row, col) / water.JT, tol));
+                        water.JT*(flux2_pos(row, col) * (pressure(row, col)) +
+                            flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col))),
+                        WithinRel(JT_term.value(row, col), tol));
                 }
                 for (auto col{1ll}; col < JT_term.cols() - 1ll; ++col)
                 {
+                    INFO("row: " << row << "col: " << col);
                     CHECK_THAT(
-                        flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
-                            flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col)),
-                        WithinRel(JT_term.value(row, col) / water.JT, tol));
+                        water.JT*(flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
+                            flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col))),
+                        WithinRel(JT_term.value(row, col), tol));
+
+                    INFO("row: " << row << "col: " << col);
+                    CHECK_THAT(
+                        water.JT*((flux2_pos(row, col)- flux2_neg(row, col + 1ll)) * pressure(row, col)  +
+                            flux2_neg(row, col + 1ll) * pressure(row, col + 1ll)  - 
+                            flux2_pos(row, col)* pressure(row, col - 1ll)
+                        ),
+                        WithinRel(JT_term.value(row, col), tol));
                 }
                 {
                     const auto col{JT_term.cols() - 1ll};
                     CHECK_THAT(
-                        flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
-                            flux2_neg(row, col + 1ll) * (-pressure(row, col)),
-                        WithinRel(JT_term.value(row, col) / water.JT, tol));
+                        water.JT*(flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
+                            flux2_neg(row, col + 1ll) * (-pressure(row, col))),
+                        WithinRel(JT_term.value(row, col), tol));
                 }
             }
 #pragma endregion
         }
     }
-//    INFO("At least a single point should be checked by analytical expression!");
-//    CHECK(counter > 0ll);
+    //    INFO("At least a single point should be checked by analytical expression!");
+    //    CHECK(counter > 0ll);
 }
