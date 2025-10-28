@@ -8,6 +8,7 @@
 
 #include <Injector/Properties/FlowField.hpp>
 #include <Injector/Properties/FaceProperties.hpp>
+#include <Injector/Properties/JT_FieldFactory.hpp>
 
 namespace GPN
 {
@@ -105,6 +106,20 @@ namespace GPN
                             axes2_value},
                         // multiply by heat capacity
                         fluid.volumetric_heat_capacity);
+            }
+
+            const auto get_spatial_JT_contribution() const
+            {
+                return Properties::JT_FieldFactory::create(*this).values();
+            }
+
+            const auto get_heat_flow_in_axes1() const
+            {
+                return heat_flow_field->axes1_as_face_normal_pos+heat_flow_field->axes1_as_face_normal_neg;
+            }
+            const auto get_heat_flow_in_axes2() const
+            {
+                return heat_flow_field->axes2_as_face_normal_pos+heat_flow_field->axes2_as_face_normal_neg;
             }
 
             const auto &get_heat_flow_in_axes1_pos() const

@@ -34,20 +34,22 @@ namespace GPN
     return EqSolver::State::State2D{EqSolver::State::State2D::FillWithFunctor(*grid, FunctorIC{geotherma}, t0)};
   }
 
-  template <typename Well_t, typename Hydro_t>
+  template <typename Well_t, typename History_t, typename Hydro_t, typename RatesFactory_t>
   struct FunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
   {
     using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
     using BCType = BoundaryConditions::GeneralBC::BoundaryCondition::BCType;
-    using ConvectionFieldFactory_t =
-        FaceProperties::IncompressibleRatesFactory<
-            Grid2D_t, Well_t, History, PhasePropertiesJT, Hydro_t>;
+    // using RatesFactory_t =
+    //     FaceProperties::CompressibleRatesFactory<
+    //         Grid2D_t, Well_t, History, PhasePropertiesJT, Hydro_t>;
     FunctorBC(
-        const ptr<ConvectionFieldFactory_t> flow_field, // volumetric heat flow rate
+                const cptr<History_t> history,
+        const cptr<RatesFactory_t> flow_field, // volumetric heat flow rate
         const Logs::Geotherma &geotherma,
         const cptr<const Grid2D_t> grid_ptr)
         : flow_field{flow_field},
           geotherma{geotherma},
+          history{history},
           grid_ptr{grid_ptr}
     {
     }
@@ -83,7 +85,7 @@ namespace GPN
       if (z == grid_ptr->first_coord().dual_front())
       { // inflow with temperature from history,
         // outflow is accounted for in the matrix
-        return std::max(0.0, flow_field->get_heat_flow_in_axes1()(0ll, r_id)) * flow_field->get_temperature();
+        return std::max(0.0, flow_field->get_heat_flow_in_axes1()(0ll, r_id)) * history->temperature();
       }
 
       if (z == grid_ptr->first_coord().dual_back())
@@ -102,7 +104,8 @@ namespace GPN
   protected:
     const Logs::Geotherma &geotherma;
     const cptr<const Grid2D_t> grid_ptr;
-    const cptr<ConvectionFieldFactory_t> flow_field;
+    const cptr<RatesFactory_t> flow_field;
+    const cptr<History_t> history;
   };
 
 } // GPN
