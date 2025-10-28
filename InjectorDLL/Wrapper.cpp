@@ -92,7 +92,7 @@ Wrapper::Wrapper(
     const VR &geotherma_nodes, // m, /* nodes for geotherma interpolation */
     const VR &geotherma_vals,  // K, /* reference vals for interpolation */
     // temporal grid
-    const RealType start_time,      // start time in seconds
+    const RealType start_time,   // start time in seconds
     const VR &time_intervals,    // intervals of const rates)
     const RealType t_minor_step, // time step used for numerical integration
     // well
@@ -191,16 +191,16 @@ Wrapper::Wrapper(
         permeability_stencils,
         grid_z};
 
-    const Logs::Hydrodynamics::BaseHydrodynamics 
-    base_hydrodynamics{
-        Logs::Rocks::CoreSampleLogs{
-            is_permeable_stencils,
-            is_perforated_stencils,
-            porosity_stencils,
-            permeability_stencils,
-            grid_z},
-        medium_compressibility_stencils,
-        ext_pressure_stencils};
+    const Logs::Hydrodynamics::BaseHydrodynamics
+        base_hydrodynamics{
+            Logs::Rocks::CoreSampleLogs{
+                is_permeable_stencils,
+                is_perforated_stencils,
+                porosity_stencils,
+                permeability_stencils,
+                grid_z},
+            medium_compressibility_stencils,
+            ext_pressure_stencils};
 
     const Properties::Rocks::RocksProps
         rock_field_props{
@@ -322,6 +322,8 @@ Wrapper::Wrapper(
 
     const auto &[times, states] = solver.solution();
     this->time = times;
+    
+    // const auto &[p_times, p_states] = solver.solution();
 
     if (!fs::is_directory("output") || !fs::exists("output")) // Check if src folder exists
     {
@@ -343,17 +345,33 @@ Wrapper::Wrapper(
         {
             if (core_logs.is_permeable(z) == 1.0)
             {
-                ofstream f{std::string{"output/layer_"} + std::to_string(layer_id) + std::string{".csv"}};
-
-                f << sep << sep
-                  << grid.transpose().format(commaFmt) << '\n';
-                for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
                 {
-                    f << t << sep << times[t] << sep
-                      << states[t].cur_state.row(z).format(commaFmt) << '\n';
-                }
+                    ofstream f{std::string{"output/layer_"} + std::to_string(layer_id) + std::string{".csv"}};
 
-                f.close();
+                    f << sep << sep
+                      << grid.transpose().format(commaFmt) << '\n';
+                    for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
+                    {
+                        f << t << sep << times[t] << sep
+                          << states[t].cur_state.row(z).format(commaFmt) << '\n';
+                    }
+
+                    f.close();
+                }
+                {
+                    ofstream f{std::string{"output/pressure/layer_"} + std::to_string(layer_id) + std::string{".csv"}};
+
+                    f << sep << sep
+                      << grid.transpose().format(commaFmt) << '\n';
+                    for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
+                    {
+                        f << t << sep << times[t] << sep
+                          << p_states[t].cur_state.row(z).format(commaFmt) << '\n';
+                    }
+
+                    f.close();
+
+                }
                 ++layer_id;
             }
         }
