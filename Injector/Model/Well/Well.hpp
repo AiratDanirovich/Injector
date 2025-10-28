@@ -289,6 +289,9 @@ namespace GPN
         {
             return get_verticle_cement_flow(history_record.rate, history_record.pressure);
         }
+        
+        const StepPropertyContainer &RFP_weights;
+        const StepPropertyContainer &WFP_weights;
 
     private:
         StepPropertyContainer get_RFP(
@@ -346,8 +349,6 @@ namespace GPN
         }
 
         const RealType weights_sum;
-        const StepPropertyContainer &RFP_weights;
-        const StepPropertyContainer &WFP_weights;
 
         const CrossFlow::CrossFlows cross_flows;
     };

@@ -212,6 +212,10 @@ namespace GPN
             }
 
         protected:
+            /// @brief Area of the ring divided by 2*pi
+            /// @param x1 Smaller radius
+            /// @param x2 Larger radius
+            /// @return The area
             static RealType volume(RealType x1, RealType x2)
             {
                 assert(x2 > x1);

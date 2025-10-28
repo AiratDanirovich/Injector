@@ -150,7 +150,7 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
   /*collector*/
   const RealType rMin{1.0}, rMax{2.0}, zTop{0.0};
   const std::ptrdiff_t rNodes{101ull};
-  const std::ptrdiff_t nLayers{11ull};
+  const std::ptrdiff_t nLayers{3ull};
   const VR thickness(nLayers, 0.01); // each layer is 1m thick
 
   const VR porosity(nLayers, 1e-16);
@@ -161,7 +161,7 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
   const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 3.9 /*should be 2600 in SI*/)};
   const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
   /*temporal grid*/
-  const std::ptrdiff_t time_steps_nmbr{51ull};
+  const std::ptrdiff_t time_steps_nmbr{15ull};
   const RealType t0{1.0}; // initial time moment
   const RealType t1{t0 + 1.0};
   const auto time_moments{

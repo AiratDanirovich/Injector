@@ -34,6 +34,9 @@ namespace GPN
             {
             }
 
+            /// @brief set the flow field at the next time moment
+            /// @param t current time moment
+            /// @param t_step step to the next time moment
             void set_flow_field(
                 double t, RealType t_step)
             { 
@@ -42,17 +45,17 @@ namespace GPN
 
                 // the filed is updated at every time step
                 // non-stationary hydrodynamics is assumed
+                pressure_field->set_pressure_field(t_step, get_history_record());
 
-                // volumetric flow field in two directions
+                // volumetric flow field in two directions is calculated,
+                // once the pressure field is calculated
                 heat_flow_field =
                     std::make_shared<FaceProperties::HeatFlowField>(
                         // create ReservoirFlowField
                         FaceProperties::FlowFactory::create_from_well(
                             history->get_current_record(), well, *grid2D),
-                        // multiple by heat capaity
+                        // multiply by heat capacity
                         fluid.volumetric_heat_capacity);
-
-                pressure_field->set_pressure_field(well.get_RFP(get_history_record()));
             }
 
             const auto get_spatial_JT_contribution() const
@@ -112,7 +115,7 @@ namespace GPN
             const Well_t &well;
             const ptr<History_t> history;
             const Fluid_t &fluid;
-            cptr<Hydrodynamics_t> pressure_field;
+            ptr<Hydrodynamics_t> pressure_field;
 
         protected:
             cptr<FaceProperties::HeatFlowField> heat_flow_field;
@@ -169,6 +172,5 @@ namespace GPN
             const cptr<Grid2D_t> grid2D;
             const cptr<FaceProperties::HeatFlowField> heat_flow_field;
         };
-
     } // FaceProperties
 } // GPN
