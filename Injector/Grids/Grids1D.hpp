@@ -229,7 +229,6 @@ namespace GPN
         public:
             AxesGrid(const GridDual &dual_nodes) noexcept
                 : GridDual{dual_nodes},
-                  dual_stencils{dual_nodes.dual_stencils},                                   // copy nodes of dual mesh
                   control_volumes{CoordinateType_t::control_volumes(dual_nodes.dual_nodes)}, // make volumes of control cells
                   mesh_steps{CoordinateType_t::mesh_steps(dual_nodes.dual_nodes, Axes{})}
             {
@@ -264,7 +263,6 @@ namespace GPN
 
             auto size() const = delete;
 
-            const GridDualStencils dual_stencils;
             const ControlVolumesContainer control_volumes;
 
         public:

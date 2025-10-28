@@ -4,6 +4,7 @@
 #include <array>
 #include <tuple>
 #include <cassert>
+#include <type_traits>
 
 #include <Eigen/Dense>
 #include <Eigen/Core>
@@ -21,10 +22,14 @@ namespace GPN
 {
     namespace EqSolver
     {
+        struct EmptyConvectionField
+        {
+        };
+
         namespace FullImplicit
         {
             template <
-                typename Grid_t,
+                typename Grid2D_t,
                 typename Capacity_t,
                 typename ConvectionTermFactory_t,
                 typename BC_t>
@@ -39,7 +44,7 @@ namespace GPN
                     typename LaplaceFactor_t>
                 Solver(
                     const LaplaceFactor_t &laplace_factor,
-                    const cptr<Grid_t> grid,
+                    const cptr<Grid2D_t> grid,
                     const Capacity_t &time_factor,
                     ptr<ConvectionTermFactory_t> convection_factory,
                     const State::State2D &initial_state,
@@ -62,8 +67,8 @@ namespace GPN
                     states.reserve(10ull);
                     save_state();
                 }
-        //        Solver(const Solver &) = default;
-        //        Solver(Solver &&) noexcept = default;
+                //        Solver(const Solver &) = default;
+                //        Solver(Solver &&) noexcept = default;
 
                 void save_state()
                 {
@@ -121,10 +126,13 @@ namespace GPN
 
                 auto advance(RealType tau)
                 {
-                    // update convection field
-                    convection_factory->set_flow_field(cur_time, tau);
+                    if constexpr (std::is_same_v<ConvectionTermFactory_t, EmptyConvectionField> == false)
+                    { // there is convection field
+                        // update convection field
+                        convection_factory->set_flow_field(cur_time, tau);
+                    }
                     // update types of boundary conditions
-                    bc.set_bc_type(cur_time+tau);
+                    bc.set_bc_type(cur_time + tau);
 
                     ptrdiff_t A_size{first_coord_size * second_coord_size};
                     assert(A_size == grid->mesh_size());
@@ -144,13 +152,30 @@ namespace GPN
 
                     assert(A_size == tau_factor.size());
 
-                    assemble_y(tripletList);
-                    assemble_x(tripletList);
+                    if constexpr (std::is_same_v<ConvectionTermFactory_t, EmptyConvectionField> == false)
+                    { // there is convection field
+                        assemble_y(tripletList);
+                        assemble_x(tripletList);
+                    }
+                    else
+                    { // there is no convection field
+                        assemble_y_noconvection(tripletList);
+                        assemble_x_noconvection(tripletList);
+                    }
 
                     A.setFromTriplets(tripletList.begin(), tripletList.end());
                     A.diagonal() = A.diagonal() + tau_factor.reshaped(A_size, 1ll).matrix();
 
-                    RHS_t rhs{assemble_RHS(state, tau_factor, A_size)};
+                    RHS_t rhs{};
+                    if constexpr (std::is_same_v<ConvectionTermFactory_t, EmptyConvectionField> == false)
+                    { // there is convection field
+                        rhs = assemble_RHS(state, tau_factor, A_size);
+                    }
+                    else
+                    { // there is no convection field
+                        rhs = assemble_RHS_noconvection(state, tau_factor, A_size);
+                    }
+
                     // BC
                     applyBC(A, rhs);
 
@@ -166,10 +191,20 @@ namespace GPN
                     const auto tau_factor,
                     const auto A_size) const
                 {
-                    return 
-                        (state.cur_state.array() * tau_factor +
-                        convection_factory->get_spatial_JT_contribution()).reshaped(A_size, 1ll)
-                            .matrix();
+                    return (state.cur_state.array() * tau_factor +
+                            convection_factory->get_spatial_JT_contribution())
+                        .reshaped(A_size, 1ll)
+                        .matrix();
+                }
+                
+                RHS_t assemble_RHS_noconvection(
+                    const auto state,
+                    const auto tau_factor,
+                    const auto A_size) const
+                {
+                    return (state.cur_state.array() * tau_factor)
+                        .reshaped(A_size, 1ll)
+                        .matrix();
                 }
 
                 struct Solution
@@ -195,7 +230,51 @@ namespace GPN
                     return {time_moments, states};
                 }
 
+                const State::State2D& get_state() const
+                {
+                    return state;
+                }
+
             protected:
+                void assemble_x_noconvection(auto &tripletList)
+                {
+                    //  Take every line for a fixed x node.
+                    //  It is a row of 2D grid representation
+                    for (auto row{0ll}; row < first_coord_size; ++row)
+                    {
+                        // copy Laplace term in y-direction for a fixed x
+                        const SpMatrix &A{splitX.LaplaceTerm(row)};
+
+                        // upper diagonal
+                        for (auto col{0ll}; col < second_coord_size - 1ll; ++col)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            tripletList.emplace_back(l, l + first_coord_size,
+                                                     A.coeff(col, col + 1ll));
+                        }
+
+                        // main diagonal
+                        const auto diag{(A.diagonal()).eval()};
+                        assert(diag.size() == second_coord_size);
+
+                        for (auto col{0ll}; col < second_coord_size; ++col)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            tripletList.emplace_back(l, l, diag(col));
+                        }
+
+                        // lower diagonal
+                        for (auto col{1ll}; col < second_coord_size; ++col)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            assert(l >= first_coord_size);
+                            tripletList.emplace_back(
+                                l, l - first_coord_size,
+                                A.coeff(col, col - 1ll));
+                        }
+                    }
+                }
+
                 void assemble_x(auto &tripletList)
                 {
                     const auto &split_flow_field_pos{
@@ -244,6 +323,44 @@ namespace GPN
                             tripletList.emplace_back(
                                 l, l - first_coord_size,
                                 A.coeff(col, col - 1ll) - flow_plus(col));
+                        }
+                    }
+                }
+
+                void assemble_y_noconvection(auto &tripletList)
+                {
+                    // take every line for a fixed y-node.
+                    // It is a col of 2D grid representation
+                    for (auto col{0ll}; col < second_coord_size; ++col)
+                    {
+                        // Laplace term
+                        const SpMatrix &A{splitY.LaplaceTerm(col)};
+
+                        // upper diagonal
+                        for (auto row{0ll}; row < first_coord_size - 1ll; ++row)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            tripletList.emplace_back(l, l + 1ll,
+                                                     A.coeff(row, row + 1ll));
+                        }
+
+                        // main diagonal
+                        const auto diag{(A.diagonal()).eval()};
+                        assert(diag.size() == first_coord_size);
+                        for (auto row{0ll}; row < first_coord_size; ++row)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            tripletList.emplace_back(l, l, diag(row));
+                        }
+
+                        // lower diagonal
+                        for (auto row{1ll}; row < first_coord_size; ++row)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            assert(l >= 1ll);
+                            tripletList.emplace_back(
+                                l, l - 1ll,
+                                A.coeff(row, row - 1ll));
                         }
                     }
                 }
@@ -305,7 +422,7 @@ namespace GPN
                 // by reference!
                 ptr<ConvectionTermFactory_t> convection_factory;
                 // required to keep grid in memory ////
-                const cptr<Grid_t> grid; //////////////
+                const cptr<Grid2D_t> grid; //////////////
                 ///////////////////////////////////////
                 const std::ptrdiff_t first_coord_size;
                 const std::ptrdiff_t second_coord_size;

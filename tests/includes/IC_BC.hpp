@@ -52,6 +52,11 @@ namespace GPN
     {
     }
 
+    /// @brief Left and right boundaries
+    /// @param z_id 
+    /// @param r 
+    /// @param t 
+    /// @return 
     RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t,
                         const BCType bc_type) const override
     {
@@ -97,7 +102,7 @@ namespace GPN
   protected:
     const Logs::Geotherma &geotherma;
     const cptr<const Grid2D_t> grid_ptr;
-    const ptr<ConvectionFieldFactory_t> flow_field;
+    const cptr<ConvectionFieldFactory_t> flow_field;
   };
 
 } // GPN

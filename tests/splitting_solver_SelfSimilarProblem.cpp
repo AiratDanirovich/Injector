@@ -143,7 +143,7 @@ RealType viscosity{6e-4}, density{1000}, capacity{4200}, heat_conductivity{0.6};
 /*collector*/
 const RealType rMin{1.0}, rMax{2.0}, zTop{0.0};
 const std::ptrdiff_t rNodes{301ull};
-const std::ptrdiff_t nLayers{11ull};
+const std::ptrdiff_t nLayers{3ull};
 const VR thickness(nLayers, 0.01); // each layer is 1m thick
 const VR is_permeable_stencils(nLayers, 1.0);
 const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 0.0)};
@@ -153,7 +153,7 @@ const LogValuesContainer solid_heatconductivity_stencils{LogValuesContainer::Con
 const LogValuesContainer solid_density_stencils{LogValuesContainer::Constant(nLayers, 3.9 /*should be 2600 in SI*/)};
 const LogValuesContainer solid_specific_heatcapacity_stencils{LogValuesContainer::Constant(nLayers, 1.0 /*should be 770 in SI*/)};
 /*temporal grid*/
-const std::ptrdiff_t time_steps_nmbr{51ull};
+const std::ptrdiff_t time_steps_nmbr{11ull};
 const RealType t0{1.0}; // initial time moment
 const RealType t1{t0 + 1.0};
 const RealType time_step{(t1 - t0) / time_steps_nmbr};

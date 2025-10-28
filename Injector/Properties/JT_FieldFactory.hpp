@@ -2,8 +2,8 @@
 
 #include <cassert>
 
+#include <Injector/Grids/Defines.h>
 #include <Injector/Properties/PhysicalField.hpp>
-#include <Injector/History/RatesFactory.hpp>
 
 namespace GPN
 {
