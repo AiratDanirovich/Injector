@@ -5,6 +5,7 @@
 #include <Injector/Grids/Defines.h>
 
 #include <Injector/Solver/BoundaryConditions.hpp>
+#include <Injector/History/History.hpp>
 
 namespace GPN
 {
@@ -18,7 +19,8 @@ namespace GPN
                    cptr<const BCFunctorBase> functor,
                    const cptr<Fieldfactory_t> field_factory)
                 : BoundaryConditions::GeneralBC{grid, functor, BoundaryCondition::BCType::second},
-                field_factory{field_factory}
+                field_factory{field_factory},
+                history{field_factory->history}
             {
             }
 
@@ -28,7 +30,7 @@ namespace GPN
             //    bc_types[south_id] = BoundaryCondition::BCType::second; // top boundary
             //    bc_types[north_id] = BoundaryCondition::BCType::second; // bottom boundary
             //    bc_types[west_id] = BoundaryCondition::BCType::second;  // well axis of symmetry
-            if(field_factory->get_rate() > 0.0)
+            if(history->rate() > 0.0)
                 bc_types[east_id] = BoundaryCondition::BCType::second;  // external contour
             else
                 bc_types[east_id] = BoundaryCondition::BCType::first;  // external contour
@@ -36,6 +38,7 @@ namespace GPN
 
         protected:
             const cptr<Fieldfactory_t> field_factory;
+            const cptr<History> history;
         };
     } // Heat
 } // GPN
