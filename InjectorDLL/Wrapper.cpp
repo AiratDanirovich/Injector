@@ -10,6 +10,7 @@
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Grids/Grids2D.hpp>
+#include <Injector/Grids/Map/Grids2DMap.hpp>
 #include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Grids/GridRefiners.hpp>
 
@@ -19,8 +20,8 @@
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Well/WellFactory.hpp>
-#include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleFluid.hpp>
-#include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleRatesFactory.hpp>
+#include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluid.hpp>
+#include <Injector/Model/Hydrodynamic/Compressible/CompressibleRatesFactory.hpp>
 #include <Injector/Model/Heat/HeatBoundaryConditions.hpp>
 #include <Injector/Model/Completion.hpp>
 #include <Injector/Model/ExtrudedCasingFactory.hpp>
@@ -39,6 +40,7 @@
 #include <tests/includes/make_r_stencils.hpp>
 #include <tests/includes/set_is_permeable_stencils.hpp>
 #include <tests/includes/IC_BC.hpp>
+#include <tests/includes/make_water.hpp>
 
 #include <Eigen/Core>
 
@@ -75,6 +77,7 @@ Wrapper::Wrapper(
     // values are in SI
     const VR &thickness,                     // meter
     const VR &ext_pressure,                  // bar
+    const VR &medium_compressibility,        // 1/Pa
     const VR &solid_heatconductivity,        // Watt/(m*K)
     const VR &porosity,                      // 0.0 < porosity <= 1.0, --
     const VR &permeability_stencils,         // m^2
@@ -89,7 +92,7 @@ Wrapper::Wrapper(
     const VR &geotherma_nodes, // m, /* nodes for geotherma interpolation */
     const VR &geotherma_vals,  // K, /* reference vals for interpolation */
     // temporal grid
-    const RealType t_start,      // start time in seconds
+    const RealType start_time,      // start time in seconds
     const VR &time_intervals,    // intervals of const rates)
     const RealType t_minor_step, // time step used for numerical integration
     // well
@@ -108,6 +111,11 @@ Wrapper::Wrapper(
         is_perforated.cend(),
         is_perforated_stencils.begin());
     LogValuesContainer ext_pressure_stencils{transfer_to_eigen(ext_pressure, 1e5)};
+    LogValuesContainer medium_compressibility_stencils(medium_compressibility.size());
+    std::copy(
+        medium_compressibility.begin(),
+        medium_compressibility.end(),
+        medium_compressibility_stencils.begin());
     LogValuesContainer solid_density_stencils(solid_density.size());
     std::copy(
         solid_density.begin(),
@@ -164,33 +172,51 @@ Wrapper::Wrapper(
     const auto &grid_r{grid2D->second_coord()};
     const auto &grid_z{grid2D->first_coord()};
 
+    const cptr<Grids::CylinderGridRock> grid2D_rocks{
+        make_shared<Grids::CylinderGridRock>(grid2D)};
+    constexpr auto left_margin{3ll};
+    const auto &grid_rocks_z{grid2D_rocks->first_coord()};
+    const auto &grid_rocks_r{grid2D_rocks->second_coord()};
+
+    // make fluid
+    const PhasePropertiesJT water{make_water(data)};
+
     const ExtrudedCasing extr_completion{
         VarExtrudedCasingFactory::create(completion)};
     // collector
-    const Logs::Rocks::CoreSampleLogs core_data{
+    const Logs::Rocks::CoreSampleLogs core_logs{
         is_permeable_stencils,
         is_perforated_stencils,
         porosity_stencils,
         permeability_stencils,
         grid_z};
-    // make fluid
-    const PhasePropertiesJT water{
-        FluidFactory::create_water_JT(
-            Viscosity{viscosity},
-            GPN::Density{density},
-            GPN::SpecificHeatCapacity{capacity},
-            GPN::HeatConductivity{heat_conductivity_fluid},
-            JouleThomson{joule_thomson})};
+
+    const Logs::Hydrodynamics::BaseHydrodynamics 
+    base_hydrodynamics{
+        Logs::Rocks::CoreSampleLogs{
+            is_permeable_stencils,
+            is_perforated_stencils,
+            porosity_stencils,
+            permeability_stencils,
+            grid_z},
+        medium_compressibility_stencils,
+        ext_pressure_stencils};
+
+    const Properties::Rocks::RocksProps
+        rock_field_props{
+            base_hydrodynamics,
+            water,
+            grid2D_rocks};
 
     const auto RFP_weights{
         Logs::RFPFactory::create_from_container(
             RFP_weights_stencils,
-            core_data.is_permeable)};
+            core_logs.is_permeable)};
     const CrossFlows cross_flows{
         RFP_weights, from_coords, to_layers};
     const auto WFP_weights{
         create_WFP(
-            core_data.is_perforated,
+            core_logs.is_perforated,
             RFP_weights,
             cross_flows)};
 
@@ -223,32 +249,36 @@ Wrapper::Wrapper(
             is_permeable_stencils,
             grid_z)};
     // fluid model for the pressure field
-    using IncompressibleFluidField_t =
-        decltype(IncompressibleFluidField{
-            t_start,
+    using FluidField_t =
+        decltype(CompressibleFluidField{
+            start_time,
             water,
-            core_data.permeability,
-            external_pressure,
+            core_logs.permeability,
+            rock_field_props,
+            base_hydrodynamics.ext_pressure,
             well,
-            grid2D});
+            history,
+            grid2D_rocks});
 
     auto ptr_pressure_field{
-        make_shared<IncompressibleFluidField_t>(
-            t_start,
+        make_shared<FluidField_t>(
+            start_time,
             water,
-            core_data.permeability,
-            external_pressure,
+            core_logs.permeability,
+            rock_field_props,
+            base_hydrodynamics.ext_pressure,
             well,
-            grid2D)};
+            history,
+            grid2D_rocks)};
 
     // rates field factory
-    using IncompressibleRatesFactory_t =
-        decltype(FaceProperties::IncompressibleRatesFactory{
+    using RatesFactory_t =
+        decltype(FaceProperties::CompressibleRatesFactory{
+            ptr_pressure_field,
+            grid2D_rocks, well, history, water});
+    auto ptr_rates_factory{make_shared<RatesFactory_t>(
         ptr_pressure_field,
-        grid2D, well, history, water});
-    auto ptr_rates_factory{make_shared<IncompressibleRatesFactory_t>(
-        ptr_pressure_field,
-        grid2D, well, history, water)};
+        grid2D_rocks, well, history, water)};
     // initial condition
     std::unique_ptr<const Logs::Geotherma> geotherma{
         make_unique<Logs::Geotherma>(
@@ -258,14 +288,16 @@ Wrapper::Wrapper(
                 z_top,
                 grid2D->first_coord()))};
 
-    const auto initial_state{ICFactory(t_start, grid2D, *geotherma)};
+    const auto initial_state{GPN::ICFactory(start_time, grid2D, *geotherma)};
     // boundary conditions
     const GPN::Heat::HeatBC bc{
         grid2D,
-        std::make_shared<FunctorBC<
+        std::make_shared<GPN::FunctorBC<
             Well_CrossFlow,
-            IncompressibleFluidField_t>>(
-            ptr_rates_factory, *geotherma, grid2D),
+            History,
+            FluidField_t,
+            RatesFactory_t>>(
+            history, ptr_rates_factory, *geotherma, grid2D),
         ptr_rates_factory};
     // solver
     using Solver_t = decltype(Solver{
@@ -273,14 +305,14 @@ Wrapper::Wrapper(
         grid2D,
         heat_props.medium_vol_heatcapacity,
         ptr_rates_factory, initial_state,
-        bc, t_start});
+        bc, start_time});
 
-    auto solver_ptr = std::make_shared<Solver_t>(
+    auto solver_ptr{std::make_shared<Solver_t>(
         heat_face_props.medium_heat_conductivity,
         grid2D,
         heat_props.medium_vol_heatcapacity,
         ptr_rates_factory, initial_state,
-        bc, t_start);
+        bc, start_time)};
 
     const auto &solver{*solver_ptr};
 
@@ -309,7 +341,7 @@ Wrapper::Wrapper(
         const Eigen::IOFormat commaFmt(Eigen::StreamPrecision, Eigen::DontAlignCols, sep, sep, "", "", "", "");
         for (auto z{0ll}, layer_id{0ll}; z < grid2D->first_coord().mesh_nodes.size(); ++z)
         {
-            if (core_data.is_permeable(z) == 1.0)
+            if (core_logs.is_permeable(z) == 1.0)
             {
                 ofstream f{std::string{"output/layer_"} + std::to_string(layer_id) + std::string{".csv"}};
 

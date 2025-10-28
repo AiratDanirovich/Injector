@@ -33,6 +33,7 @@ int main()
     /*collector*/
     const VR thickness = data["collector"]["thickness"].get<VR>();
     const VR ext_pressure_stencils{data["collector"]["external_pressure"].get<VR>()};
+    const VR medium_compressibility_stencils{data["collector"]["medium_compressibility"].get<VR>()};
     // hydrodynamic logs
     const VR is_perforated_stencils = data["collector"]["is_perforated"].get<VR>();
     const VR porosity_stencils = data["collector"]["porosity"].get<VR>();
@@ -105,6 +106,7 @@ int main()
         // values are in SI
         thickness,                 // meter
         ext_pressure_stencils,     // bar
+        medium_compressibility_stencils, // 1/Pa
         heatconductivity_stencils, // Watt/(m*K)
         porosity_stencils,         // --
         permeability_stencils,     // m^2

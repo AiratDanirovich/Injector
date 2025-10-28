@@ -43,6 +43,7 @@ public:
         // values are in SI
         const VR &thickness,                   // meter
         const VR &ext_pressure,                // bar
+        const VR &medium_compressibility,      // 1/Pa
         const VR &conductivity,                // W/(m*K)
         const VR &porosity,                    // --
         const VR &permeability,                // m^2
