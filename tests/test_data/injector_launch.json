@@ -8,7 +8,9 @@
   },
   "collector": {
     "external_pressure": 
-                 [   0.0, 260, 260,  0.0],
+                 [   0.0, 260,  260,  0.0],
+    "medium_compressibility": 
+                 [   0.0, 2E-5, 2E-5, 0.0],
     "thickness": [   100, 2,   3,    21 ],
     "is_perforated":[0.0, 0.0, 1.0,  0.0],
     "cross_flow":{
@@ -17,7 +19,7 @@
       "to_layers": [1]
     },  
     "porosity":     [0.0, 1.0,  1.0,  0.0],
-    "permeability": [0.0, 0.07, 0.07, 0.0],
+    "permeability": [0.0, 7e-13, 7e-13, 0.0],
     "rate_division_types": ["KH", "explicit"],
     "rate_division_type": "KH",
     "explicit":{

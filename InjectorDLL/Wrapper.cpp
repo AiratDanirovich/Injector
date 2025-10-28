@@ -367,7 +367,7 @@ Wrapper::Wrapper(
 
                     f << sep << sep
                       << grid.transpose().format(commaFmt) << '\n';
-                    for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
+                    for (auto t{0ll}; t < (ptrdiff_t)p_times.size(); ++t)
                     {
                         f << t << sep << p_times[t] << sep
                           << p_states[t].cur_state.row(z).format(commaFmt) << '\n';
