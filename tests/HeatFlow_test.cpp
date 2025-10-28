@@ -301,6 +301,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     solver_manager.run(t_minor_step);
 
+    const auto& [p_times, p_states] = ptr_rates_factory->solution;
+
     // assert solution
     const double tol = 1E-11;
     const auto precision{1e-5};

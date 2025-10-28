@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <vector>
 
 #include <Injector/Grids/Defines.h>
 
@@ -9,6 +10,8 @@
 #include <Injector/Properties/FlowField.hpp>
 #include <Injector/Properties/FaceProperties.hpp>
 #include <Injector/Properties/JT_FieldFactory.hpp>
+
+#include <Injector/Solver/State2D.hpp>
 
 namespace GPN
 {
@@ -21,6 +24,19 @@ namespace GPN
         struct CompressibleRatesFactory
         {
             using OriginalGrid = typename Grid2D_t::OriginalGrid;
+
+            struct Solution
+            {
+                Solution(const auto history) 
+                {
+                    times.reserve(history->size());
+                    states.reserve(history->size());
+                }
+                std::vector<RealType> times;
+                std::vector<EqSolver::State::State2D> states;
+            };
+
+            Solution solution;
 
             CompressibleRatesFactory(
                 cptr<Hydrodynamics_t> pressure_field,
@@ -42,7 +58,8 @@ namespace GPN
                   mobility_factor{
                       set_mobility_factor(
                           pressure_field->mobility.face_vals_axes2,
-                          grid2D_rocks->first_coord().control_volumes)}
+                          grid2D_rocks->first_coord().control_volumes)},
+                  solution{history}
             {
             }
 
@@ -58,6 +75,15 @@ namespace GPN
                 // the filed is updated at every time step
                 // non-stationary hydrodynamics is assumed
                 pressure_field->set_pressure_field(t_step, get_history_record());
+
+                const auto mid_time{history->get_current_record().mid_time};
+                if ((t < mid_time) && (t + t_step > mid_time))
+                {
+                    /*Properties::Pressure<Grid2D_t>*/
+                    const auto &P{get_pressure_field()};
+                    solution.times.push_back(t + t_step / 2.0);
+                    solution.states.emplace_back(P.values());
+                }
 
                 // volumetric flow field in two directions is calculated,
                 // once the pressure field is calculated
@@ -82,13 +108,13 @@ namespace GPN
                 assert(mobility.face_vals_axes2.rows() == first_size);
                 const auto second_size_rock{second_size - Grid2D_t::l_margin - 1ll};
                 assert(mobility.face_vals_axes2.cols() == second_size_rock);
-            //    axes2_value.middleCols(Grid2D_t::l_margin + 1ll, second_size_rock) =
-            //        mobility_factor;
+                //    axes2_value.middleCols(Grid2D_t::l_margin + 1ll, second_size_rock) =
+                //        mobility_factor;
 
-                const auto& P{get_pressure_field()};
-                for(auto col{Grid2D_t::l_margin + 1ll}, count{0ll}; count < second_size_rock; ++col, ++count)
+                const auto &P{get_pressure_field()};
+                for (auto col{Grid2D_t::l_margin + 1ll}, count{0ll}; count < second_size_rock; ++col, ++count)
                 {
-                    axes2_value.col(col) = mobility_factor.col(count)*(P.col(col) - P.col(col-1ll));
+                    axes2_value.col(col) = mobility_factor.col(count) * (P.col(col) - P.col(col - 1ll));
                 }
 
                 for (auto row{0ll}; row < first_size; ++row)
@@ -115,11 +141,11 @@ namespace GPN
 
             const auto get_heat_flow_in_axes1() const
             {
-                return heat_flow_field->axes1_as_face_normal_pos+heat_flow_field->axes1_as_face_normal_neg;
+                return heat_flow_field->axes1_as_face_normal_pos + heat_flow_field->axes1_as_face_normal_neg;
             }
             const auto get_heat_flow_in_axes2() const
             {
-                return heat_flow_field->axes2_as_face_normal_pos+heat_flow_field->axes2_as_face_normal_neg;
+                return heat_flow_field->axes2_as_face_normal_pos + heat_flow_field->axes2_as_face_normal_neg;
             }
 
             const auto &get_heat_flow_in_axes1_pos() const
@@ -153,12 +179,12 @@ namespace GPN
             const Fluid_t &fluid;
 
             ptr<Hydrodynamics_t> pressure_field;
+
         protected:
             const ptrdiff_t first_size, second_size;
 
             cptr<FaceProperties::HeatFlowField> heat_flow_field;
             //    cptr<FaceProperties::ReservoirFlowField> volumetric_flow_field;
-
 
             const auto get_history_record() const
             {
