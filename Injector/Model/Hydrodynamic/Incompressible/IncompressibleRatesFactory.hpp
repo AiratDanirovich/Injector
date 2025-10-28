@@ -54,7 +54,7 @@ namespace GPN
                         // create ReservoirFlowField
                         FaceProperties::FlowFactory::create_from_well(
                             history->get_current_record(), well, *grid2D),
-                        // multiple by heat capaity
+                        // multiply by heat capacity
                         fluid.volumetric_heat_capacity);
             }
 
