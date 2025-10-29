@@ -293,7 +293,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
                 if (core_logs.is_permeable(row) == 1.0)
                 { // check rates in permeable layer
-
                     for (auto col{0ll}; col < left_margin; ++col)
                     {
                         CHECK(flux2(row, col) == 0.0);
@@ -301,7 +300,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     {
                         const auto col{left_margin};
                         const auto r{grid_r.mesh_nodes(col)};
-                        const auto ref_rate{-2.0 * pi * k * h / mu / std::log(r / r_sandface) * (P(row, col) - P(row, col - 1ll))};
+                        const auto ref_rate{
+                            -2.0 * pi * k * h / mu *
+                            (P(row, col) - P(row, col - 1ll)) / std::log(r / r_sandface)};
                         const auto rate{rfp(row)};
                         CHECK_THAT(ref_rate,
                                    WithinRel(
@@ -316,14 +317,24 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                         const auto r{grid_r.mesh_nodes(col - 1ll)};
                         const auto r_next{grid_r.mesh_nodes(col)};
                         const auto ref_rate{
-                            2.0 * C * pi * k * h / mu / std::log(r_next / r) *
-                            (P(row, col) - P(row, col - 1ll))};
+                            -2.0 * C * pi * k * h / mu *
+                            (P(row, col) - P(row, col - 1ll)) / std::log(r_next / r)};
                         CHECK_THAT(flux2(row, col),
                                    WithinRel(ref_rate, 1e-10));
                     }
                     {
                         const auto col{grid_r.dual_size() - 1ll};
                         CHECK(flux2(row, col) == 0.0);
+                    }
+// check rate signs
+                    for (auto col{left_margin + 1ll}; col < grid_z.dual_size() - 1ll; ++col)
+                    {
+                        const auto r{grid_r.mesh_nodes(col - 1ll)};
+                        const auto r_next{grid_r.mesh_nodes(col)};
+                        const auto ref_rate{
+                            -2.0 * C * pi * k * h / mu *
+                            (P(row, col) - P(row, col - 1ll)) / std::log(r_next / r)};
+                        CHECK(flux2(row, col)*flux2(row, left_margin) >= 0.0);
                     }
                 }
             }
@@ -341,8 +352,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 {
                     const auto col{0ll};
                     CHECK_THAT(
-                        water.JT*(flux2_pos(row, col) * (pressure(row, col)) +
-                            flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col))),
+                        water.JT * (flux2_pos(row, col) * (pressure(row, col)) +
+                                    flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col))),
                         WithinRel(JT_term.value(row, col), tol));
                 }
                 for (auto col{1ll}; col < JT_term.cols() - 1ll; ++col)
@@ -355,17 +366,21 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
                     INFO("row: " << row << "col: " << col);
                     CHECK_THAT(
-                        water.JT*((flux2_pos(row, col)- flux2_neg(row, col + 1ll)) * pressure(row, col)  +
-                            flux2_neg(row, col + 1ll) * pressure(row, col + 1ll)  - 
-                            flux2_pos(row, col)* pressure(row, col - 1ll)
-                        ),
+                        water.JT * ((flux2_pos(row, col) - flux2_neg(row, col + 1ll)) * pressure(row, col) +
+                                    flux2_neg(row, col + 1ll) * pressure(row, col + 1ll) -
+                                    flux2_pos(row, col) * pressure(row, col - 1ll)),
                         WithinRel(JT_term.value(row, col), tol));
                 }
                 {
                     const auto col{JT_term.cols() - 1ll};
+                    // CHECK_THAT(
+                    //     water.JT*(flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
+                    //         flux2_neg(row, col + 1ll) * (-pressure(row, col))),
+                    //     WithinRel(JT_term.value(row, col), tol));
+
                     CHECK_THAT(
-                        water.JT*(flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
-                            flux2_neg(row, col + 1ll) * (-pressure(row, col))),
+                        water.JT * ((flux2_pos(row, col) - flux2_neg(row, col + 1ll)) * pressure(row, col) -
+                                    flux2_pos(row, col) * pressure(row, col - 1ll)),
                         WithinRel(JT_term.value(row, col), tol));
                 }
             }
