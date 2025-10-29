@@ -60,7 +60,7 @@ namespace GPN
 
             const auto get_spatial_JT_contribution() const
             {
-                return Properties::JT_FieldFactory::create(*this).values();
+                return Properties::JT_FieldFactory::create_spatial(*this).values();
             }
 
             const auto &get_heat_flow_in_axes1() const

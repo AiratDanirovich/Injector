@@ -393,7 +393,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         const auto &flux2_neg{rates_factory.get_heat_flow_in_axes2_neg()};
         const auto &pressure{rates_factory.get_pressure_field().values()};
 
-        const auto JT_term{Properties::JT_FieldFactory::create(rates_factory)};
+        const auto JT_term{Properties::JT_FieldFactory::create_spatial(rates_factory)};
 
         for (auto row{0ll}; row < JT_term.rows(); ++row)
         {
