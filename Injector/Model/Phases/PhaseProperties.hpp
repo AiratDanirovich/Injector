@@ -80,11 +80,11 @@ namespace GPN
             JouleThomson JT) noexcept
             : PhaseProperties{props},
               JT{JT},
-              adiabatic_expansion{JT + 1.0/props.volumetric_heat_capacity}
+              adiabatic_factor{1.0 + JT*props.volumetric_heat_capacity}
         {
         }
 
-        const RealType JT, adiabatic_expansion;
+        const RealType JT, adiabatic_factor;
     };
 
     struct Water : public PhaseProperties
