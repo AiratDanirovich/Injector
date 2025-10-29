@@ -16,17 +16,20 @@ namespace GPN
             typename Well_t, typename History_t>
         struct SomeFluidField
         {
+            using Axes1 = std::decay_t<typename Grid2D_t::Axes1Coordinate_t>;
+
             SomeFluidField(
                 const RealType start_time,
                 const Fluid_t &fluid,
-                const Logs::Permeability &permeability,
-                const Logs::ExternalPressure &ext_pressure,
+                const Logs::Hydrodynamics::BaseHydrodynamics<Axes1>& base_hydrodynamics,
                 const Well_t &well,
                 const cptr<History_t> history,
                 const cptr<Grid2D_t> grid2D)
                 : fluid{fluid},
-                  permeability{permeability},
-                  ext_pressure{ext_pressure},
+                  base_hydrodynamics{base_hydrodynamics},
+                  permeability{base_hydrodynamics.permeability},
+                  porosity{base_hydrodynamics.porosity},
+                  ext_pressure{base_hydrodynamics.ext_pressure},
                   P_ext{set_initial_pressure(ext_pressure, grid2D)},
                   P{std::make_shared<Properties::Pressure<Grid2D_t>>(
                       set_initial_pressure(ext_pressure, grid2D))},
@@ -49,7 +52,9 @@ namespace GPN
             const Well_t &well;
             const cptr<Grid2D_t> grid2D;
             const ControlVolumesContainer &thickness_log;
+            const Logs::Hydrodynamics::BaseHydrodynamics<Axes1>& base_hydrodynamics;
             const Logs::Permeability &permeability;
+            const Logs::Porosity &porosity;
             const Logs::ExternalPressure &ext_pressure;
             const cptr<History_t> history;
 
