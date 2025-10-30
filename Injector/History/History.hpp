@@ -100,13 +100,14 @@ namespace GPN
                 const TimeStep time_step)
                 : pressure{pressure}, rate{rate}, type{type},
                   start_time{start_time}, time_step{time_step},
-                  end_time{start_time+time_step}
+                  end_time{start_time+time_step},
+                  mid_time{start_time + time_step/2.0}
             {
             }
             const RealType rate;
             const RealType pressure;
             const InjectorRegimes::Type type;
-            const RealType start_time, time_step, end_time;
+            const RealType start_time, time_step, end_time, mid_time;
         };
 
         History(const Logs::InjectorRate &rates,

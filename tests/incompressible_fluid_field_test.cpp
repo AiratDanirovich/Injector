@@ -216,7 +216,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         {
             CHECK_THAT(rock_face_props.mobility.face_vals_axes2(row, col),
                        WithinRel(
-                           core_logs.permeability(row)/ water.viscosity /
+                           core_logs.permeability(row) / water.viscosity /
                                std::log(grid_rocks_r.mesh_nodes(col + 1ll) /
                                         grid_rocks_r.mesh_nodes(col)),
                            tol));
@@ -320,6 +320,60 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     CHECK(
                         P.value(row, col) == base_hydrodynamics.ext_pressure(row));
             }
+        }
+#pragma endregion
+#pragma region VERIFY-RATES
+        {
+#pragma region CHECKS
+
+            // TODO: fix volumetric balance of fluid flow in reservoir, and in the well (if possible)
+
+            //     const auto rate{history->rate()};
+            //     const auto pressure{history->pressure()};
+            //     // verify flow field
+            //     const auto v1{rates_factory.get_heat_flow_in_axes1()}; // verticle flow
+            //     for (auto row{0ll}; row < v1.rows(); ++row)
+            //     {
+            //         CHECK(v1(row, 0ll) * rate >= 0.0); // flow in tube
+            //         CHECK(v1(row, 1ll) == 0.0);        // flow in tube-wall::annulus::column-wall
+            //         // CHECK(col == 2ll) // flow in cement is pretty much complex
+            //         for (auto col{3ll}; col < v1.cols(); ++col)
+            //             CHECK(v1(row, col) == 0.0);
+            //     }
+            //     const auto v2{rates_factory.get_heat_flow_in_axes2()}; // horizontal flow
+            //     // boundary conditions at r = 0.0
+            //     for (auto row{0ll}, col{0ll}; row < v2.rows(); ++row)
+            //     {
+            //         CHECK(v2(row, col) == 0.0);
+            //         CHECK_THAT(v1(row, col), WithinRel(v1(row + 1, col) + v2(row, col + 1ll), tol));
+            //     }
+            //     // compare against WFP
+            //     const auto WFP{(water.volumetric_heat_capacity * well.get_WFP(history->get_current_record())).eval()};
+            //     for (auto row{0ll}, col{1ll}; row < v2.rows(); ++row)
+            //     {
+            //         CHECK(v2(row, col) == v2(row, 2ll));
+            //         CHECK(v2(row, col) == WFP(row));
+            //     }
+            //     // compare against RFP
+            //     const auto RFP{(water.volumetric_heat_capacity * well.get_RFP(history->get_current_record())).eval()};
+            //     for (auto row{0ll}; row < v2.rows(); ++row)
+            //     {
+            //         CHECK(v2(row, 3ll) == RFP(row));
+            //         for (auto col{4ll}; col < v2.cols(); ++col)
+            //             CHECK(v2(row, col) == v2(row, 3ll));
+            //     }
+
+            //     // flow volume balance
+            //     for (auto row{0ll}; row < grid2D->first_coord().mesh_size(); ++row)
+            //     {
+            //         for (auto col{0ll}; col < grid2D->second_coord().mesh_size(); ++col)
+            //         {
+            //             INFO("" << "col: " << col << ", row: " << row << ", bottom: " << -v1(row + 1ll, col) << ", top: " << v1(row, col) << ", right: " << v2(row, col + 1ll) << ", left: " << -v2(row, col));
+            //             CHECK_THAT(-v1(row + 1ll, col) + v1(row, col), WithinRel(v2(row, col + 1ll) - v2(row, col), tol));
+            //         }
+            //     }
+            // }
+#pragma endregion
         }
 #pragma endregion
     }
