@@ -197,7 +197,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     for (auto t_step{0ll}; t_step < history->time_steps.size(); ++t_step)
     {
         history->advance();
-        const auto rfp{well.get_RFP(history->get_current_record())};
+        const RealType Q{history->rate()};
 
         const size_t internal_step_count{
             static_cast<size_t>(
@@ -207,10 +207,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         for (size_t id{0ull}; id < internal_step_count; ++id, cur_time += step)
         {
             const auto t{cur_time + step};
-
             rates_factory.set_flow_field(cur_time, step);
+            const auto rfp{well.get_RFP(history->get_current_record())};
 #pragma region CHECK-PRESSURE
             const auto &P{pressure_field.current_pressure().values()};
+            CHECK(rfp.rows() == grid_z.mesh_size());
             for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
             {
                 const auto rate{rfp(row)};
@@ -284,24 +285,44 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 #pragma endregion
 #pragma region CHECK-RATES
             const auto C{water.volumetric_heat_capacity};
+            const auto flux1{rates_factory.get_heat_flow_in_axes1_neg() + rates_factory.get_heat_flow_in_axes1_pos()};
+            CHECK(flux1.rows() == grid_z.dual_size());
+            CHECK(flux1.cols() == grid_r.mesh_size());
             const auto flux2{rates_factory.get_heat_flow_in_axes2_neg() + rates_factory.get_heat_flow_in_axes2_pos()};
+            CHECK(flux2.rows() == grid_z.mesh_size());
+            CHECK(flux2.cols() == grid_r.dual_size());
             const auto &mobility2{pressure_field.mobility.face_vals_axes2};
-            for (auto row{0ll}; row < core_logs.is_permeable.size(); ++row)
+            const auto wfp{well.get_WFP(history->get_current_record())};
+            CHECK(wfp.rows() == grid_z.mesh_size());
+            const auto cement_flow{well.get_verticle_cement_flow(history->get_current_record())};
+            CHECK(cement_flow.rows() == grid_z.dual_size());
+            const auto well_flow{well.get_verticle_well_flow(history->get_current_record())};
+            CHECK(well_flow.rows() == grid_z.dual_size());
+            RealType well_loss_cum_sum{0.0};
+#pragma region HORIZONTAL-RATES
+            for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
             {
                 const auto k{core_logs.permeability(row)};
                 const auto h{grid_z.volume(row)};
 
                 if (core_logs.is_permeable(row) == 1.0)
-                { // check rates in permeable layer
-
-                    for (auto col{0ll}; col < left_margin; ++col)
+                { // check horizontal rates in permeable layer
                     {
+                        const auto col{0ll};
                         CHECK(flux2(row, col) == 0.0);
+                    }
+                    {
+                        for (auto col{1ll}; col <= 2ll; ++col)
+                        {
+                            CHECK(flux2(row, col) == C * wfp(row));
+                        }
                     }
                     {
                         const auto col{left_margin};
                         const auto r{grid_r.mesh_nodes(col)};
-                        const auto ref_rate{-2.0 * pi * k * h / mu / std::log(r / r_sandface) * (P(row, col) - P(row, col - 1ll))};
+                        const auto ref_rate{
+                            -2.0 * pi * k * h / mu *
+                            (P(row, col) - P(row, col - 1ll)) / std::log(r / r_sandface)};
                         const auto rate{rfp(row)};
                         CHECK_THAT(ref_rate,
                                    WithinRel(
@@ -310,14 +331,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                         CHECK_THAT(flux2(row, col),
                                    WithinRel(C * rate, tol));
                     }
-
                     for (auto col{left_margin + 1ll}; col < grid_z.dual_size() - 1ll; ++col)
                     {
                         const auto r{grid_r.mesh_nodes(col - 1ll)};
                         const auto r_next{grid_r.mesh_nodes(col)};
                         const auto ref_rate{
-                            2.0 * C * pi * k * h / mu / std::log(r_next / r) *
-                            (P(row, col) - P(row, col - 1ll))};
+                            -2.0 * C * pi * k * h / mu *
+                            (P(row, col) - P(row, col - 1ll)) / std::log(r_next / r)};
                         CHECK_THAT(flux2(row, col),
                                    WithinRel(ref_rate, 1e-10));
                     }
@@ -325,8 +345,46 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                         const auto col{grid_r.dual_size() - 1ll};
                         CHECK(flux2(row, col) == 0.0);
                     }
+                    // check rate signs
+                    for (auto col{left_margin + 1ll}; col < grid_z.dual_size() - 1ll; ++col)
+                    {
+                        const auto r{grid_r.mesh_nodes(col - 1ll)};
+                        const auto r_next{grid_r.mesh_nodes(col)};
+                        const auto ref_rate{
+                            -2.0 * C * pi * k * h / mu *
+                            (P(row, col) - P(row, col - 1ll)) / std::log(r_next / r)};
+                        CHECK(flux2(row, col) * flux2(row, left_margin) >= 0.0);
+                    }
+                }
+                else
+                { // check horizontal rates in impermeble layers
+                    for (auto col{0ll}; col < grid_r.dual_size(); ++col)
+                        CHECK(flux2(row, col) == 0.0);
                 }
             }
+#pragma endregion
+#pragma region VERTICAL-RATES
+            for (auto row{0ll}; row < grid_z.dual_size(); ++row)
+            {
+                { // flow in the tube
+                    const auto col{0ll};
+                    CHECK(Q - well_loss_cum_sum == well_flow(row));
+                    CHECK(C*(Q - well_loss_cum_sum) == flux1(row, col));
+                    if (row < grid_z.mesh_size())
+                        well_loss_cum_sum += wfp(row);
+                }
+                { // flow in the sandwich
+                    const auto col{1ll};
+                    CHECK(flux1(row, col) == 0.0);
+                }
+                { // flow in the cement
+                    const auto col{2ll};
+                    CHECK(flux1(row, col) == cement_flow(row));
+                }
+                for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
+                    CHECK(flux1(row, col) == 0.0);
+            }
+#pragma endregion
 #pragma endregion
 #pragma region CHECK-JT
             //    const auto &flux2{rates_factory.get_heat_flow_in_axes2_pos()};
@@ -341,8 +399,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 {
                     const auto col{0ll};
                     CHECK_THAT(
-                        water.JT*(flux2_pos(row, col) * (pressure(row, col)) +
-                            flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col))),
+                        water.JT * (flux2_pos(row, col) * (pressure(row, col)) +
+                                    flux2_neg(row, col + 1ll) * (pressure(row, col + 1ll) - pressure(row, col))),
                         WithinRel(JT_term.value(row, col), tol));
                 }
                 for (auto col{1ll}; col < JT_term.cols() - 1ll; ++col)
@@ -355,17 +413,21 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
                     INFO("row: " << row << "col: " << col);
                     CHECK_THAT(
-                        water.JT*((flux2_pos(row, col)- flux2_neg(row, col + 1ll)) * pressure(row, col)  +
-                            flux2_neg(row, col + 1ll) * pressure(row, col + 1ll)  - 
-                            flux2_pos(row, col)* pressure(row, col - 1ll)
-                        ),
+                        water.JT * ((flux2_pos(row, col) - flux2_neg(row, col + 1ll)) * pressure(row, col) +
+                                    flux2_neg(row, col + 1ll) * pressure(row, col + 1ll) -
+                                    flux2_pos(row, col) * pressure(row, col - 1ll)),
                         WithinRel(JT_term.value(row, col), tol));
                 }
                 {
                     const auto col{JT_term.cols() - 1ll};
+                    // CHECK_THAT(
+                    //     water.JT*(flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
+                    //         flux2_neg(row, col + 1ll) * (-pressure(row, col))),
+                    //     WithinRel(JT_term.value(row, col), tol));
+
                     CHECK_THAT(
-                        water.JT*(flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
-                            flux2_neg(row, col + 1ll) * (-pressure(row, col))),
+                        water.JT * ((flux2_pos(row, col) - flux2_neg(row, col + 1ll)) * pressure(row, col) -
+                                    flux2_pos(row, col) * pressure(row, col - 1ll)),
                         WithinRel(JT_term.value(row, col), tol));
                 }
             }
