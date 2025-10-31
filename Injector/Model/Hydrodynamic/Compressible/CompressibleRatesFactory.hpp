@@ -91,9 +91,9 @@ namespace GPN
                     FaceValuesContainer::Zero(
                         first_size + 1ll,
                         second_size)};
-                
-                const auto cement_flow{well.get_verticle_cement_flow(get_history_record())};
-                axes1_value.col(2ll) = cement_flow;
+
+                axes1_value.col(0ll) = well.get_verticle_well_flow(get_history_record());
+                axes1_value.col(2ll) = well.get_verticle_cement_flow(get_history_record());
 
                 FaceValuesContainer axes2_value{
                     FaceValuesContainer::Zero(
