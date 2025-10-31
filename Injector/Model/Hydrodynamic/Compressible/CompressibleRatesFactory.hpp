@@ -87,18 +87,25 @@ namespace GPN
 
                 // volumetric flow field in two directions is calculated,
                 // once the pressure field is calculated
-                const FaceValuesContainer axes1_value{
+                FaceValuesContainer axes1_value{
                     FaceValuesContainer::Zero(
                         first_size + 1ll,
                         second_size)};
+
+                axes1_value.col(0ll) = well.get_verticle_well_flow(get_history_record());
+                axes1_value.col(2ll) = well.get_verticle_cement_flow(get_history_record());
+
                 FaceValuesContainer axes2_value{
                     FaceValuesContainer::Zero(
                         first_size,
                         second_size + 1ll)};
 
+                const auto wfp{well.get_WFP(get_history_record())};
+
                 static_assert(Grid2D_t::l_margin == 3ll);
-                // retain zero values
-                //    axes2_value.leftCols(Grid2D_t::l_margin).colwise() = 0.0;
+                axes2_value.col(0ll) = 0.0;
+                axes2_value.col(1ll) = wfp;
+                axes2_value.col(2ll) = wfp;
                 axes2_value.col(Grid2D_t::l_margin) =
                     well.get_RFP(get_history_record());
 
@@ -115,12 +122,6 @@ namespace GPN
                 for (auto col{Grid2D_t::l_margin + 1ll}, count{0ll}; count < second_size_rock; ++col, ++count)
                 {
                     axes2_value.col(col) = mobility_factor.col(count) * (P.col(col-1ll) - P.col(col));
-                }
-
-                for (auto row{0ll}; row < first_size; ++row)
-                {
-                    for (auto col{0ll}; col < Grid2D_t::l_margin; ++col)
-                        assert(axes2_value(row, col) == 0.0);
                 }
 
                 // volumetric flow field in two directions is calculated,

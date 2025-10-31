@@ -289,6 +289,11 @@ namespace GPN
         {
             return get_verticle_cement_flow(history_record.rate, history_record.pressure);
         }
+        template <typename HistoryRecord_t>
+        auto get_verticle_well_flow(const HistoryRecord_t &history_record) const
+        {
+            return get_verticle_well_flow(history_record.rate, history_record.pressure);
+        }
         
         const StepPropertyContainer &RFP_weights;
         const StepPropertyContainer &WFP_weights;
@@ -346,6 +351,29 @@ namespace GPN
             }
             else
                 throw std::invalid_argument("RFP: Either rate or pressure must be set, but not both.");
+        }
+        
+        StepPropertyContainer get_verticle_well_flow(
+            RealType rate,
+            RealType pressure) const
+        {
+            if (std::isnan(rate))
+            { // define rate from pressure
+                throw std::invalid_argument("RFP: Rate must be set");
+            }
+            else if (std::isnan(pressure))
+            { // define pressure from rate
+                assert(!std::isnan(rate));
+
+                const auto wfp{get_WFP(rate, pressure)};
+                StepPropertyContainer out(StepPropertyContainer::Zero(wfp.rows()+1ll));
+                std::partial_sum(wfp.cbegin(), wfp.cend(), out.begin()+1ll, std::plus<RealType>{});
+                out = rate - out;
+
+                return out;
+            }
+            else
+                throw std::invalid_argument("verticle well flow: Either rate or pressure must be set, but not both.");
         }
 
         const RealType weights_sum;
