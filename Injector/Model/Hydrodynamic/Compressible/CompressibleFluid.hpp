@@ -40,9 +40,7 @@ namespace GPN
             CompressibleFluidField(
                 const RealType start_time,
                 const Fluid_t &fluid,
-                const Logs::Permeability &permeability, // delete
                 const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
-                const Logs::ExternalPressure &ext_pressure, // delete
                 const Well_t &well,
                 const cptr<History_t> history,
                 const cptr<Grid2D_t> grid2D_rocks)
@@ -74,13 +72,13 @@ namespace GPN
             template <typename HistoryRecord_t>
             void set_pressure_field(
                 const RealType time_step,
-                const HistoryRecord_t &record)
+                const HistoryRecord_t &history_record)
             {
                 solver->advance(time_step);
                 const GridNodeValues2D &rock_P{solver->get_state().cur_state};
                 GridNodeValues2D out{GridNodeValues2D::Zero(first_size, second_size)};
                 out.rightCols(second_size - Grid2D_t::l_margin) = rock_P;
-                out.leftCols(Grid2D_t::l_margin).colwise() = rock_P.col(0ll) + record.rate * inv_mobility;
+                out.leftCols(Grid2D_t::l_margin).colwise() = rock_P.col(0ll) + history_record.rate * inv_mobility;
 
                 P = std::make_shared<Properties::Pressure<OriginalGrid>>(
                     std::move(out),
