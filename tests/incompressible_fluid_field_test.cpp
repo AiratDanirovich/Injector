@@ -392,6 +392,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         const auto &pressure{rates_factory.get_pressure_field().values()};
 
         const auto JT_term{Properties::JT_FieldFactory::create_spatial(rates_factory)};
+        const auto JT_temporal_term{Properties::JT_FieldFactory::create_temporal(rates_factory)};
+
+        CHECK(JT_term.rows() == JT_temporal_term.rows());
+        CHECK(JT_term.cols() == JT_temporal_term.cols());
 
         for (auto row{0ll}; row < JT_term.rows(); ++row)
         {
@@ -418,6 +422,20 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     water.JT * (flux2_pos(row, col) * (pressure(row, col) - pressure(row, col - 1ll)) +
                                 flux2_neg(row, col + 1ll) * (-pressure(row, col))),
                     WithinRel(JT_term.value(row, col), tol));
+            }
+
+            {
+                for (auto col{0ll}; col < 3ll; ++col)
+                    CHECK(JT_temporal_term.value(row, col) == 0.0);
+            }
+            {
+                for (auto col{3ll}; col < JT_temporal_term.cols(); ++col)
+                {
+                    const auto ref{water.adiabatic_factor / history->time_steps[t] *
+                                   (rates_factory.pressure_field->P->value(row, col) -
+                                    rates_factory.pressure_field->P_prev->value(row, col))};
+                    CHECK(ref == JT_temporal_term.value(row, col));
+                }
             }
         }
     }

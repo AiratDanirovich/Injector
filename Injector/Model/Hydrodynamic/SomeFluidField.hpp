@@ -50,7 +50,7 @@ namespace GPN
             }
             const auto delta_pressure() const
             {
-                const ControlVolumesContainer out{P->values() - P_prev->values()};
+                const auto out{(*P - *P_prev).values()};
                 return out;
             }
 

@@ -84,6 +84,11 @@ namespace GPN
         {
             return Field{lhs.values() / rhs.values(), lhs.grid};
         }
+        template <typename Grid2D_t>
+        auto operator-(const Field<Grid2D_t> &lhs, const Field<Grid2D_t> &rhs)
+        {
+            return Field{lhs.values() - rhs.values(), lhs.grid};
+        }
 
         struct FieldFactory
         {
