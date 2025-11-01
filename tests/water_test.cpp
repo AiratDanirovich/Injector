@@ -24,5 +24,6 @@ TEST_CASE("PhaseProperties", "Water")
             Density{density},
             SpecificHeatCapacity{capacity},
             HeatConductivity{heat_conductivity},
-            JouleThomson{joule_thomson})};
+            JouleThomson{joule_thomson},
+            1.0)};
 }

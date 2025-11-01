@@ -77,10 +77,11 @@ namespace GPN
     {
         PhasePropertiesJT( 
             const PhaseProperties& props,
-            JouleThomson JT) noexcept
+            const JouleThomson JT,
+            const RealType adiabatic_weight) noexcept
             : PhaseProperties{props},
               JT{JT},
-              adiabatic_factor{1.0 + JT*props.volumetric_heat_capacity}
+              adiabatic_factor{(1.0 + JT*props.volumetric_heat_capacity)*adiabatic_weight}
         {
         }
 
