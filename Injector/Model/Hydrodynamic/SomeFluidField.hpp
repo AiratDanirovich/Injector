@@ -21,15 +21,15 @@ namespace GPN
             SomeFluidField(
                 const RealType start_time,
                 const Fluid_t &fluid,
-                const Logs::Hydrodynamics::BaseHydrodynamics<Axes1>& base_hydrodynamics,
+                const Logs::Permeability &permeability,
+                const Logs::ExternalPressure &ext_pressure,
                 const Well_t &well,
                 const cptr<History_t> history,
                 const cptr<Grid2D_t> grid2D)
                 : fluid{fluid},
                   base_hydrodynamics{base_hydrodynamics},
-                  permeability{base_hydrodynamics.permeability},
-                  porosity{base_hydrodynamics.porosity},
-                  ext_pressure{base_hydrodynamics.ext_pressure},
+                  permeability{permeability},
+                  ext_pressure{ext_pressure},
                   P_ext{set_initial_pressure(ext_pressure, grid2D)},
                   P{std::make_shared<Properties::Pressure<Grid2D_t>>(
                       set_initial_pressure(ext_pressure, grid2D))},
@@ -54,7 +54,6 @@ namespace GPN
             const ControlVolumesContainer &thickness_log;
             const Logs::Hydrodynamics::BaseHydrodynamics<Axes1>& base_hydrodynamics;
             const Logs::Permeability &permeability;
-            const Logs::Porosity &porosity;
             const Logs::ExternalPressure &ext_pressure;
             const cptr<History_t> history;
 
