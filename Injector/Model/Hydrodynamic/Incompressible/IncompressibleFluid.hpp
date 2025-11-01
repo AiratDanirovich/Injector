@@ -19,6 +19,7 @@ namespace GPN
             using Base = SomeFluidField<OriginalGrid, Fluid_t, Well_t, History_t>;
             using Base::ext_pressure;
             using Base::P;
+            using Base::P_prev;
             using Base::grid2D;
             using Base::well;
 
@@ -61,6 +62,8 @@ namespace GPN
 
                 const auto left_col{rock_P.col(0ll)};
                 out.leftCols(Grid2D_t::l_margin).colwise() = rock_P.col(0ll);
+
+                P_prev = P;
 
                 P = std::make_shared<Properties::Pressure<OriginalGrid>>(
                     std::move(out),

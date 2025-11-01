@@ -28,6 +28,7 @@ namespace GPN
             using Base::ext_pressure;
             using Base::grid2D;
             using Base::P;
+            using Base::P_prev;
             using Base::well;
 
             using Solver_t =
@@ -81,6 +82,8 @@ namespace GPN
                 GridNodeValues2D out{GridNodeValues2D::Zero(first_size, second_size)};
                 out.rightCols(second_size - Grid2D_t::l_margin) = rock_P;
                 out.leftCols(Grid2D_t::l_margin).colwise() = rock_P.col(0ll) + history_record.rate * inv_mobility;
+
+                P_prev = P;
 
                 P = std::make_shared<Properties::Pressure<OriginalGrid>>(
                     std::move(out),
