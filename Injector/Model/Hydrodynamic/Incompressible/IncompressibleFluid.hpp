@@ -19,19 +19,22 @@ namespace GPN
             using Base = SomeFluidField<OriginalGrid, Fluid_t, Well_t, History_t>;
             using Base::ext_pressure;
             using Base::P;
+            using Base::P_prev;
             using Base::grid2D;
             using Base::well;
 
             IncompressibleFluidField(
                 const RealType start_time,
                 const Fluid_t &fluid,
-                const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
+                const Properties::Rocks::RocksProps<Grid2D_t> &
+                    rock_field_props,
                 const Well_t &well,
                 const cptr<History_t> history,
                 const cptr<Grid2D_t> grid2D_rocks)
                 : Base{
                       start_time, fluid,
                       rock_field_props.base_hydrodynamics.permeability,
+                      rock_field_props.base_hydrodynamics.porosity,
                       rock_field_props.base_hydrodynamics.ext_pressure,
                       well, history, grid2D_rocks->grid2D},
                   auxillary_term{set_auxillary_term(
@@ -59,6 +62,8 @@ namespace GPN
 
                 const auto left_col{rock_P.col(0ll)};
                 out.leftCols(Grid2D_t::l_margin).colwise() = rock_P.col(0ll);
+
+                P_prev = P;
 
                 P = std::make_shared<Properties::Pressure<OriginalGrid>>(
                     std::move(out),

@@ -19,7 +19,8 @@ GPN::PhasePropertiesJT make_water(const json &data)
       density{data["fluid"]["density"]},
       capacity{data["fluid"]["specific_heat_capacity"]},
       heat_conductivity{data["fluid"]["heat_conductivity"]},
-      joule_thomson{data["fluid"]["joule_thomson"]};
+      joule_thomson{data["fluid"]["joule_thomson"]},
+      adiabatic_weight{data["fluid"]["adiabatic_weight"]};
 
   return PhasePropertiesJT{
       FluidFactory::create_water_JT(
@@ -27,5 +28,6 @@ GPN::PhasePropertiesJT make_water(const json &data)
           GPN::Density{density},
           GPN::SpecificHeatCapacity{capacity},
           GPN::HeatConductivity{heat_conductivity},
-          JouleThomson{joule_thomson})};
+          JouleThomson{joule_thomson},
+          adiabatic_weight)};
 }

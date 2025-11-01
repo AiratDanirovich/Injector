@@ -55,7 +55,8 @@ namespace GPN
                 Density density,
                 SpecificHeatCapacity mass_heat_capacity,
                 HeatConductivity heat_conductivity,
-                JouleThomson joule_thomson)
+                JouleThomson joule_thomson,
+                const RealType adiabatic_weight)
             {
                 return WaterJT{
                     PhasePropertiesJT{
@@ -64,7 +65,8 @@ namespace GPN
                             density,
                             mass_heat_capacity,
                             heat_conductivity},
-                        joule_thomson}};
+                        joule_thomson,
+                        adiabatic_weight}};
             }
         };
 
