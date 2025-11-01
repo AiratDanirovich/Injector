@@ -4,10 +4,13 @@
 
 #include <Injector/Grids/Defines.h>
 
+#include <Injector/Properties/Logs.hpp>
+
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Hydrodynamic/SomeFluidField.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluidSolver.hpp>
 
+#include <Injector/Solver/State2D.hpp>
 #include <Injector/Solver/FullImplicit/Solver.hpp>
 
 namespace GPN
@@ -43,7 +46,8 @@ namespace GPN
                 const cptr<Grid2D_t> grid2D_rocks)
                 : Base{
                       start_time, fluid,
-                      rock_field_props.base_hydrodynamics,
+                      rock_field_props.base_hydrodynamics.permeability,
+                      rock_field_props.base_hydrodynamics.ext_pressure,
                       well, history, grid2D_rocks->grid2D},
                   mobility{FaceProperties::Rocks::RocksFaceProps{
                       rock_field_props,
@@ -68,17 +72,19 @@ namespace GPN
             template <typename HistoryRecord_t>
             void set_pressure_field(
                 const RealType time_step,
-                const HistoryRecord_t &record)
+                const HistoryRecord_t &history_record)
             {
                 solver->advance(time_step);
                 const GridNodeValues2D &rock_P{solver->get_state().cur_state};
                 GridNodeValues2D out{GridNodeValues2D::Zero(first_size, second_size)};
                 out.rightCols(second_size - Grid2D_t::l_margin) = rock_P;
-                out.leftCols(Grid2D_t::l_margin).colwise() = rock_P.col(0ll) + record.rate * inv_mobility;
+                out.leftCols(Grid2D_t::l_margin).colwise() = rock_P.col(0ll) + history_record.rate * inv_mobility;
 
                 P = std::make_shared<Properties::Pressure<OriginalGrid>>(
                     std::move(out),
                     grid2D);
+                    
+                Base::set_time(time_step, history_record);
             }
 
             const auto& get_mobility() const
