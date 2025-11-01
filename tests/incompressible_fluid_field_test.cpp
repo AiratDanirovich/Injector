@@ -256,20 +256,22 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             start_time,
             water,
             core_logs.permeability,
+            rock_field_props,
             base_hydrodynamics.ext_pressure,
             well,
             history,
-            grid2D});
+            grid2D_rocks});
 
     auto ptr_pressure_field{
         make_shared<IncompressibleFluidField_t>(
             start_time,
             water,
             core_logs.permeability,
+            rock_field_props,
             base_hydrodynamics.ext_pressure,
             well,
             history,
-            grid2D)};
+            grid2D_rocks)};
 
     auto &pressure_field{*ptr_pressure_field};
 
@@ -381,7 +383,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     // rates field factory
     FaceProperties::IncompressibleRatesFactory rates_factory{
         ptr_pressure_field,
-        grid2D, well, history, water};
+        grid2D_rocks, well, history, water};
 
     // mock SolverManaer behavior
     for (auto t{0ll}; t < history->size(); ++t)

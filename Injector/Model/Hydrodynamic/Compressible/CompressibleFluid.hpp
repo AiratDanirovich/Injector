@@ -4,10 +4,13 @@
 
 #include <Injector/Grids/Defines.h>
 
+#include <Injector/Properties/Logs.hpp>
+
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Hydrodynamic/SomeFluidField.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluidSolver.hpp>
 
+#include <Injector/Solver/State2D.hpp>
 #include <Injector/Solver/FullImplicit/Solver.hpp>
 
 namespace GPN
@@ -37,16 +40,16 @@ namespace GPN
             CompressibleFluidField(
                 const RealType start_time,
                 const Fluid_t &fluid,
-                const Logs::Permeability &permeability,
+                const Logs::Permeability &permeability, // delete
                 const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
-                const Logs::ExternalPressure &ext_pressure,
+                const Logs::ExternalPressure &ext_pressure, // delete
                 const Well_t &well,
                 const cptr<History_t> history,
                 const cptr<Grid2D_t> grid2D_rocks)
                 : Base{
                       start_time, fluid,
-                      permeability,
-                      ext_pressure,
+                      rock_field_props.base_hydrodynamics.permeability,
+                      rock_field_props.base_hydrodynamics.ext_pressure,
                       well, history, grid2D_rocks->grid2D},
                   mobility{FaceProperties::Rocks::RocksFaceProps{
                       rock_field_props,
@@ -82,6 +85,8 @@ namespace GPN
                 P = std::make_shared<Properties::Pressure<OriginalGrid>>(
                     std::move(out),
                     grid2D);
+                    
+                Base::set_time(time_step, history_record);
             }
 
             const auto& get_mobility() const
