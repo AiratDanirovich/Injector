@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <utility>
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Properties/PhysicalField.hpp>
@@ -11,7 +12,7 @@ namespace GPN
     {
         struct JT_FieldFactory
         {
-            static auto create(
+            static auto create_spatial(
                 const auto &rates_factory)
             {
                 const auto /*not &*/ grid2D_ptr{rates_factory.grid2D};
@@ -55,6 +56,30 @@ namespace GPN
                 }
 
                 return JT_SpatialComponent{values, grid2D_ptr};
+            }
+            
+            static auto create_temporal(
+                const auto &rates_factory)
+            {
+                const auto& p_field{*(rates_factory.pressure_field)};
+                const auto& porosity{p_field.porosity.log_vals};
+                const auto& adiabatic_factor{
+                    p_field.fluid.adiabatic_factor};
+
+
+                const auto /*not &*/ grid2D_ptr{rates_factory.grid2D};
+                const auto first_coord_size{
+                    grid2D_ptr->first_coord().mesh_size()};
+                const auto second_coord_size{
+                    grid2D_ptr->second_coord().mesh_size()};
+                GridNodeValues2D values{
+                    p_field.delta_pressure().colwise()*(porosity*adiabatic_factor)};
+
+                // temporal contribution of JT
+                // inside the sandface is assumed zero
+                values.leftCols(rates_factory.grid2D_rocks->l_margin) = 0.0;
+
+                return JT_SpatialComponent{std::move(values), grid2D_ptr};
             }
         };
     } // Properties

@@ -28,6 +28,12 @@ namespace GPN
         : SomeProperty{value*1e-5}
         {}
     };
+    struct AdiabaticExpansion : public SomeProperty
+    {
+        // AdiabaticExpansion(RealType value)
+        // : SomeProperty{value}
+        // {}
+    };
 
     struct StationaryPhaseProperties
     {
@@ -71,13 +77,15 @@ namespace GPN
     {
         PhasePropertiesJT( 
             const PhaseProperties& props,
-            JouleThomson JT) noexcept
+            const JouleThomson JT,
+            const RealType adiabatic_weight) noexcept
             : PhaseProperties{props},
-              JT{JT}
+              JT{JT},
+              adiabatic_factor{(1.0 + JT*props.volumetric_heat_capacity)*adiabatic_weight}
         {
         }
 
-        const RealType JT;
+        const RealType JT, adiabatic_factor;
     };
 
     struct Water : public PhaseProperties
