@@ -174,14 +174,13 @@ namespace GPN
             const cptr<OriginalGrid> grid2D;
             const cptr<Grid2D_t> grid2D_rocks;
             const Well_t &well;
-            const FaceProperties::Mobility<Grid2D_t> &mobility;
-            const FaceValuesContainer mobility_factor;
             const ptr<History_t> history;
             const Fluid_t &fluid;
-
             ptr<Hydrodynamics_t> pressure_field;
 
         protected:
+            const FaceProperties::Mobility<Grid2D_t> &mobility;
+            const FaceValuesContainer mobility_factor;
             const ptrdiff_t first_size, second_size;
 
             cptr<FaceProperties::HeatFlowField> heat_flow_field;
