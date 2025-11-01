@@ -36,6 +36,7 @@
 #include "includes/make_r_stencils.hpp"
 #include "includes/make_history.hpp"
 #include "includes/make_geotherma.hpp"
+#include "includes/make_water.hpp"
 #include "includes/get_completion.hpp"
 #include "includes/generate_stencils_and_steps.hpp"
 #include "includes/set_is_permeable_stencils.hpp"
@@ -112,13 +113,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     /*END*/
 
     // make fluid
-    const PhasePropertiesJT water{
-        FluidFactory::create_water_JT(
-            Viscosity{viscosity},
-            GPN::Density{density},
-            GPN::SpecificHeatCapacity{capacity},
-            GPN::HeatConductivity{heat_conductivity},
-            JouleThomson{joule_thomson})};
+    const PhasePropertiesJT water{make_water(data)};
 
     // make grid2D
     // r_stencils
