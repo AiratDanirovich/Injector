@@ -24,9 +24,7 @@ namespace GPN
             IncompressibleFluidField(
                 const RealType start_time,
                 const Fluid_t &fluid,
-                const Logs::Permeability &permeability, // delete
                 const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
-                const Logs::ExternalPressure &ext_pressure, // delete
                 const Well_t &well,
                 const cptr<History_t> history,
                 const cptr<Grid2D_t> grid2D_rocks)
@@ -97,7 +95,7 @@ namespace GPN
                 const CellNodesContainer2D temp{(temp2.matrix() * temp1.transpose().matrix()).array()};
 
                 assert(temp.rows() == grid2D_rocks->first_coord().mesh_size());
-                assert(temp.cols() == grid2D_rocks->second_coord().mesh_size());
+                assert(temp.cols() == grid2D_rocks->second_coord().mesh_size()+1ll); // +1 is for sandface radius
 
                 return temp;
             }

@@ -255,9 +255,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         decltype(IncompressibleFluidField{
             start_time,
             water,
-            core_logs.permeability,
             rock_field_props,
-            base_hydrodynamics.ext_pressure,
             well,
             history,
             grid2D_rocks});
@@ -266,9 +264,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         make_shared<IncompressibleFluidField_t>(
             start_time,
             water,
-            core_logs.permeability,
             rock_field_props,
-            base_hydrodynamics.ext_pressure,
             well,
             history,
             grid2D_rocks)};
