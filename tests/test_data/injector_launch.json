@@ -4,7 +4,8 @@
     "viscosity": 6e-4,
     "specific_heat_capacity": 4200,
     "heat_conductivity": 1.00000,
-    "joule_thomson": -0.02
+    "joule_thomson": -0.02,
+    "adiabatic_weight": 0.0
   },
   "collector": {
     "external_pressure": 
