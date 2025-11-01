@@ -3,12 +3,17 @@
 #include <cassert>
 #include <memory>
 #include <limits>
+#include <vector>
+
+#include <Injector/Grids/Defines.h>
 
 #include <Injector/History/InjectorRegimes.hpp>
 
 #include <Injector/Properties/FlowField.hpp>
 #include <Injector/Properties/PhysicalField.hpp>
 #include <Injector/Properties/JT_FieldFactory.hpp>
+
+#include <Injector/Solver/State2D.hpp>
 
 namespace GPN
 {
@@ -20,17 +25,34 @@ namespace GPN
             typename Hydrodynamics_t>
         struct IncompressibleRatesFactory
         {
+            using OriginalGrid = typename Grid2D_t::OriginalGrid;
+
+            struct Solution
+            {
+                Solution(const auto history) 
+                {
+                    times.reserve(history->size());
+                    states.reserve(history->size());
+                }
+                std::vector<RealType> times;
+                std::vector<EqSolver::State::State2D> states;
+            };
+
+            Solution solution;
+
             IncompressibleRatesFactory(
                 cptr<Hydrodynamics_t> pressure_field,
-                const cptr<Grid2D_t> grid2D,
+                const cptr<Grid2D_t> grid2D_rocks,
                 const Well_t &well,
                 const ptr<History_t> history,
                 const Fluid_t &fluid)
-                : grid2D{grid2D},
+                : grid2D_rocks{grid2D_rocks},
+                  grid2D{grid2D_rocks->grid2D},
                   well{well},
                   history{history},
                   fluid{fluid},
-                  pressure_field{pressure_field}
+                  pressure_field{pressure_field},
+                  solution{history}
             {
             }
 
@@ -63,14 +85,15 @@ namespace GPN
                 return Properties::JT_FieldFactory::create(*this).values();
             }
 
-            const auto &get_heat_flow_in_axes1() const
+            const auto get_heat_flow_in_axes1() const
             {
-                return heat_flow_field->axes1_as_face_normal;
+                return heat_flow_field->axes1_as_face_normal_pos + heat_flow_field->axes1_as_face_normal_neg;
             }
-            const auto &get_heat_flow_in_axes2() const
+            const auto get_heat_flow_in_axes2() const
             {
-                return heat_flow_field->axes2_as_face_normal;
+                return heat_flow_field->axes2_as_face_normal_pos + heat_flow_field->axes2_as_face_normal_neg;
             }
+
             const auto &get_heat_flow_in_axes1_pos() const
             {
                 return heat_flow_field->axes1_as_face_normal_pos;
@@ -87,31 +110,14 @@ namespace GPN
             {
                 return heat_flow_field->axes2_as_face_normal_neg;
             }
-
-            const auto get_temperature() const
-            {
-                return history->temperature();
-            }
-            const auto get_rate() const
-            {
-                return history->rate();
-            }
-            const auto get_pressure() const
-            {
-                return history->pressure();
-            }
-            const auto get_history_record() const
-            {
-                return history->get_current_record();
-            }
-
             const auto &get_pressure_field() const
             {
                 return pressure_field->current_pressure();
             }
 
         public:
-            const cptr<Grid2D_t> grid2D;
+            const cptr<OriginalGrid> grid2D;
+            const cptr<Grid2D_t> grid2D_rocks;
             const Well_t &well;
             const ptr<History_t> history;
             const Fluid_t &fluid;
@@ -120,6 +126,11 @@ namespace GPN
         protected:
             cptr<FaceProperties::HeatFlowField> heat_flow_field;
             //    cptr<FaceProperties::ReservoirFlowField> volumetric_flow_field;
+            
+            const auto get_history_record() const
+            {
+                return history->get_current_record();
+            }
         };
 
         template <typename Grid2D_t, typename Fluid_t>
