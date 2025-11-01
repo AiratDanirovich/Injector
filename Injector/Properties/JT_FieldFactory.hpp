@@ -75,6 +75,10 @@ namespace GPN
                 GridNodeValues2D values{
                     p_field.delta_pressure().colwise()*(porosity*adiabatic_factor)};
 
+                // temporal contribution of JT
+                // inside the sandface is assumed zero
+                values.leftCols(rates_factory.grid2D_rocks->l_margin) = 0.0;
+
                 return JT_SpatialComponent{std::move(values), grid2D_ptr};
             }
         };
