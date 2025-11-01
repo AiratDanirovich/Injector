@@ -124,7 +124,7 @@ namespace GPN
                     }
                 };
 
-                auto advance(RealType tau)
+                auto advance(const RealType tau)
                 {
                     if constexpr (std::is_same_v<ConvectionTermFactory_t, EmptyConvectionField> == false)
                     { // there is convection field
@@ -169,7 +169,7 @@ namespace GPN
                     RHS_t rhs{};
                     if constexpr (std::is_same_v<ConvectionTermFactory_t, EmptyConvectionField> == false)
                     { // there is convection field
-                        rhs = assemble_RHS(state, tau_factor, A_size);
+                        rhs = assemble_RHS(state, tau_factor, A_size, tau);
                     }
                     else
                     { // there is no convection field
@@ -189,10 +189,12 @@ namespace GPN
                 RHS_t assemble_RHS(
                     const auto state,
                     const auto tau_factor,
-                    const auto A_size) const
+                    const auto A_size,
+                    const auto tau) const
                 {
                     return (state.cur_state.array() * tau_factor +
-                            convection_factory->get_spatial_JT_contribution())
+                            convection_factory->get_spatial_JT_contribution() +
+                            convection_factory->get_temporal_JT_contribution()/tau)
                         .reshaped(A_size, 1ll)
                         .matrix();
                 }

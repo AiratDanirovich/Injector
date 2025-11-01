@@ -40,13 +40,15 @@ namespace GPN
             CompressibleFluidField(
                 const RealType start_time,
                 const Fluid_t &fluid,
-                const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
+                const Properties::Rocks::RocksProps<Grid2D_t> &
+                    rock_field_props,
                 const Well_t &well,
                 const cptr<History_t> history,
                 const cptr<Grid2D_t> grid2D_rocks)
                 : Base{
                       start_time, fluid,
                       rock_field_props.base_hydrodynamics.permeability,
+                      rock_field_props.base_hydrodynamics.porosity,
                       rock_field_props.base_hydrodynamics.ext_pressure,
                       well, history, grid2D_rocks->grid2D},
                   mobility{FaceProperties::Rocks::RocksFaceProps{

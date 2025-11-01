@@ -22,6 +22,7 @@ namespace GPN
                 const RealType start_time,
                 const Fluid_t &fluid,
                 const Logs::Permeability &permeability,
+                const Logs::Porosity &porosity,
                 const Logs::ExternalPressure &ext_pressure,
                 const Well_t &well,
                 const cptr<History_t> history,
@@ -29,9 +30,11 @@ namespace GPN
                 : fluid{fluid},
                   base_hydrodynamics{base_hydrodynamics},
                   permeability{permeability},
+                  porosity{porosity},
                   ext_pressure{ext_pressure},
-                  P_ext{set_initial_pressure(ext_pressure, grid2D)},
                   P{std::make_shared<Properties::Pressure<Grid2D_t>>(
+                      set_initial_pressure(ext_pressure, grid2D))},
+                  P_prev{std::make_shared<Properties::Pressure<Grid2D_t>>(
                       set_initial_pressure(ext_pressure, grid2D))},
                   thickness_log{grid2D->first_coord().control_volumes},
                   well{well},
@@ -45,20 +48,25 @@ namespace GPN
             {
                 return *P;
             }
+            const auto delta_pressure() const
+            {
+                const ControlVolumesContainer out{P->values() - P_prev->values()};
+                return out;
+            }
 
         public:
-            const Properties::Pressure<Grid2D_t> P_ext;
             const Fluid_t &fluid;
             const Well_t &well;
             const cptr<Grid2D_t> grid2D;
             const ControlVolumesContainer &thickness_log;
             const Logs::Hydrodynamics::BaseHydrodynamics<Axes1>& base_hydrodynamics;
             const Logs::Permeability &permeability;
+            const Logs::Porosity &porosity;
             const Logs::ExternalPressure &ext_pressure;
             const cptr<History_t> history;
 
         protected:
-            std::shared_ptr<Properties::Pressure<Grid2D_t>> P;
+            std::shared_ptr<Properties::Pressure<Grid2D_t>> P, P_prev;
             RealType current_time;
 
             /// @brief Set the initial pressure replicating the pressure at the external boundary
