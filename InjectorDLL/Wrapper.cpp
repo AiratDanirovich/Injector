@@ -253,9 +253,7 @@ Wrapper::Wrapper(
         decltype(CompressibleFluidField{
             start_time,
             water,
-            core_logs.permeability,
             rock_field_props,
-            base_hydrodynamics.ext_pressure,
             well,
             history,
             grid2D_rocks});
@@ -264,9 +262,7 @@ Wrapper::Wrapper(
         make_shared<FluidField_t>(
             start_time,
             water,
-            core_logs.permeability,
             rock_field_props,
-            base_hydrodynamics.ext_pressure,
             well,
             history,
             grid2D_rocks)};
