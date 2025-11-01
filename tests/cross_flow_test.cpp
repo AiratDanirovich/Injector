@@ -6,18 +6,20 @@
 #include <Injector/Grids/GridsFactory.hpp>
 #include <Injector/Grids/Grids2D.hpp>
 #include <Injector/Grids/GridRefiners.hpp>
+
 #include <Injector/History/History.hpp>
+
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Well/Well.hpp>
-#include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleRatesFactory.hpp>
-#include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleFluid.hpp>
+
 #include <Injector/Properties/Logs.hpp>
 #include <Injector/Properties/LogsFactory.hpp>
 
 #include "includes/transfer_to_eigen.hpp"
 #include "includes/set_is_permeable_stencils.hpp"
 #include "includes/make_history.hpp"
+#include "includes/make_water.hpp"
 
 #include <nlohmann/json.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -33,12 +35,8 @@ using namespace Catch::Matchers;
 using namespace GPN;
 using namespace GPN::Grids;
 using namespace GPN::Phases;
-using namespace GPN::Hydrodynamic;
-using namespace GPN::FaceProperties;
 using namespace GPN::Logs;
 using namespace GPN::CrossFlow;
-
-RealType viscosity{6e-4}, density{1000}, capacity{4200}, heat_conductivity{0.6};
 
 TEST_CASE("CrossFlow", "")
 {
@@ -139,13 +137,7 @@ TEST_CASE("CrossFlow", "")
     const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
     // make fluid
-    const PhaseProperties water{
-        FluidFactory::create_water(
-            Viscosity{viscosity},
-            GPN::Density{density},
-            GPN::SpecificHeatCapacity{capacity},
-            GPN::HeatConductivity{heat_conductivity})};
-
+    const PhaseProperties water{make_water(data)};
     // history
     const ptr<History> history{make_shared<History>(make_history(data))};
 
@@ -163,34 +155,4 @@ TEST_CASE("CrossFlow", "")
             ext_pressure_stencils,
             is_permeable_stencils,
             grid_z)};
-    // fluid model for the pressure field
-
-    using IncompressibleFluidField_t =
-        decltype(IncompressibleFluidField{
-            start_time,
-            water,
-            permeability,
-            external_pressure,
-            well,
-            history,
-            grid2D});
-
-    shared_ptr<IncompressibleFluidField_t>
-        ptr_pressure_field{
-            make_shared<IncompressibleFluidField_t>(
-                start_time,
-                water,
-                permeability,
-                external_pressure,
-                well,
-                history,
-                grid2D)};
-
-    // rates field factory
-    FaceProperties::IncompressibleRatesFactory rates_factory{
-        ptr_pressure_field,
-        grid2D, well, history, water};
-
-    history->advance();
-    rates_factory.set_flow_field(0.0, 1800.0);
 }
