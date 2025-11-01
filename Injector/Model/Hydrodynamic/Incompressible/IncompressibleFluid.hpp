@@ -4,6 +4,7 @@
 #include <cassert>
 
 #include <Injector/Properties/Logs.hpp>
+#include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Hydrodynamic/SomeFluidField.hpp>
 
 namespace GPN
