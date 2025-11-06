@@ -73,7 +73,7 @@ namespace GPN
                 const auto second_coord_size{
                     grid2D_ptr->second_coord().mesh_size()};
                 GridNodeValues2D values{
-                    p_field.delta_pressure().colwise()*(porosity*adiabatic_factor)};
+                    p_field.delta_pressure()*(grid2D_ptr->volumes().colwise()*(porosity*adiabatic_factor))};
 
                 // temporal contribution of JT
                 // inside the sandface is assumed zero
