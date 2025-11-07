@@ -30,9 +30,11 @@ namespace GPN
                     // so it pointed at the last record when the simulation is finished
                     history->advance();
                     // calculate the accurate time step
-                    const size_t internal_step_count{
+                    size_t internal_step_count{
                         static_cast<size_t>(
                             std::abs(std::ceil(time_intervals[t_step] / numerical_step)))};
+                    if(internal_step_count % 2 == 0)
+                        ++internal_step_count;
                     const RealType step{time_intervals[t_step] / internal_step_count};
                     // loop within the histroy entry
                     // with the numerical scheme time step
