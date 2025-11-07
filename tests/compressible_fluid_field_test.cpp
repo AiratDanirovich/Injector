@@ -438,7 +438,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 {
                     for (auto col{3ll}; col < JT_temporal_term.cols(); ++col)
                     {
-                        const auto ref{ water.adiabatic_factor/step*
+                        const auto ref{ water.adiabatic_factor/step*grid2D->volume(row,col)*
                             (rates_factory.pressure_field->P->value(row,col) -
                         rates_factory.pressure_field->P_prev->value(row,col))};
                         CHECK(ref == JT_temporal_term.value(row, col));
