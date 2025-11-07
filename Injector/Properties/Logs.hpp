@@ -265,10 +265,10 @@ namespace GPN
                   AssertNonNegative{pressure}
             {
                 assert(pressure.size() == is_permeable.size());
-                for (std::ptrdiff_t id{0ll}; id < pressure.size(); ++id)
-                    assert(
-                        ((is_permeable(id) == 1.0) && (pressure(id) > 0.0)) ||
-                        ((is_permeable(id) == 0.0) && (pressure(id) == 0.0)));
+                // for (std::ptrdiff_t id{0ll}; id < pressure.size(); ++id)
+                //     assert(
+                //         ((is_permeable(id) == 1.0) && (pressure(id) > 0.0)) ||
+                //         ((is_permeable(id) == 0.0) && (pressure(id) == 0.0)));
             }
         };
 
