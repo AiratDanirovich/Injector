@@ -29,8 +29,8 @@ namespace GPN
             {
                 Solution(const auto history) 
                 {
-                    times.reserve(history->size());
-                    states.reserve(history->size());
+                    times.reserve(history->size()+1ull);
+                    states.reserve(history->size()+1ull);
                 }
                 std::vector<RealType> times;
                 std::vector<EqSolver::State::State2D> states;
@@ -61,6 +61,10 @@ namespace GPN
                           grid2D_rocks->first_coord().control_volumes)},
                   solution{history}
             {
+                    /*Properties::Pressure<Grid2D_t>*/
+                    const auto &P{get_pressure_field()};
+                    solution.times.push_back(history->time_moments[0ull]);
+                    solution.states.emplace_back(P.values());
             }
 
             /// @brief set the flow field at the next time moment
