@@ -342,7 +342,7 @@ Wrapper::Wrapper(
         const auto &grid_r{grid2D->second_coord()};
         const auto size{grid_r.dual_size()};
 
-        const Eigen::IOFormat commaFmt(Eigen::FullPrecision, Eigen::DontAlignCols, sep, sep, "", "", "", "");
+        const Eigen::IOFormat commaFmt(Eigen::FullPrecision, Eigen::DontAlignCols, sep, "\n", "", "", "", "");
         for (auto z{0ll}, layer_id{0ll}; z < grid2D->first_coord().mesh_size(); ++z)
         {
             MeshNodesContainerT grid{MeshNodesContainerT::Zero(grid_r.dual_size())};
@@ -354,44 +354,63 @@ Wrapper::Wrapper(
             {
                 {
                     ofstream f{std::string{"output/t_layer_"} + std::to_string(layer_id) + std::string{".csv"}};
+                    
+                    // print time ids
+                    f << sep;
+                    for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
+                        f << sep << t;
+                    f << '\n';
 
-                    f << sep << sep
-                      << grid.transpose().format(commaFmt) << '\n';
+                    // print time moments
+                    f << sep << sep << transfer_to_eigen(times).transpose().format(commaFmt) << '\n';
+
+                    // prepare data to print
+                    GridNodeValues2D out_tt{GridNodeValues2D::Zero(size, (ptrdiff_t)times.size()+2ll)};
+                    out_tt.col(0ll) =  grid_r.dual_nodes.transpose();
+                    out_tt.col(1ll) =  grid.transpose();
                     for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
                     {
                         MeshNodesContainer out_t{MeshNodesContainer::Zero(size)};
-                        const auto T{states[t].cur_state.row(z)};
+                        const auto T{states[t].cur_state.row(z).transpose()};
                         out_t.head(3ll) = T.head(3ll);
                         out_t.tail(size - 3ll) = T.tail(size - 3ll);
                         out_t(3ll) = (out_t(2ll)+out_t(4ll))/2.0;
 
-                        f << t << sep << times[t] << sep
-                          << out_t.format(commaFmt) << '\n';
+                        out_tt.col(t+2ll) = out_t;
                     }
+                    // print prepared data
+                    f << out_tt.format(commaFmt) << '\n';
 
                     f.close();
                 }
                 {
                     ofstream f{std::string{"output/pressure/p_layer_"} + std::to_string(layer_id) + std::string{".csv"}};
-                    
-                    f << sep << sep
-                      << grid_r.dual_nodes.transpose().format(commaFmt) << '\n';
 
-                    f << sep << sep
-                      << grid.transpose().format(commaFmt) << '\n';
+                    // print time ids
+                    f << sep;
+                    for (auto t{0ll}; t < (ptrdiff_t)p_times.size(); ++t)
+                        f << sep << t;
+                    f << '\n';
 
+                    // print time moments
+                    f << sep << sep << transfer_to_eigen(p_times).transpose().format(commaFmt) << '\n';
+
+                    // prepare data to print
+                    GridNodeValues2D out_pp{GridNodeValues2D::Zero(size, (ptrdiff_t)times.size()+2ll)};
+                    out_pp.col(0ll) =  grid_r.dual_nodes.transpose();
+                    out_pp.col(1ll) =  grid.transpose();
                     for (auto t{0ll}; t < (ptrdiff_t)p_times.size(); ++t)
                     {
                         MeshNodesContainer out_p{MeshNodesContainer::Zero(size)};
-                        const auto p{p_states[t].cur_state.row(z)};
-                        out_p.head(3ll) = p.head(3ll);
+                        const auto P{p_states[t].cur_state.row(z).transpose()};
+                        out_p.head(3ll) = P.head(3ll);
+                        out_p.tail(size - 3ll) = P.tail(size - 3ll);
                         out_p(3ll) = out_p(2ll);
-                        out_p.tail(size - 3ll) = p.tail(size - 3ll);
 
-                        f << t << sep << p_times[t] << sep
-                          << out_p.format(commaFmt) << '\n';
+                        out_pp.col(t+2ll) = out_p;
                     }
-
+                    // print prepared data
+                    f << out_pp.format(commaFmt) << '\n';
                     f.close();
                 }
                 ++layer_id;
