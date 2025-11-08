@@ -150,7 +150,8 @@ Wrapper::Wrapper(
     const auto temp_grid_z{
         Grids::Factory::create_axes<CoordinateTypes::Z>(
             z_refiner, z_stencils)};
-    const Casing<VarRing> completion{get_completion(data, temp_grid_z)};
+    const auto casing{get_completion(data, temp_grid_z)};
+    const Casing<VarRing> completion{casing};
 
     //    const Casing completion{make_completion(casing_data)};
 
@@ -318,8 +319,8 @@ Wrapper::Wrapper(
 
     const auto &[times, states] = solver.solution();
     this->time = times;
-    
-    const auto& [p_times, p_states] = ptr_rates_factory->solution;
+
+    const auto &[p_times, p_states] = ptr_rates_factory->solution;
 
     if (!fs::is_directory("output") || !fs::exists("output")) // Check if src folder exists
     {
@@ -335,42 +336,63 @@ Wrapper::Wrapper(
         ifstream f("separators.json");
         json data = json::parse(f);
 
-        const std::string sep = data["coeff_sep"];
+        const auto sep{data["coeff_sep"].get<std::string>()};
 
-        auto grid{grid2D->second_coord().mesh_nodes};
-        grid(0ll) = grid_r.dual_nodes(1ll);
+        // insert sandface in a proper position
+        const auto &grid_r{grid2D->second_coord()};
+        const auto size{grid_r.dual_size()};
 
-        const Eigen::IOFormat commaFmt(Eigen::StreamPrecision, Eigen::DontAlignCols, sep, sep, "", "", "", "");
-        for (auto z{0ll}, layer_id{0ll}; z < grid2D->first_coord().mesh_nodes.size(); ++z)
+        const Eigen::IOFormat commaFmt(Eigen::FullPrecision, Eigen::DontAlignCols, sep, sep, "", "", "", "");
+        for (auto z{0ll}, layer_id{0ll}; z < grid2D->first_coord().mesh_size(); ++z)
         {
+            MeshNodesContainerT grid{MeshNodesContainerT::Zero(grid_r.dual_size())};
+            grid.tail(grid2D->second_coord().mesh_size()) = grid_r.mesh_nodes;
+            grid.head(3ll) = grid_r.mesh_nodes.head(3ll);
+            grid(3ll) = completion.sandface_radius(z);
+
             if (core_logs.is_permeable(z) == 1.0)
             {
                 {
-                    ofstream f{std::string{"output/layer_"} + std::to_string(layer_id) + std::string{".csv"}};
+                    ofstream f{std::string{"output/t_layer_"} + std::to_string(layer_id) + std::string{".csv"}};
 
                     f << sep << sep
                       << grid.transpose().format(commaFmt) << '\n';
                     for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
                     {
+                        MeshNodesContainer out_t{MeshNodesContainer::Zero(size)};
+                        const auto T{states[t].cur_state.row(z)};
+                        out_t.head(3ll) = T.head(3ll);
+                        out_t.tail(size - 3ll) = T.tail(size - 3ll);
+                        out_t(3ll) = (out_t(2ll)+out_t(4ll))/2.0;
+
                         f << t << sep << times[t] << sep
-                          << states[t].cur_state.row(z).format(commaFmt) << '\n';
+                          << out_t.format(commaFmt) << '\n';
                     }
 
                     f.close();
                 }
                 {
-                    ofstream f{std::string{"output/pressure/layer_"} + std::to_string(layer_id) + std::string{".csv"}};
+                    ofstream f{std::string{"output/pressure/p_layer_"} + std::to_string(layer_id) + std::string{".csv"}};
+                    
+                    f << sep << sep
+                      << grid_r.dual_nodes.transpose().format(commaFmt) << '\n';
 
                     f << sep << sep
                       << grid.transpose().format(commaFmt) << '\n';
+
                     for (auto t{0ll}; t < (ptrdiff_t)p_times.size(); ++t)
                     {
+                        MeshNodesContainer out_p{MeshNodesContainer::Zero(size)};
+                        const auto p{p_states[t].cur_state.row(z)};
+                        out_p.head(3ll) = p.head(3ll);
+                        out_p(3ll) = out_p(2ll);
+                        out_p.tail(size - 3ll) = p.tail(size - 3ll);
+
                         f << t << sep << p_times[t] << sep
-                          << p_states[t].cur_state.row(z).format(commaFmt) << '\n';
+                          << out_p.format(commaFmt) << '\n';
                     }
 
                     f.close();
-
                 }
                 ++layer_id;
             }
