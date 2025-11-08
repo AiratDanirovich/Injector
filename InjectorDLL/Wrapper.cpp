@@ -354,7 +354,7 @@ Wrapper::Wrapper(
             {
                 {
                     ofstream f{std::string{"output/t_layer_"} + std::to_string(layer_id) + std::string{".csv"}};
-                    
+
                     // print time ids
                     f << sep;
                     for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
@@ -365,18 +365,18 @@ Wrapper::Wrapper(
                     f << sep << sep << transfer_to_eigen(times).transpose().format(commaFmt) << '\n';
 
                     // prepare data to print
-                    GridNodeValues2D out_tt{GridNodeValues2D::Zero(size, (ptrdiff_t)times.size()+2ll)};
-                    out_tt.col(0ll) =  grid_r.dual_nodes.transpose();
-                    out_tt.col(1ll) =  grid.transpose();
+                    GridNodeValues2D out_tt{GridNodeValues2D::Zero(size, (ptrdiff_t)times.size() + 2ll)};
+                    out_tt.col(0ll) = grid_r.dual_nodes.transpose();
+                    out_tt.col(1ll) = grid.transpose();
                     for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
                     {
                         MeshNodesContainer out_t{MeshNodesContainer::Zero(size)};
                         const auto T{states[t].cur_state.row(z).transpose()};
                         out_t.head(3ll) = T.head(3ll);
                         out_t.tail(size - 3ll) = T.tail(size - 3ll);
-                        out_t(3ll) = (out_t(2ll)+out_t(4ll))/2.0;
+                        out_t(3ll) = (out_t(2ll) + out_t(4ll)) / 2.0;
 
-                        out_tt.col(t+2ll) = out_t;
+                        out_tt.col(t + 2ll) = out_t;
                     }
                     // print prepared data
                     f << out_tt.format(commaFmt) << '\n';
@@ -396,9 +396,9 @@ Wrapper::Wrapper(
                     f << sep << sep << transfer_to_eigen(p_times).transpose().format(commaFmt) << '\n';
 
                     // prepare data to print
-                    GridNodeValues2D out_pp{GridNodeValues2D::Zero(size, (ptrdiff_t)times.size()+2ll)};
-                    out_pp.col(0ll) =  grid_r.dual_nodes.transpose();
-                    out_pp.col(1ll) =  grid.transpose();
+                    GridNodeValues2D out_pp{GridNodeValues2D::Zero(size, (ptrdiff_t)times.size() + 2ll)};
+                    out_pp.col(0ll) = grid_r.dual_nodes.transpose();
+                    out_pp.col(1ll) = grid.transpose();
                     for (auto t{0ll}; t < (ptrdiff_t)p_times.size(); ++t)
                     {
                         MeshNodesContainer out_p{MeshNodesContainer::Zero(size)};
@@ -407,7 +407,7 @@ Wrapper::Wrapper(
                         out_p.tail(size - 3ll) = P.tail(size - 3ll);
                         out_p(3ll) = out_p(2ll);
 
-                        out_pp.col(t+2ll) = out_p;
+                        out_pp.col(t + 2ll) = out_p;
                     }
                     // print prepared data
                     f << out_pp.format(commaFmt) << '\n';
@@ -417,35 +417,59 @@ Wrapper::Wrapper(
             }
         }
 
+        const auto size_z{grid_z.mesh_size()};
         {
             ofstream f{std::string{"output/well_temperature.csv"}};
-            f << sep << sep << grid_z.mesh_nodes.transpose().format(commaFmt) << '\n';
+            // print time ids
+            f << sep;
             for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
-            {
-                f << t << sep << times[t] << sep << states[t].cur_state.col(0ll).format(commaFmt) << '\n';
-            }
+                f << sep << t;
+            f << '\n';
+
+            // print time moments
+            f << sep << sep << transfer_to_eigen(times).transpose().format(commaFmt) << '\n';
+
+            // prepare data to print
+            GridNodeValues2D out_tt{GridNodeValues2D::Zero(size_z, (ptrdiff_t)times.size() + 2ll)};
+            out_tt.col(0ll) = grid_z.dual_nodes.tail(size_z);
+            out_tt.col(1ll) = grid_z.mesh_nodes;
+            for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
+                out_tt.col(t + 2ll) = states[t].cur_state.col(0ll);
+            // print prepared data
+            f << out_tt.format(commaFmt) << '\n';
             f.close();
         }
 
         {
             ofstream f{std::string{"output/cement_temperature.csv"}};
-            f << sep << sep << grid_z.mesh_nodes.transpose().format(commaFmt) << '\n';
+            // print time ids
+            f << sep;
+            for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
+                f << sep << t;
+            f << '\n';
+            // print time moments
+            f << sep << sep << transfer_to_eigen(times).transpose().format(commaFmt) << '\n';
+            // prepare data to print
+            GridNodeValues2D out_tt{GridNodeValues2D::Zero(size_z, (ptrdiff_t)times.size() + 2ll)};
+            out_tt.col(0ll) = grid_z.dual_nodes.tail(size_z);
+            out_tt.col(1ll) = grid_z.mesh_nodes;
             for (auto t{0ll}; t < (ptrdiff_t)times.size(); ++t)
             {
-                f << t << sep << times[t] << sep << states[t].cur_state.col(1ll).format(commaFmt) << '\n';
+                out_tt.col(t + 2ll) = states[t].cur_state.col(2ll);
             }
+            f << out_tt.format(commaFmt) << '\n';
             f.close();
         }
 
         // print grids
         {
             ofstream f{std::string{"output/z_grid.csv"}};
-            f << grid_z.mesh_nodes.transpose().format(commaFmt) << '\n';
+            f << grid_z.mesh_nodes.format(commaFmt) << '\n';
             f.close();
         }
         {
             ofstream f{std::string{"output/r_grid.csv"}};
-            f << grid_r.mesh_nodes.transpose().format(commaFmt) << '\n';
+            f << grid_r.mesh_nodes.format(commaFmt) << '\n';
             f.close();
         }
         {
@@ -535,11 +559,6 @@ Wrapper::Wrapper(
 
             f.close();
         }
-        // {
-        //     ofstream f{std::string{"output/data.txt"}};
-        //     f << "top collector height: " << grid_z.mesh_nodes(well.top_collector_cell_id()) << " m" << endl;
-        //     f.close();
-        // }
     }
     catch (const std::exception &e)
     {
