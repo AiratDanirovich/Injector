@@ -11,7 +11,7 @@
     "external_pressure": 
                  [   0.0, 260,  260,  0.0],
     "medium_compressibility": 
-                 [   0.0, 2E-5, 2E-5, 0.0],
+                 [   0.0, 0, 0, 0.0],
     "thickness": [   100, 2,   3,    21 ],
     "is_perforated":[0.0, 0.0, 1.0,  0.0],
     "cross_flow":{
