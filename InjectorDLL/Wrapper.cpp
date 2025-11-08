@@ -342,7 +342,7 @@ Wrapper::Wrapper(
         const auto &grid_r{grid2D->second_coord()};
         const auto size{grid_r.dual_size()};
 
-        const Eigen::IOFormat commaFmt(Eigen::StreamPrecision, Eigen::DontAlignCols, sep, sep, "", "", "", "");
+        const Eigen::IOFormat commaFmt(Eigen::FullPrecision, Eigen::DontAlignCols, sep, sep, "", "", "", "");
         for (auto z{0ll}, layer_id{0ll}; z < grid2D->first_coord().mesh_size(); ++z)
         {
             MeshNodesContainerT grid{MeshNodesContainerT::Zero(grid_r.dual_size())};
@@ -373,6 +373,9 @@ Wrapper::Wrapper(
                 }
                 {
                     ofstream f{std::string{"output/pressure/p_layer_"} + std::to_string(layer_id) + std::string{".csv"}};
+                    
+                    f << sep << sep
+                      << grid_r.dual_nodes.transpose().format(commaFmt) << '\n';
 
                     f << sep << sep
                       << grid.transpose().format(commaFmt) << '\n';
