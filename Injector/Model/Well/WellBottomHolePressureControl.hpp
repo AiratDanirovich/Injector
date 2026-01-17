@@ -84,6 +84,7 @@ namespace GPN
             struct WellBottomHolePressureControl
             {
             };
+            
         } // BotHolePresControl
     } // Well
 } // GPN
