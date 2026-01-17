@@ -1,204 +1,357 @@
+#include <memory>
 #include <iostream>
+#include <fstream>
+#include <string>
 #include <numbers>
+#include <cmath>
+#include <vector>
 
 #include <Injector/Grids/Defines.h>
+
 #include <Injector/Grids/GridsFactory.hpp>
-#include <Injector/Properties/LogsFactory.hpp>
-#include <Injector/Model/Well/Well.hpp>
+#include <Injector/Grids/Grids2D.hpp>
+#include <Injector/Grids/Map/Grids2DMap.hpp>
+#include <Injector/Grids/GridRefiners.hpp>
+
+#include <Injector/History/History.hpp>
+
 #include <Injector/Model/Phases/FluidFactory.hpp>
+#include <Injector/Model/Collector.hpp>
+#include <Injector/Model/Well/Well.hpp>
 
 #include <Injector/Model/Well/WellBottomHolePressureControl.hpp>
 
+
+#include <Injector/Model/Well/WellFactory.hpp>
+#include <Injector/Model/Well/CrossFlow.hpp>
+#include <Injector/Model/Hydrodynamic/Compressible/CompressibleRatesFactory.hpp>
+#include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluid.hpp>
+#include <Injector/Model/Heat/HeatBoundaryConditions.hpp>
+#include <Injector/Model/Completion.hpp>
+#include <Injector/Model/ExtrudedCasingFactory.hpp>
+
+#include <Injector/Properties/Logs.hpp>
+#include <Injector/Properties/FlowField.hpp>
+#include <Injector/Properties/Factory.hpp>
+#include <Injector/Solver/FullImplicit/Solver.hpp>
+#include <Injector/Solver/SolverManager.hpp>
+
+#include "includes/transfer_to_eigen.hpp"
+#include "includes/make_r_stencils.hpp"
+#include "includes/make_history.hpp"
+#include "includes/make_geotherma.hpp"
+#include "includes/make_water.hpp"
+#include "includes/get_completion.hpp"
+#include "includes/generate_stencils_and_steps.hpp"
+#include "includes/set_is_permeable_stencils.hpp"
+#include "includes/IC_BC.hpp"
+
+#include <nlohmann/json.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
-
-#include "includes/transfer_to_eigen.hpp"
-#include "includes/make_steps.hpp"
-
 using namespace Catch;
 using namespace Catch::Matchers;
+using json = nlohmann::json;
 
 using namespace std;
-
 using namespace GPN;
-using namespace GPN::Grids;
 using namespace GPN::Logs;
+using namespace GPN::CrossFlow;
+using namespace GPN::Grids;
 using namespace GPN::Phases;
-using namespace GPN::CoordinateTypes;
+using namespace GPN::Completion;
+using namespace GPN::Hydrodynamic;
+using namespace GPN::EqSolver;
+using namespace GPN::EqSolver::FullImplicit;
 
-std::vector<RealType> grid_stencils{0.0, 1.0, 3.0, 7.0, 10.0};
-std::vector<RealType> grid_thickness{make_steps(grid_stencils)};
-std::vector<RealType> permeability_stencils(grid_stencils.size() - 1ull, 1.0);
-std::vector<RealType> is_permeable_stencils(grid_stencils.size() - 1ull, 1.0);
-std::vector<RealType> is_perforated_stencils{is_permeable_stencils};
-
-const RealType rate{1.0};
-const RealType pressure{1.0 / (2.0 * std::numbers::pi * permeability_stencils.back() * grid_stencils.back())};
-
-const RealType rMax{std::numbers::e}; // m
-/*well*/
-const RealType sandface_radius{1.0}; // m
-const RealType column_radius{0.5}; // m
-const RealType tube_radius{0.1};     // m
-
-const RealType tol{1e-12};
-
-TEST_CASE("Well_Test")
+TEST_CASE("Solver", "SelfSimilarCyl")
 {
-    is_perforated_stencils[0ll] = 0.0;
+    ifstream f("heatflow_test_data.json");
+    REQUIRE(f.is_open());
+    json data = json::parse(f);
 
-    const auto z_grid{
-        Grids::Factory::create_axes<CoordinateTypes::Z>(
-            grid_stencils)};
+    /*START*/
+    // input parameters
+    /*fluid*/
+    RealType
+        viscosity{data["fluid"]["viscosity"].get<RealType>()},
+        density{data["fluid"]["density"].get<RealType>()},
+        capacity{data["fluid"]["specific_heat_capacity"].get<RealType>()},
+        heat_conductivity{data["fluid"]["heat_conductivity"].get<RealType>()},
+        joule_thomson{data["fluid"]["joule_thomson"].get<RealType>()};
+    /*collector*/
+    const auto thickness{data["collector"]["thickness"].get<VR>()};
+    // const ptrdiff_t nLayers{thickness.size()};
+    // hydrodynamic logs
+    const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"].get<VR>())};
+    const auto porosity_stencils{transfer_to_eigen(data["collector"]["porosity"].get<VR>())};
+    const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"].get<VR>(), 1e-12)};
+    const auto RFP_weights_stencils{transfer_to_eigen(data["collector"]["explicit"]["weights"].get<VR>())};
+    const auto from_coords{data["collector"]["cross_flow"]["from_coord"].get<VR>()};
+    const auto to_layers{data["collector"]["cross_flow"]["to_layers"].get<std::vector<std::ptrdiff_t>>()};
+    const auto is_permeable_stencils{set_is_permeable_stencils(is_perforated_stencils, to_layers)};
+    const auto ext_pressure_stencils{transfer_to_eigen(data["collector"]["external_pressure"].get<VR>(), 1e5)};
+    const auto medium_compressibility_stencils{transfer_to_eigen(data["collector"]["medium_compressibility"].get<VR>())};
+    // heat logs
+    const auto solid_heatconductivity_stencils{transfer_to_eigen(data["collector"]["heatConductivity"].get<VR>())};
+    const auto solid_density_stencils{transfer_to_eigen(data["collector"]["solidDensity"].get<VR>())};
+    const auto solid_specific_heatcapacity_stencils{transfer_to_eigen(data["collector"]["solidSpecificHeatCapacity"].get<VR>())};
+    /*grid*/
+    const auto
+        z_minor_step{data["grid"]["z_minor_step"].get<RealType>()}; // m
+    //  const ptrdiff_t rNodes{data["grid"]["rNodes"]};
+    /*history*/
+    const auto t_minor_step{data["history"]["t_minor_step"].get<RealType>()};
+    const auto start_time{data["history"]["start_time"].get<RealType>()};
+    /*temperatures*/
+    /*completion*/
+    // z-refiner
+    const auto z_stencils{Grids::Factory::generate_dual_grid_stencils_from_steps(
+        0.0, thickness)};
+    RefinerVerticle z_refiner{z_minor_step, is_permeable_stencils};
+    const auto temp_grid_z{
+        Factory::create_axes<CoordinateTypes::Z>(
+            z_refiner, z_stencils)};
+    const Casing<VarRing> completion{get_completion(data, temp_grid_z)};
+    /*END*/
 
-    const auto is_permeable{
-        Logs::IsPermeableFactory::create(
+    // make fluid
+    const PhasePropertiesJT water{make_water(data)};
+
+    // make grid2D
+    // r_stencils
+    const VR r_stencils{
+        WellHoles{WellHolesFactory::create(completion)}.get_stencils(
+            data["grid"]["r_start"].get<RealType>(),
+            data["grid"]["r_end"].get<RealType>())};
+    // r-refiner
+    const AbstractRefinerRadial *r_refiner{
+        make_r_refiner(data)};
+
+    const auto r_nodes{r_refiner->refine(r_stencils)};
+    // the grid itself
+    const auto grid2D{
+        Grids::CylinderGridFactory::create(
+            z_refiner, z_stencils,
+            r_nodes)};
+    const auto &grid_z{grid2D->first_coord()};
+    const auto &grid_r{grid2D->second_coord()};
+
+        const cptr<Grids::CylinderGridRock> grid2D_rocks{
+        make_shared<Grids::CylinderGridRock>(grid2D)};
+    constexpr auto left_margin{3ll};
+    const auto &grid_rocks_z{grid2D_rocks->first_coord()};
+    const auto &grid_rocks_r{grid2D_rocks->second_coord()};
+
+    const auto rMin{grid_r.dual_front()};
+    const auto rMax{grid_r.dual_back()};
+
+    const ExtrudedCasing extr_completion{
+        VarExtrudedCasingFactory::create(completion)};
+
+    cout << "radial dual grid stencils:\n"
+         << grid_r.dual_nodes.transpose() << endl;
+
+    // cout << "radial grid:\n"
+    //      << grid2D->second_coord.dual_nodes.transpose() << endl;
+    // cout << "vertical grid:\n"
+    //      << grid2D->first_coord.dual_nodes.transpose() << endl;
+
+    // cout << "radial grid cell centers:\n"
+    //      << grid2D->second_coord.mesh_nodes.transpose() << endl;
+    // cout << "vertical grid cell centers:\n"
+    //      << grid2D->first_coord.mesh_nodes.transpose() << endl;
+
+    // cout << "radial grid mesh steps:\n"
+    //      << grid2D->second_coord.mesh_steps.transpose() << endl;
+    // cout << "vertical grid mesh steps:\n"
+    //      << grid2D->first_coord.mesh_steps.transpose() << endl;
+
+    const Logs::Rocks::CoreSampleLogs core_logs{
+        is_permeable_stencils,
+        is_perforated_stencils,
+        porosity_stencils,
+        permeability_stencils,
+        grid_z};
+
+    const Logs::Hydrodynamics::BaseHydrodynamics base_hydrodynamics{
+        Logs::Rocks::CoreSampleLogs{
             is_permeable_stencils,
-            z_grid)};
-
-    const auto is_perforated{
-        Logs::IsPerforatedFactory::create(
             is_perforated_stencils,
-            is_permeable_stencils,
-            z_grid)};
-
-    const auto permeability{
-        Logs::PermeabilityFactory::create(
+            porosity_stencils,
             permeability_stencils,
-            is_permeable_stencils,
-            z_grid)};
+            grid_z},
+        medium_compressibility_stencils,
+        ext_pressure_stencils};
 
-    const auto water{FluidFactory::create_water(
-        Viscosity{1.0},
-        Density{1.0},
-        SpecificHeatCapacity{1.0},
-        GPN::HeatConductivity{1.0})};
+    const Properties::Rocks::RocksProps
+        rock_field_props{
+            base_hydrodynamics,
+            water,
+            grid2D_rocks};
 
-    WellHoles well_holes{
-        TubeInnerRadius{tube_radius}, 
-        ColumnOuterRadius{column_radius}, 
-        SandfaceRadius{sandface_radius}};
+    // well
+    // const Well_KH well{
+    //     water, core_logs.is_permeable, core_logs.is_perforated, core_logs.permeability, well_holes, rMax};
+    const auto RFP_weights{
+        RFPFactory::create_from_container(
+            RFP_weights_stencils,
+            core_logs.is_permeable)};
+    const CrossFlows cross_flows{
+        RFP_weights, from_coords, to_layers};
+    const auto WFP_weights{
+        create_WFP(
+            core_logs.is_perforated,
+            RFP_weights,
+            cross_flows)};
 
-    cout << "thickness profile:\n"
-         << transfer_to_eigen(grid_thickness).transpose();
+    const Well_Explicit well_explicit{
+        core_logs.is_permeable, core_logs.is_perforated, RFP_weights};
 
-    struct Record
+    const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
+
+    const Logs::Rocks::HeatLogs heat_logs{
+        solid_density_stencils,
+        solid_specific_heatcapacity_stencils,
+        solid_heatconductivity_stencils,
+        porosity_stencils,
+        water,
+        grid_z};
+
+    std::unique_ptr<const Logs::Geotherma> geotherma{
+        make_unique<Logs::Geotherma>(
+            make_geotherma(data, grid2D))};
+
+    Properties::Rocks::HeatProps heat_props{
+        heat_logs, grid2D};
+
+    // properties of material that fills the well up to the sandface
+    heat_props.apply_well(extr_completion, well);
+
+    FaceProperties::Rocks::HeatFaceProps heat_face_props{
+        heat_props, grid2D};
+    heat_face_props.apply_well(extr_completion, well);
+    // history
+    const shared_ptr<History> history{make_shared<History>(make_history(data))};
+    // fluid model for the pressure field
+    using FluidField_t =
+        decltype(CompressibleFluidField{
+            start_time,
+            water,
+            rock_field_props,
+            well,
+            history,
+            grid2D_rocks});
+
+    auto ptr_pressure_field{
+        make_shared<FluidField_t>(
+            start_time,
+            water,
+            rock_field_props,
+            well,
+            history,
+            grid2D_rocks)};
+
+    // rates field factory
+    using RatesFactory_t =
+        decltype(FaceProperties::CompressibleRatesFactory{
+        ptr_pressure_field,
+        grid2D_rocks, well, history, water});
+    auto ptr_rates_factory{make_shared<RatesFactory_t>(
+        ptr_pressure_field,
+        grid2D_rocks, well, history, water)};
+    // initial condition
+    const auto initial_state{GPN::ICFactory(start_time, grid2D, *geotherma)};
+    // boundary conditions
+    const GPN::Heat::HeatBC bc{
+        grid2D,
+        std::make_shared<GPN::FunctorBC<
+            Well_CrossFlow,
+            History,
+            FluidField_t,
+            RatesFactory_t>>(
+            history, ptr_rates_factory, *geotherma, grid2D),
+        ptr_rates_factory
+        };
+    // solver
+
+    using Solver_t = decltype(Solver{
+        heat_face_props.medium_heat_conductivity,
+        grid2D,
+        heat_props.medium_vol_heatcapacity,
+        ptr_rates_factory, initial_state,
+        bc, start_time});
+
+    auto solver_ptr{std::make_shared<Solver_t>(
+        heat_face_props.medium_heat_conductivity,
+        grid2D,
+        heat_props.medium_vol_heatcapacity,
+        ptr_rates_factory, initial_state,
+        bc, start_time)};
+
+    const auto &solver{*solver_ptr};
+
+    SolverManager solver_manager{history, solver_ptr};
+
+    solver_manager.run(t_minor_step);
+
+    const auto& [p_times, p_states] = ptr_rates_factory->solution;
+
+    // assert solution
+    const double tol = 1E-11;
+    const auto precision{1e-5};
+
+    const auto& rates_factory{*ptr_rates_factory};
+    // {
+    //     string path{std::string{"flow_field.txt"}};
+    //     ofstream f{path};
+    //     f << (rates_factory.get_heat_flow_in_axes1() / precision).round() * precision << endl
+    //       << endl;
+    //     f << (rates_factory.get_heat_flow_in_axes2() / precision).round() * precision << endl
+    //       << endl;
+    //     f.close();
+    // }
+    // maximum principle
+    const auto &[times, states] = solver.solution();
+    // overall heat balance
+    RealType cur_heat_incr = 0.0;
+    RealType cum_inlet_heat = 0.0;
+    //  cout << "volumetric heat capacity\n"
+    //       << heat_props.medium_vol_heatcapacity.its_values << endl;
+    for (auto t{1ll}; t < (ptrdiff_t)times.size(); ++t)
     {
-        const RealType rate, pressure;
-    } history_record_q{rate, std::numeric_limits<double>::quiet_NaN()},
-        history_record_p{std::numeric_limits<double>::quiet_NaN(), pressure};
+        cur_heat_incr +=
+            ((states[t].cur_state - states[t - 1ll].cur_state) *
+             heat_props.medium_vol_heatcapacity.values() * grid2D->volumes())
+                .sum();
+        cum_inlet_heat +=
+            (times[t] - times[t - 1ll]) *
+            history->rates(t - 1ll) *
+            water.volumetric_heat_capacity * (history->temps(t - 1ll) /*- initial_temperature*/);
 
-    const Well_KH well_q{
-        water, is_permeable, is_perforated, permeability, well_holes, rMax};
-
-    const auto rfp_q = RFPFactory::create_from_container(well_q.get_RFP(history_record_q), is_permeable);
-    const auto wfp_q = WFPFactory::create_from_container(well_q.get_WFP(history_record_q), is_perforated);
-
-    const Well_KH well_p{
-        water, is_permeable, is_perforated, permeability, well_holes, rMax};
-
-    const auto rfp_p = RFPFactory::create_from_container(well_p.get_RFP(history_record_p), is_permeable);
-    const auto wfp_p = WFPFactory::create_from_container(well_p.get_WFP(history_record_p), is_perforated);
-
-    { // check Well_KH
-
-        { // check well_kh at fixed rate
-
-            cout << "\nwell rate profile:     \n"
-                 << wfp_q.log_vals.transpose();
-            cout << "\nreservoir rate profile:\n"
-                 << rfp_q.log_vals.transpose();
-
-            for (auto i{0ll}; i < rfp_q.size(); ++i)
-            {
-                CHECK_THAT(rate / (grid_stencils.back() - grid_stencils.front()) *
-                               z_grid.dual_steps(i),
-                           WithinRel(rfp_q(i), tol));
-            }
-
-            CHECK_THAT(rfp_q.log_vals.sum(),
-                       WithinRel(rate, tol));
-            CHECK_THAT(wfp_q.log_vals.sum(),
-                       WithinRel(rate, tol));
-
-            RealType cum_rate{0.0};
-            ptrdiff_t i{0ll};
-            for (auto l{0ll}; (i < rfp_q.size()) && (l < 2ll); ++i)
-            {
-                if (is_permeable(i) == 1.0)
-                {
-                    cum_rate += rfp_q(i);
-                    ++l;
-                }
-            }
-
-            CHECK(wfp_q(i - 1ll) == cum_rate);
-        }
-
-        { // check well_kh at fixed pressure
-            cout << "\nwell rate profile:     \n"
-                 << wfp_p.log_vals.transpose();
-            cout << "\nreservoir rate profile:\n"
-                 << rfp_p.log_vals.transpose();
-
-            for (auto i{0ll}; i < rfp_p.size(); ++i)
-            {
-                CHECK_THAT(rate / (grid_stencils.back() - grid_stencils.front()) *
-                               z_grid.dual_steps(i),
-                           WithinRel(rfp_p(i), tol));
-            }
-
-            CHECK(rfp_p.log_vals.sum() == rate);
-            CHECK(wfp_p.log_vals.sum() == rate);
-
-            RealType cum_rate{0.0};
-            ptrdiff_t i{0ll};
-            for (auto l{0ll}; (i < rfp_p.size()) && (l < 2ll); ++i)
-            {
-                if (is_permeable(i) == 1.0)
-                {
-                    cum_rate += rfp_p(i);
-                    ++l;
-                }
-            }
-
-            CHECK(wfp_p(i - 1ll) == cum_rate);
-        }
-
-        { // compare well_kh at fixed rate vs fixed pressure
-            assert(rfp_p.size() == rfp_q.size());
-            assert(wfp_p.size() == wfp_q.size());
-            assert(rfp_p.size() == wfp_p.size());
-            assert(rfp_q.size() == rfp_q.size());
-            for (auto i{0ll}; i < rfp_p.size(); ++i)
-            {
-                CHECK_THAT(rfp_p.log_vals(i), WithinRel(rfp_q.log_vals(i), tol));
-                CHECK_THAT(wfp_p.log_vals(i), WithinRel(wfp_q.log_vals(i), tol));
-            }
-        }
-    }
-
-    { // check Well_explicit
-        vector<RealType> weights;
-        weights.reserve(grid_thickness.size());
-        for (auto i{0ull}; i < grid_thickness.size(); ++i)
-            weights.push_back(grid_thickness[i] * permeability_stencils[i]);
-
-        const Well_Explicit well_q_exp{
-            is_permeable, is_perforated, transfer_to_eigen(weights)};
-
-        const auto rfp_q_exp = RFPFactory::create_from_container(well_q_exp.get_RFP(history_record_q), is_permeable);
-        const auto wfp_q_exp = WFPFactory::create_from_container(well_q_exp.get_WFP(history_record_q), is_perforated);
-
-        assert(rfp_p.size() == rfp_q_exp.size());
-        assert(wfp_p.size() == wfp_q_exp.size());
-        assert(rfp_p.size() == wfp_p.size());
-        assert(rfp_q_exp.size() == rfp_q_exp.size());
-        for (auto i{0ll}; i < rfp_p.size(); ++i)
+        for (auto t{1ll}; t < (ptrdiff_t)times.size(); ++t)
         {
-            CHECK_THAT(rfp_p.log_vals(i), WithinRel(rfp_q_exp.log_vals(i), tol));
-            CHECK_THAT(wfp_p.log_vals(i), WithinRel(wfp_q_exp.log_vals(i), tol));
+            cur_heat_incr +=
+                ((states[t].cur_state - states[t - 1ll].cur_state) *
+                 heat_props.medium_vol_heatcapacity.values() * grid2D->volumes())
+                    .sum();
+            cum_inlet_heat +=
+                (times[t] - times[t - 1ll]) *
+                history->rates(t - 1ll) *
+                water.volumetric_heat_capacity * (history->temps(t - 1ll) /*- initial_temperature*/);
+
+            RealType rel_tol = std::abs(2.0 * (cur_heat_incr - cum_inlet_heat) / (cur_heat_incr + cum_inlet_heat));
+            //    CHECK(rel_tol < 0.05);
         }
     }
+#pragma endregion
+    // {
+    //     const auto &state = states.back();
+    //     std::string path{std::string{"T_"} + std::to_string(0) + std::string{".txt"}};
+    //     std::ofstream f{path};
+
+    //     f << ((state.cur_state /*- initial_temperature*/) / precision).round() * precision;
+    //     f.close();
+    // }
 }
