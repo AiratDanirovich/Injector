@@ -381,6 +381,9 @@ namespace GPN
         const CrossFlow::CrossFlows cross_flows;
     };
 
+    /**
+     * @brief Incompressible fluid is assumed in reservoir
+     */
     struct Well_KH
         : public Well_Explicit
     {
