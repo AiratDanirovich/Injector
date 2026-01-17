@@ -74,11 +74,6 @@ namespace GPN
                     bc_types[north_id] = BoundaryCondition::BCType::second;
                     bc_types[south_id] = BoundaryCondition::BCType::second;
                 }
-
-                void set_bc_type(const RealType t)
-                {
-                    this->t = t;
-                }
             };
 #pragma endregion
 
