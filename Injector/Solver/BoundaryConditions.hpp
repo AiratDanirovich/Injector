@@ -15,12 +15,14 @@ namespace GPN
         {
             struct BoundaryCondition
             {
+                // sides of computational domain
                 enum Side
                 {
                     East, West,
                     North, South
                 };
 
+                // types of boundary conditions
                 enum BCType
                 {
                     undef,
