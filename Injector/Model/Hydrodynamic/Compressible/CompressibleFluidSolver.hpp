@@ -18,7 +18,7 @@ namespace GPN
     namespace Hydrodynamic
     {
 #pragma region INITIAL-CONDITION
-        /// @brief Initial temperature is assumed to be constant
+        /// @brief Initial pressure is assumed to be constant
         struct FunctorIC : public GPN::InitialConditions::ICFunctorBase
         {
             FunctorIC(const Logs::ExternalPressure &ext_pressure)
