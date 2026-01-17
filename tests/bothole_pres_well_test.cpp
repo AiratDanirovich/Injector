@@ -21,7 +21,6 @@
 
 #include <Injector/Model/Well/WellBottomHolePressureControl.hpp>
 
-
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleRatesFactory.hpp>
@@ -138,7 +137,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto &grid_z{grid2D->first_coord()};
     const auto &grid_r{grid2D->second_coord()};
 
-        const cptr<Grids::CylinderGridRock> grid2D_rocks{
+    const cptr<Grids::CylinderGridRock> grid2D_rocks{
         make_shared<Grids::CylinderGridRock>(grid2D)};
     constexpr auto left_margin{3ll};
     const auto &grid_rocks_z{grid2D_rocks->first_coord()};
@@ -256,8 +255,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     // rates field factory
     using RatesFactory_t =
         decltype(FaceProperties::CompressibleRatesFactory{
-        ptr_pressure_field,
-        grid2D_rocks, well, history, water});
+            ptr_pressure_field,
+            grid2D_rocks, well, history, water});
     auto ptr_rates_factory{make_shared<RatesFactory_t>(
         ptr_pressure_field,
         grid2D_rocks, well, history, water)};
@@ -272,8 +271,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             FluidField_t,
             RatesFactory_t>>(
             history, ptr_rates_factory, *geotherma, grid2D),
-        ptr_rates_factory
-        };
+        ptr_rates_factory};
     // solver
 
     using Solver_t = decltype(Solver{
@@ -296,13 +294,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     solver_manager.run(t_minor_step);
 
-    const auto& [p_times, p_states] = ptr_rates_factory->solution;
+    const auto &[p_times, p_states] = ptr_rates_factory->solution;
 
     // assert solution
     const double tol = 1E-11;
     const auto precision{1e-5};
 
-    const auto& rates_factory{*ptr_rates_factory};
+    const auto &rates_factory{*ptr_rates_factory};
     // {
     //     string path{std::string{"flow_field.txt"}};
     //     ofstream f{path};
@@ -354,4 +352,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     //     f << ((state.cur_state /*- initial_temperature*/) / precision).round() * precision;
     //     f.close();
     // }
+
+    std::cout << "BottomHole pressure test : success!";
 }
