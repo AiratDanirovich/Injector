@@ -43,7 +43,8 @@ namespace GPN
         }
 #pragma endregion
 #pragma region BOUNDARY-CONDITION
-        template <typename Well_t, typename History_t, typename Grid2D_t>
+        template <typename Well_t, // this template is not used
+        typename History_t, typename Grid2D_t>
         struct FunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
         {
             //    using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;

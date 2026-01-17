@@ -11,7 +11,9 @@ namespace GPN
         namespace BotHolePresControl
         {
 #pragma region BOUNDARY-CONDITION
-            template <typename History_t, typename Grid2D_t>
+            template <
+            typename Well_t, // this template is not used
+            typename History_t, typename Grid2D_t>
             struct FunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
             {
                 FunctorBC(
