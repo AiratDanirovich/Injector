@@ -80,7 +80,9 @@ namespace GPN
                 solver->advance(time_step);
                 const GridNodeValues2D &rock_P{solver->get_state().cur_state};
                 GridNodeValues2D out{GridNodeValues2D::Zero(first_size, second_size)};
+                // set pressure in reservoir as a solution of respective problem
                 out.rightCols(second_size - Grid2D_t::l_margin) = rock_P;
+                // get pressure from the well
                 out.leftCols(Grid2D_t::l_margin).colwise() = rock_P.col(0ll) + history_record.rate * inv_mobility;
 
                 P_prev = P;
