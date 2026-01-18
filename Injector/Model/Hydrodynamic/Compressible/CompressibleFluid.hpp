@@ -124,7 +124,7 @@ namespace GPN
                 const HydroBC bc{
                     grid2D_rocks,
                     std::make_shared<const FunctorBC<
-                        Well_t, History_t, Grid2D_t>>(
+                        History_t, Grid2D_t>>(
                         history, ext_pressure, rfp, grid2D_rocks)};
 
                 const auto initial_state{ICFactory(start_time, grid2D_rocks, ext_pressure)};
