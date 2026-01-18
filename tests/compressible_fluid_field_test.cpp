@@ -147,7 +147,17 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             core_logs.is_perforated,
             RFP_weights,
             cross_flows)};
-    const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
+    // const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
+
+    
+    const Well well{
+        Well_CrossFlow{
+            RFP_weights,
+            WFP_weights,
+            cross_flows},
+        rock_field_props,
+        grid2D_rocks};
+
 #pragma endregion
 #pragma region MAKE-HISTORY
     const ptr<History> history{make_shared<History>(make_history(data))};

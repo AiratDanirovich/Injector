@@ -6,7 +6,7 @@
 
 namespace GPN
 {
-    namespace Well
+    namespace Wells
     {
         namespace BotHolePresControl
         {
@@ -86,5 +86,5 @@ namespace GPN
             };
             
         } // BotHolePresControl
-    } // Well
+    } // Wells
 } // GPN

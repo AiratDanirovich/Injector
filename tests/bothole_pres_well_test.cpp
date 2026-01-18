@@ -57,7 +57,7 @@ using namespace std;
 using namespace GPN;
 using namespace GPN::Logs;
 using namespace GPN::CrossFlow;
-using namespace GPN::Well::BotHolePresControl;
+using namespace GPN::Wells::BotHolePresControl;
 using namespace GPN::Grids;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
@@ -186,10 +186,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             RFP_weights,
             cross_flows)};
 
-    const Well_Explicit well_explicit{
-        core_logs.is_permeable, core_logs.is_perforated, RFP_weights};
-
-    const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
+    const Well well{
+        Well_CrossFlow{
+            RFP_weights,
+            WFP_weights,
+            cross_flows},
+        rock_field_props,
+        grid2D_rocks};
 
     const WellBottomHolePressureControl well_bothole{};
 

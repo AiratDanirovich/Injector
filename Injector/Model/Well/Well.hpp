@@ -11,6 +11,7 @@
 
 #include <Injector/Grids/Defines.h>
 #include <Injector/Model/Phases/PhaseProperties.hpp>
+#include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Well/WellHoles.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Properties/Logs.hpp>
@@ -156,7 +157,7 @@ namespace GPN
             else if (std::isnan(pressure))
             { // define pressure from rate
                 assert(!std::isnan(rate));
-        //        assert(rate >= 0.0);
+                //        assert(rate >= 0.0);
 
                 const auto rfp_vals{get_RFP(rate, pressure)};
                 // leftover flowrate along the well
@@ -184,7 +185,7 @@ namespace GPN
             else if (std::isnan(pressure))
             { // define pressure from rate
                 assert(!std::isnan(rate));
-            //    assert(rate >= 0.0);
+                //    assert(rate >= 0.0);
                 return ((rate / weights_sum) * RFP_weights).eval();
             }
             else
@@ -202,7 +203,7 @@ namespace GPN
             else if (std::isnan(pressure))
             { // define pressure from rate
                 assert(!std::isnan(rate));
-            //    assert(rate >= 0.0);
+                //    assert(rate >= 0.0);
                 return ((rate / weights_sum) * WFP_weights).eval();
             }
             else
@@ -294,14 +295,14 @@ namespace GPN
         {
             return get_verticle_well_flow(history_record.rate, history_record.pressure);
         }
-        
+
         const StepPropertyContainer &RFP_weights;
         const StepPropertyContainer &WFP_weights;
 
-    private:
+    protected:
         StepPropertyContainer get_RFP(
-            RealType rate,
-            RealType pressure) const
+            const RealType rate,
+            const RealType pressure) const
         {
             if (std::isnan(rate))
             { // define rate from pressure
@@ -310,7 +311,7 @@ namespace GPN
             else if (std::isnan(pressure))
             { // define pressure from rate
                 assert(!std::isnan(rate));
-//                assert(rate >= 0.0);
+                //                assert(rate >= 0.0);
                 return ((rate / weights_sum) * RFP_weights).eval();
             }
             else
@@ -318,8 +319,8 @@ namespace GPN
         }
 
         StepPropertyContainer get_WFP(
-            RealType rate,
-            RealType pressure) const
+            const RealType rate,
+            const RealType pressure) const
         {
             if (std::isnan(rate))
             { // define rate from pressure
@@ -328,7 +329,7 @@ namespace GPN
             else if (std::isnan(pressure))
             { // define pressure from rate
                 assert(!std::isnan(rate));
-            //    assert(rate >= 0.0);
+                //    assert(rate >= 0.0);
                 return ((rate / weights_sum) * WFP_weights).eval();
             }
             else
@@ -336,8 +337,8 @@ namespace GPN
         }
 
         StepPropertyContainer get_verticle_cement_flow(
-            RealType rate,
-            RealType pressure) const
+            const RealType rate,
+            const RealType pressure) const
         {
             if (std::isnan(rate))
             { // define rate from pressure
@@ -346,16 +347,16 @@ namespace GPN
             else if (std::isnan(pressure))
             { // define pressure from rate
                 assert(!std::isnan(rate));
-//                assert(rate >= 0.0);
+                //                assert(rate >= 0.0);
                 return ((rate / weights_sum) * cross_flows.get_normalized_verticle_flux()).eval();
             }
             else
                 throw std::invalid_argument("RFP: Either rate or pressure must be set, but not both.");
         }
-        
+
         StepPropertyContainer get_verticle_well_flow(
-            RealType rate,
-            RealType pressure) const
+            const RealType rate,
+            const RealType pressure) const
         {
             if (std::isnan(rate))
             { // define rate from pressure
@@ -366,8 +367,8 @@ namespace GPN
                 assert(!std::isnan(rate));
 
                 const auto wfp{get_WFP(rate, pressure)};
-                StepPropertyContainer out(StepPropertyContainer::Zero(wfp.rows()+1ll));
-                std::partial_sum(wfp.cbegin(), wfp.cend(), out.begin()+1ll, std::plus<RealType>{});
+                StepPropertyContainer out(StepPropertyContainer::Zero(wfp.rows() + 1ll));
+                std::partial_sum(wfp.cbegin(), wfp.cend(), out.begin() + 1ll, std::plus<RealType>{});
                 out = rate - out;
 
                 return out;
@@ -379,6 +380,56 @@ namespace GPN
         const RealType weights_sum;
 
         const CrossFlow::CrossFlows cross_flows;
+    };
+
+    template <
+        typename Grid2D_t,
+        typename Well_t>
+    struct Well : public Well_t
+    {
+        using Well_t::weights_sum;
+        using Well_t::RFP_weights;
+
+        Well(const Well_t &well_base,
+             const Properties::Rocks::RocksProps<Grid2D_t> &
+                 rock_field_props,
+             const cptr<Grid2D_t> grid2D_rocks)
+            : Well_t{well_base},
+              inv_mobility{set_inv_mobility(rock_field_props, well_base, grid2D_rocks)}
+        {
+        }
+
+        StepPropertyContainer get_pressure_at_symmetry_axis(
+            const RealType rate,
+            const auto& ref_pressure) const
+        {
+            return ref_pressure + rate * inv_mobility;
+        }
+
+    private:
+        static auto set_inv_mobility(
+            const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
+            const Well_t &well,
+            cptr<Grid2D_t> grid2D_rocks)
+        {
+            const auto r3{grid2D_rocks->second_coord().mesh_nodes(0ll)};
+            const auto r2_face{grid2D_rocks->second_coord().dual_nodes(0ll)};
+            const auto two_pi{2.0 * std::numbers::pi_v<RealType>};
+            const auto is_permeable{rock_field_props.base_hydrodynamics.is_permeable.log_vals};
+
+            Eigen::ArrayX<RealType> out{well.RFP_weights / (two_pi / std::log(r3 / r2_face) *
+                                                            rock_field_props.mobility_axes2.col(Grid2D_t::l_margin) *
+                                                            grid2D_rocks->first_coord().volumes())};
+
+            for (auto row{0ll}; row < grid2D_rocks->first_coord().mesh_size(); ++row)
+            {
+                if (is_permeable(row) == 0.0)
+                    out(row) = 0.0;
+            }
+            return out;
+        }
+        
+        const StepPropertyContainer inv_mobility;
     };
 
     /**
