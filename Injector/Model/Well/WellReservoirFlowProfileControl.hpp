@@ -136,7 +136,6 @@ namespace GPN
 
                 const StepPropertyContainer inv_mobility;
             };
-
         } // ResFlowProfileControl
     } // Wells
 } // GPN
