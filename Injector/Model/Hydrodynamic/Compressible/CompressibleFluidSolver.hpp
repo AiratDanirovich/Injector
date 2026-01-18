@@ -43,7 +43,7 @@ namespace GPN
         }
 #pragma endregion
 #pragma region BOUNDARY-CONDITION
-        template <typename Well_t, typename History_t, typename Grid2D_t>
+        template <typename History_t, typename Grid2D_t>
         struct FunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
         {
             //    using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
@@ -96,21 +96,6 @@ namespace GPN
             const StepPropertyContainer rfp;
             const cptr<History_t> history;
         };
-
-        // struct HydroBC : public BoundaryConditions::GeneralBC
-        // {
-        //     template <typename Grid2D_t>
-        //     HydroBC(const cptr<Grid2D_t> &grid,
-        //             const cptr<const BCFunctorBase> functor)
-        //         : BoundaryConditions::GeneralBC{grid, functor, BoundaryCondition::BCType::second}
-        //     {
-        //         bc_types[east_id] = BoundaryCondition::BCType::first;
-        //     }
-        // void set_bc_type(const RealType t)
-        // {
-        //     this->t = t;
-        // }
-        // };
 #pragma endregion
 
         template <typename Solver_t>
