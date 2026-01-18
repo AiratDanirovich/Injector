@@ -57,6 +57,7 @@ using namespace std;
 using namespace GPN;
 using namespace GPN::Logs;
 using namespace GPN::CrossFlow;
+using namespace GPN::Well::BotHolePresControl;
 using namespace GPN::Grids;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
@@ -149,24 +150,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const ExtrudedCasing extr_completion{
         VarExtrudedCasingFactory::create(completion)};
 
-    cout << "radial dual grid stencils:\n"
-         << grid_r.dual_nodes.transpose() << endl;
-
-    // cout << "radial grid:\n"
-    //      << grid2D->second_coord.dual_nodes.transpose() << endl;
-    // cout << "vertical grid:\n"
-    //      << grid2D->first_coord.dual_nodes.transpose() << endl;
-
-    // cout << "radial grid cell centers:\n"
-    //      << grid2D->second_coord.mesh_nodes.transpose() << endl;
-    // cout << "vertical grid cell centers:\n"
-    //      << grid2D->first_coord.mesh_nodes.transpose() << endl;
-
-    // cout << "radial grid mesh steps:\n"
-    //      << grid2D->second_coord.mesh_steps.transpose() << endl;
-    // cout << "vertical grid mesh steps:\n"
-    //      << grid2D->first_coord.mesh_steps.transpose() << endl;
-
     const Logs::Rocks::CoreSampleLogs core_logs{
         is_permeable_stencils,
         is_perforated_stencils,
@@ -191,8 +174,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             grid2D_rocks};
 
     // well
-    // const Well_KH well{
-    //     water, core_logs.is_permeable, core_logs.is_perforated, core_logs.permeability, well_holes, rMax};
     const auto RFP_weights{
         RFPFactory::create_from_container(
             RFP_weights_stencils,
@@ -210,6 +191,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
+    const WellBottomHolePressureControl well_bothole{};
+
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
         solid_specific_heatcapacity_stencils,
@@ -226,11 +209,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         heat_logs, grid2D};
 
     // properties of material that fills the well up to the sandface
-    heat_props.apply_well(extr_completion, well);
+    heat_props.apply_well(extr_completion, well_bothole);
 
     FaceProperties::Rocks::HeatFaceProps heat_face_props{
         heat_props, grid2D};
-    heat_face_props.apply_well(extr_completion, well);
+    heat_face_props.apply_well(extr_completion, well_bothole);
     // history
     const shared_ptr<History> history{make_shared<History>(make_history(data))};
     // fluid model for the pressure field
@@ -353,5 +336,5 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     //     f.close();
     // }
 
-    std::cout << "BottomHole pressure test : success!";
+    std::cout << "BottomHole pressure test : success!\n";
 }
