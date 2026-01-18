@@ -97,21 +97,20 @@ namespace GPN
             const cptr<History_t> history;
         };
 
-        struct HydroBC : public BoundaryConditions::GeneralBC
-        {
-            template <typename Grid2D_t>
-            HydroBC(const cptr<Grid2D_t> &grid,
-                    const cptr<const BCFunctorBase> functor)
-                : BoundaryConditions::GeneralBC{grid, functor, BoundaryCondition::BCType::second}
-            {
-                bc_types[east_id] = BoundaryCondition::BCType::first;
-            }
-
-            void set_bc_type(const RealType t)
-            {
-                this->t = t;
-            }
-        };
+        // struct HydroBC : public BoundaryConditions::GeneralBC
+        // {
+        //     template <typename Grid2D_t>
+        //     HydroBC(const cptr<Grid2D_t> &grid,
+        //             const cptr<const BCFunctorBase> functor)
+        //         : BoundaryConditions::GeneralBC{grid, functor, BoundaryCondition::BCType::second}
+        //     {
+        //         bc_types[east_id] = BoundaryCondition::BCType::first;
+        //     }
+        // void set_bc_type(const RealType t)
+        // {
+        //     this->t = t;
+        // }
+        // };
 #pragma endregion
 
         template <typename Solver_t>

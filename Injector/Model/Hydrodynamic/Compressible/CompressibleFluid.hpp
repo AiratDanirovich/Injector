@@ -38,7 +38,7 @@ namespace GPN
                     Grid2D_t,
                     Properties::MediumCompressibility<Grid2D_t>,
                     EqSolver::EmptyConvectionField,
-                    HydroBC>;
+                    hydro_bc_type>;
 
             CompressibleFluidField(
                 const RealType start_time,
@@ -120,7 +120,7 @@ namespace GPN
                 //         rock_field_props,
                 //         grid2D_rocks};
 
-                const HydroBC bc{
+                const hydro_bc_type bc{
                     grid2D_rocks,
                     std::make_shared<const FunctorBC<
                         Well_t, History_t, Grid2D_t>>(

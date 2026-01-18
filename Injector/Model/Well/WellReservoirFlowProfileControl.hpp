@@ -72,6 +72,10 @@ namespace GPN
                     bc_types[north_id] = BoundaryCondition::BCType::second;
                     bc_types[south_id] = BoundaryCondition::BCType::second;
                 }
+                void set_bc_type(const RealType t)
+                {
+                    this->t = t;
+                }
             };
 #pragma endregion
 
@@ -94,9 +98,9 @@ namespace GPN
                 using hydro_bc_type = HydroBC;
 
                 WellReservoirFlowProfileControl(const Well_t &well_base,
-                     const Properties::Rocks::RocksProps<Grid2D_t> &
-                         rock_field_props,
-                     const cptr<Grid2D_t> grid2D_rocks)
+                                                const Properties::Rocks::RocksProps<Grid2D_t> &
+                                                    rock_field_props,
+                                                const cptr<Grid2D_t> grid2D_rocks)
                     : Well_t{well_base},
                       inv_mobility{set_inv_mobility(rock_field_props, well_base, grid2D_rocks)}
                 {
