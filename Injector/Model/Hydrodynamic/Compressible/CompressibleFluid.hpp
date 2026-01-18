@@ -99,7 +99,7 @@ namespace GPN
 
             const FaceProperties::Mobility<Grid2D_t> mobility;
         private:
-            const Eigen::ArrayX<RealType> inv_mobility;
+            const StepPropertyContainer inv_mobility;
             std::unique_ptr<CompressibleFluidSolver<Solver_t>> solver;
             const ptrdiff_t first_size, second_size;
             const cptr<Grid2D_t> grid2D_rocks;
@@ -114,7 +114,7 @@ namespace GPN
                 const auto two_pi{2.0 * std::numbers::pi_v<RealType>};
                 const auto is_permeable{rock_field_props.base_hydrodynamics.is_permeable.log_vals};
 
-                Eigen::ArrayX<RealType> out{well.RFP_weights / (
+                StepPropertyContainer out{well.RFP_weights / (
                     two_pi / std::log(r3 / r2_face) * 
                     rock_field_props.mobility_axes2.col(Grid2D_t::l_margin) * 
                     grid2D_rocks->first_coord().volumes())};
