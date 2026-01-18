@@ -389,7 +389,7 @@ namespace GPN
     {
         using Well_t::weights_sum;
         using Well_t::RFP_weights;
-        
+
         Well(const Well_t &well_base,
              const Properties::Rocks::RocksProps<Grid2D_t> &
                  rock_field_props,
@@ -405,23 +405,11 @@ namespace GPN
             return get_pressure_at_symmetry_axis(history_record.rate, history_record.pressure);
         }
 
-    protected:
         StepPropertyContainer get_pressure_at_symmetry_axis(
             const RealType rate,
-            const RealType pressure) const
+            const auto& ref_pressure) const
         {
-            if (std::isnan(rate))
-            { // define rate from pressure
-                throw std::invalid_argument("RFP: Rate must be set");
-            }
-            else if (std::isnan(pressure))
-            { // define pressure from rate
-                assert(!std::isnan(rate));
-                //                assert(rate >= 0.0);
-                return ((rate / weights_sum) * RFP_weights).eval();
-            }
-            else
-                throw std::invalid_argument("RFP: Either rate or pressure must be set, but not both.");
+            return ref_pressure + rate * inv_mobility;
         }
 
     private:
@@ -447,7 +435,7 @@ namespace GPN
             return out;
         }
         
-        const Eigen::ArrayX<RealType> inv_mobility;
+        const StepPropertyContainer inv_mobility;
     };
 
     struct Well_KH
