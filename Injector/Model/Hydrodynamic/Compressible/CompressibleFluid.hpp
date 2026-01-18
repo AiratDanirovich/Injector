@@ -31,12 +31,15 @@ namespace GPN
             using Base::P_prev;
             using Base::well;
 
+            using functor_type = typename Well_t:: template functor_type<History_t>;
+            using hydro_bc_type = typename Well_t::hydro_bc_type;
+
             using Solver_t =
                 EqSolver::FullImplicit::Solver<
                     Grid2D_t,
                     Properties::MediumCompressibility<Grid2D_t>,
                     EqSolver::EmptyConvectionField,
-                    HydroBC>;
+                    hydro_bc_type>;
 
             CompressibleFluidField(
                 const RealType start_time,
@@ -81,11 +84,10 @@ namespace GPN
                 GridNodeValues2D out{GridNodeValues2D::Zero(first_size, second_size)};
                 // set pressure in reservoir as a solution of respective problem
                 out.rightCols(second_size - Grid2D_t::l_margin) = rock_P;  
-                // get pressure from the well              
-                out.leftCols(Grid2D_t::l_margin).colwise() = 
-                    well.get_pressure_at_symmetry_axis(
-                        history_record.rate, rock_P.col(0ll)
-                    );
+                // get pressure from the well                            
+                out.leftCols(Grid2D_t::l_margin).colwise() = well.get_pressure_at_symmetry_axis(
+                    history_record.rate, rock_P
+                );
 
                 P_prev = P;
 
@@ -121,10 +123,9 @@ namespace GPN
                 //         rock_field_props,
                 //         grid2D_rocks};
 
-                const HydroBC bc{
+                const hydro_bc_type bc{
                     grid2D_rocks,
-                    std::make_shared<const FunctorBC<
-                        History_t, Grid2D_t>>(
+                    std::make_shared<const functor_type>(
                         history, ext_pressure, rfp, grid2D_rocks)};
 
                 const auto initial_state{ICFactory(start_time, grid2D_rocks, ext_pressure)};

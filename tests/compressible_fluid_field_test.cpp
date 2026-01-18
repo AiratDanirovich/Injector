@@ -17,6 +17,7 @@
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Well/Well.hpp>
+#include <Injector/Model/Well/WellReservoirFlowProfileControl.hpp>
 
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleRatesFactory.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluid.hpp>
@@ -47,6 +48,7 @@ using namespace GPN::Grids;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
 using namespace GPN::Hydrodynamic;
+using namespace GPN::Wells::ResFlowProfileControl;
 
 using VR = std::vector<GPN::RealType>;
 
@@ -150,7 +152,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     // const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
     
-    const Well well{
+    const WellReservoirFlowProfileControl well{
         Well_CrossFlow{
             RFP_weights,
             WFP_weights,

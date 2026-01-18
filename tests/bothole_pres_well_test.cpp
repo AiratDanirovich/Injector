@@ -18,8 +18,9 @@
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Well/Well.hpp>
+#include <Injector/Model/Well/WellReservoirFlowProfileControl.hpp>
 
-#include <Injector/Model/Well/WellBottomHolePressureControl.hpp>
+// #include <Injector/Model/Well/WellBottomHolePressureControl.hpp>
 
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
@@ -57,7 +58,7 @@ using namespace std;
 using namespace GPN;
 using namespace GPN::Logs;
 using namespace GPN::CrossFlow;
-using namespace GPN::Wells::BotHolePresControl;
+using namespace GPN::Wells::ResFlowProfileControl;
 using namespace GPN::Grids;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
@@ -186,7 +187,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             RFP_weights,
             cross_flows)};
 
-    const Well well{
+    const WellReservoirFlowProfileControl well{
         Well_CrossFlow{
             RFP_weights,
             WFP_weights,
@@ -194,7 +195,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         rock_field_props,
         grid2D_rocks};
 
-    const WellBottomHolePressureControl well_bothole{};
+    // const WellBottomHolePressureControl well_bothole{};
 
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
@@ -212,11 +213,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         heat_logs, grid2D};
 
     // properties of material that fills the well up to the sandface
-    heat_props.apply_well(extr_completion, well_bothole);
+    heat_props.apply_well(extr_completion, well);
 
     FaceProperties::Rocks::HeatFaceProps heat_face_props{
         heat_props, grid2D};
-    heat_face_props.apply_well(extr_completion, well_bothole);
+    heat_face_props.apply_well(extr_completion, well);
     // history
     const shared_ptr<History> history{make_shared<History>(make_history(data))};
     // fluid model for the pressure field
