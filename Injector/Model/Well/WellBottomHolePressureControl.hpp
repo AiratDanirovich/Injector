@@ -62,10 +62,10 @@ namespace GPN
                 const cptr<const History_t> history;
             };
 
-            struct HydroBC : public BoundaryConditions::GeneralBC
+            struct BotHolePresBC : public BoundaryConditions::GeneralBC
             {
                 template <typename Grid2D_t>
-                HydroBC(const cptr<Grid2D_t> &grid,
+                BotHolePresBC(const cptr<Grid2D_t> &grid,
                         const cptr<const BCFunctorBase> functor)
                     : BoundaryConditions::GeneralBC{grid, functor, BoundaryCondition::BCType::first}
                 {
@@ -75,14 +75,36 @@ namespace GPN
             };
 #pragma endregion
 
-            struct BotHolePresBC : public BoundaryConditions::GeneralBC
+            template <
+                typename Grid2D_t,
+                typename Well_t>
+            struct WellBottomHolePressureControl : public Well_t
             {
+                using Well_t::RFP_weights;
+                using Well_t::weights_sum;
+
+                template <typename History_t>
+                using functor_type = FunctorBC<History_t, Grid2D_t>;
+
+                using hydro_bc_type = BotHolePresBC;
+
+                WellBottomHolePressureControl(
+                    const Well_t &well_base,
+                    const Properties::Rocks::RocksProps<Grid2D_t> &
+                        rock_field_props,
+                    const cptr<Grid2D_t> grid2D_rocks)
+                    : Well_t{well_base}
+                {
+                }
+
+                // StepPropertyContainer get_pressure_at_symmetry_axis(
+                //     const RealType rate,
+                //     const auto &ref_pressure) const
+                // {
+                //     return ref_pressure.col(0ll) + rate * inv_mobility;
+                // }
             };
 
-            struct WellBottomHolePressureControl
-            {
-            };
-            
         } // BotHolePresControl
     } // Wells
 } // GPN

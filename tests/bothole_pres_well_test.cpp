@@ -20,7 +20,7 @@
 #include <Injector/Model/Well/Well.hpp>
 #include <Injector/Model/Well/WellReservoirFlowProfileControl.hpp>
 
-// #include <Injector/Model/Well/WellBottomHolePressureControl.hpp>
+#include <Injector/Model/Well/WellBottomHolePressureControl.hpp>
 
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
