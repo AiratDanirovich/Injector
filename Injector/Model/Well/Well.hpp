@@ -399,11 +399,6 @@ namespace GPN
         {
         }
 
-        template <typename HistoryRecord_t>
-        auto get_pressure_at_symmetry_axis(const HistoryRecord_t &history_record) const
-        {
-            return get_pressure_at_symmetry_axis(history_record.rate, history_record.pressure);
-        }
 
         StepPropertyContainer get_pressure_at_symmetry_axis(
             const RealType rate,
