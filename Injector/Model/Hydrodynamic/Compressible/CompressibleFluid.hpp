@@ -31,6 +31,7 @@ namespace GPN
             using Base::P_prev;
             using Base::well;
 
+            using functor_type = typename Well_t:: template functor_type<History_t>;
             using hydro_bc_type = typename Well_t::hydro_bc_type;
 
             using Solver_t =
