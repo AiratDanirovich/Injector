@@ -399,7 +399,6 @@ namespace GPN
         {
         }
 
-
         StepPropertyContainer get_pressure_at_symmetry_axis(
             const RealType rate,
             const auto& ref_pressure) const
