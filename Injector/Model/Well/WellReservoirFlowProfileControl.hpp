@@ -62,10 +62,10 @@ namespace GPN
                 const cptr<const History_t> history;
             };
 
-            struct HydroBC : public BoundaryConditions::GeneralBC
+            struct RFPControlBC : public BoundaryConditions::GeneralBC
             {
                 template <typename Grid2D_t>
-                HydroBC(const cptr<Grid2D_t> &grid,
+                RFPControlBC(const cptr<Grid2D_t> &grid,
                         const cptr<const BCFunctorBase> functor)
                     : BoundaryConditions::GeneralBC{grid, functor, BoundaryCondition::BCType::first}
                 {
@@ -79,14 +79,6 @@ namespace GPN
             };
 #pragma endregion
 
-            // struct BotHolePresBC : public BoundaryConditions::GeneralBC
-            // {
-            // };
-
-            // struct WellBottomHolePressureControl
-            // {
-            // };
-
             template <
                 typename Grid2D_t,
                 typename Well_t>
@@ -95,7 +87,10 @@ namespace GPN
                 using Well_t::RFP_weights;
                 using Well_t::weights_sum;
 
-                using hydro_bc_type = HydroBC;
+                template <typename History_t>
+                using functor_type = FunctorBC<History_t, Grid2D_t>;
+
+                using hydro_bc_type = RFPControlBC;
 
                 WellReservoirFlowProfileControl(const Well_t &well_base,
                                                 const Properties::Rocks::RocksProps<Grid2D_t> &
