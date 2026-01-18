@@ -134,7 +134,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto &grid_z{grid2D->first_coord()};
     const auto &grid_r{grid2D->second_coord()};
 
-        const cptr<Grids::CylinderGridRock> grid2D_rocks{
+    const cptr<Grids::CylinderGridRock> grid2D_rocks{
         make_shared<Grids::CylinderGridRock>(grid2D)};
     constexpr auto left_margin{3ll};
     const auto &grid_rocks_z{grid2D_rocks->first_coord()};
@@ -202,10 +202,21 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             RFP_weights,
             cross_flows)};
 
+    // history
+    const shared_ptr<History> history{make_shared<History>(make_history(data))};
+
     const Well_Explicit well_explicit{
         core_logs.is_permeable, core_logs.is_perforated, RFP_weights};
 
-    const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
+    //   const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
+
+    const Well well{
+        Well_CrossFlow{
+            RFP_weights,
+            WFP_weights,
+            cross_flows},
+        rock_field_props,
+        grid2D_rocks};
 
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
@@ -228,8 +239,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     FaceProperties::Rocks::HeatFaceProps heat_face_props{
         heat_props, grid2D};
     heat_face_props.apply_well(extr_completion, well);
-    // history
-    const shared_ptr<History> history{make_shared<History>(make_history(data))};
     // fluid model for the pressure field
     using FluidField_t =
         decltype(CompressibleFluidField{
@@ -252,8 +261,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     // rates field factory
     using RatesFactory_t =
         decltype(FaceProperties::CompressibleRatesFactory{
-        ptr_pressure_field,
-        grid2D_rocks, well, history, water});
+            ptr_pressure_field,
+            grid2D_rocks, well, history, water});
     auto ptr_rates_factory{make_shared<RatesFactory_t>(
         ptr_pressure_field,
         grid2D_rocks, well, history, water)};
@@ -268,8 +277,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             FluidField_t,
             RatesFactory_t>>(
             history, ptr_rates_factory, *geotherma, grid2D),
-        ptr_rates_factory
-        };
+        ptr_rates_factory};
     // solver
 
     using Solver_t = decltype(Solver{
@@ -292,13 +300,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     solver_manager.run(t_minor_step);
 
-    const auto& [p_times, p_states] = ptr_rates_factory->solution;
+    const auto &[p_times, p_states] = ptr_rates_factory->solution;
 
     // assert solution
     const double tol = 1E-11;
     const auto precision{1e-5};
 
-    const auto& rates_factory{*ptr_rates_factory};
+    const auto &rates_factory{*ptr_rates_factory};
     // {
     //     string path{std::string{"flow_field.txt"}};
     //     ofstream f{path};
