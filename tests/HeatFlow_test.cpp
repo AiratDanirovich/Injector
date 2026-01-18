@@ -18,6 +18,7 @@
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Well/Well.hpp>
+#include <Injector/Model/Well/WellReservoirFlowProfileControl.hpp>
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleRatesFactory.hpp>
@@ -58,6 +59,7 @@ using namespace GPN::Grids;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
 using namespace GPN::Hydrodynamic;
+using namespace GPN::Wells::ResFlowProfileControl;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::FullImplicit;
 
@@ -210,7 +212,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     //   const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
-    const Well well{
+    const WellReservoirFlowProfileControl well{
         Well_CrossFlow{
             RFP_weights,
             WFP_weights,

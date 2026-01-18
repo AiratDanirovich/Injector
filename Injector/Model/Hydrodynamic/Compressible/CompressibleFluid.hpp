@@ -81,7 +81,7 @@ namespace GPN
                 GridNodeValues2D out{GridNodeValues2D::Zero(first_size, second_size)};
                 out.rightCols(second_size - Grid2D_t::l_margin) = rock_P;                
                 out.leftCols(Grid2D_t::l_margin).colwise() = well.get_pressure_at_symmetry_axis(
-                    history_record.rate, rock_P.col(0ll)
+                    history_record.rate, rock_P
                 );
 
                 P_prev = P;
