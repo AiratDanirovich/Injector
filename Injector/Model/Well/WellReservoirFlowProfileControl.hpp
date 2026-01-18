@@ -91,6 +91,8 @@ namespace GPN
                 using Well_t::RFP_weights;
                 using Well_t::weights_sum;
 
+                using hydro_bc_type = HydroBC;
+
                 WellReservoirFlowProfileControl(const Well_t &well_base,
                      const Properties::Rocks::RocksProps<Grid2D_t> &
                          rock_field_props,

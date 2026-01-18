@@ -31,6 +31,8 @@ namespace GPN
             using Base::P_prev;
             using Base::well;
 
+            using hydro_bc_type = typename Well_t::hydro_bc_type;
+
             using Solver_t =
                 EqSolver::FullImplicit::Solver<
                     Grid2D_t,
