@@ -59,7 +59,6 @@ namespace GPN
                     grid2D_rocks->grid2D->first_coord().mesh_size()}, 
                   second_size{
                     grid2D_rocks->grid2D->second_coord().mesh_size()},
-                  inv_mobility{set_inv_mobility(rock_field_props, well, grid2D_rocks)}, 
                   grid2D_rocks{grid2D_rocks}
             {
                 solver =
@@ -80,8 +79,10 @@ namespace GPN
                 solver->advance(time_step);
                 const GridNodeValues2D &rock_P{solver->get_state().cur_state};
                 GridNodeValues2D out{GridNodeValues2D::Zero(first_size, second_size)};
-                out.rightCols(second_size - Grid2D_t::l_margin) = rock_P;
-                out.leftCols(Grid2D_t::l_margin).colwise() = rock_P.col(0ll) + history_record.rate * inv_mobility;
+                out.rightCols(second_size - Grid2D_t::l_margin) = rock_P;                
+                out.leftCols(Grid2D_t::l_margin).colwise() = well.get_pressure_at_symmetry_axis(
+                    history_record.rate, rock_P.col(0ll)
+                );
 
                 P_prev = P;
 
@@ -99,33 +100,9 @@ namespace GPN
 
             const FaceProperties::Mobility<Grid2D_t> mobility;
         private:
-            const StepPropertyContainer inv_mobility;
             std::unique_ptr<CompressibleFluidSolver<Solver_t>> solver;
             const ptrdiff_t first_size, second_size;
             const cptr<Grid2D_t> grid2D_rocks;
-
-            static auto set_inv_mobility(
-                const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
-                const Well_t &well,
-                cptr<Grid2D_t> grid2D_rocks)
-            {
-                const auto r3{grid2D_rocks->second_coord().mesh_nodes(0ll)};
-                const auto r2_face{grid2D_rocks->second_coord().dual_nodes(0ll)};
-                const auto two_pi{2.0 * std::numbers::pi_v<RealType>};
-                const auto is_permeable{rock_field_props.base_hydrodynamics.is_permeable.log_vals};
-
-                StepPropertyContainer out{well.RFP_weights / (
-                    two_pi / std::log(r3 / r2_face) * 
-                    rock_field_props.mobility_axes2.col(Grid2D_t::l_margin) * 
-                    grid2D_rocks->first_coord().volumes())};
-
-                    for(auto row{0ll}; row < grid2D_rocks->first_coord().mesh_size(); ++row)
-                    {
-                        if(is_permeable(row) == 0.0)
-                            out(row) = 0.0;
-                    }
-                return out;
-            }
 
             static auto set_solver(
                 const RealType start_time,
