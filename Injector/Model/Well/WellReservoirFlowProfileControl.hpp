@@ -141,7 +141,9 @@ namespace GPN
                 }
 
                 template <typename HistoryRecord_t>
-                void set_well_flow_field(const HistoryRecord_t &record)
+                void set_well_flow_field(
+                    const HistoryRecord_t &record,
+                    const auto &)
                 {
                     // set verticle flux
                     flow_axes1_value.col(0ll) = this->get_verticle_well_flow(record);

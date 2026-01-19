@@ -57,7 +57,7 @@ namespace GPN
                 solver->advance(time_step);
             }
 
-            const auto get_state() const
+            const auto& get_state() const
             {
                 return solver->get_state();
             }

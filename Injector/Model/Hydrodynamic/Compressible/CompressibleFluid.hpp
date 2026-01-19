@@ -73,7 +73,7 @@ namespace GPN
                 const HistoryRecord_t &history_record)
             {
                 solver->advance(time_step);
-                const GridNodeValues2D &rock_P{solver->get_state().cur_state};
+                const GridNodeValues2D &rock_P{get_rock_pressure()};
                 GridNodeValues2D out{GridNodeValues2D::Zero(first_size, second_size)};
                 // set pressure in reservoir as a solution of respective problem
                 out.rightCols(second_size - Grid2D_t::l_margin) = rock_P;
@@ -93,6 +93,10 @@ namespace GPN
             const auto &get_mobility() const
             {
                 return solver->mobility;
+            }
+            const auto &get_rock_pressure() const
+            {
+                return solver->get_state().cur_state;
             }
 
             const FaceProperties::Mobility<Grid2D_t> mobility;

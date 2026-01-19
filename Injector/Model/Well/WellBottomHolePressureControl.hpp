@@ -114,8 +114,7 @@ namespace GPN
                           FaceValuesContainer::Zero(
                               grid2D_rocks->first_coord().mesh_size(),
                               Grid2D_t::l_margin + 1ll)}
-                {
-                }
+                { }
 
                 template <typename HistoryRecord_t>
                 StepPropertyContainer get_pressure_at_symmetry_axis(
@@ -126,7 +125,9 @@ namespace GPN
                 }
 
                 template <typename HistoryRecord_t>
-                void set_well_flow_field(const HistoryRecord_t &record)
+                void set_well_flow_field(
+                    const HistoryRecord_t &record,
+                    const auto &ref_pressure)
                 {
                     // set verticle flux
                     flow_axes1_value.col(0ll) = this->get_verticle_well_flow(record);
@@ -139,10 +140,9 @@ namespace GPN
                     flow_axes2_value.col(1ll) = wfp;
                     flow_axes2_value.col(2ll) = wfp;
                     flow_axes2_value.col(3ll) =
-                        this->get_RFP(record);
+                        this->get_RFP(record, ref_pressure);
                 }
 
-                
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
                 
                 template <typename HistoryRecord_t>
@@ -153,9 +153,8 @@ namespace GPN
                     return get_RFP(record, ref_pressure).sum();
                 }
 
-
                 template <typename HistoryRecord_t>
-                StepPropertyContainer get_total_bottomhole_rate(
+                StepPropertyContainer get_RFP(
                     const HistoryRecord_t &record,
                     const auto &ref_pressure) const
                 {
