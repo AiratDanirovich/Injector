@@ -154,14 +154,25 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             cross_flows)};
     // const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
-    const WellReservoirFlowProfileControl well{
+    using Well_t =
+        decltype(WellReservoirFlowProfileControl{
         rock_field_props,
         Well_CrossFlow{
             RFP_weights,
             WFP_weights,
             cross_flows},
         history,
-        grid2D_rocks};
+        grid2D_rocks});
+
+    const ptr<Well_t> well{
+        std::make_shared<Well_t>(
+        rock_field_props,
+        Well_CrossFlow{
+            RFP_weights,
+            WFP_weights,
+            cross_flows},
+        history,
+        grid2D_rocks)};
 
 #pragma endregion
     using CompressibleFluidField_t =
@@ -169,7 +180,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             start_time,
             water,
             rock_field_props,
-            well,
+            *well,
             history,
             grid2D_rocks});
     auto ptr_pressure_field{
@@ -177,7 +188,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             start_time,
             water,
             rock_field_props,
-            well,
+            *well,
             history,
             grid2D_rocks)};
     auto &pressure_field{*ptr_pressure_field};
@@ -216,7 +227,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         {
             const auto t{cur_time + step};
             rates_factory.set_flow_field(cur_time, step);
-            const auto rfp{well.get_RFP(history->get_current_record())};
+            const auto rfp{well->get_RFP(history->get_current_record())};
 #pragma region CHECK-PRESSURE
             const auto &P{pressure_field.current_pressure().values()};
             CHECK(rfp.rows() == grid_z.mesh_size());
@@ -300,11 +311,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             CHECK(flux2.rows() == grid_z.mesh_size());
             CHECK(flux2.cols() == grid_r.dual_size());
             const auto &mobility2{pressure_field.mobility.face_vals_axes2};
-            const auto wfp{well.get_WFP(history->get_current_record())};
+            const auto wfp{well->get_WFP(history->get_current_record())};
             CHECK(wfp.rows() == grid_z.mesh_size());
-            const auto cement_flow{well.get_verticle_cement_flow(history->get_current_record())};
+            const auto cement_flow{well->get_verticle_cement_flow(history->get_current_record())};
             CHECK(cement_flow.rows() == grid_z.dual_size());
-            const auto well_flow{well.get_verticle_well_flow(history->get_current_record())};
+            const auto well_flow{well->get_verticle_well_flow(history->get_current_record())};
             CHECK(well_flow.rows() == grid_z.dual_size());
             RealType well_loss_cum_sum{0.0};
 #pragma region HORIZONTAL-RATES

@@ -105,7 +105,15 @@ namespace GPN
                                   history, rock_field_props.base_hydrodynamics.ext_pressure,
                                   grid2D_rocks))},
                       size{grid2D_rocks->first_coord().mesh_size()},
-                      mobility{set_mobility(rock_field_props, grid2D_rocks)}
+                      mobility{set_mobility(rock_field_props, grid2D_rocks)},
+                      flow_axes1_value{
+                          FaceValuesContainer::Zero(
+                              grid2D_rocks->first_coord().mesh_size() + 1ll,
+                              Grid2D_t::l_margin)},
+                      flow_axes2_value{
+                          FaceValuesContainer::Zero(
+                              grid2D_rocks->first_coord().mesh_size(),
+                              Grid2D_t::l_margin + 1ll)}
                 {
                 }
 
@@ -117,13 +125,25 @@ namespace GPN
                     return StepPropertyContainer::Constant(size, record.pressure);
                 }
 
-                // template <typename HistoryRecord_t>
-                // StepPropertyContainer get_RFP(
-                //     const HistoryRecord_t &record,
-                //     const auto &ref_pressure) const
-                // {
-                //     return mobility * (ref_pressure.col(0ll) - record.pressure);
-                // }
+                template <typename HistoryRecord_t>
+                void set_well_flow_field(const HistoryRecord_t &record)
+                {
+                    // set verticle flux
+                    flow_axes1_value.col(0ll) = this->get_verticle_well_flow(record);
+                    flow_axes1_value.col(1ll) = 0.0;
+                    flow_axes1_value.col(2ll) = this->get_verticle_cement_flow(record);
+                    // set radial flux
+                    static_assert(Grid2D_t::l_margin == 3ll);
+                    const auto wfp{this->get_WFP(record)};
+                    flow_axes2_value.col(0ll) = 0.0;
+                    flow_axes2_value.col(1ll) = wfp;
+                    flow_axes2_value.col(2ll) = wfp;
+                    flow_axes2_value.col(3ll) =
+                        this->get_RFP(record);
+                }
+
+                
+                FaceValuesContainer flow_axes1_value, flow_axes2_value;
                 
                 template <typename HistoryRecord_t>
                 RealType get_total_bottomhole_rate(

@@ -92,23 +92,13 @@ namespace GPN
                     FaceValuesContainer::Zero(
                         first_size + 1ll,
                         second_size)};
-
-                axes1_value.col(0ll) = well->get_verticle_well_flow(get_history_record());
-                axes1_value.col(2ll) = well->get_verticle_cement_flow(get_history_record());
+                axes1_value.leftCols(3ll) = well->flow_axes1_value;
 
                 FaceValuesContainer axes2_value{
                     FaceValuesContainer::Zero(
                         first_size,
                         second_size + 1ll)};
-
-                const auto wfp{well->get_WFP(get_history_record())};
-
-                static_assert(Grid2D_t::l_margin == 3ll);
-                axes2_value.col(0ll) = 0.0;
-                axes2_value.col(1ll) = wfp;
-                axes2_value.col(2ll) = wfp;
-                axes2_value.col(3ll) =
-                    well->get_RFP(get_history_record());
+                axes2_value.leftCols(4ll) = well->flow_axes2_value;
 
                 // face values of mobility are not defined at the domain boundaries
                 assert(mobility.face_vals_axes1.rows() == first_size - 1ll);
@@ -116,8 +106,6 @@ namespace GPN
                 assert(mobility.face_vals_axes2.rows() == first_size);
                 const auto second_size_rock{second_size - Grid2D_t::l_margin - 1ll};
                 assert(mobility.face_vals_axes2.cols() == second_size_rock);
-                //    axes2_value.middleCols(Grid2D_t::l_margin + 1ll, second_size_rock) =
-                //        mobility_factor;
 
                 const auto &P{get_pressure_field()};
                 for (auto col{Grid2D_t::l_margin + 1ll}, count{0ll}; count < second_size_rock; ++col, ++count)

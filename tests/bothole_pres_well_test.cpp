@@ -188,14 +188,26 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             RFP_weights,
             cross_flows)};
 
-    const WellBottomHolePressureControl well{
+            
+    using Well_t =
+        decltype(WellBottomHolePressureControl{
         rock_field_props,
         Well_CrossFlow{
             RFP_weights,
             WFP_weights,
             cross_flows},
         history,
-        grid2D_rocks};
+        grid2D_rocks});
+
+    const ptr<Well_t> well{
+        std::make_shared<Well_t>(
+        rock_field_props,
+        Well_CrossFlow{
+            RFP_weights,
+            WFP_weights,
+            cross_flows},
+        history,
+        grid2D_rocks)};
 
     // const WellBottomHolePressureControl well_bothole{};
 
@@ -226,7 +238,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             start_time,
             water,
             rock_field_props,
-            well,
+            *well,
             history,
             grid2D_rocks});
 
@@ -235,7 +247,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             start_time,
             water,
             rock_field_props,
-            well,
+            *well,
             history,
             grid2D_rocks)};
 
