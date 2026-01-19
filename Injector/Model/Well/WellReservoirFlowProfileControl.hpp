@@ -127,15 +127,15 @@ namespace GPN
                 template <typename HistoryRecord_t>
                 StepPropertyContainer get_pressure_at_sandface(
                     const HistoryRecord_t &record,
-                    const auto &ref_pressure) const
+                    const auto &colelctor_pressure) const
                 {
-                    return ref_pressure.col(0ll) + record.rate * resistivity;
+                    return colelctor_pressure.col(0ll) + record.rate * resistivity;
                 }
 
                 template <typename HistoryRecord_t>
                 StepPropertyContainer get_total_bottomhole_rate(
                     const HistoryRecord_t &record,
-                    const auto &ref_pressure) const
+                    const auto &) const
                 {
                     return record.rate;
                 }

@@ -115,20 +115,21 @@ namespace GPN
                               grid2D_rocks->first_coord().mesh_size(),
                               Grid2D_t::l_margin + 1ll)},
                       is_permeable{rock_field_props.base_hydrodynamics.is_permeable}
-                { }
+                {
+                }
 
                 template <typename HistoryRecord_t>
                 StepPropertyContainer get_pressure_at_sandface(
                     const HistoryRecord_t &record,
-                    const auto &ref_pressure) const
+                    const auto &) const
                 {
-                    return StepPropertyContainer::Constant(size, record.pressure)*is_permeable.log_vals;
+                    return StepPropertyContainer::Constant(size, record.pressure) * is_permeable.log_vals;
                 }
 
                 template <typename HistoryRecord_t>
                 void set_well_flow_field(
                     const HistoryRecord_t &record,
-                    const auto &ref_pressure)
+                    const auto &collector_pressure)
                 {
                     // set verticle flux
                     flow_axes1_value.col(0ll) = this->get_verticle_well_flow(record);
@@ -136,30 +137,36 @@ namespace GPN
                     flow_axes1_value.col(2ll) = this->get_verticle_cement_flow(record);
                     // set radial flux
                     static_assert(Grid2D_t::l_margin == 3ll);
+
+                    // const auto RFP{
+                    //     RFPFactory::create_from_container(
+                    //         this->get_RFP(record, collector_pressure),
+                    //         is_permeable)};
+
                     const auto wfp{this->get_WFP(record)};
                     flow_axes2_value.col(0ll) = 0.0;
                     flow_axes2_value.col(1ll) = wfp;
                     flow_axes2_value.col(2ll) = wfp;
                     flow_axes2_value.col(3ll) =
-                        this->get_RFP(record, ref_pressure);
+                        this->get_RFP(record, collector_pressure);
                 }
 
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
-                
+
                 template <typename HistoryRecord_t>
                 RealType get_total_bottomhole_rate(
                     const HistoryRecord_t &record,
-                    const auto &ref_pressure) const
+                    const auto &collector_pressure) const
                 {
-                    return get_RFP(record, ref_pressure).sum();
+                    return get_RFP(record, collector_pressure).sum();
                 }
 
                 template <typename HistoryRecord_t>
                 StepPropertyContainer get_RFP(
                     const HistoryRecord_t &record,
-                    const auto &ref_pressure) const
+                    const auto &collector_pressure) const
                 {
-                    return mobility * (ref_pressure.col(0ll) - record.pressure);
+                    return mobility * (collector_pressure.col(0ll) - record.pressure);
                 }
 
                 const std::ptrdiff_t size;
@@ -189,7 +196,7 @@ namespace GPN
                 }
 
                 const StepPropertyContainer mobility;
-                const Logs::IsPermeable& is_permeable;
+                const Logs::IsPermeable &is_permeable;
             };
 
         } // BotHolePresControl

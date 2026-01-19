@@ -219,21 +219,21 @@ namespace GPN
     /// @param RFP_weights
     /// @param cross_flows
     /// @return
-    Logs::WFP create_WFP(
+    Logs::WFP_weights create_WFP(
         const Logs::IsPerforated &is_perforated,
-        const Logs::RFP &RFP_weights,
+        const Logs::RFP_weights &RFP_w,
         const CrossFlow::CrossFlows &cross_flows)
     {
-        StepPropertyContainer wfp_step_prop_grid{(is_perforated * RFP_weights).log_vals};
+        StepPropertyContainer wfp_step_prop_grid{(is_perforated * RFP_w).log_vals};
         const auto is_damaged{Logs::IsDamagedFactory::create(
             cross_flows,
             is_perforated.log_vals,
             is_perforated.grid)};
 
         for (const auto &cf : cross_flows.cross_flow_data)
-            wfp_step_prop_grid(cf.from_id) += RFP_weights(cf.to_id);
+            wfp_step_prop_grid(cf.from_id) += RFP_w(cf.to_id);
 
-        assert(wfp_step_prop_grid.sum() == RFP_weights.log_vals.sum());
+        assert(wfp_step_prop_grid.sum() == RFP_w.log_vals.sum());
 
         assert(is_perforated.size() == wfp_step_prop_grid.size());
         for (auto i{0ll}; i < wfp_step_prop_grid.size(); ++i)
@@ -252,12 +252,12 @@ namespace GPN
     struct Well_CrossFlow
     {
         Well_CrossFlow(
-            const Logs::RFP &RFP_weights,
-            const Logs::WFP &WFP_weights,
+            const Logs::RFP_weights &RFP_w,
+            const Logs::WFP_weights &WFP_w,
             const CrossFlow::CrossFlows &cross_flows)
-            : RFP_weights{RFP_weights.log_vals},
-              weights_sum{RFP_weights.log_vals.sum()},
-              WFP_weights{WFP_weights.log_vals},
+            : RFP_weights{RFP_w.log_vals},
+              weights_sum{RFP_w.log_vals.sum()},
+              WFP_weights{WFP_w.log_vals},
               cross_flows{cross_flows}
         {
             assert(RFP_weights.log_vals.sum() == WFP_weights.log_vals.sum());
@@ -265,13 +265,13 @@ namespace GPN
         }
 
         Well_CrossFlow(
-            const Logs::RFP &RFP_weights,
-            const Logs::WFP &WFP_weights,
+            const Logs::RFP_weights &RFP_w,
+            const Logs::WFP_weights &WFP_w,
             const std::vector<RealType> &from_coords,
             const std::vector<ptrdiff_t> &to_layers)
             : Well_CrossFlow{
-                  RFP_weights, WFP_weights,
-                  CrossFlow::CrossFlows{RFP_weights, from_coords, to_layers}}
+                  RFP_w, WFP_w,
+                  CrossFlow::CrossFlows{RFP_w, from_coords, to_layers}}
         {
         }
 

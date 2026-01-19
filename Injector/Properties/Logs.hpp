@@ -307,20 +307,20 @@ namespace GPN
             };
         } // InternalUse
 
-        struct RFP
+        struct RFP_weights
             : public InternalUse::RateWeights
         {
-            RFP(const StepPropertyGrid &rfp,
+            RFP_weights(const StepPropertyGrid &rfp,
                 const IsPermeable &is_permeable)
                 : InternalUse::RateWeights(rfp, is_permeable)
             {
             }
         };
 
-        struct WFP
+        struct WFP_weights
             : public InternalUse::RateWeights
         {
-            WFP(const StepPropertyGrid &wfp,
+            WFP_weights(const StepPropertyGrid &wfp,
                 const IsPerforated &is_perforated)
                 : InternalUse::RateWeights(wfp, is_perforated)
             {

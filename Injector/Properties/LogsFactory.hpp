@@ -477,7 +477,7 @@ namespace GPN
                 const Container_t &rfp,
                 const IsPermeable_t &is_permeable)
             {
-                return RFP{
+                return RFP_weights{
                     StepPropertyGrid{StepProperty{rfp}, is_permeable.grid},
                     is_permeable};
             }
@@ -490,7 +490,7 @@ namespace GPN
                 const Container_t &wfp,
                 const IsPerforated_t &is_perforated)
             {
-                return WFP{
+                return WFP_weights{
                     StepPropertyGrid{{wfp}, is_perforated.grid},
                     is_perforated};
             }

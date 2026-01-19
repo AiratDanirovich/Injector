@@ -63,15 +63,15 @@ namespace GPN
         struct CrossFlows
         {
             CrossFlows(
-                const Logs::RFP &RFP_weights,
+                const Logs::RFP_weights &RFP_w,
                 const std::vector<RealType> &from_coords,
                 const std::vector<ptrdiff_t> &to_layers)
                 : cross_flow_data{
                       set_cross_flow_data(
-                          RFP_weights,
+                          RFP_w,
                           from_coords, to_layers)}
             {
-                normalized_verticle_flux = set_verticle_flux(RFP_weights);
+                normalized_verticle_flux = set_verticle_flux(RFP_w);
 
                 auto this_coord{from_coords};
                 std::sort(this_coord.begin(), this_coord.end());
@@ -96,22 +96,22 @@ namespace GPN
 #pragma region PRIVETA-METHODS
         private:
             StepPropertyContainer normalized_verticle_flux;
-            const StepPropertyContainer set_verticle_flux(const Logs::RFP &RFP_weights) const
+            const StepPropertyContainer set_verticle_flux(const Logs::RFP_weights &RFP_w) const
             {
-                StepPropertyContainer out{StepPropertyContainer::Zero(RFP_weights.grid.dual_nodes.rows())};
+                StepPropertyContainer out{StepPropertyContainer::Zero(RFP_w.grid.dual_nodes.rows())};
                 for (auto i{0ull}; i < cross_flow_data.size(); ++i)
                     out += cross_flow_data[i].verticle_flux;
                 return out;
             }
 
             static std::vector<SingleCrossFlow> set_cross_flow_data(
-                const Logs::RFP &RFP_weights,
+                const Logs::RFP_weights &RFP_w,
                 const std::vector<RealType> &from_coords,
                 const std::vector<ptrdiff_t> &to_layers)
             {
                 assert(from_coords.size() == to_layers.size());
 
-                const auto &grid{RFP_weights.grid};
+                const auto &grid{RFP_w.grid};
 
                 std::vector<SingleCrossFlow> out;
                 out.reserve(from_coords.size());
@@ -120,7 +120,7 @@ namespace GPN
                 {
                     const auto from_cell{get_mesh_cell_id(grid, from_coords[i])};
                     const auto to_cell{get_to_cell_id(grid, to_layers[i])};
-                    out.emplace_back(RFP_weights, from_cell, to_cell, RFP_weights(to_cell));
+                    out.emplace_back(RFP_w, from_cell, to_cell, RFP_w(to_cell));
                 }
 
                 return out;
