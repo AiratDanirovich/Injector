@@ -307,16 +307,6 @@ namespace GPN
             };
         } // InternalUse
 
-        struct RFP_weights
-            : public InternalUse::RateWeights
-        {
-            RFP_weights(const StepPropertyGrid &rfp,
-                        const IsPermeable &is_permeable)
-                : InternalUse::RateWeights(rfp, is_permeable)
-            {
-            }
-        };
-
         struct RFP
             : public StepPropertyGrid
         {
@@ -331,13 +321,13 @@ namespace GPN
                         ((indicator(id) == 0.0) && (rfp(id) == 0.0)));
             }
         };
-
-        struct WFP_weights
-            : public InternalUse::RateWeights
+        
+        struct RFP_weights
+            : public RFP
         {
-            WFP_weights(const StepPropertyGrid &wfp,
-                        const IsPerforated &is_perforated)
-                : InternalUse::RateWeights(wfp, is_perforated)
+            RFP_weights(const StepPropertyGrid &rfp,
+                        const IsPermeable &is_permeable)
+                : RFP{ InternalUse::RateWeights(rfp, is_permeable), is_permeable}
             {
             }
         };
@@ -354,6 +344,16 @@ namespace GPN
                     assert(
                         ((indicator(id) == 1.0)) ||
                         ((indicator(id) == 0.0) && (wfp(id) == 0.0)));
+            }
+        };
+        
+        struct WFP_weights
+            : public WFP
+        {
+            WFP_weights(const StepPropertyGrid &wfp,
+                        const IsPerforated &is_perforated)
+                : WFP{InternalUse::RateWeights{wfp, is_perforated}, is_perforated}
+            {
             }
         };
 
