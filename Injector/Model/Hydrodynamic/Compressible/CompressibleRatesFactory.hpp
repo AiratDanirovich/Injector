@@ -72,9 +72,11 @@ namespace GPN
                 // this method only works at FixedRate injection
                 assert(history->regime() == InjectorRegimes::FixedRate);
 
-                // the field is updated at every time step
+                // the pressure field field is updated at every time step
                 // non-stationary hydrodynamics is assumed
                 pressure_field->set_pressure_field(t_step, get_history_record());
+                // set the flow in all cells of the well,
+                // taking RFP and WFP into account
                 well->set_well_flow_field(get_history_record(), pressure_field->get_rock_pressure());
 
                 const auto mid_time{history->get_current_record().mid_time};
