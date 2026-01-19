@@ -105,7 +105,7 @@ namespace GPN
                     const cptr<History_t> history,
                     const cptr<Grid2D_t> grid2D_rocks)
                     : Well_t{well_base},
-                      inv_mobility{set_inv_mobility(rock_field_props, well_base, grid2D_rocks)},
+                      resistivity{set_resistivity(rock_field_props, well_base, grid2D_rocks)},
                       hydro_bc{
                           std::make_shared<const hydro_bc_type>(
                               grid2D_rocks,
@@ -129,7 +129,7 @@ namespace GPN
                     const HistoryRecord_t &record,
                     const auto &ref_pressure) const
                 {
-                    return ref_pressure.col(0ll) + record.rate * inv_mobility;
+                    return ref_pressure.col(0ll) + record.rate * resistivity;
                 }
 
                 template <typename HistoryRecord_t>
@@ -162,7 +162,7 @@ namespace GPN
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
 
             private:
-                static auto set_inv_mobility(
+                static auto set_resistivity(
                     const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
                     const Well_t &well,
                     cptr<Grid2D_t> grid2D_rocks)
@@ -184,7 +184,7 @@ namespace GPN
                     return out;
                 }
 
-                const StepPropertyContainer inv_mobility;
+                const StepPropertyContainer resistivity;
             };
         } // ResFlowProfileControl
     } // Wells
