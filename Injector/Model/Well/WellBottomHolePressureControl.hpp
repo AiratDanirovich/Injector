@@ -107,19 +107,54 @@ namespace GPN
                               std::make_shared<const functor_type>(
                                   history, rock_field_props.base_hydrodynamics.ext_pressure,
                                   grid2D_rocks))},
-                      size{grid2D_rocks->first_coord().mesh_size()}
+                      size{grid2D_rocks->first_coord().mesh_size()},
+                      mobility{set_mobility(rock_field_props, grid2D_rocks)}
                 {
                 }
 
-                template<typename HistoryRecord_t>
+                template <typename HistoryRecord_t>
                 StepPropertyContainer get_pressure_at_symmetry_axis(
-                    const HistoryRecord_t& record,
+                    const HistoryRecord_t &record,
                     const auto &ref_pressure) const
                 {
                     return StepPropertyContainer::Constant(size, record.pressure);
                 }
 
+                template <typename HistoryRecord_t>
+                StepPropertyContainer get_total_bottomhole_rate(
+                    const HistoryRecord_t &record,
+                    const auto &ref_pressure) const
+                {
+                    return mobility * (ref_pressure.col(0ll) - record.pressure);
+                }
+
                 const std::ptrdiff_t size;
+
+            protected:
+                static auto set_mobility(
+                    const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
+                    cptr<Grid2D_t> grid2D_rocks)
+                {
+                    // center of cell next to the well
+                    const auto r3{grid2D_rocks->second_coord().mesh_nodes(0ll)};
+                    // sandface
+                    const auto r2_face{grid2D_rocks->second_coord().dual_nodes(0ll)};
+                    const auto two_pi{2.0 * std::numbers::pi_v<RealType>};
+                    const auto is_permeable{rock_field_props.base_hydrodynamics.is_permeable.log_vals};
+
+                    Eigen::ArrayX<RealType> out{two_pi / std::log(r3 / r2_face) *
+                                                rock_field_props.mobility_axes2.col(Grid2D_t::l_margin) *
+                                                grid2D_rocks->first_coord().volumes()};
+
+                    for (auto row{0ll}; row < grid2D_rocks->first_coord().mesh_size(); ++row)
+                    {
+                        if (is_permeable(row) == 0.0)
+                            out(row) = 0.0;
+                    }
+                    return out;
+                }
+
+                const StepPropertyContainer mobility;
             };
 
         } // BotHolePresControl

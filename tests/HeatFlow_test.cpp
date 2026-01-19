@@ -148,8 +148,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const ExtrudedCasing extr_completion{
         VarExtrudedCasingFactory::create(completion)};
 
-    cout << "radial dual grid stencils:\n"
-         << grid_r.dual_nodes.transpose() << endl;
+    // cout << "radial dual grid stencils:\n"
+    //      << grid_r.dual_nodes.transpose() << endl;
 
     // cout << "radial grid:\n"
     //      << grid2D->second_coord.dual_nodes.transpose() << endl;

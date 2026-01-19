@@ -122,6 +122,14 @@ namespace GPN
                 {
                     return ref_pressure.col(0ll) + record.rate * inv_mobility;
                 }
+                
+                template<typename HistoryRecord_t>
+                StepPropertyContainer get_total_bottomhole_rate(
+                    const HistoryRecord_t& record,
+                    const auto &ref_pressure) const
+                {
+                    return record.rate;
+                }
 
             private:
                 static auto set_inv_mobility(
