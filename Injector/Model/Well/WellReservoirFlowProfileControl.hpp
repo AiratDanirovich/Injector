@@ -86,12 +86,9 @@ namespace GPN
             template <
                 typename History_t,
                 typename Grid2D_t,
-                typename Well_t>
-            struct WellReservoirFlowProfileControl : public Well_t
+                typename CrossFlow_t>
+            struct WellReservoirFlowProfileControl : public CrossFlow_t
             {
-                using Well_t::RFP_weights;
-                using Well_t::weights_sum;
-
                 using functor_type = FunctorBC<History_t, Grid2D_t>;
 
                 using hydro_bc_type = RFPControlBC;
@@ -101,17 +98,17 @@ namespace GPN
                 WellReservoirFlowProfileControl(
                     const Properties::Rocks::RocksProps<Grid2D_t> &
                         rock_field_props,
-                    const Well_t &well_base,
+                    const CrossFlow_t &well_base,
                     const cptr<History_t> history,
                     const cptr<Grid2D_t> grid2D_rocks)
-                    : Well_t{well_base},
+                    : CrossFlow_t{well_base},
                       resistivity{set_resistivity(rock_field_props, well_base, grid2D_rocks)},
                       hydro_bc{
                           std::make_shared<const hydro_bc_type>(
                               grid2D_rocks,
                               std::make_shared<const functor_type>(
                                   history, rock_field_props.base_hydrodynamics.ext_pressure,
-                                  well_base.RFP_weights, grid2D_rocks))},
+                                  well_base.rfp, grid2D_rocks))},
                       flow_axes1_value{
                           FaceValuesContainer::Zero(
                               grid2D_rocks->first_coord().mesh_size() + 1ll,
@@ -124,12 +121,36 @@ namespace GPN
                     static_assert(3ll == Grid2D_t::l_margin);
                 }
 
+                template<typename HistoryRecord_t>
+                const auto get_RFP(const HistoryRecord_t& record) const
+                {
+                    return this->rfp*record.rate;
+                }
+                template<typename HistoryRecord_t>
+                const auto get_WFP(const HistoryRecord_t& record) const
+                {
+                    return this->wfp*record.rate;
+                }
+                template<typename HistoryRecord_t>
+                const auto get_verticle_cement_flow(const HistoryRecord_t& record) const
+                {
+                    return this->verticle_flux_in_cement*record.rate;
+                }
+                template<typename HistoryRecord_t>
+                const auto get_verticle_well_flow(const HistoryRecord_t& record) const
+                {
+                    return this->verticle_flux_in_well*record.rate;
+                }
+
+
+
+
                 template <typename HistoryRecord_t>
                 StepPropertyContainer get_pressure_at_sandface(
                     const HistoryRecord_t &record,
-                    const auto &colelctor_pressure) const
+                    const auto &collector_pressure) const
                 {
-                    return colelctor_pressure.col(0ll) + record.rate * resistivity;
+                    return collector_pressure.col(0ll) + record.rate * resistivity;
                 }
 
                 template <typename HistoryRecord_t>
@@ -145,18 +166,19 @@ namespace GPN
                     const HistoryRecord_t &record,
                     const auto &)
                 {
+                    const auto rate{record.rate};
+
                     // set verticle flux
-                    flow_axes1_value.col(0ll) = this->get_verticle_well_flow(record);
+                    flow_axes1_value.col(0ll) = rate*this->verticle_flux_in_well;
                     flow_axes1_value.col(1ll) = 0.0;
-                    flow_axes1_value.col(2ll) = this->get_verticle_cement_flow(record);
+                    flow_axes1_value.col(2ll) = rate*this->verticle_flux_in_cement;
                     // set radial flux
                     static_assert(Grid2D_t::l_margin == 3ll);
-                    const auto wfp{this->get_WFP(record)};
                     flow_axes2_value.col(0ll) = 0.0;
-                    flow_axes2_value.col(1ll) = wfp;
-                    flow_axes2_value.col(2ll) = wfp;
+                    flow_axes2_value.col(1ll) = rate*this->wfp;
+                    flow_axes2_value.col(2ll) = rate*this->wfp;
                     flow_axes2_value.col(3ll) =
-                        this->get_RFP(record);
+                        rate*this->rfp;
                 }
 
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
@@ -164,7 +186,7 @@ namespace GPN
             private:
                 static auto set_resistivity(
                     const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
-                    const Well_t &well,
+                    const CrossFlow_t &well,
                     cptr<Grid2D_t> grid2D_rocks)
                 {
                     const auto r3{grid2D_rocks->second_coord().mesh_nodes(0ll)};
@@ -172,7 +194,7 @@ namespace GPN
                     const auto two_pi{2.0 * std::numbers::pi_v<RealType>};
                     const auto is_permeable{rock_field_props.base_hydrodynamics.is_permeable.log_vals};
 
-                    Eigen::ArrayX<RealType> out{well.RFP_weights / (two_pi / std::log(r3 / r2_face) *
+                    Eigen::ArrayX<RealType> out{well.rfp / (two_pi / std::log(r3 / r2_face) *
                                                                     rock_field_props.mobility_axes2.col(Grid2D_t::l_margin) *
                                                                     grid2D_rocks->first_coord().volumes())};
 

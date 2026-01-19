@@ -2,6 +2,8 @@
 
 #include <Injector/Grids/Defines.h>
 
+#include <Injector/Model/Collector.hpp>
+
 #include <Injector/Solver/BoundaryConditions.hpp>
 
 namespace GPN
@@ -82,8 +84,8 @@ namespace GPN
             template <
                 typename History_t,
                 typename Grid2D_t,
-                typename Well_t>
-            struct WellBottomHolePressureControl : public Well_t
+                typename CrossFlow_t>
+            struct WellBottomHolePressureControl : public CrossFlow_t
             {
                 using functor_type = FunctorBC<History_t, Grid2D_t>;
 
@@ -94,10 +96,10 @@ namespace GPN
                 WellBottomHolePressureControl(
                     const Properties::Rocks::RocksProps<Grid2D_t> &
                         rock_field_props,
-                    const Well_t &well_base,
+                    const CrossFlow_t &well_base,
                     const cptr<History_t> history,
                     const cptr<Grid2D_t> grid2D_rocks)
-                    : Well_t{well_base},
+                    : CrossFlow_t{well_base},
                       hydro_bc{
                           std::make_shared<const hydro_bc_type>(
                               grid2D_rocks,
@@ -127,28 +129,34 @@ namespace GPN
                 }
 
                 template <typename HistoryRecord_t>
+                Logs::RFP get_RFP(
+                    const HistoryRecord_t &record,
+                    const auto &collector_pressure) const
+                {
+                    const Logs::RFP RFP_w{
+                        Logs::RFPFactory::create_from_container(
+                            (mobility * (collector_pressure.col(0ll) - record.pressure)).eval(),
+                            is_permeable)};
+                    return RFP_w;
+                }
+
+                template <typename HistoryRecord_t>
                 void set_well_flow_field(
                     const HistoryRecord_t &record,
                     const auto &collector_pressure)
                 {
+                    this->set_flux(get_RFP(record, collector_pressure));
                     // set verticle flux
-                    flow_axes1_value.col(0ll) = this->get_verticle_well_flow(record);
+                    flow_axes1_value.col(0ll) = this->verticle_flux_in_well;
                     flow_axes1_value.col(1ll) = 0.0;
-                    flow_axes1_value.col(2ll) = this->get_verticle_cement_flow(record);
+                    flow_axes1_value.col(2ll) = this->verticle_flux_in_cement;
                     // set radial flux
                     static_assert(Grid2D_t::l_margin == 3ll);
 
-                    // const auto RFP{
-                    //     RFPFactory::create_from_container(
-                    //         this->get_RFP(record, collector_pressure),
-                    //         is_permeable)};
-
-                    const auto wfp{this->get_WFP(record)};
                     flow_axes2_value.col(0ll) = 0.0;
-                    flow_axes2_value.col(1ll) = wfp;
-                    flow_axes2_value.col(2ll) = wfp;
-                    flow_axes2_value.col(3ll) =
-                        this->get_RFP(record, collector_pressure);
+                    flow_axes2_value.col(1ll) = this->wfp;
+                    flow_axes2_value.col(2ll) = this->wfp;
+                    flow_axes2_value.col(3ll) = this->rfp;
                 }
 
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
@@ -158,15 +166,7 @@ namespace GPN
                     const HistoryRecord_t &record,
                     const auto &collector_pressure) const
                 {
-                    return get_RFP(record, collector_pressure).sum();
-                }
-
-                template <typename HistoryRecord_t>
-                StepPropertyContainer get_RFP(
-                    const HistoryRecord_t &record,
-                    const auto &collector_pressure) const
-                {
-                    return mobility * (collector_pressure.col(0ll) - record.pressure);
+                    return get_RFP(record, collector_pressure).log_vals.sum();
                 }
 
                 const std::ptrdiff_t size;

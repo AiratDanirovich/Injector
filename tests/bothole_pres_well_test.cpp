@@ -176,36 +176,25 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     // history
     const shared_ptr<History> history{make_shared<History>(make_history(data))};
     // well
-    const auto RFP_weights{
+    const Logs::RFP_weights RFP_w{
         RFPFactory::create_from_container(
             RFP_weights_stencils,
             core_logs.is_permeable)};
     const CrossFlows cross_flows{
-        from_coords, to_layers, RFP_weights};
-    const auto WFP_weights{
-        create_WFP_weights(
-            core_logs.is_perforated,
-            RFP_weights,
-            cross_flows.cross_flow_handler)};
+        from_coords, to_layers, RFP_w, core_logs.is_perforated};
 
             
     using Well_t =
         decltype(WellBottomHolePressureControl{
         rock_field_props,
-        Well_CrossFlow{
-            RFP_weights,
-            WFP_weights,
-            cross_flows},
+        cross_flows,
         history,
         grid2D_rocks});
 
     const ptr<Well_t> well{
         std::make_shared<Well_t>(
         rock_field_props,
-        Well_CrossFlow{
-            RFP_weights,
-            WFP_weights,
-            cross_flows},
+        cross_flows,
         history,
         grid2D_rocks)};
 
@@ -265,7 +254,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const GPN::Heat::HeatBC bc{
         grid2D,
         std::make_shared<GPN::FunctorBC<
-            Well_CrossFlow,
             History,
             FluidField_t,
             RatesFactory_t>>(

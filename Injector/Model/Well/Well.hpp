@@ -211,137 +211,137 @@ namespace GPN
         }
     };
 
-    struct Well_CrossFlow
-    {
-        Well_CrossFlow(
-            const Logs::RFP &RFP_w,
-            const Logs::WFP &WFP_w,
-            const CrossFlow::CrossFlows &cross_flows)
-            : RFP_weights{RFP_w.log_vals},
-              weights_sum{RFP_w.log_vals.sum()},
-              WFP_weights{WFP_w.log_vals},
-              cross_flows{cross_flows}
-        {
-            assert(RFP_weights.log_vals.sum() == WFP_weights.log_vals.sum());
-        }
+    // struct Well_CrossFlow
+    // {
+    //     Well_CrossFlow(
+    //         const Logs::RFP &RFP_w,
+    //         const Logs::WFP &WFP_w,
+    //         const CrossFlow::CrossFlows &cross_flows)
+    //         : RFP_weights{RFP_w.log_vals},
+    //           weights_sum{RFP_w.log_vals.sum()},
+    //           WFP_weights{WFP_w.log_vals},
+    //           cross_flows{cross_flows}
+    //     {
+    //         assert(RFP_weights.log_vals.sum() == WFP_weights.log_vals.sum());
+    //     }
 
-        Well_CrossFlow(
-            const Logs::RFP &RFP_w,
-            const Logs::WFP &WFP_w,
-            const std::vector<RealType> &from_coords,
-            const std::vector<ptrdiff_t> &to_layers)
-            : Well_CrossFlow{
-                  RFP_w, WFP_w,
-                  CrossFlow::CrossFlows{from_coords, to_layers, RFP_w}}
-        {
-        }
+    //     Well_CrossFlow(
+    //         const Logs::RFP &RFP_w,
+    //         const Logs::WFP &WFP_w,
+    //         const std::vector<RealType> &from_coords,
+    //         const std::vector<ptrdiff_t> &to_layers)
+    //         : Well_CrossFlow{
+    //               RFP_w, WFP_w,
+    //               CrossFlow::CrossFlows{from_coords, to_layers, RFP_w}}
+    //     {
+    //     }
 
-        template <typename HistoryRecord_t>
-        auto get_RFP(const HistoryRecord_t &history_record) const
-        {
-            return get_RFP(history_record.rate, history_record.pressure);
-        }
-        template <typename HistoryRecord_t>
-        auto get_WFP(const HistoryRecord_t &history_record) const
-        {
-            return get_WFP(history_record.rate, history_record.pressure);
-        }
-        template <typename HistoryRecord_t>
-        auto get_verticle_cement_flow(const HistoryRecord_t &history_record) const
-        {
-            return get_verticle_cement_flow(history_record.rate, history_record.pressure);
-        }
-        template <typename HistoryRecord_t>
-        auto get_verticle_well_flow(const HistoryRecord_t &history_record) const
-        {
-            return get_verticle_well_flow(history_record.rate, history_record.pressure);
-        }
+    //     template <typename HistoryRecord_t>
+    //     auto get_RFP(const HistoryRecord_t &history_record) const
+    //     {
+    //         return get_RFP(history_record.rate, history_record.pressure);
+    //     }
+    //     template <typename HistoryRecord_t>
+    //     auto get_WFP(const HistoryRecord_t &history_record) const
+    //     {
+    //         return get_WFP(history_record.rate, history_record.pressure);
+    //     }
+    //     template <typename HistoryRecord_t>
+    //     auto get_verticle_cement_flow(const HistoryRecord_t &history_record) const
+    //     {
+    //         return get_verticle_cement_flow(history_record.rate, history_record.pressure);
+    //     }
+    //     template <typename HistoryRecord_t>
+    //     auto get_verticle_well_flow(const HistoryRecord_t &history_record) const
+    //     {
+    //         return get_verticle_well_flow(history_record.rate, history_record.pressure);
+    //     }
 
-        const StepPropertyContainer &RFP_weights;
-        const StepPropertyContainer &WFP_weights;
+    //     const StepPropertyContainer &RFP_weights;
+    //     const StepPropertyContainer &WFP_weights;
 
-    protected:
-        StepPropertyContainer get_RFP(
-            const RealType rate,
-            const RealType pressure) const
-        {
-            if (std::isnan(rate))
-            { // define rate from pressure
-                throw std::invalid_argument("RFP: Rate must be set");
-            }
-            else if (std::isnan(pressure))
-            { // define pressure from rate
-                assert(!std::isnan(rate));
-                //                assert(rate >= 0.0);
-                return ((rate / weights_sum) * RFP_weights).eval();
-            }
-            else
-                throw std::invalid_argument("RFP: Either rate or pressure must be set, but not both.");
-        }
+    // protected:
+    //     StepPropertyContainer get_RFP(
+    //         const RealType rate,
+    //         const RealType pressure) const
+    //     {
+    //         if (std::isnan(rate))
+    //         { // define rate from pressure
+    //             throw std::invalid_argument("RFP: Rate must be set");
+    //         }
+    //         else if (std::isnan(pressure))
+    //         { // define pressure from rate
+    //             assert(!std::isnan(rate));
+    //             //                assert(rate >= 0.0);
+    //             return ((rate / weights_sum) * RFP_weights).eval();
+    //         }
+    //         else
+    //             throw std::invalid_argument("RFP: Either rate or pressure must be set, but not both.");
+    //     }
 
-        StepPropertyContainer get_WFP(
-            const RealType rate,
-            const RealType pressure) const
-        {
-            if (std::isnan(rate))
-            { // define rate from pressure
-                throw std::invalid_argument("WFP: Rate must be set");
-            }
-            else if (std::isnan(pressure))
-            { // define pressure from rate
-                assert(!std::isnan(rate));
-                //    assert(rate >= 0.0);
-                return ((rate / weights_sum) * WFP_weights).eval();
-            }
-            else
-                throw std::invalid_argument("WFP: Either rate or pressure must be set, but not both.");
-        }
+    //     StepPropertyContainer get_WFP(
+    //         const RealType rate,
+    //         const RealType pressure) const
+    //     {
+    //         if (std::isnan(rate))
+    //         { // define rate from pressure
+    //             throw std::invalid_argument("WFP: Rate must be set");
+    //         }
+    //         else if (std::isnan(pressure))
+    //         { // define pressure from rate
+    //             assert(!std::isnan(rate));
+    //             //    assert(rate >= 0.0);
+    //             return ((rate / weights_sum) * WFP_weights).eval();
+    //         }
+    //         else
+    //             throw std::invalid_argument("WFP: Either rate or pressure must be set, but not both.");
+    //     }
 
-        StepPropertyContainer get_verticle_cement_flow(
-            const RealType rate,
-            const RealType pressure) const
-        {
-            if (std::isnan(rate))
-            { // define rate from pressure
-                throw std::invalid_argument("RFP: Rate must be set");
-            }
-            else if (std::isnan(pressure))
-            { // define pressure from rate
-                assert(!std::isnan(rate));
-                //                assert(rate >= 0.0);
-                return ((rate / weights_sum) * cross_flows.verticle_flux_in_cement).eval();
-            }
-            else
-                throw std::invalid_argument("RFP: Either rate or pressure must be set, but not both.");
-        }
+    //     StepPropertyContainer get_verticle_cement_flow(
+    //         const RealType rate,
+    //         const RealType pressure) const
+    //     {
+    //         if (std::isnan(rate))
+    //         { // define rate from pressure
+    //             throw std::invalid_argument("RFP: Rate must be set");
+    //         }
+    //         else if (std::isnan(pressure))
+    //         { // define pressure from rate
+    //             assert(!std::isnan(rate));
+    //             //                assert(rate >= 0.0);
+    //             return ((rate / weights_sum) * cross_flows.verticle_flux_in_cement).eval();
+    //         }
+    //         else
+    //             throw std::invalid_argument("RFP: Either rate or pressure must be set, but not both.");
+    //     }
 
-        StepPropertyContainer get_verticle_well_flow(
-            const RealType rate,
-            const RealType pressure) const
-        {
-            if (std::isnan(rate))
-            { // define rate from pressure
-                throw std::invalid_argument("RFP: Rate must be set");
-            }
-            else if (std::isnan(pressure))
-            { // define pressure from rate
-                assert(!std::isnan(rate));
+    //     StepPropertyContainer get_verticle_well_flow(
+    //         const RealType rate,
+    //         const RealType pressure) const
+    //     {
+    //         if (std::isnan(rate))
+    //         { // define rate from pressure
+    //             throw std::invalid_argument("RFP: Rate must be set");
+    //         }
+    //         else if (std::isnan(pressure))
+    //         { // define pressure from rate
+    //             assert(!std::isnan(rate));
 
-                const auto wfp{get_WFP(rate, pressure)};
-                StepPropertyContainer out(StepPropertyContainer::Zero(wfp.rows() + 1ll));
-                std::partial_sum(wfp.cbegin(), wfp.cend(), out.begin() + 1ll, std::plus<RealType>{});
-                out = rate - out;
+    //             const auto wfp{get_WFP(rate, pressure)};
+    //             StepPropertyContainer out(StepPropertyContainer::Zero(wfp.rows() + 1ll));
+    //             std::partial_sum(wfp.cbegin(), wfp.cend(), out.begin() + 1ll, std::plus<RealType>{});
+    //             out = rate - out;
 
-                return out;
-            }
-            else
-                throw std::invalid_argument("verticle well flow: Either rate or pressure must be set, but not both.");
-        }
+    //             return out;
+    //         }
+    //         else
+    //             throw std::invalid_argument("verticle well flow: Either rate or pressure must be set, but not both.");
+    //     }
 
-        const RealType weights_sum;
+    //     const RealType weights_sum;
 
-        const CrossFlow::CrossFlows cross_flows;
-    };
+    //     const CrossFlow::CrossFlows cross_flows;
+    // };
 
     /**
      * @brief Incompressible fluid is assumed in reservoir
