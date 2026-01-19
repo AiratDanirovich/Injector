@@ -96,7 +96,7 @@ namespace GPN
 
                 using hydro_bc_type = RFPControlBC;
 
-                const ptr<const functor_type> functor_bc;
+                const ptr<const hydro_bc_type> hydro_bc;
 
                 WellReservoirFlowProfileControl(
                     const Properties::Rocks::RocksProps<Grid2D_t> &
@@ -106,9 +106,12 @@ namespace GPN
                     const cptr<Grid2D_t> grid2D_rocks)
                     : Well_t{well_base},
                       inv_mobility{set_inv_mobility(rock_field_props, well_base, grid2D_rocks)},
-                      functor_bc{std::make_shared<const functor_type>(
-                          history, rock_field_props.base_hydrodynamics.ext_pressure,
-                          well_base.RFP_weights, grid2D_rocks)}
+                      hydro_bc{
+                        std::make_shared<const hydro_bc_type>(
+                            grid2D_rocks,
+                               std::make_shared<const functor_type>(
+                                   history, rock_field_props.base_hydrodynamics.ext_pressure,
+                                   well_base.RFP_weights, grid2D_rocks))}
                 {
                 }
 

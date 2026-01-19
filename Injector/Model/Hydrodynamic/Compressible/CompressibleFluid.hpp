@@ -32,7 +32,7 @@ namespace GPN
             using Base::well;
         //    using Well_t::functor_bc;
 
-            using functor_type = typename Well_t::functor_type;
+        //    using functor_type = typename Well_t::functor_type;
             using hydro_bc_type = typename Well_t::hydro_bc_type;
 
             using Solver_t =
@@ -122,9 +122,7 @@ namespace GPN
                 //         rock_field_props,
                 //         grid2D_rocks};
 
-                const hydro_bc_type bc{
-                    grid2D_rocks,
-                    well.functor_bc};
+                const hydro_bc_type& bc{*(well.hydro_bc)};
 
                 const auto initial_state{ICFactory(start_time, grid2D_rocks, ext_pressure)};
 
