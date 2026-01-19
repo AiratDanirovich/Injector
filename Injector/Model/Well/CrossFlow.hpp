@@ -65,12 +65,17 @@ namespace GPN
 #pragma endregion
         };
 
+        struct CrossFlowsHandler
+        {
+
+        };
+
         struct CrossFlows
         {
             CrossFlows(
-                const Logs::RFP &RFP_w,
                 const std::vector<RealType> &from_coords,
-                const std::vector<ptrdiff_t> &to_layers)
+                const std::vector<ptrdiff_t> &to_layers,
+                const Logs::RFP &RFP_w)
                 : cross_flow_data{
                       set_cross_flow_data(
                           RFP_w,

@@ -270,7 +270,7 @@ namespace GPN
             const std::vector<ptrdiff_t> &to_layers)
             : Well_CrossFlow{
                   RFP_w, WFP_w,
-                  CrossFlow::CrossFlows{RFP_w, from_coords, to_layers}}
+                  CrossFlow::CrossFlows{from_coords, to_layers, RFP_w}}
         {
         }
 

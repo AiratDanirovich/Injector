@@ -83,7 +83,7 @@ TEST_CASE("CrossFlow", "")
 
     const RealType total_rate{1.0};
     const CrossFlows cross_flows{
-        RFP_weights, from_coords, to_layers};
+        from_coords, to_layers, RFP_weights};
 
     cout << "flux weights: " << RFP_weights.log_vals.transpose() << endl;
     const auto &dual_nodes{RFP_weights.grid.dual_nodes};

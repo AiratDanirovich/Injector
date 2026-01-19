@@ -146,7 +146,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             RFP_weights_stencils,
             core_logs.is_permeable)};
     const CrossFlows cross_flows{
-        RFP_weights, from_coords, to_layers};
+        from_coords, to_layers, RFP_weights};
     const auto WFP_weights{
         create_WFP_weights(
             core_logs.is_perforated,

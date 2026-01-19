@@ -235,7 +235,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     CHECK(RFP_weights.log_vals.sum() == 1.0);
 
     const CrossFlows cross_flows{
-        RFP_weights, from_coords, to_layers};
+        from_coords, to_layers, RFP_weights};
     const auto WFP_weights{
         create_WFP_weights(
             core_logs.is_perforated,
