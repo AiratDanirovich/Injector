@@ -25,7 +25,7 @@ namespace GPN
                 const Logs::StepPropertyGrid &some_log,
                 const std::ptrdiff_t from_id,
                 const std::ptrdiff_t to_id,
-                const RealType flux_amount) // RFP value
+                const RealType flux_amount = 0.0) // RFP value
                 : verticle_flux{
                     StepPropertyContainer::Zero(
                         some_log.grid.dual_nodes.rows())},
@@ -41,12 +41,14 @@ namespace GPN
             // the flux values take into account the direction of flow
             const std::ptrdiff_t from_id, to_id;
             const RealType dir;
-            StepPropertyContainer verticle_flux;
+            const StepPropertyContainer verticle_flux;
 
             void set_flux(const RealType flux_amount)
             {
                 const RealType directed_flux{flux_amount * dir};
-                verticle_flux.middleRows(std::min(from_id, to_id) + 1ll, std::abs(from_id - to_id)) = directed_flux;
+                const_cast<StepPropertyContainer&>(verticle_flux).middleRows(
+                    std::min(from_id, to_id) + 1ll, std::abs(from_id - to_id)) = 
+                        directed_flux;
             }
 
 #pragma region PRIVATE-METHODS
