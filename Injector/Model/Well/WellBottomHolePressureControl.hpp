@@ -120,6 +120,23 @@ namespace GPN
                     return StepPropertyContainer::Constant(size, record.pressure);
                 }
 
+                // template <typename HistoryRecord_t>
+                // StepPropertyContainer get_RFP(
+                //     const HistoryRecord_t &record,
+                //     const auto &ref_pressure) const
+                // {
+                //     return mobility * (ref_pressure.col(0ll) - record.pressure);
+                // }
+                
+                template <typename HistoryRecord_t>
+                RealType get_total_bottomhole_rate(
+                    const HistoryRecord_t &record,
+                    const auto &ref_pressure) const
+                {
+                    return get_RFP(record, ref_pressure).sum();
+                }
+
+
                 template <typename HistoryRecord_t>
                 StepPropertyContainer get_total_bottomhole_rate(
                     const HistoryRecord_t &record,

@@ -72,7 +72,7 @@ namespace GPN
                 // this method only works at FixedRate injection
                 assert(history->regime() == InjectorRegimes::FixedRate);
 
-                // the filed is updated at every time step
+                // the field is updated at every time step
                 // non-stationary hydrodynamics is assumed
                 pressure_field->set_pressure_field(t_step, get_history_record());
 
@@ -106,7 +106,7 @@ namespace GPN
                 axes2_value.col(0ll) = 0.0;
                 axes2_value.col(1ll) = wfp;
                 axes2_value.col(2ll) = wfp;
-                axes2_value.col(Grid2D_t::l_margin) =
+                axes2_value.col(3ll) =
                     well.get_RFP(get_history_record());
 
                 // face values of mobility are not defined at the domain boundaries
