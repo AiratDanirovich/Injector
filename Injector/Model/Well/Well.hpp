@@ -252,8 +252,8 @@ namespace GPN
     struct Well_CrossFlow
     {
         Well_CrossFlow(
-            const Logs::RFP_weights &RFP_w,
-            const Logs::WFP_weights &WFP_w,
+            const Logs::RFP &RFP_w,
+            const Logs::WFP &WFP_w,
             const CrossFlow::CrossFlows &cross_flows)
             : RFP_weights{RFP_w.log_vals},
               weights_sum{RFP_w.log_vals.sum()},
@@ -261,12 +261,11 @@ namespace GPN
               cross_flows{cross_flows}
         {
             assert(RFP_weights.log_vals.sum() == WFP_weights.log_vals.sum());
-            assert((weights_sum == 1.0));
         }
 
         Well_CrossFlow(
-            const Logs::RFP_weights &RFP_w,
-            const Logs::WFP_weights &WFP_w,
+            const Logs::RFP &RFP_w,
+            const Logs::WFP &WFP_w,
             const std::vector<RealType> &from_coords,
             const std::vector<ptrdiff_t> &to_layers)
             : Well_CrossFlow{

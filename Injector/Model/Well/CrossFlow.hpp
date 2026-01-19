@@ -13,49 +13,63 @@ namespace GPN
     namespace CrossFlow
     {
         /// @brief Descriptor of a single cross flow flux,
-        /// from a single hole in the column hrough the cement to a permeable layer
+        /// from a single hole in the column vertically along the cement towards a permeable layer
         struct SingleCrossFlow
         {
             /// @brief
-            /// @param some_log
+            /// @param some_log just som log to get the grid pointer and log_vals.size
             /// @param from_id
             /// @param to_id
-            /// @param flux_fraction An element of normalized RFP profile
+            /// @param flux_amount An element of RFP profile
             SingleCrossFlow(
                 const Logs::StepPropertyGrid &some_log,
                 const std::ptrdiff_t from_id,
                 const std::ptrdiff_t to_id,
-                const RealType flux_fraction)
+                const RealType flux_amount) // RFP value
                 : verticle_flux{
                       set_verticle_flux(
                           some_log, from_id, to_id,
-                          flux_fraction)},
-                  from_id{from_id}, to_id{to_id}
+                          flux_amount)},
+                  from_id{from_id}, to_id{to_id},
+                  dir{get_dir(from_id, to_id)}
             {
+                set_flux(flux_amount);
             }
 
             // the flux values take into account the direction of flow
             // const RealType flux;
             const std::ptrdiff_t from_id, to_id;
-            const StepPropertyContainer verticle_flux;
+            const RealType dir;
+            StepPropertyContainer verticle_flux;
+
+            void set_flux(const RealType flux_amount)
+            {
+                const RealType directed_flux{flux_amount * dir};
+                verticle_flux.middleRows(std::min(from_id, to_id) + 1ll, std::abs(from_id - to_id)) = directed_flux;
+            }
+
 #pragma region PRIVATE-METHODS
         private:
             static StepPropertyContainer set_verticle_flux(
                 const Logs::StepPropertyGrid &some_log,
                 const std::ptrdiff_t from_id,
                 const std::ptrdiff_t to_id,
-                const RealType flux_fraction)
+                const RealType flux_amount)
             {
-                // dir = 1.0 if the cross flow is directed downwards,
-                // dir = -1.0 if the crossflow is directed upwards
-                const RealType dir{(from_id < to_id ? 1.0 : -1.0)};
-                const RealType directed_normalized_flux{flux_fraction * dir};
-
                 assert((from_id >= 0ll) && (from_id < some_log.log_vals.rows()));
                 assert((to_id >= 0ll) && (to_id < some_log.log_vals.rows()));
                 StepPropertyContainer out{StepPropertyContainer::Zero(some_log.grid.dual_nodes.rows())};
-                out.middleRows(std::min(from_id, to_id) + 1ll, std::abs(from_id - to_id)) = directed_normalized_flux;
                 return out;
+            }
+
+            static RealType get_dir(
+                const std::ptrdiff_t from_id,
+                const std::ptrdiff_t to_id
+            ) 
+            {
+                // dir = 1.0 if the cross flow is directed downwards,
+                // dir = -1.0 if the crossflow is directed upwards
+                return (from_id < to_id ? 1.0 : -1.0);
             }
 #pragma endregion
         };
@@ -63,7 +77,7 @@ namespace GPN
         struct CrossFlows
         {
             CrossFlows(
-                const Logs::RFP_weights &RFP_w,
+                const Logs::RFP &RFP_w,
                 const std::vector<RealType> &from_coords,
                 const std::vector<ptrdiff_t> &to_layers)
                 : cross_flow_data{
@@ -93,10 +107,10 @@ namespace GPN
             }
 
             const std::vector<SingleCrossFlow> cross_flow_data;
-#pragma region PRIVETA-METHODS
+#pragma region PRIVET-METHODS
         private:
             StepPropertyContainer normalized_verticle_flux;
-            const StepPropertyContainer set_verticle_flux(const Logs::RFP_weights &RFP_w) const
+            const StepPropertyContainer set_verticle_flux(const Logs::RFP &RFP_w) const
             {
                 StepPropertyContainer out{StepPropertyContainer::Zero(RFP_w.grid.dual_nodes.rows())};
                 for (auto i{0ull}; i < cross_flow_data.size(); ++i)
@@ -105,7 +119,7 @@ namespace GPN
             }
 
             static std::vector<SingleCrossFlow> set_cross_flow_data(
-                const Logs::RFP_weights &RFP_w,
+                const Logs::RFP &RFP_w,
                 const std::vector<RealType> &from_coords,
                 const std::vector<ptrdiff_t> &to_layers)
             {
