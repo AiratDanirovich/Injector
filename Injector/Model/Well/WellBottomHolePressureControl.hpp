@@ -66,7 +66,7 @@ namespace GPN
             {
                 template <typename Grid2D_t>
                 BotHolePresBC(const cptr<Grid2D_t> &grid,
-                        const cptr<const BCFunctorBase> functor)
+                              const cptr<const BCFunctorBase> functor)
                     : BoundaryConditions::GeneralBC{grid, functor, BoundaryCondition::BCType::first}
                 {
                     bc_types[north_id] = BoundaryCondition::BCType::second;
@@ -80,6 +80,7 @@ namespace GPN
 #pragma endregion
 
             template <
+                typename History_t,
                 typename Grid2D_t,
                 typename Well_t>
             struct WellBottomHolePressureControl : public Well_t
@@ -87,26 +88,35 @@ namespace GPN
                 using Well_t::RFP_weights;
                 using Well_t::weights_sum;
 
-                template <typename History_t>
                 using functor_type = FunctorBC<History_t, Grid2D_t>;
 
                 using hydro_bc_type = BotHolePresBC;
 
+                const ptr<const hydro_bc_type> hydro_bc;
+
                 WellBottomHolePressureControl(
-                    const Well_t &well_base,
                     const Properties::Rocks::RocksProps<Grid2D_t> &
                         rock_field_props,
+                    const Well_t &well_base,
+                    const cptr<History_t> history,
                     const cptr<Grid2D_t> grid2D_rocks)
-                    : Well_t{well_base}
+                    : Well_t{well_base},
+                      hydro_bc{
+                          std::make_shared<const hydro_bc_type>(
+                              grid2D_rocks,
+                              std::make_shared<const functor_type>(
+                                  history, rock_field_props.base_hydrodynamics.ext_pressure,
+                                  grid2D_rocks))}
                 {
                 }
 
-                // StepPropertyContainer get_pressure_at_symmetry_axis(
-                //     const RealType rate,
-                //     const auto &ref_pressure) const
-                // {
-                //     return ref_pressure.col(0ll) + rate * inv_mobility;
-                // }
+                template<typename HistoryRecord_t>
+                StepPropertyContainer get_pressure_at_symmetry_axis(
+                    const HistoryRecord_t& record,
+                    const auto &ref_pressure) const
+                {
+                    return 0.0*ref_pressure.col(0ll) + record.pressure;
+                }
             };
 
         } // BotHolePresControl

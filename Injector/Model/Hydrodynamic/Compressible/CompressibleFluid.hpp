@@ -79,7 +79,7 @@ namespace GPN
                 out.rightCols(second_size - Grid2D_t::l_margin) = rock_P;
                 // get pressure from the well
                 out.leftCols(Grid2D_t::l_margin).colwise() = well.get_pressure_at_symmetry_axis(
-                    history_record.rate, rock_P);
+                    history_record, rock_P);
 
                 P_prev = P;
 

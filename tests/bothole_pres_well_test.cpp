@@ -18,7 +18,6 @@
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Well/Well.hpp>
-#include <Injector/Model/Well/WellReservoirFlowProfileControl.hpp>
 
 #include <Injector/Model/Well/WellBottomHolePressureControl.hpp>
 
@@ -58,7 +57,7 @@ using namespace std;
 using namespace GPN;
 using namespace GPN::Logs;
 using namespace GPN::CrossFlow;
-using namespace GPN::Wells::ResFlowProfileControl;
+using namespace GPN::Wells::BotHolePresControl;
 using namespace GPN::Grids;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
@@ -189,7 +188,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             RFP_weights,
             cross_flows)};
 
-    const WellReservoirFlowProfileControl well{
+    const WellBottomHolePressureControl well{
         rock_field_props,
         Well_CrossFlow{
             RFP_weights,
