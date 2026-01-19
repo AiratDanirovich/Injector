@@ -137,6 +137,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             base_hydrodynamics,
             water,
             grid2D_rocks};
+#pragma region MAKE-HISTORY
+    const ptr<History> history{make_shared<History>(make_history(data))};
+#pragma endregion
 #pragma region MAKE-WELL
     const auto RFP_weights{
         RFPFactory::create_from_container(
@@ -151,18 +154,15 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             cross_flows)};
     // const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
-    
     const WellReservoirFlowProfileControl well{
+        rock_field_props,
         Well_CrossFlow{
             RFP_weights,
             WFP_weights,
             cross_flows},
-        rock_field_props,
+        history,
         grid2D_rocks};
 
-#pragma endregion
-#pragma region MAKE-HISTORY
-    const ptr<History> history{make_shared<History>(make_history(data))};
 #pragma endregion
     using CompressibleFluidField_t =
         decltype(CompressibleFluidField{

@@ -2,6 +2,8 @@
 
 #include <Injector/Grids/Defines.h>
 
+#include <Injector/Model/Collector.hpp>
+
 #include <Injector/Solver/BoundaryConditions.hpp>
 
 namespace GPN
@@ -82,6 +84,7 @@ namespace GPN
 #pragma endregion
 
             template <
+                typename History_t,
                 typename Grid2D_t,
                 typename Well_t>
             struct WellReservoirFlowProfileControl : public Well_t
@@ -89,17 +92,23 @@ namespace GPN
                 using Well_t::RFP_weights;
                 using Well_t::weights_sum;
 
-                template <typename History_t>
                 using functor_type = FunctorBC<History_t, Grid2D_t>;
 
                 using hydro_bc_type = RFPControlBC;
 
-                WellReservoirFlowProfileControl(const Well_t &well_base,
-                                                const Properties::Rocks::RocksProps<Grid2D_t> &
-                                                    rock_field_props,
-                                                const cptr<Grid2D_t> grid2D_rocks)
+                const ptr<const functor_type> functor_bc;
+
+                WellReservoirFlowProfileControl(
+                    const Properties::Rocks::RocksProps<Grid2D_t> &
+                        rock_field_props,
+                    const Well_t &well_base,
+                    const cptr<History_t> history,
+                    const cptr<Grid2D_t> grid2D_rocks)
                     : Well_t{well_base},
-                      inv_mobility{set_inv_mobility(rock_field_props, well_base, grid2D_rocks)}
+                      inv_mobility{set_inv_mobility(rock_field_props, well_base, grid2D_rocks)},
+                      functor_bc{std::make_shared<const functor_type>(
+                          history, rock_field_props.base_hydrodynamics.ext_pressure,
+                          well_base.RFP_weights, grid2D_rocks)}
                 {
                 }
 

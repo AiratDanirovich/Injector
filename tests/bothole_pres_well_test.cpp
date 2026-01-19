@@ -174,6 +174,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             water,
             grid2D_rocks};
 
+    // history
+    const shared_ptr<History> history{make_shared<History>(make_history(data))};
     // well
     const auto RFP_weights{
         RFPFactory::create_from_container(
@@ -188,11 +190,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             cross_flows)};
 
     const WellReservoirFlowProfileControl well{
+        rock_field_props,
         Well_CrossFlow{
             RFP_weights,
             WFP_weights,
             cross_flows},
-        rock_field_props,
+        history,
         grid2D_rocks};
 
     // const WellBottomHolePressureControl well_bothole{};
@@ -218,8 +221,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     FaceProperties::Rocks::HeatFaceProps heat_face_props{
         heat_props, grid2D};
     heat_face_props.apply_well(extr_completion, well);
-    // history
-    const shared_ptr<History> history{make_shared<History>(make_history(data))};
     // fluid model for the pressure field
     using FluidField_t =
         decltype(CompressibleFluidField{

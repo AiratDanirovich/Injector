@@ -213,11 +213,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     //   const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
     const WellReservoirFlowProfileControl well{
+        rock_field_props,
         Well_CrossFlow{
             RFP_weights,
             WFP_weights,
             cross_flows},
-        rock_field_props,
+        history,
         grid2D_rocks};
 
     const Logs::Rocks::HeatLogs heat_logs{
