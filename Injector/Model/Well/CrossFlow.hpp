@@ -16,10 +16,10 @@ namespace GPN
         /// from a single hole in the column vertically along the cement towards a permeable layer
         struct SingleCrossFlow
         {
-            /// @brief
-            /// @param some_log just som log to get the grid pointer and log_vals.size
-            /// @param from_id
-            /// @param to_id
+            /// @brief Container for verticle flux in the cement due to a singel hole in the column
+            /// @param some_log just some log to get the grid pointer and log_vals.size
+            /// @param from_id id of cell with a hole in the column
+            /// @param to_id id of cell with a hole in the sandface
             /// @param flux_amount An element of RFP profile
             SingleCrossFlow(
                 const Logs::StepPropertyGrid &some_log,
@@ -27,17 +27,18 @@ namespace GPN
                 const std::ptrdiff_t to_id,
                 const RealType flux_amount) // RFP value
                 : verticle_flux{
-                      set_verticle_flux(
-                          some_log, from_id, to_id,
-                          flux_amount)},
+                    StepPropertyContainer::Zero(
+                        some_log.grid.dual_nodes.rows())},
                   from_id{from_id}, to_id{to_id},
                   dir{get_dir(from_id, to_id)}
             {
+                assert((from_id >= 0ll) && (from_id < some_log.log_vals.rows()));
+                assert((to_id >= 0ll) && (to_id < some_log.log_vals.rows()));
+
                 set_flux(flux_amount);
             }
 
             // the flux values take into account the direction of flow
-            // const RealType flux;
             const std::ptrdiff_t from_id, to_id;
             const RealType dir;
             StepPropertyContainer verticle_flux;
@@ -50,18 +51,6 @@ namespace GPN
 
 #pragma region PRIVATE-METHODS
         private:
-            static StepPropertyContainer set_verticle_flux(
-                const Logs::StepPropertyGrid &some_log,
-                const std::ptrdiff_t from_id,
-                const std::ptrdiff_t to_id,
-                const RealType flux_amount)
-            {
-                assert((from_id >= 0ll) && (from_id < some_log.log_vals.rows()));
-                assert((to_id >= 0ll) && (to_id < some_log.log_vals.rows()));
-                StepPropertyContainer out{StepPropertyContainer::Zero(some_log.grid.dual_nodes.rows())};
-                return out;
-            }
-
             static RealType get_dir(
                 const std::ptrdiff_t from_id,
                 const std::ptrdiff_t to_id
