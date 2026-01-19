@@ -85,9 +85,6 @@ namespace GPN
                 typename Well_t>
             struct WellBottomHolePressureControl : public Well_t
             {
-                using Well_t::RFP_weights;
-                using Well_t::weights_sum;
-
                 using functor_type = FunctorBC<History_t, Grid2D_t>;
 
                 using hydro_bc_type = BotHolePresBC;
