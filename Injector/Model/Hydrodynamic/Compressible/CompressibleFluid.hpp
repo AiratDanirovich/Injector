@@ -77,9 +77,10 @@ namespace GPN
                 GridNodeValues2D out{GridNodeValues2D::Zero(first_size, second_size)};
                 // set pressure in reservoir as a solution of respective problem
                 out.rightCols(second_size - Grid2D_t::l_margin) = rock_P;
-                // get pressure from the well
-                out.leftCols(Grid2D_t::l_margin).colwise() = well.get_pressure_at_sandface(
-                    history_record, rock_P);
+                // get pressure at the sandface
+                out.leftCols(Grid2D_t::l_margin).colwise() = 
+                    well.get_pressure_at_sandface(
+                        history_record, rock_P);
 
                 P_prev = P;
 
