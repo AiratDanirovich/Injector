@@ -113,15 +113,16 @@ namespace GPN
                       flow_axes2_value{
                           FaceValuesContainer::Zero(
                               grid2D_rocks->first_coord().mesh_size(),
-                              Grid2D_t::l_margin + 1ll)}
+                              Grid2D_t::l_margin + 1ll)},
+                      is_permeable{rock_field_props.base_hydrodynamics.is_permeable}
                 { }
 
                 template <typename HistoryRecord_t>
-                StepPropertyContainer get_pressure_at_symmetry_axis(
+                StepPropertyContainer get_pressure_at_sandface(
                     const HistoryRecord_t &record,
                     const auto &ref_pressure) const
                 {
-                    return StepPropertyContainer::Constant(size, record.pressure);
+                    return StepPropertyContainer::Constant(size, record.pressure)*is_permeable.log_vals;
                 }
 
                 template <typename HistoryRecord_t>
@@ -188,6 +189,7 @@ namespace GPN
                 }
 
                 const StepPropertyContainer mobility;
+                const Logs::IsPermeable& is_permeable;
             };
 
         } // BotHolePresControl

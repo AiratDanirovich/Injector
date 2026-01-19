@@ -125,7 +125,7 @@ namespace GPN
                 }
 
                 template <typename HistoryRecord_t>
-                StepPropertyContainer get_pressure_at_symmetry_axis(
+                StepPropertyContainer get_pressure_at_sandface(
                     const HistoryRecord_t &record,
                     const auto &ref_pressure) const
                 {
