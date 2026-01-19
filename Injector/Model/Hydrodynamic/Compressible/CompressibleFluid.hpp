@@ -30,6 +30,7 @@ namespace GPN
             using Base::P;
             using Base::P_prev;
             using Base::well;
+        //    using Well_t::functor_bc;
 
             using functor_type = typename Well_t::functor_type;
             using hydro_bc_type = typename Well_t::hydro_bc_type;
@@ -66,10 +67,9 @@ namespace GPN
             {
                 solver =
                     std::make_unique<CompressibleFluidSolver<Solver_t>>(set_solver(
-                        start_time, history, 
-                        rock_field_props, 
-                        ext_pressure, 
-                        well.RFP_weights,
+                        start_time, history,
+                        rock_field_props,
+                        ext_pressure,
                         mobility,
                         grid2D_rocks));
             }
@@ -109,12 +109,11 @@ namespace GPN
             const ptrdiff_t first_size, second_size;
             const cptr<Grid2D_t> grid2D_rocks;
 
-            static auto set_solver(
+            auto set_solver(
                 const RealType start_time,
                 const cptr<History_t> history,
                 const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
                 const Logs::ExternalPressure &ext_pressure,
-                const auto rfp,
                 const FaceProperties::Mobility<Grid2D_t>& mobility,
                 const cptr<Grid2D_t> grid2D_rocks)
             {
@@ -125,8 +124,7 @@ namespace GPN
 
                 const hydro_bc_type bc{
                     grid2D_rocks,
-                    std::make_shared<const functor_type>(
-                        history, ext_pressure, rfp, grid2D_rocks)};
+                    well.functor_bc};
 
                 const auto initial_state{ICFactory(start_time, grid2D_rocks, ext_pressure)};
 

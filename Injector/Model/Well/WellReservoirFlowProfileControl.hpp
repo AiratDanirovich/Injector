@@ -71,7 +71,7 @@ namespace GPN
             {
                 template <typename Grid2D_t>
                 RFPControlBC(const cptr<Grid2D_t> &grid,
-                             const cptr<const BCFunctorBase> functor)
+                             const ptr<const BCFunctorBase> functor)
                     : BoundaryConditions::GeneralBC{grid, functor, BoundaryCondition::BCType::second}
                 {
                     bc_types[east_id] = BoundaryCondition::BCType::first;
