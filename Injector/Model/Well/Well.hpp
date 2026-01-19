@@ -211,44 +211,6 @@ namespace GPN
         }
     };
 
-    /// @brief Assumption: multiple flows can start from the same well node,
-    /// but they have to come to different layers of the reservoir.
-    /// This allows to assemble the WFP from the RFP
-    /// @param is_permeable
-    /// @param is_perforated
-    /// @param RFP_weights
-    /// @param cross_flows
-    /// @return
-    Logs::WFP_weights create_WFP_weights(
-        const Logs::IsPerforated &is_perforated,
-        const Logs::RFP_weights &RFP_w,
-        const CrossFlow::CrossFlows &cross_flows)
-    {
-        StepPropertyContainer wfp_step_prop_grid{(is_perforated * RFP_w).log_vals};
-        const auto is_damaged{Logs::IsDamagedFactory::create(
-            cross_flows,
-            is_perforated.log_vals,
-            is_perforated.grid)};
-
-        for (const auto &cf : cross_flows.cross_flow_data)
-            wfp_step_prop_grid(cf.from_id) += RFP_w(cf.to_id);
-
-        assert(wfp_step_prop_grid.sum() == RFP_w.log_vals.sum());
-
-        assert(is_perforated.size() == wfp_step_prop_grid.size());
-        for (auto i{0ll}; i < wfp_step_prop_grid.size(); ++i)
-        {
-            assert(
-                ((is_perforated(i) != is_damaged(i)) &&
-                 (wfp_step_prop_grid(i) > 0.0)) ||
-                ((is_perforated(i) == 0.0) && (is_damaged(i) == 0.0) &&
-                 (wfp_step_prop_grid(i) == 0.0)));
-        }
-
-        return Logs::WFPFactory::create_from_container(
-            wfp_step_prop_grid, is_perforated + is_damaged);
-    }
-
     struct Well_CrossFlow
     {
         Well_CrossFlow(
@@ -347,7 +309,7 @@ namespace GPN
             { // define pressure from rate
                 assert(!std::isnan(rate));
                 //                assert(rate >= 0.0);
-                return ((rate / weights_sum) * cross_flows.get_normalized_verticle_flux()).eval();
+                return ((rate / weights_sum) * cross_flows.verticle_flux_in_cement).eval();
             }
             else
                 throw std::invalid_argument("RFP: Either rate or pressure must be set, but not both.");

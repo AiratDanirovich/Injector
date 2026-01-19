@@ -490,7 +490,7 @@ namespace GPN
                 const Container_t &wfp,
                 const IsPerforated_t &is_perforated)
             {
-                return WFP_weights{
+                return WFP{
                     StepPropertyGrid{{wfp}, is_perforated.grid},
                     is_perforated};
             }

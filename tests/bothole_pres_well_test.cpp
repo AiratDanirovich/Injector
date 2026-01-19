@@ -186,7 +186,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         create_WFP_weights(
             core_logs.is_perforated,
             RFP_weights,
-            cross_flows)};
+            cross_flows.cross_flow_handler)};
 
             
     using Well_t =

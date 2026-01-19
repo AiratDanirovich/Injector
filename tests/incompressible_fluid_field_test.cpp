@@ -240,7 +240,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         create_WFP_weights(
             core_logs.is_perforated,
             RFP_weights,
-            cross_flows)};
+            cross_flows.cross_flow_handler)};
     CHECK(WFP_weights.log_vals.sum() == 1.0);
 
     const Well_Explicit well_explicit{

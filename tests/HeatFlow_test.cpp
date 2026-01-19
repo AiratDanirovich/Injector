@@ -202,7 +202,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         create_WFP_weights(
             core_logs.is_perforated,
             RFP_weights,
-            cross_flows)};
+            cross_flows.cross_flow_handler)};
 
     // history
     const shared_ptr<History> history{make_shared<History>(make_history(data))};

@@ -88,9 +88,9 @@ TEST_CASE("CrossFlow", "")
     cout << "flux weights: " << RFP_weights.log_vals.transpose() << endl;
     const auto &dual_nodes{RFP_weights.grid.dual_nodes};
     const auto &dual_stencils{RFP_weights.grid.dual_stencils};
-    for (auto i{0ull}; i < cross_flows.cross_flow_data.size(); ++i)
+    for (auto i{0ull}; i < cross_flows.cross_flow_handler.size(); ++i)
     {
-        const auto &cf{cross_flows.cross_flow_data[i]};
+        const auto &cf{cross_flows.cross_flow_handler[i]};
         cout << "flux vector: " << cf.verticle_flux.transpose() << endl;
 
         auto to_id{0ll};
@@ -132,7 +132,7 @@ TEST_CASE("CrossFlow", "")
         create_WFP_weights(
             is_perforated,
             RFP_weights,
-            cross_flows)};
+            cross_flows.cross_flow_handler)};
 
     const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
