@@ -66,7 +66,6 @@ namespace GPN
                     std::make_unique<CompressibleFluidSolver<Solver_t>>(set_solver(
                         start_time, history,
                         rock_field_props,
-                        ext_pressure,
                         mobility,
                         grid2D_rocks));
             }
@@ -110,13 +109,12 @@ namespace GPN
                 const RealType start_time,
                 const cptr<History_t> history,
                 const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
-                const Logs::ExternalPressure &ext_pressure,
                 const FaceProperties::Mobility<Grid2D_t>& mobility,
                 const cptr<Grid2D_t> grid2D_rocks)
             {
                 const hydro_bc_type& bc{*(well.hydro_bc)};
 
-                const auto initial_state{ICFactory(start_time, grid2D_rocks, ext_pressure)};
+                const auto initial_state{ICFactory(start_time, grid2D_rocks, rock_field_props.base_hydrodynamics.ext_pressure)};
 
                 const auto ptr_rates_factory{std::make_shared<EqSolver::EmptyConvectionField>()};
 
