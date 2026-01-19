@@ -183,7 +183,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const CrossFlows cross_flows{
         RFP_weights, from_coords, to_layers};
     const auto WFP_weights{
-        create_WFP(
+        create_WFP_weights(
             core_logs.is_perforated,
             RFP_weights,
             cross_flows)};

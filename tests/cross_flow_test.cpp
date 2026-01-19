@@ -129,7 +129,7 @@ TEST_CASE("CrossFlow", "")
     }
 
     const auto WFP_weights{
-        create_WFP(
+        create_WFP_weights(
             is_perforated,
             RFP_weights,
             cross_flows)};

@@ -211,7 +211,7 @@ namespace GPN
         }
     };
 
-    /// @brief Assumption: multiple flows can start from the well,
+    /// @brief Assumption: multiple flows can start from the same well node,
     /// but they have to come to different layers of the reservoir.
     /// This allows to assemble the WFP from the RFP
     /// @param is_permeable
@@ -219,7 +219,7 @@ namespace GPN
     /// @param RFP_weights
     /// @param cross_flows
     /// @return
-    Logs::WFP_weights create_WFP(
+    Logs::WFP_weights create_WFP_weights(
         const Logs::IsPerforated &is_perforated,
         const Logs::RFP_weights &RFP_w,
         const CrossFlow::CrossFlows &cross_flows)
