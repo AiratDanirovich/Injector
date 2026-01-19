@@ -54,9 +54,9 @@ namespace GPN
                       rock_field_props.base_hydrodynamics.ext_pressure,
                       well, history, grid2D_rocks->grid2D},
                   mobility{
-                    FaceProperties::Rocks::RocksFaceProps{rock_field_props, grid2D_rocks}.mobility}, 
-                  first_size{grid2D_rocks->grid2D->first_coord().mesh_size()}, 
-                  second_size{grid2D_rocks->grid2D->second_coord().mesh_size()}, 
+                    FaceProperties::Rocks::RocksFaceProps{rock_field_props, grid2D_rocks}.mobility},
+                  first_size{grid2D_rocks->grid2D->first_coord().mesh_size()},
+                  second_size{grid2D_rocks->grid2D->second_coord().mesh_size()},
                   grid2D_rocks{grid2D_rocks}
             {
                 solver =
