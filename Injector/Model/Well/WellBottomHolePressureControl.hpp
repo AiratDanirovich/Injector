@@ -106,7 +106,8 @@ namespace GPN
                               grid2D_rocks,
                               std::make_shared<const functor_type>(
                                   history, rock_field_props.base_hydrodynamics.ext_pressure,
-                                  grid2D_rocks))}
+                                  grid2D_rocks))},
+                      size{grid2D_rocks->first_coord().mesh_size()}
                 {
                 }
 
@@ -115,8 +116,10 @@ namespace GPN
                     const HistoryRecord_t& record,
                     const auto &ref_pressure) const
                 {
-                    return 0.0*ref_pressure.col(0ll) + record.pressure;
+                    return StepPropertyContainer::Constant(size, record.pressure);
                 }
+
+                const std::ptrdiff_t size;
             };
 
         } // BotHolePresControl
