@@ -169,7 +169,7 @@ namespace GPN
         }
         auto operator/(const StepPropertyGrid &lhs, RealType c)
         {
-            return lhs*(1/c);
+            return lhs * (1 / c);
         }
         auto operator*(const StepPropertyGrid &lhs, const StepPropertyGrid &rhs)
         {
@@ -311,9 +311,24 @@ namespace GPN
             : public InternalUse::RateWeights
         {
             RFP_weights(const StepPropertyGrid &rfp,
-                const IsPermeable &is_permeable)
+                        const IsPermeable &is_permeable)
                 : InternalUse::RateWeights(rfp, is_permeable)
             {
+            }
+        };
+
+        struct RFP
+            : public StepPropertyGrid
+        {
+            RFP(const StepPropertyGrid &rfp,
+                        const IsPermeable &indicator)
+                        :StepPropertyGrid{rfp}
+            {
+                assert(rfp.size() == indicator.size());
+                for (std::ptrdiff_t id{0ll}; id < rfp.size(); ++id)
+                    assert(
+                        ((indicator(id) == 1.0)) ||
+                        ((indicator(id) == 0.0) && (rfp(id) == 0.0)));
             }
         };
 
@@ -321,9 +336,24 @@ namespace GPN
             : public InternalUse::RateWeights
         {
             WFP_weights(const StepPropertyGrid &wfp,
-                const IsPerforated &is_perforated)
+                        const IsPerforated &is_perforated)
                 : InternalUse::RateWeights(wfp, is_perforated)
             {
+            }
+        };
+
+        struct WFP
+            : public StepPropertyGrid
+        {
+            WFP(const StepPropertyGrid &wfp,
+                        const IsPerforated &indicator)
+                : StepPropertyGrid{wfp}
+            {
+                assert(wfp.size() == indicator.size());
+                for (std::ptrdiff_t id{0ll}; id < wfp.size(); ++id)
+                    assert(
+                        ((indicator(id) == 1.0)) ||
+                        ((indicator(id) == 0.0) && (wfp(id) == 0.0)));
             }
         };
 
