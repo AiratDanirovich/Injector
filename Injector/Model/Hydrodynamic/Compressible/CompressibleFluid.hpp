@@ -53,13 +53,10 @@ namespace GPN
                       rock_field_props.base_hydrodynamics.porosity,
                       rock_field_props.base_hydrodynamics.ext_pressure,
                       well, history, grid2D_rocks->grid2D},
-                  mobility{FaceProperties::Rocks::RocksFaceProps{
-                      rock_field_props,
-                      grid2D_rocks}.mobility}, 
-                  first_size{
-                    grid2D_rocks->grid2D->first_coord().mesh_size()}, 
-                  second_size{
-                    grid2D_rocks->grid2D->second_coord().mesh_size()},
+                  mobility{
+                    FaceProperties::Rocks::RocksFaceProps{rock_field_props, grid2D_rocks}.mobility}, 
+                  first_size{grid2D_rocks->grid2D->first_coord().mesh_size()}, 
+                  second_size{grid2D_rocks->grid2D->second_coord().mesh_size()}, 
                   grid2D_rocks{grid2D_rocks}
             {
                 solver =
@@ -79,27 +76,27 @@ namespace GPN
                 const GridNodeValues2D &rock_P{solver->get_state().cur_state};
                 GridNodeValues2D out{GridNodeValues2D::Zero(first_size, second_size)};
                 // set pressure in reservoir as a solution of respective problem
-                out.rightCols(second_size - Grid2D_t::l_margin) = rock_P;  
-                // get pressure from the well                            
+                out.rightCols(second_size - Grid2D_t::l_margin) = rock_P;
+                // get pressure from the well
                 out.leftCols(Grid2D_t::l_margin).colwise() = well.get_pressure_at_symmetry_axis(
-                    history_record.rate, rock_P
-                );
+                    history_record.rate, rock_P);
 
                 P_prev = P;
 
                 P = std::make_shared<Properties::Pressure<OriginalGrid>>(
                     std::move(out),
                     grid2D);
-                    
+
                 Base::set_time(time_step, history_record);
             }
 
-            const auto& get_mobility() const
+            const auto &get_mobility() const
             {
                 return solver->mobility;
             }
 
             const FaceProperties::Mobility<Grid2D_t> mobility;
+
         private:
             std::unique_ptr<CompressibleFluidSolver<Solver_t>> solver;
             const ptrdiff_t first_size, second_size;
@@ -109,10 +106,10 @@ namespace GPN
                 const RealType start_time,
                 const cptr<History_t> history,
                 const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
-                const FaceProperties::Mobility<Grid2D_t>& mobility,
+                const FaceProperties::Mobility<Grid2D_t> &mobility,
                 const cptr<Grid2D_t> grid2D_rocks)
             {
-                const hydro_bc_type& bc{*(well.hydro_bc)};
+                const hydro_bc_type &bc{*(well.hydro_bc)};
 
                 const auto initial_state{ICFactory(start_time, grid2D_rocks, rock_field_props.base_hydrodynamics.ext_pressure)};
 
@@ -126,14 +123,14 @@ namespace GPN
                         grid2D_rocks}};
 
                 using Solver_t = decltype(EqSolver::FullImplicit::Solver{
-                    /*rock_face_props.*/mobility,
+                    /*rock_face_props.*/ mobility,
                     grid2D_rocks,
                     corrected_compressibility,
                     ptr_rates_factory, initial_state,
                     bc, start_time});
 
                 auto solver_ptr{std::make_shared<Solver_t>(
-                    /*rock_face_props.*/mobility,
+                    /*rock_face_props.*/ mobility,
                     grid2D_rocks,
                     corrected_compressibility,
                     ptr_rates_factory, initial_state,
