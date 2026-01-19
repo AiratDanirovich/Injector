@@ -107,29 +107,57 @@ namespace GPN
                     : Well_t{well_base},
                       inv_mobility{set_inv_mobility(rock_field_props, well_base, grid2D_rocks)},
                       hydro_bc{
-                        std::make_shared<const hydro_bc_type>(
-                            grid2D_rocks,
-                               std::make_shared<const functor_type>(
-                                   history, rock_field_props.base_hydrodynamics.ext_pressure,
-                                   well_base.RFP_weights, grid2D_rocks))}
+                          std::make_shared<const hydro_bc_type>(
+                              grid2D_rocks,
+                              std::make_shared<const functor_type>(
+                                  history, rock_field_props.base_hydrodynamics.ext_pressure,
+                                  well_base.RFP_weights, grid2D_rocks))},
+                      flow_axes1_value{
+                          FaceValuesContainer::Zero(
+                              grid2D_rocks->first_coord().mesh_size() + 1ll,
+                              Grid2D_t::l_margin)},
+                      flow_axes2_value{
+                          FaceValuesContainer::Zero(
+                              grid2D_rocks->first_coord().mesh_size(),
+                              Grid2D_t::l_margin + 1ll)}
                 {
+                    static_assert(3ll == Grid2D_t::l_margin);
                 }
 
-                template<typename HistoryRecord_t>
+                template <typename HistoryRecord_t>
                 StepPropertyContainer get_pressure_at_symmetry_axis(
-                    const HistoryRecord_t& record,
+                    const HistoryRecord_t &record,
                     const auto &ref_pressure) const
                 {
                     return ref_pressure.col(0ll) + record.rate * inv_mobility;
                 }
-                
-                template<typename HistoryRecord_t>
+
+                template <typename HistoryRecord_t>
                 StepPropertyContainer get_total_bottomhole_rate(
-                    const HistoryRecord_t& record,
+                    const HistoryRecord_t &record,
                     const auto &ref_pressure) const
                 {
                     return record.rate;
                 }
+
+                template <typename HistoryRecord_t>
+                void set_well_flow_field(const HistoryRecord_t &record)
+                {
+                    // set verticle flux
+                    flow_axes1_value.col(0ll) = this->get_verticle_well_flow(record);
+                    flow_axes1_value.col(1ll) = 0.0;
+                    flow_axes1_value.col(2ll) = this->get_verticle_cement_flow(record);
+                    // set radial flux
+                    static_assert(Grid2D_t::l_margin == 3ll);
+                    const auto wfp{this->get_WFP(record)};
+                    flow_axes2_value.col(0ll) = 0.0;
+                    flow_axes2_value.col(1ll) = wfp;
+                    flow_axes2_value.col(2ll) = wfp;
+                    flow_axes2_value.col(3ll) =
+                        this->get_RFP(record);
+                }
+
+                FaceValuesContainer flow_axes1_value, flow_axes2_value;
 
             private:
                 static auto set_inv_mobility(

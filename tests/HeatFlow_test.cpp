@@ -212,14 +212,25 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     //   const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
-    const WellReservoirFlowProfileControl well{
+    using Well_t =
+        decltype(WellReservoirFlowProfileControl{
         rock_field_props,
         Well_CrossFlow{
             RFP_weights,
             WFP_weights,
             cross_flows},
         history,
-        grid2D_rocks};
+        grid2D_rocks});
+
+    const ptr<Well_t> well{
+        std::make_shared<Well_t>(
+        rock_field_props,
+        Well_CrossFlow{
+            RFP_weights,
+            WFP_weights,
+            cross_flows},
+        history,
+        grid2D_rocks)};
 
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
@@ -237,18 +248,18 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         heat_logs, grid2D};
 
     // properties of material that fills the well up to the sandface
-    heat_props.apply_well(extr_completion, well);
+    heat_props.apply_well(extr_completion, *well);
 
     FaceProperties::Rocks::HeatFaceProps heat_face_props{
         heat_props, grid2D};
-    heat_face_props.apply_well(extr_completion, well);
+    heat_face_props.apply_well(extr_completion, *well);
     // fluid model for the pressure field
     using FluidField_t =
         decltype(CompressibleFluidField{
             start_time,
             water,
             rock_field_props,
-            well,
+            *well,
             history,
             grid2D_rocks});
 
@@ -257,7 +268,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             start_time,
             water,
             rock_field_props,
-            well,
+            *well,
             history,
             grid2D_rocks)};
 

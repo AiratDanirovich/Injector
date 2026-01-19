@@ -41,7 +41,7 @@ namespace GPN
             CompressibleRatesFactory(
                 cptr<Hydrodynamics_t> pressure_field,
                 const cptr<Grid2D_t> grid2D_rocks,
-                const Well_t &well,
+                const ptr<Well_t> well,
                 const ptr<History_t> history,
                 const Fluid_t &fluid)
                 : grid2D_rocks{grid2D_rocks},
@@ -75,6 +75,7 @@ namespace GPN
                 // the field is updated at every time step
                 // non-stationary hydrodynamics is assumed
                 pressure_field->set_pressure_field(t_step, get_history_record());
+                well->set_well_flow_field(get_history_record());
 
                 const auto mid_time{history->get_current_record().mid_time};
                 if ((t < mid_time) && (t + t_step > mid_time))
@@ -92,22 +93,22 @@ namespace GPN
                         first_size + 1ll,
                         second_size)};
 
-                axes1_value.col(0ll) = well.get_verticle_well_flow(get_history_record());
-                axes1_value.col(2ll) = well.get_verticle_cement_flow(get_history_record());
+                axes1_value.col(0ll) = well->get_verticle_well_flow(get_history_record());
+                axes1_value.col(2ll) = well->get_verticle_cement_flow(get_history_record());
 
                 FaceValuesContainer axes2_value{
                     FaceValuesContainer::Zero(
                         first_size,
                         second_size + 1ll)};
 
-                const auto wfp{well.get_WFP(get_history_record())};
+                const auto wfp{well->get_WFP(get_history_record())};
 
                 static_assert(Grid2D_t::l_margin == 3ll);
                 axes2_value.col(0ll) = 0.0;
                 axes2_value.col(1ll) = wfp;
                 axes2_value.col(2ll) = wfp;
                 axes2_value.col(3ll) =
-                    well.get_RFP(get_history_record());
+                    well->get_RFP(get_history_record());
 
                 // face values of mobility are not defined at the domain boundaries
                 assert(mobility.face_vals_axes1.rows() == first_size - 1ll);
@@ -178,7 +179,7 @@ namespace GPN
         public:
             const cptr<OriginalGrid> grid2D;
             const cptr<Grid2D_t> grid2D_rocks;
-            const Well_t &well;
+            const ptr<Well_t> well;
             const ptr<History_t> history;
             const Fluid_t &fluid;
             ptr<Hydrodynamics_t> pressure_field;
