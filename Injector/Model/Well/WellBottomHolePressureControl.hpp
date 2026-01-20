@@ -18,9 +18,9 @@ namespace GPN
             struct BotHolePresFunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
             {
                 BotHolePresFunctorBC(
-                    const cptr<const History_t> history,
+                    const ptr<const History_t> history,
                     const Logs::ExternalPressure &ext_pressure,
-                    const cptr<const Grid2D_t> grid_ptr)
+                    const ptr<const Grid2D_t> grid_ptr)
                     : BoundaryConditions::GeneralBC::BCFunctorBase{},
                       history{history},
                       ext_pressure{ext_pressure},

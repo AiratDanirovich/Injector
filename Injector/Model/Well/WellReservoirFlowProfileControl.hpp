@@ -23,11 +23,11 @@ namespace GPN
                 /// @param rfp log_vals of Logs::RFP_weights container
                 /// @param grid_ptr Grid in collector, outside the sandface
                 RFPControlFunctorBC(
-                    const cptr<History_t> history,
+                    const ptr<const History_t> history,
                     const Logs::ExternalPressure &ext_pressure,
                     const StepPropertyContainer &rfp,
                     const Logs::IsPermeable &is_permeable,
-                    const cptr<const Grid2D_t> grid_ptr)
+                    const ptr<const Grid2D_t> grid_ptr)
                     : BoundaryConditions::GeneralBC::BCFunctorBase{},
                       history{history},
                       ext_pressure{ext_pressure},
@@ -72,9 +72,9 @@ namespace GPN
 
             protected:
                 const Logs::ExternalPressure &ext_pressure;
-                const cptr<const Grid2D_t> grid_ptr;
+                const ptr<const Grid2D_t> grid_ptr;
                 const Logs::RFP_weights rfp;
-                const cptr<History_t> history;
+                const ptr<const History_t> history;
             };
 
             struct RFPControlBC : public BoundaryConditions::GeneralBC
@@ -100,7 +100,6 @@ namespace GPN
             struct WellReservoirFlowProfileControl : public CrossFlow_t
             {
                 using functor_type = RFPControlFunctorBC<History_t, Grid2D_t>;
-
                 using hydro_bc_type = RFPControlBC;
 
                 const ptr<const hydro_bc_type> hydro_bc;
