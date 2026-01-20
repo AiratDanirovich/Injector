@@ -125,37 +125,25 @@ namespace GPN
                 }
 
                 template <typename HistoryRecord_t>
-                Logs::RFP get_RFP(
-                    const HistoryRecord_t &record,
-                    const auto &collector_pressure) const
+                const auto get_RFP(const HistoryRecord_t &record) const
                 {
-                    return 
-                        Logs::RFPFactory::create_from_container<Logs::RFP>(
-                            (mobility * (collector_pressure.col(0ll) - record.pressure)).eval(),
-                            is_permeable);
+                    return this->rfp;
                 }
-
                 template <typename HistoryRecord_t>
-                void set_well_flow_field(
-                    const HistoryRecord_t &record,
-                    const auto &collector_pressure)
+                const auto get_WFP(const HistoryRecord_t &record) const
                 {
-                    this->set_flux(get_RFP(record, collector_pressure));
-                    // set verticle flux
-                    flow_axes1_value.col(0ll) = this->verticle_flux_in_well;
-                    flow_axes1_value.col(1ll) = 0.0;
-                    flow_axes1_value.col(2ll) = this->verticle_flux_in_cement;
-                    // set radial flux
-                    static_assert(Grid2D_t::l_margin == 3ll);
-
-                    flow_axes2_value.col(0ll) = 0.0;
-                    flow_axes2_value.col(1ll) = this->wfp;
-                    flow_axes2_value.col(2ll) = this->wfp;
-                    flow_axes2_value.col(3ll) = this->rfp;
+                    return this->wfp;
                 }
-
-                FaceValuesContainer flow_axes1_value, flow_axes2_value;
-
+                template <typename HistoryRecord_t>
+                const auto get_verticle_cement_flow(const HistoryRecord_t &record) const
+                {
+                    return this->verticle_flux_in_cement;
+                }
+                template <typename HistoryRecord_t>
+                const auto get_verticle_well_flow(const HistoryRecord_t &record) const
+                {
+                    return this->verticle_flux_in_well;
+                }
 
                 template <typename HistoryRecord_t>
                 StepPropertyContainer get_pressure_at_sandface(
@@ -171,10 +159,42 @@ namespace GPN
                     const HistoryRecord_t &record,
                     const auto &collector_pressure) const
                 {
-                    return get_RFP(record, collector_pressure).log_vals.sum();
+                    return get_RFP(record).log_vals.sum();
                 }
 
+                template <typename HistoryRecord_t>
+                void set_well_flow_field(
+                    const HistoryRecord_t &record,
+                    const auto &collector_pressure)
+                {
+                    this->set_flux(set_RFP(record, collector_pressure));
+                    // set verticle flux
+                    flow_axes1_value.col(0ll) = get_verticle_well_flow(record);
+                    flow_axes1_value.col(1ll) = 0.0;
+                    flow_axes1_value.col(2ll) = get_verticle_cement_flow(record);
+                    // set radial flux
+                    static_assert(Grid2D_t::l_margin == 3ll);
+
+                    flow_axes2_value.col(0ll) = 0.0;
+                    flow_axes2_value.col(1ll) = get_WFP(record);
+                    flow_axes2_value.col(2ll) = get_WFP(record);
+                    flow_axes2_value.col(3ll) = get_RFP(record);
+                }
+
+                FaceValuesContainer flow_axes1_value, flow_axes2_value;
+
             protected:
+                template <typename HistoryRecord_t>
+                const auto set_RFP(
+                    const HistoryRecord_t &record,
+                    const auto &collector_pressure) const
+                {
+                    // return (mobility * (collector_pressure.col(0ll) - record.pressure)).eval();
+                    return Logs::RFPFactory::create_from_container<Logs::RFP>(
+                        (mobility * (collector_pressure.col(0ll) - record.pressure)).eval(),
+                        is_permeable);
+                }
+
                 static auto set_mobility(
                     const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
                     const ptr<const Grid2D_t> grid2D_rocks)
@@ -186,9 +206,10 @@ namespace GPN
                     const auto two_pi{2.0 * std::numbers::pi_v<RealType>};
                     const auto is_permeable{rock_field_props.base_hydrodynamics.is_permeable.log_vals};
 
-                    Eigen::ArrayX<RealType> out{two_pi / std::log(r3 / r2_face) *
-                                                rock_field_props.mobility_axes2.col(Grid2D_t::l_margin) *
-                                                grid2D_rocks->first_coord().volumes()};
+                    Eigen::ArrayX<RealType> out{
+                        two_pi / std::log(r3 / r2_face) *
+                        rock_field_props.mobility_axes2.col(Grid2D_t::l_margin) *
+                        grid2D_rocks->first_coord().volumes()};
 
                     for (auto row{0ll}; row < grid2D_rocks->first_coord().mesh_size(); ++row)
                     {
@@ -202,7 +223,6 @@ namespace GPN
                 const StepPropertyContainer mobility;
                 const Logs::IsPermeable &is_permeable;
             };
-
         } // BotHolePresControl
     } // Wells
 } // GPN
