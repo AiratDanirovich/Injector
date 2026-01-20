@@ -65,8 +65,8 @@ namespace GPN
 
             protected:
                 const Logs::ExternalPressure &ext_pressure;
-                const cptr<const Grid2D_t> grid_ptr;
-                const cptr<const History_t> history;
+                const ptr<const Grid2D_t> grid_ptr;
+                const ptr<const History_t> history;
             };
 
             struct BotHolePresBC : public BoundaryConditions::GeneralBC
@@ -93,7 +93,6 @@ namespace GPN
             struct WellBottomHolePressureControl : public CrossFlow_t
             {
                 using functor_type = BotHolePresFunctorBC<History_t, Grid2D_t>;
-
                 using hydro_bc_type = BotHolePresBC;
 
                 const ptr<const hydro_bc_type> hydro_bc;
@@ -123,14 +122,6 @@ namespace GPN
                               Grid2D_t::l_margin + 1ll)},
                       is_permeable{rock_field_props.base_hydrodynamics.is_permeable}
                 {
-                }
-
-                template <typename HistoryRecord_t>
-                StepPropertyContainer get_pressure_at_sandface(
-                    const HistoryRecord_t &record,
-                    const auto &) const
-                {
-                    return StepPropertyContainer::Constant(size, record.pressure) * is_permeable.log_vals;
                 }
 
                 template <typename HistoryRecord_t>
@@ -165,6 +156,16 @@ namespace GPN
 
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
 
+
+                template <typename HistoryRecord_t>
+                StepPropertyContainer get_pressure_at_sandface(
+                    const HistoryRecord_t &record,
+                    const auto &) const
+                {
+                    // pressure at the level of NON-permeable layers is assumed zero
+                    return StepPropertyContainer::Constant(size, record.pressure) * is_permeable.log_vals;
+                }
+
                 template <typename HistoryRecord_t>
                 RealType get_total_bottomhole_rate(
                     const HistoryRecord_t &record,
@@ -173,12 +174,10 @@ namespace GPN
                     return get_RFP(record, collector_pressure).log_vals.sum();
                 }
 
-                const std::ptrdiff_t size;
-
             protected:
                 static auto set_mobility(
                     const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
-                    cptr<Grid2D_t> grid2D_rocks)
+                    const ptr<const Grid2D_t> grid2D_rocks)
                 {
                     // center of cell next to the well
                     const auto r3{grid2D_rocks->second_coord().mesh_nodes(0ll)};
@@ -199,6 +198,7 @@ namespace GPN
                     return out;
                 }
 
+                const std::ptrdiff_t size;
                 const StepPropertyContainer mobility;
                 const Logs::IsPermeable &is_permeable;
             };
