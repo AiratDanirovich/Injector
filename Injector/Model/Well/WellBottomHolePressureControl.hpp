@@ -3,6 +3,7 @@
 #include <Injector/Grids/Defines.h>
 
 #include <Injector/Model/Collector.hpp>
+#include <Injector/Properties/Logs.hpp>
 
 #include <Injector/Solver/BoundaryConditions.hpp>
 
@@ -14,9 +15,9 @@ namespace GPN
         {
 #pragma region BOUNDARY-CONDITION
             template <typename History_t, typename Grid2D_t>
-            struct FunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
+            struct BotHolePresFunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
             {
-                FunctorBC(
+                BotHolePresFunctorBC(
                     const cptr<const History_t> history,
                     const Logs::ExternalPressure &ext_pressure,
                     const cptr<const Grid2D_t> grid_ptr)
@@ -24,6 +25,7 @@ namespace GPN
                       ext_pressure{ext_pressure},
                       grid_ptr{grid_ptr}
                 {
+                //    static_assert(Grid2D_t::l_margin == 3ll);
                 }
 
                 RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType,
@@ -87,7 +89,7 @@ namespace GPN
                 typename CrossFlow_t>
             struct WellBottomHolePressureControl : public CrossFlow_t
             {
-                using functor_type = FunctorBC<History_t, Grid2D_t>;
+                using functor_type = BotHolePresFunctorBC<History_t, Grid2D_t>;
 
                 using hydro_bc_type = BotHolePresBC;
 
