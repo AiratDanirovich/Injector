@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cassert>
+
 #include <Injector/Grids/Defines.h>
 
 #include <Injector/Model/Collector.hpp>
@@ -128,6 +130,9 @@ namespace GPN
                               grid2D_rocks->first_coord().mesh_size(),
                               Grid2D_t::l_margin + 1ll)}
                 {
+                    assert(std::abs(well_base.rfp.sum() - 1.0) < 1e-12);
+                    assert(std::abs(well_base.wfp.sum() - 1.0) < 1e-12);
+
                     static_assert(3ll == Grid2D_t::l_margin);
                 }
 
@@ -161,9 +166,9 @@ namespace GPN
                 }
 
                 template <typename HistoryRecord_t>
-                StepPropertyContainer get_total_bottomhole_rate(
+                RealType get_total_bottomhole_rate(
                     const HistoryRecord_t &record,
-                    const auto &) const
+                    const auto &/*collector_pressure*/) const
                 {
                     return record.rate;
                 }
@@ -176,16 +181,16 @@ namespace GPN
                     const auto rate{record.rate};
 
                     // set verticle flux
-                    flow_axes1_value.col(0ll) = rate * this->verticle_flux_in_well;
+                    flow_axes1_value.col(0ll) = get_verticle_well_flow(record);
                     flow_axes1_value.col(1ll) = 0.0;
-                    flow_axes1_value.col(2ll) = rate * this->verticle_flux_in_cement;
+                    flow_axes1_value.col(2ll) = get_verticle_cement_flow(record);
                     // set radial flux
+                    const auto temp{get_WFP(record)};
                     static_assert(Grid2D_t::l_margin == 3ll);
                     flow_axes2_value.col(0ll) = 0.0;
-                    flow_axes2_value.col(1ll) = rate * this->wfp;
-                    flow_axes2_value.col(2ll) = rate * this->wfp;
-                    flow_axes2_value.col(3ll) =
-                        rate * this->rfp;
+                    flow_axes2_value.col(1ll) = temp;
+                    flow_axes2_value.col(2ll) = temp;
+                    flow_axes2_value.col(3ll) = get_RFP(record);
                 }
 
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;

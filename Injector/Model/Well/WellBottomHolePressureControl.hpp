@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cassert>
+
 #include <Injector/Grids/Defines.h>
 
 #include <Injector/Model/Collector.hpp>
