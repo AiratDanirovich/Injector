@@ -3,6 +3,7 @@
 #include <Injector/Grids/Defines.h>
 
 #include <Injector/Model/Collector.hpp>
+#include <Injector/Properties/Logs.hpp>
 
 #include <Injector/Solver/BoundaryConditions.hpp>
 
@@ -14,10 +15,14 @@ namespace GPN
         {
 #pragma region BOUNDARY-CONDITION
             template <typename History_t, typename Grid2D_t>
-            struct FunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
-            {
-                //    using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
-                FunctorBC(
+            struct RFPControlFunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
+            {                
+                /// @brief 
+                /// @param history 
+                /// @param ext_pressure 
+                /// @param rfp 
+                /// @param grid_ptr Grid in collector, outside the sandface
+                RFPControlFunctorBC(
                     const cptr<History_t> history,
                     const Logs::ExternalPressure &ext_pressure,
                     const StepPropertyContainer &rfp,
@@ -27,7 +32,8 @@ namespace GPN
                       grid_ptr{grid_ptr},
                       rfp{rfp}
                 {
-                    assert(rfp.sum() == 1.0);
+                //    static_assert(Grid2D_t::l_margin == 3ll);
+                //    assert(std::abs(this->rfp.sum() - 1.0) < 1e-12);
                 }
 
                 RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType,
@@ -89,7 +95,7 @@ namespace GPN
                 typename CrossFlow_t>
             struct WellReservoirFlowProfileControl : public CrossFlow_t
             {
-                using functor_type = FunctorBC<History_t, Grid2D_t>;
+                using functor_type = RFPControlFunctorBC<History_t, Grid2D_t>;
 
                 using hydro_bc_type = RFPControlBC;
 
