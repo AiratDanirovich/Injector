@@ -32,8 +32,8 @@ namespace GPN
                       grid_ptr{grid_ptr},
                       rfp{rfp}
                 {
-                //    static_assert(Grid2D_t::l_margin == 3ll);
-                //    assert(std::abs(this->rfp.sum() - 1.0) < 1e-12);
+                    static_assert(Grid2D_t::l_margin == 3ll);
+                    assert(std::abs(this->rfp.sum() - 1.0) < 1e-12);
                 }
 
                 RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType,

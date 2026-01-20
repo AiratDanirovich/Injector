@@ -25,7 +25,7 @@ namespace GPN
                       ext_pressure{ext_pressure},
                       grid_ptr{grid_ptr}
                 {
-                //    static_assert(Grid2D_t::l_margin == 3ll);
+                    static_assert(Grid2D_t::l_margin == 3ll);
                 }
 
                 RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType,
