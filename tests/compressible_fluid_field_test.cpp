@@ -142,7 +142,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 #pragma endregion
 #pragma region MAKE-WELL
     const Logs::RFP_weights RFP_w{
-        RFPFactory::create_from_container(
+        RFPFactory::create_from_container<Logs::RFP_weights>(
             RFP_weights_stencils,
             core_logs.is_permeable)};
     const CrossFlows cross_flows{

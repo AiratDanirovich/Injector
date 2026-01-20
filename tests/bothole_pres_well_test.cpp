@@ -177,7 +177,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const shared_ptr<History> history{make_shared<History>(make_history(data))};
     // well
     const Logs::RFP_weights RFP_w{
-        RFPFactory::create_from_container(
+        RFPFactory::create_from_container<Logs::RFP_weights>(
             RFP_weights_stencils,
             core_logs.is_permeable)};
     const CrossFlows cross_flows{

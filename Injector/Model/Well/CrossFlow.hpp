@@ -205,12 +205,12 @@ namespace GPN
             {
                 assert(
                     ((is_perforated(i) != is_damaged(i)) &&
-                     (wfp_step_prop_grid(i) > 0.0)) ||
+                     (wfp_step_prop_grid(i) != 0.0)) ||
                     ((is_perforated(i) == 0.0) && (is_damaged(i) == 0.0) &&
                      (wfp_step_prop_grid(i) == 0.0)));
             }
 
-            return Logs::WFPFactory::create_from_container(
+            return Logs::WFPFactory::create_from_container<Logs::WFP>(
                 wfp_step_prop_grid, is_perforated + is_damaged);
         }
 

@@ -71,7 +71,7 @@ TEST_CASE("CrossFlow", "")
             grid_z)};
 
     const Logs::RFP_weights RFP_w{
-        RFPFactory::create_from_container(
+        RFPFactory::create_from_container<Logs::RFP_weights>(
             RFP_weights_stencils,
             is_permeable)};
 

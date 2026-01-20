@@ -133,11 +133,10 @@ namespace GPN
                     const HistoryRecord_t &record,
                     const auto &collector_pressure) const
                 {
-                    const Logs::RFP RFP_w{
-                        Logs::RFPFactory::create_from_container(
+                    return 
+                        Logs::RFPFactory::create_from_container<Logs::RFP>(
                             (mobility * (collector_pressure.col(0ll) - record.pressure)).eval(),
-                            is_permeable)};
-                    return RFP_w;
+                            is_permeable);
                 }
 
                 template <typename HistoryRecord_t>

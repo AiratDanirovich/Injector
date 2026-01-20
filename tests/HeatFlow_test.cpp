@@ -193,7 +193,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     // const Well_KH well{
     //     water, core_logs.is_permeable, core_logs.is_perforated, core_logs.permeability, well_holes, rMax};
     const RFP_weights RFP_w{
-        RFPFactory::create_from_container(
+        RFPFactory::create_from_container<Logs::RFP_weights>(
             RFP_weights_stencils,
             core_logs.is_permeable)};
     const CrossFlows cross_flows{

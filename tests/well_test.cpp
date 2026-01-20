@@ -90,14 +90,14 @@ TEST_CASE("Well_Test")
     const Well_KH well_q{
         water, is_permeable, is_perforated, permeability, well_holes, rMax};
 
-    const auto rfp_q = RFPFactory::create_from_container(well_q.get_RFP(history_record_q), is_permeable);
-    const auto wfp_q = WFPFactory::create_from_container(well_q.get_WFP(history_record_q), is_perforated);
+    const auto rfp_q = RFPFactory::create_from_container<Logs::RFP>(well_q.get_RFP(history_record_q), is_permeable);
+    const auto wfp_q = WFPFactory::create_from_container<Logs::WFP>(well_q.get_WFP(history_record_q), is_perforated);
 
     const Well_KH well_p{
         water, is_permeable, is_perforated, permeability, well_holes, rMax};
 
-    const auto rfp_p = RFPFactory::create_from_container(well_p.get_RFP(history_record_p), is_permeable);
-    const auto wfp_p = WFPFactory::create_from_container(well_p.get_WFP(history_record_p), is_perforated);
+    const auto rfp_p = RFPFactory::create_from_container<Logs::RFP>(well_p.get_RFP(history_record_p), is_permeable);
+    const auto wfp_p = WFPFactory::create_from_container<Logs::WFP>(well_p.get_WFP(history_record_p), is_perforated);
 
     { // check Well_KH
 
@@ -186,8 +186,8 @@ TEST_CASE("Well_Test")
         const Well_Explicit well_q_exp{
             is_permeable, is_perforated, transfer_to_eigen(weights)};
 
-        const auto rfp_q_exp = RFPFactory::create_from_container(well_q_exp.get_RFP(history_record_q), is_permeable);
-        const auto wfp_q_exp = WFPFactory::create_from_container(well_q_exp.get_WFP(history_record_q), is_perforated);
+        const auto rfp_q_exp = RFPFactory::create_from_container<Logs::RFP>(well_q_exp.get_RFP(history_record_q), is_permeable);
+        const auto wfp_q_exp = WFPFactory::create_from_container<Logs::WFP>(well_q_exp.get_WFP(history_record_q), is_perforated);
 
         assert(rfp_p.size() == rfp_q_exp.size());
         assert(wfp_p.size() == wfp_q_exp.size());
