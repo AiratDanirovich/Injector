@@ -150,7 +150,8 @@ namespace GPN
                     const HistoryRecord_t &record,
                     const auto &) const
                 {
-                    // pressure at the level of NON-permeable layers is assumed zero
+                    // Pressure at the level of NON-permeable layers is assumed zero.
+                    // Pressure at permeable layers is equal to history->pressure()
                     return StepPropertyContainer::Constant(size, record.pressure) * is_permeable.log_vals;
                 }
 
