@@ -7,7 +7,7 @@ namespace GPN
         enum Type
         {
             FixedRate,
-            FixedPressure
+            FixedBottomHolePressure
         };
     };
 } // GPN

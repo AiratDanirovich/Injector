@@ -57,7 +57,7 @@ using namespace std;
 using namespace GPN;
 using namespace GPN::Logs;
 using namespace GPN::CrossFlow;
-using namespace GPN::Well::BotHolePresControl;
+using namespace GPN::Wells::BotHolePresControl;
 using namespace GPN::Grids;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
@@ -173,25 +173,32 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             water,
             grid2D_rocks};
 
+    // history
+    const shared_ptr<History> history{make_shared<History>(make_history(data))};
     // well
-    const auto RFP_weights{
-        RFPFactory::create_from_container(
+    const Logs::RFP_weights RFP_w{
+        RFPFactory::create_from_container<Logs::RFP_weights>(
             RFP_weights_stencils,
             core_logs.is_permeable)};
     const CrossFlows cross_flows{
-        RFP_weights, from_coords, to_layers};
-    const auto WFP_weights{
-        create_WFP(
-            core_logs.is_perforated,
-            RFP_weights,
-            cross_flows)};
+        from_coords, to_layers, RFP_w, core_logs.is_perforated};
 
-    const Well_Explicit well_explicit{
-        core_logs.is_permeable, core_logs.is_perforated, RFP_weights};
+            
+    using Well_t =
+        decltype(WellBottomHolePressureControl{
+        rock_field_props,
+        cross_flows,
+        history,
+        grid2D_rocks});
 
-    const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
+    const ptr<Well_t> well{
+        std::make_shared<Well_t>(
+        rock_field_props,
+        cross_flows,
+        history,
+        grid2D_rocks)};
 
-    const WellBottomHolePressureControl well_bothole{};
+    // const WellBottomHolePressureControl well_bothole{};
 
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
@@ -209,20 +216,18 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         heat_logs, grid2D};
 
     // properties of material that fills the well up to the sandface
-    heat_props.apply_well(extr_completion, well_bothole);
+    heat_props.apply_well(extr_completion, well);
 
     FaceProperties::Rocks::HeatFaceProps heat_face_props{
         heat_props, grid2D};
-    heat_face_props.apply_well(extr_completion, well_bothole);
-    // history
-    const shared_ptr<History> history{make_shared<History>(make_history(data))};
+    heat_face_props.apply_well(extr_completion, well);
     // fluid model for the pressure field
     using FluidField_t =
         decltype(CompressibleFluidField{
             start_time,
             water,
             rock_field_props,
-            well,
+            *well,
             history,
             grid2D_rocks});
 
@@ -231,7 +236,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             start_time,
             water,
             rock_field_props,
-            well,
+            *well,
             history,
             grid2D_rocks)};
 
@@ -249,7 +254,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const GPN::Heat::HeatBC bc{
         grid2D,
         std::make_shared<GPN::FunctorBC<
-            Well_CrossFlow,
             History,
             FluidField_t,
             RatesFactory_t>>(

@@ -129,7 +129,7 @@ namespace GPN
 
             for (auto i{0ll}; i < rates.size(); ++i)
             {
-                if (regimes[i] == InjectorRegimes::FixedPressure)
+                if (regimes[i] == InjectorRegimes::FixedBottomHolePressure)
                 {
                     assert(std::isnan(rates.log_vals(i)));
                     assert(pressures.log_vals(i) > 0.0);
@@ -265,7 +265,7 @@ namespace GPN
         {
             const std::vector<InjectorRegimes::Type> regimes(
                 pressure.size(),
-                InjectorRegimes::FixedPressure);
+                InjectorRegimes::FixedBottomHolePressure);
 
             // nan-valued rate.
             // can be calculated during the simulation

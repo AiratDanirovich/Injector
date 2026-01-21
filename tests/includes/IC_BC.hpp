@@ -34,14 +34,11 @@ namespace GPN
     return EqSolver::State::State2D{EqSolver::State::State2D::FillWithFunctor(*grid, FunctorIC{geotherma}, t0)};
   }
 
-  template <typename Well_t, typename History_t, typename Hydro_t, typename RatesFactory_t>
+  template <typename History_t, typename Hydro_t, typename RatesFactory_t>
   struct FunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
   {
     using Grid2D_t = Grids::StructuredCylinderGrid2DAxisymmetric;
     using BCType = BoundaryConditions::GeneralBC::BoundaryCondition::BCType;
-    // using RatesFactory_t =
-    //     FaceProperties::CompressibleRatesFactory<
-    //         Grid2D_t, Well_t, History, PhasePropertiesJT, Hydro_t>;
     FunctorBC(
                 const cptr<History_t> history,
         const cptr<RatesFactory_t> flow_field, // volumetric heat flow rate

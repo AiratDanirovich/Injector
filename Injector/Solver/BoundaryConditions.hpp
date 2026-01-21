@@ -59,7 +59,7 @@ namespace GPN
             template <typename Grid2D_t>
             GeneralBC(
                 const cptr<Grid2D_t> &grid,
-                const cptr<const BCFunctorBase> functor,
+                const ptr<const BCFunctorBase> functor,
                 std::array<BoundaryCondition::BCType, 4ull> bc_types)
                 : bc_types{bc_types},
                   fixed_coords{
@@ -164,7 +164,7 @@ namespace GPN
             RealType t;
             std::array<BoundaryCondition::BCType, 4ull> bc_types;
             const std::array<RealType, 4ull> fixed_coords;
-            const cptr<const BCFunctorBase> functor;
+            const ptr<const BCFunctorBase> functor;
 
             const size_t west_id{2ull}, east_id{3ull}, south_id{0ull}, north_id{1ull};
         };
