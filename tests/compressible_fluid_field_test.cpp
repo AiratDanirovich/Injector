@@ -381,8 +381,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             {
                 { // flow in the tube
                     const auto col{0ll};
-                    CHECK(Q - well_loss_cum_sum == well_flow(row));
-                    CHECK(C * (Q - well_loss_cum_sum) == flux1(row, col));
+                    CHECK_THAT(Q - well_loss_cum_sum,
+                        WithinRel(well_flow(row), tol));
+                    CHECK_THAT(C * (Q - well_loss_cum_sum),
+                        WithinRel(flux1(row, col), tol));
                     if (row < grid_z.mesh_size())
                         well_loss_cum_sum += wfp(row);
                 }
