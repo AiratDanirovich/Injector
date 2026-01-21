@@ -1,3 +1,17 @@
+/**
+ * @file make_history.hpp
+ * @brief The file describes the History object creation from a json data
+ *
+ * 1. By default, an RFP pressure control is assumed. So, it is expected that the
+ * nodes "collector->explicit->weights" and "history->rate" exist in the json file.
+ *
+ * 2. Bottomhole pressure control is introduced. So, instead of these two nodes one may expect
+ * "history->control_type = bottomhole_pressure" and "history->dynamic->bottomhole_pressure".
+ *
+ * @author Arthur Salamatin
+ * @date 2026-01-21
+ */
+
 #pragma once
 
 #include <vector>
@@ -16,7 +30,7 @@ auto make_history(const json &data)
 {
     using namespace GPN;
     using namespace GPN::Logs;
-
+#pragma region SET-UNIT-OF-TIME
     const std::string t_unit = data["history"]["t_unit"].get<std::string>();
     RealType factor{1.0};
     if (t_unit == "d")
@@ -29,18 +43,29 @@ auto make_history(const json &data)
         factor = 1;
     else
         throw std::runtime_error("Incorrect unit of time.");
-
-    const std::string history_type = data["history"]["history_type"];
+#pragma endregion
+#pragma region CHOOSE-HISTORY-TYPE
+    const std::string history_type{data["history"]["history_type"].get<std::string>()};
+    const std::string control_type{data["history"].value<std::string>("control_type", "RFP")};
     if (history_type == "dynamic")
     {
-        const auto &data2 = data["history"]["dynamic"];
-        VR t_major_steps = data2["t_major_step"].get<VR>();
+        const auto &data2 {data["history"]["dynamic"]};
+        VR t_major_steps{data2["t_major_step"].get<VR>()};
         for (auto &v : t_major_steps)
-            v = v * factor;
-        const VR well_rates = data2["well_rate"].get<VR>();
-        const VR inlet_temps = data2["inlet_temperature"].get<VR>();
-
-        return HistoryFactory::createFixedRate(t_major_steps, well_rates, inlet_temps);
+            v = v * factor; // change units of time-steps to seconds
+        const VR inlet_temps {data2["inlet_temperature"].get<VR>()};
+        if (control_type == "RFP")
+        {
+            const VR well_rates { data2["well_rate"].get<VR>()};
+            return HistoryFactory::createFixedRate(t_major_steps, well_rates, inlet_temps);
+        }
+        else if (control_type == "bottomhole_pressure")
+        {
+            const VR bothole_pressure = data2["bottomhole_pressure"].get<VR>();
+            return HistoryFactory::createFixedPressure(t_major_steps, bothole_pressure, inlet_temps);
+        }
+        else
+            throw std::runtime_error("Incorrect history control type.");
     }
     else if (history_type == "static")
     {
@@ -52,16 +77,28 @@ auto make_history(const json &data)
         const RealType t_major_step = std::min(t1 - t0, data2["t_major_step"].get<RealType>() * factor);
 
         const VR t_stencils{generate_stencils(t0, t1, t_major_step)};
-
-        const RealType well_rate{data2["well_rate"].get<RealType>()}; // m^3/s
-        const RealType inlet_temperature{data2["inlet_temperature"].get<RealType>()};
-
         const std::vector<RealType> t_major_steps{generate_steps(t_stencils)};
-        const std::vector<RealType> well_rates(t_major_steps.size(), well_rate);
-        const std::vector<RealType> inlet_temperature_set(t_major_steps.size(), inlet_temperature);
 
-        return HistoryFactory::createFixedRate(t_major_steps, well_rates, inlet_temperature_set);
+        const RealType inlet_temperature{data2["inlet_temperature"].get<RealType>()};
+        const std::vector<RealType> inlet_temps(t_major_steps.size(), inlet_temperature);
+
+
+        if (control_type == "RFP")
+        {
+            const RealType well_rate{data2["well_rate"].get<RealType>()}; // m^3/s
+            const std::vector<RealType> well_rates(t_major_steps.size(), well_rate);
+            return HistoryFactory::createFixedRate(t_major_steps, well_rates, inlet_temps);
+        }
+        else if (control_type == "bottomhole_pressure")
+        {
+            const RealType bothole_pressure{data2["bothole_pressure"].get<RealType>()}; // 
+            const std::vector<RealType> bothole_pressures(t_major_steps.size(), bothole_pressure);
+            return HistoryFactory::createFixedPressure(t_major_steps, bothole_pressures, inlet_temps);
+        }
+        else
+            throw std::runtime_error("Incorrect history control type.");
     }
     else
         throw std::runtime_error("Incorrect history type descriptor.");
+#pragma endregion
 }
