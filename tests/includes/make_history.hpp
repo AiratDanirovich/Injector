@@ -1,3 +1,17 @@
+/**
+ * @file make_history.hpp
+ * @brief The file describes the History object creation from a json data
+ *
+ * 1. By default, an RFP pressure control is assumed. So, it is expected that the
+ * nodes "collector->explicit->weights" and "history->rate" exist in the json file.
+ * 
+ * 2. Bottomhole pressure control is introduced. So, instead of these two nodes one may expect 
+ * "history->control_type = bottomhole_pressure" and "history->dynamic->bottomhole_pressure".
+ *
+ * @author Arthur Salamatin
+ * @date 2026-01-21
+ */
+
 #pragma once
 
 #include <vector>
@@ -16,7 +30,7 @@ auto make_history(const json &data)
 {
     using namespace GPN;
     using namespace GPN::Logs;
-
+#pragma region SET-UNIT-OF-TIME
     const std::string t_unit = data["history"]["t_unit"].get<std::string>();
     RealType factor{1.0};
     if (t_unit == "d")
@@ -29,7 +43,7 @@ auto make_history(const json &data)
         factor = 1;
     else
         throw std::runtime_error("Incorrect unit of time.");
-
+#pragma endregion
     const std::string history_type = data["history"]["history_type"];
     if (history_type == "dynamic")
     {
