@@ -67,7 +67,7 @@ using namespace GPN::EqSolver::FullImplicit;
 
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
-    ifstream f("heatflow_test_data.json");
+    ifstream f("bothole_pres_test_data.json");
     REQUIRE(f.is_open());
     json data = json::parse(f);
 
