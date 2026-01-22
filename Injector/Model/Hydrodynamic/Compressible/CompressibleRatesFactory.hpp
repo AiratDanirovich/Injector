@@ -70,7 +70,8 @@ namespace GPN
                 double t, RealType t_step)
             {
                 // this method only works at FixedRate injection
-                assert(history->regime() == InjectorRegimes::FixedRate);
+                assert((history->regime() == InjectorRegimes::FixedRate) ||
+                       (history->regime() == InjectorRegimes::FixedBottomHolePressure));
 
                 // the pressure field field is updated at every time step
                 // non-stationary hydrodynamics is assumed

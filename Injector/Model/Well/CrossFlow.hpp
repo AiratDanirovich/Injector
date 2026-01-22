@@ -201,6 +201,10 @@ namespace GPN
                 is_perforated.log_vals,
                 is_perforated.grid)};
 
+                std::cout << "is_perforated:\n" << is_perforated.log_vals.transpose() << std::endl;
+                std::cout << "is_damaged:\n" << is_damaged.log_vals.transpose() << std::endl;
+                std::cout << "wfp_step_prop_grid:\n" << wfp_step_prop_grid.transpose() << std::endl;
+                std::cout << "RFP_w:\n" << RFP_w.log_vals.transpose() << std::endl << std::endl;
             for (auto i{0ll}; i < wfp_step_prop_grid.size(); ++i)
             {
                 assert(
