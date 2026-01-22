@@ -30,6 +30,8 @@ auto make_history(const json &data)
 {
     using namespace GPN;
     using namespace GPN::Logs;
+    
+    const RealType Atm2Pa{1e5};
 #pragma region SET-UNIT-OF-TIME
     const std::string t_unit = data["history"]["t_unit"].get<std::string>();
     RealType factor{1.0};
@@ -61,7 +63,9 @@ auto make_history(const json &data)
         }
         else if (control_type == "bottomhole_pressure")
         {
-            const VR bothole_pressure = data2["bottomhole_pressure"].get<VR>();
+            VR bothole_pressure = data2["bottomhole_pressure"].get<VR>();
+            for (auto &v : bothole_pressure)
+                v = v * Atm2Pa; // change units of pressure to Pa
             return HistoryFactory::createFixedPressure(t_major_steps, bothole_pressure, inlet_temps);
         }
         else
@@ -91,7 +95,7 @@ auto make_history(const json &data)
         }
         else if (control_type == "bottomhole_pressure")
         {
-            const RealType bothole_pressure{data2["bothole_pressure"].get<RealType>()}; // 
+            const RealType bothole_pressure{Atm2Pa*data2["bothole_pressure"].get<RealType>()}; // 
             const std::vector<RealType> bothole_pressures(t_major_steps.size(), bothole_pressure);
             return HistoryFactory::createFixedPressure(t_major_steps, bothole_pressures, inlet_temps);
         }

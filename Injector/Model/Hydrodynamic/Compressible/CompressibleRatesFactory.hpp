@@ -27,7 +27,7 @@ namespace GPN
 
             struct Solution
             {
-                Solution(const auto history) 
+                Solution(const auto history)
                 {
                     times.reserve(history->size());
                     states.reserve(history->size());
@@ -111,7 +111,7 @@ namespace GPN
 
                 const auto &P{get_pressure_field()};
                 for (auto col{Grid2D_t::l_margin + 1ll}, count{0ll}; count < second_size_rock; ++col, ++count)
-                    axes2_value.col(col) = mobility_factor.col(count) * (P.col(col-1ll) - P.col(col));
+                    axes2_value.col(col) = mobility_factor.col(count) * (P.col(col - 1ll) - P.col(col));
 
                 // volumetric flow field in two directions is calculated,
                 // once the pressure field is calculated
@@ -128,7 +128,7 @@ namespace GPN
             {
                 return Properties::JT_FieldFactory::create_spatial(*this).values();
             }
-            
+
             const auto get_temporal_JT_contribution() const
             {
                 return Properties::JT_FieldFactory::create_temporal(*this).values();

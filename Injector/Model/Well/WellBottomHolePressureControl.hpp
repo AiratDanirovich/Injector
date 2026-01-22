@@ -111,7 +111,7 @@ namespace GPN
                                   history, rock_field_props.base_hydrodynamics.ext_pressure,
                                   grid2D_rocks))},
                       size{grid2D_rocks->first_coord().mesh_size()},
-                      mobility{set_mobility(rock_field_props, grid2D_rocks)},
+                      PI{set_productivity_index(rock_field_props, grid2D_rocks)},
                       flow_axes1_value{
                           FaceValuesContainer::Zero(
                               grid2D_rocks->first_coord().mesh_size() + 1ll,
@@ -192,11 +192,11 @@ namespace GPN
                 {
                     // return (mobility * (collector_pressure.col(0ll) - record.pressure)).eval();
                     return Logs::RFPFactory::create_from_container<Logs::RFP>(
-                        (mobility * (collector_pressure.col(0ll) - record.pressure)).eval(),
+                        (PI * (collector_pressure.col(0ll) - record.pressure)).eval(),
                         is_permeable);
                 }
 
-                static auto set_mobility(
+                static auto set_productivity_index(
                     const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
                     const ptr<const Grid2D_t> grid2D_rocks)
                 {
@@ -221,7 +221,7 @@ namespace GPN
                 }
 
                 const std::ptrdiff_t size;
-                const StepPropertyContainer mobility;
+                const StepPropertyContainer PI;
                 const Logs::IsPermeable &is_permeable;
             };
         } // BotHolePresControl
