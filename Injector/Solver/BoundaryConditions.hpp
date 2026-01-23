@@ -32,12 +32,11 @@ namespace GPN
             
             struct BCFunctorBase
             {
-                /// @brief Decriptor for the generalized boundary condition
-                /// flux = factor*T - value. It is specified for 
-                /// various types of BCs as follows
-                /// I:   factor = 1; prescribe value
-                /// II:  factor = 0; prescribe value
-                /// III: prescribe both factor and value
+                /// @brief Decriptor for the generalized boundary condition.
+                /// It is specified for various types of BCs as follows:
+                /// I:   factor*T = value; factor = 1, prescribe value
+                /// II:  flux = factor*T + value; factor = 0; prescribe value
+                /// III: flux = factor*(T - value); prescribe both factor and value
                 struct BC_descriptor
                 {
                     static BC_descriptor BC_I(const RealType value)
