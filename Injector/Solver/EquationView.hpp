@@ -66,6 +66,7 @@ namespace GPN
                         for (const auto id : neib_ids)
                             flag = flag && (matrix.coeffRef(diag_id, id) == 0.0);
                         return flag;
+                    }
                 };
     } // EqSolver
 } // GPN
