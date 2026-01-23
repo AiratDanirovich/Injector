@@ -59,46 +59,57 @@ namespace GPN
     /// @param r 
     /// @param t 
     /// @return 
-    RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType t,
+    BC_descriptor operator()(const ptrdiff_t z_id, const RealType r, const RealType t,
                         const BCType bc_type) const override
     {
       if (r == grid_ptr->second_coord().dual_front())
-        return 0.0; // bc at the axis of symmetry, r == 0.0
+      {
+        assert(bc_type == BCType::second);
+        return BC_descriptor::BC_II(0.0); // bc at the axis of symmetry, r == 0.0
+      }
 
       if (r == grid_ptr->second_coord().dual_back())
       {                // bc at the external contour
         if (bc_type == // geotherma is set for producer
             BCType::first)
-          return geotherma(z_id);
+          return BC_descriptor::BC_I(geotherma(z_id));
+        //  return geotherma(z_id);
         else if (bc_type == // zero diffusion flux for injector
                  BCType::second)
-          return 0.0;
+          return BC_descriptor::BC_II(0.0);
+        //  return 0.0;
       }
 
       assert(false);
-      return 0.0;
+      return BC_descriptor::BC_I(0.0);
+    //  return 0.0;
     }
 
-    RealType operator()(const RealType z, const ptrdiff_t r_id, const RealType t,
+    BC_descriptor operator()(const RealType z, const ptrdiff_t r_id, const RealType t,
                         const BCType) const override
     {
       if (z == grid_ptr->first_coord().dual_front())
       { // inflow with temperature from history,
         // outflow is accounted for in the matrix
-        return std::max(0.0, flow_field->get_heat_flow_in_axes1()(0ll, r_id)) * history->temperature();
+        return BC_descriptor::BC_II(-std::max(0.0, flow_field->get_heat_flow_in_axes1()(0ll, r_id)) * history->temperature());
+      //  return std::max(0.0, flow_field->get_heat_flow_in_axes1()(0ll, r_id)) * history->temperature();
       }
 
       if (z == grid_ptr->first_coord().dual_back())
       {
         // outflow -- duffusion flux is zero, min -> 0.0
         // inflow -- geotherm inflows from the bottom hole
-        return std::min(0.0, flow_field->get_heat_flow_in_axes1()(
+        return BC_descriptor::BC_II(-std::min(0.0, flow_field->get_heat_flow_in_axes1()(
                                  grid_ptr->first_coord().dual_size() - 1ll, r_id)) *
-               geotherma.log_vals.tail(1ll)(0ll);
+               geotherma.log_vals.tail(1ll)(0ll));
+        // return std::min(0.0, flow_field->get_heat_flow_in_axes1()(
+        //                          grid_ptr->first_coord().dual_size() - 1ll, r_id)) *
+        //        geotherma.log_vals.tail(1ll)(0ll);
       }
 
       assert(false);
-      return 0.0;
+      return BC_descriptor::BC_I(0.0);
+    //  return 0.0;
     }
 
   protected:

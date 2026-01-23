@@ -60,34 +60,35 @@ namespace GPN
                 assert(rfp.sum() == 1.0);
             }
 
-            RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType,
+            BC_descriptor operator()(const ptrdiff_t z_id, const RealType r, const RealType,
                                 const BCType bc_type) const override
             {
                 if (r == grid_ptr->second_coord().dual_front())
                 {
                     assert(bc_type == BCType::second);
                     const auto out{rfp(z_id) * history->rate()};
-                    return out;
+                    // see definition of BC_descriptor class for minus sign
+                    return BC_descriptor::BC_II(-out);
                 }
 
                 if (r == grid_ptr->second_coord().dual_back())
                 {
                     assert(bc_type == BCType::first);
-                    return ext_pressure(z_id);
+                    return BC_descriptor::BC_I(ext_pressure(z_id));
                 }
 
                 assert(false);
-                return 0.0;
+                return BC_descriptor::BC_I(0.0); //0.0;
             }
 
-            RealType operator()(const RealType z, const ptrdiff_t, const RealType,
+            BC_descriptor operator()(const RealType z, const ptrdiff_t, const RealType,
                                 const BCType bc_type) const override
             {
                 // boundary conditions are set exactly at domain boundaries
                 assert((z == grid_ptr->first_coord().dual_front()) || (z == grid_ptr->first_coord().dual_back()));
                 // assume zero diffusion flux in hydrodynamic equation
                 assert(bc_type == BCType::second);
-                return 0.0;
+                    return BC_descriptor::BC_II(0.0);
             }
 
         protected:

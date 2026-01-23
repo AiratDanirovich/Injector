@@ -99,7 +99,7 @@ struct AFunctorBC : public GPN::BoundaryConditions::GeneralBC::BCFunctorBase
   {
   }
 
-  RealType operator()(const ptrdiff_t z_id, RealType r, const RealType t,
+  BC_descriptor operator()(const ptrdiff_t z_id, RealType r, const RealType t,
                             const BCType) const override
   {
     RealType z{grid2D->first_coord().mesh_nodes(z_id)};
@@ -110,10 +110,10 @@ struct AFunctorBC : public GPN::BoundaryConditions::GeneralBC::BCFunctorBase
     else
       assert(false);
 
-    return es(z, r, t);
+    return BC_descriptor::BC_I(es(z, r, t));
   }
 
-  RealType operator()(RealType z, const ptrdiff_t r_id, const RealType t,
+  BC_descriptor operator()(RealType z, const ptrdiff_t r_id, const RealType t,
                             const BCType) const override
   {
     RealType r{grid2D->second_coord().mesh_nodes(r_id)};
@@ -124,7 +124,7 @@ struct AFunctorBC : public GPN::BoundaryConditions::GeneralBC::BCFunctorBase
     else
       assert(false);
 
-    return es(z, r, t);
+    return BC_descriptor::BC_I(es(z, r, t));
   }
 
 protected:

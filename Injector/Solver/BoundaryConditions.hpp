@@ -63,10 +63,10 @@ namespace GPN
                 };
 
                 using BCType = BoundaryConditions::GeneralBC::BoundaryCondition::BCType;
-                virtual RealType operator()(
+                virtual BC_descriptor operator()(
                     const ptrdiff_t x, RealType y, const RealType t,
                     const BoundaryCondition::BCType bc_type = BoundaryCondition::BCType::second) const = 0;
-                virtual RealType operator()(
+                virtual BC_descriptor operator()(
                     RealType x, const ptrdiff_t y, const RealType t,
                     const BoundaryCondition::BCType bc_type = BoundaryCondition::BCType::second) const = 0;
             };

@@ -17,6 +17,7 @@
 #include <Injector/Solver/CapacityTerm.hpp>
 #include <Injector/Solver/SplittingMethod/SplitX.hpp>
 #include <Injector/Solver/SplittingMethod/SplitY.hpp>
+#include <Injector/Solver/EquationView.hpp>
 
 namespace GPN
 {
@@ -75,54 +76,6 @@ namespace GPN
                     time_moments.push_back(cur_time);
                     states.emplace_back(state);
                 }
-
-                template <typename Coefs_t>
-                struct EquationView
-                {
-                    using Matrix_t = Eigen::SparseMatrix<RealType>; // Eigen::Block<Eigen::SparseMatrix<RealType>, 1, -1, false>;
-                    EquationView(Matrix_t &A,
-                                 RealType &rhs,
-                                 const ptrdiff_t diag_id,
-                                 const Coefs_t &neib_ids)
-                        : matrix{A}, rhs{rhs},
-                          diag_id{diag_id},
-                          neib_ids{neib_ids}
-                    {
-                        assert(matrix.cols() > 1ll);
-                        for (const auto id : neib_ids)
-                        {
-                            assert(id >= 0ll);
-                            assert(id < matrix.cols() * matrix.cols());
-                        }
-                    }
-
-                    Matrix_t &matrix;
-                    RealType &rhs;
-                    const ptrdiff_t diag_id;
-                    const Coefs_t &neib_ids;
-
-                    void set_type_I(const RealType val)
-                    {
-                        // set diagonal value = 1.0
-                        matrix.coeffRef(diag_id, diag_id) = 1.0;
-                        // set non-diagonal values = 0.0
-                        for (const auto id : neib_ids)
-                            matrix.coeffRef(diag_id, id) = 0.0;
-                        //  set rhs = val to satisfy: 1.0*T = val
-                        rhs = val;
-                    }
-                    void add_rhs_type_II(const RealType val)
-                    {
-                        bool flag{matrix.coeffRef(diag_id, diag_id) == 1.0};
-                        for (const auto id : neib_ids)
-                            flag = flag && (matrix.coeffRef(diag_id, id) == 0.0);
-                        // add the given flux to the rhs,
-                        // if type_I BC was not applied
-                        // from the other face
-                        if (flag == false)
-                            rhs += val;
-                    }
-                };
 
                 auto advance(const RealType tau)
                 {
