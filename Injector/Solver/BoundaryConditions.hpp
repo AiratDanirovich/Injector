@@ -36,11 +36,39 @@ namespace GPN
 
             struct BCFunctorBase
             {
+                /// @brief Decriptor for the generalized boundary condition.
+                /// It is specified for various types of BCs as follows:
+                /// I:   factor*T = value; factor = 1, prescribe value
+                /// II:  flux = factor*T + value; factor = 0; prescribe value
+                /// III: flux = factor*(T - value); prescribe both factor and value
+                struct BC_descriptor
+                {
+                    static BC_descriptor BC_I(const RealType value)
+                    {
+                        return BC_descriptor{value, 1.0};
+                    }
+                    static BC_descriptor BC_II(const RealType value)
+                    {
+                        return BC_descriptor{value, 0.0};
+                    }
+                    static BC_descriptor BC_III(const RealType value, const RealType factor)
+                    {
+                        return BC_descriptor{value, factor};
+                    }
+
+                    const RealType value;
+                    const RealType factor;
+                    protected:
+                    BC_descriptor(const RealType value, const RealType factor):
+                        value{value}, factor{factor}
+                    {}
+                };
+
                 using BCType = BoundaryConditions::GeneralBC::BoundaryCondition::BCType;
-                virtual RealType operator()(
+                virtual BC_descriptor operator()(
                     const ptrdiff_t x, RealType y, const RealType t,
                     const BoundaryCondition::BCType bc_type = BoundaryCondition::BCType::second) const = 0;
-                virtual RealType operator()(
+                virtual BC_descriptor operator()(
                     RealType x, const ptrdiff_t y, const RealType t,
                     const BoundaryCondition::BCType bc_type = BoundaryCondition::BCType::second) const = 0;
             };
