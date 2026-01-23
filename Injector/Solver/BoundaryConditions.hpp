@@ -127,6 +127,11 @@ namespace GPN
                     view.add_rhs_type_II((*functor)(i, y, t, bc_type));
                     return;
                 }
+                else if (bc_type == BoundaryCondition::BCType::third)
+                {
+                    view.set_type_III((*functor)(i, y, t, bc_type));
+                    return;
+                }
 
                 assert(false && "West boundary condition is not properly set");
             }
