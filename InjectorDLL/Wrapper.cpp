@@ -18,8 +18,10 @@
 
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
-#include <Injector/Model/Well/CrossFlow.hpp>
+#include <Injector/Model/Well/Well.hpp>
+#include <Injector/Model/Well/WellReservoirFlowProfileControl.hpp>
 #include <Injector/Model/Well/WellFactory.hpp>
+#include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluid.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleRatesFactory.hpp>
 #include <Injector/Model/Heat/HeatBoundaryConditions.hpp>
@@ -55,6 +57,7 @@ using namespace GPN::CrossFlow;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
 using namespace GPN::Hydrodynamic;
+using namespace GPN::Wells::ResFlowProfileControl;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::FullImplicit;
 
@@ -209,19 +212,31 @@ Wrapper::Wrapper(
             water,
             grid2D_rocks};
 
-    const auto RFP_weights{
-        Logs::RFPFactory::create_from_container(
+    const Logs::RFP_weights RFP_w{
+        Logs::RFPFactory::create_from_container<Logs::RFP_weights>(
             RFP_weights_stencils,
             core_logs.is_permeable)};
     const CrossFlows cross_flows{
-        RFP_weights, from_coords, to_layers};
-    const auto WFP_weights{
-        create_WFP(
-            core_logs.is_perforated,
-            RFP_weights,
-            cross_flows)};
+        from_coords, to_layers, RFP_w, core_logs.is_perforated};
+        
+    // history
+    const ptr<History> history{make_shared<History>(
+        HistoryFactory::createFixedRate(
+            time_intervals, well_rates, inlet_temperatures))};
+    
+    using Well_t =
+        decltype(WellReservoirFlowProfileControl{
+        rock_field_props,
+        cross_flows,
+        history,
+        grid2D_rocks});
 
-    const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
+    const ptr<Well_t> well{
+        std::make_shared<Well_t>(
+        rock_field_props,
+        cross_flows,
+        history,
+        grid2D_rocks)};
 
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
@@ -233,16 +248,12 @@ Wrapper::Wrapper(
 
     Properties::Rocks::HeatProps heat_props{
         heat_logs, grid2D};
-    heat_props.apply_well(extr_completion, well);
+    heat_props.apply_well(extr_completion, *well);
 
     FaceProperties::Rocks::HeatFaceProps heat_face_props{
         heat_props, grid2D};
-    heat_face_props.apply_well(extr_completion, well);
+    heat_face_props.apply_well(extr_completion, *well);
 
-    // history
-    const ptr<History> history{make_shared<History>(
-        HistoryFactory::createFixedRate(
-            time_intervals, well_rates, inlet_temperatures))};
     // external pressure log
     const auto external_pressure{
         Logs::ExtPressureFactory::create(
@@ -255,7 +266,7 @@ Wrapper::Wrapper(
             start_time,
             water,
             rock_field_props,
-            well,
+            *well,
             history,
             grid2D_rocks});
 
@@ -264,7 +275,7 @@ Wrapper::Wrapper(
             start_time,
             water,
             rock_field_props,
-            well,
+            *well,
             history,
             grid2D_rocks)};
 
@@ -290,7 +301,6 @@ Wrapper::Wrapper(
     const GPN::Heat::HeatBC bc{
         grid2D,
         std::make_shared<GPN::FunctorBC<
-            Well_CrossFlow,
             History,
             FluidField_t,
             RatesFactory_t>>(
