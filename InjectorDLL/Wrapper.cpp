@@ -63,88 +63,81 @@ using namespace GPN::EqSolver::FullImplicit;
 
 namespace fs = std::filesystem;
 
-Wrapper::Wrapper(
-    // fluid params in SI
-    const RealType density,                 // kg/(m^3)
-    const RealType capacity,                // J/(kg*K) /* specific heat capacity */
-    const RealType viscosity,               // Pa*s
-    const RealType heat_conductivity_fluid, // Watt/(m*K)
-    const RealType joule_thomson,           // K/bar
-    // grid
-    const RealType rMin,         // m /* typically would be zero */
-    const RealType rMax,         // m
-    const RealType q,            // --, q >= 1.0 /* step increment factor */
-    const RealType r_max_step,   // m /* maximum allowed step in radial direction */
-    const RealType z_minor_step, // m, /*maximum step within impermeable layers*/
-    // eight vectors of the same size
-    // values are in SI
-    const VR &thickness,                     // meter
-    const VR &ext_pressure,                  // bar
-    const VR &medium_compressibility,        // 1/Pa
-    const VR &solid_heatconductivity,        // Watt/(m*K)
-    const VR &porosity,                      // 0.0 < porosity <= 1.0, --
-    const VR &permeability_stencils,         // m^2
-    const VR &RFP_weights_stencils,          // -- /*rate distribution between layers*/
-    const VR &is_perforated,                 // {0, 1}, --
-    const VR &from_coords,                   // coordinates of column corrosion, m
-    const std::vector<ptrdiff_t> &to_layers, // -- /* ids of layers accepting the cross flow */
-    const VR &solid_density,                 // kg/(m^3)
-    const VR &solid_specific_heatcapacity,   // J/(kg*K)
-    // geotherma
-    const RealType z_top,      // m, /* z-coordinate of the top */
-    const VR &geotherma_nodes, // m, /* nodes for geotherma interpolation */
-    const VR &geotherma_vals,  // K, /* reference vals for interpolation */
-    // temporal grid
-    const RealType start_time,   // start time in seconds
-    const VR &time_intervals,    // intervals of const rates)
-    const RealType t_minor_step, // time step used for numerical integration
-    // well
-    const VR &well_rates,         // ~1.1E-3 m^3/s
-    const VR &inlet_temperatures, // K
-    // casing
-    // {fluid, tube, annulus, column, cement}
-    const json &data)
+Wrapper::Wrapper(const json &data)
 {
-    // adapt stl container to Eigen container
-    //    LogValuesContainer is_permeable_stencils(is_permeable.size());
-    //    std::copy(is_permeable.cbegin(), is_permeable.cend(), is_permeable_stencils.begin());
-    LogValuesContainer is_perforated_stencils(is_perforated.size());
-    std::copy(
-        is_perforated.cbegin(),
-        is_perforated.cend(),
-        is_perforated_stencils.begin());
-    LogValuesContainer ext_pressure_stencils{transfer_to_eigen(ext_pressure, 1e5)};
-    LogValuesContainer medium_compressibility_stencils(medium_compressibility.size());
-    std::copy(
-        medium_compressibility.begin(),
-        medium_compressibility.end(),
-        medium_compressibility_stencils.begin());
-    LogValuesContainer solid_density_stencils(solid_density.size());
-    std::copy(
-        solid_density.begin(),
-        solid_density.end(),
-        solid_density_stencils.begin());
-    LogValuesContainer solid_specific_heatcapacity_stencils(
-        solid_specific_heatcapacity.size());
-    std::copy(
-        solid_specific_heatcapacity.begin(),
-        solid_specific_heatcapacity.end(),
-        solid_specific_heatcapacity_stencils.begin());
-    LogValuesContainer porosity_stencils(porosity.size());
-    std::copy(
-        porosity.begin(), porosity.end(),
-        porosity_stencils.begin());
-    LogValuesContainer solid_heatconductivity_stencils(
-        solid_heatconductivity.size());
-    std::copy(
-        solid_heatconductivity.begin(),
-        solid_heatconductivity.end(),
-        solid_heatconductivity_stencils.begin());
-
+    /*START*/
+    // input parameters
+    /*fluid*/
+    RealType
+        viscosity{data["fluid"]["viscosity"].get<RealType>()},
+        density{data["fluid"]["density"].get<RealType>()},
+        capacity{data["fluid"]["specific_heat_capacity"].get<RealType>()},
+        heat_conductivity{data["fluid"]["heat_conductivity"].get<RealType>()},
+        joule_thomson{data["fluid"]["joule_thomson"].get<RealType>()};
+    /*collector*/
+    const auto thickness{data["collector"]["thickness"].get<VR>()};
+    // hydrodynamic logs
+    const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"].get<VR>())};
+    const auto ext_pressure_stencils{transfer_to_eigen(data["collector"]["external_pressure"].get<VR>(), 1e5)};
+    const auto medium_compressibility_stencils{transfer_to_eigen(data["collector"]["medium_compressibility"].get<VR>())};
+    const auto solid_density_stencils{transfer_to_eigen(data["collector"]["solidDensity"].get<VR>())};
+    const auto solid_specific_heatcapacity_stencils{transfer_to_eigen(data["collector"]["solidSpecificHeatCapacity"].get<VR>())};
+    const auto porosity_stencils{transfer_to_eigen(data["collector"]["porosity"].get<VR>())};
+    const auto solid_heatconductivity_stencils{transfer_to_eigen(data["collector"]["heatConductivity"].get<VR>())};
+    const auto permeability_stencils{transfer_to_eigen(data["collector"]["permeability"].get<VR>())};
+    const auto RFP_weights_stencils{transfer_to_eigen(data["collector"]["explicit"]["weights"].get<VR>())};
+    const auto from_coords{data["collector"]["cross_flow"]["from_coord"].get<VR>()};
+    const auto to_layers{data["collector"]["cross_flow"]["to_layers"].get<std::vector<std::ptrdiff_t>>()};
     const auto is_permeable_stencils{
         set_is_permeable_stencils(
             is_perforated_stencils, to_layers)};
+    // heat logs
+    /*grid*/
+    const RealType
+        rMin{data["grid"]["r_start"].get<RealType>()},
+        rMax{data["grid"]["r_end"].get<RealType>()},
+        q{data["grid"]["r_log_grid"]["q"].get<RealType>()},
+        r_max_step{data["grid"]["r_log_grid"]["r_max_step"].get<RealType>()},
+        z_minor_step{data["grid"]["z_minor_step"].get<RealType>()}; // m
+    /*history*/
+    const std::string t_unit = data["history"]["t_unit"].get<std::string>();
+    RealType factor{1.0};
+    if (t_unit == "d")
+        factor = 24 * 60 * 60;
+    else if (t_unit == "h")
+        factor = 60 * 60;
+    else if (t_unit == "m")
+        factor = 60;
+    else if (t_unit == "s")
+        factor = 1;
+    else
+        throw std::runtime_error("Incorrect unit of time.");
 
+    const RealType
+        start_time{factor * data["history"]["start_time"].get<RealType>()};
+    RealType t_minor_step{factor * data["history"]["t_minor_step"].get<RealType>()};
+    VR t_major_steps = data["history"]["dynamic"]["t_major_step"].get<VR>();
+    for (auto &v : t_major_steps)
+        v *= factor;
+    const auto& time_intervals{t_major_steps};
+    /*temperatures*/
+    const VR well_rates = data["history"]["dynamic"]["well_rate"].get<VR>(); // m^3/s
+    const VR inlet_temperatures = data["history"]["dynamic"]["inlet_temperature"].get<VR>();
+    /*well*/
+    //    const auto casing{parse_completion(data)};
+    /*END*/
+
+    const auto &data2 = data["collector"]["geotherma"]["interpolate"];
+    const VR geotherma_nodes = data2["z_nodes"].get<VR>();
+    const VR geotherma_vals = data2["t_vals"].get<VR>();
+    const RealType z_top = data2["z_top"].get<RealType>();
+
+    cout << "Simulation is started." << endl;
+    cout << "Please wait..." << endl;
+
+    const auto t_start{chrono::high_resolution_clock::now()};
+
+#pragma region
     // z-refiner
     const auto z_stencils{Grids::Factory::generate_dual_grid_stencils_from_steps(
         0.0, thickness)};
@@ -218,25 +211,25 @@ Wrapper::Wrapper(
             core_logs.is_permeable)};
     const CrossFlows cross_flows{
         from_coords, to_layers, RFP_w, core_logs.is_perforated};
-        
+
     // history
     const ptr<History> history{make_shared<History>(
         HistoryFactory::createFixedRate(
             time_intervals, well_rates, inlet_temperatures))};
-    
+
     using Well_t =
         decltype(WellReservoirFlowProfileControl{
-        rock_field_props,
-        cross_flows,
-        history,
-        grid2D_rocks});
+            rock_field_props,
+            cross_flows,
+            history,
+            grid2D_rocks});
 
     const ptr<Well_t> well{
         std::make_shared<Well_t>(
-        rock_field_props,
-        cross_flows,
-        history,
-        grid2D_rocks)};
+            rock_field_props,
+            cross_flows,
+            history,
+            grid2D_rocks)};
 
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
@@ -574,6 +567,7 @@ Wrapper::Wrapper(
     {
         std::cerr << e.what() << '\n';
     }
+#pragma endregion
 }
 
 std::vector<RealType> Wrapper::get_times() const
