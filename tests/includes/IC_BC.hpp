@@ -91,7 +91,7 @@ namespace GPN
       if (z == grid_ptr->first_coord().dual_front())
       { // inflow with temperature from history,
         // outflow is accounted for in the matrix
-        return BC_descriptor::BC_II(-std::max(0.0, flow_field->get_heat_flow_in_axes1()(0ll, r_id)) * history->temperature());
+        return BC_descriptor::BC_II(std::max(0.0, flow_field->get_heat_flow_in_axes1()(0ll, r_id)) * history->temperature());
       //  return std::max(0.0, flow_field->get_heat_flow_in_axes1()(0ll, r_id)) * history->temperature();
       }
 
@@ -99,7 +99,7 @@ namespace GPN
       {
         // outflow -- duffusion flux is zero, min -> 0.0
         // inflow -- geotherm inflows from the bottom hole
-        return BC_descriptor::BC_II(-std::min(0.0, flow_field->get_heat_flow_in_axes1()(
+        return BC_descriptor::BC_II(std::min(0.0, flow_field->get_heat_flow_in_axes1()(
                                  grid_ptr->first_coord().dual_size() - 1ll, r_id)) *
                geotherma.log_vals.tail(1ll)(0ll));
         // return std::min(0.0, flow_field->get_heat_flow_in_axes1()(
