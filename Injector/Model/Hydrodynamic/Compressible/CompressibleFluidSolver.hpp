@@ -68,7 +68,7 @@ namespace GPN
                     assert(bc_type == BCType::second);
                     const auto out{rfp(z_id) * history->rate()};
                     // see definition of BC_descriptor class for minus sign
-                    return BC_descriptor::BC_II(-out);
+                    return BC_descriptor::BC_II(out);
                 }
 
                 if (r == grid_ptr->second_coord().dual_back())
