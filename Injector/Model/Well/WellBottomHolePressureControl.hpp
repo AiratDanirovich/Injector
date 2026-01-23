@@ -19,13 +19,20 @@ namespace GPN
             template <typename History_t, typename Grid2D_t>
             struct BotHolePresFunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
             {
+                /// @brief 
+                /// @param history 
+                /// @param ext_pressure 
+                /// @param PI productivity index that multiplies pressure difference at sandface
+                /// @param grid_ptr 
                 BotHolePresFunctorBC(
                     const ptr<const History_t> history,
                     const Logs::ExternalPressure &ext_pressure,
+                    const StepPropertyContainer PI,
                     const ptr<const Grid2D_t> grid_ptr)
                     : BoundaryConditions::GeneralBC::BCFunctorBase{},
                       history{history},
                       ext_pressure{ext_pressure},
+                      PI{PI},
                       grid_ptr{grid_ptr}
                 {
                     static_assert(Grid2D_t::l_margin == 3ll);
@@ -37,9 +44,9 @@ namespace GPN
                     // boundary condition at sandface
                     if (r == grid_ptr->second_coord().dual_front())
                     {
-                        assert(bc_type == BCType::first);
+                        assert(bc_type == BCType::third);
                         const auto out{history->pressure()};
-                        return BC_descriptor::BC_I(out);
+                        return BC_descriptor::BC_III(out, PI(z_id));
                     //    return out;
                     }
 
@@ -69,6 +76,7 @@ namespace GPN
 
             protected:
                 const Logs::ExternalPressure &ext_pressure;
+                const StepPropertyContainer& PI;
                 const ptr<const Grid2D_t> grid_ptr;
                 const ptr<const History_t> history;
             };
@@ -78,10 +86,10 @@ namespace GPN
                 template <typename Grid2D_t>
                 BotHolePresBC(const cptr<Grid2D_t> &grid,
                               const cptr<const BCFunctorBase> functor)
-                    : BoundaryConditions::GeneralBC{grid, functor, BoundaryCondition::BCType::first}
+                    : BoundaryConditions::GeneralBC{grid, functor, BoundaryCondition::BCType::second}
                 {
-                    bc_types[north_id] = BoundaryCondition::BCType::second;
-                    bc_types[south_id] = BoundaryCondition::BCType::second;
+                    bc_types[west_id] = BoundaryCondition::BCType::third;
+                    bc_types[east_id] = BoundaryCondition::BCType::first;
                 }
                 void set_bc_type(const RealType t)
                 {
@@ -108,12 +116,6 @@ namespace GPN
                     const cptr<History_t> history,
                     const cptr<Grid2D_t> grid2D_rocks)
                     : CrossFlow_t{well_base},
-                      hydro_bc{
-                          std::make_shared<const hydro_bc_type>(
-                              grid2D_rocks,
-                              std::make_shared<const functor_type>(
-                                  history, rock_field_props.base_hydrodynamics.ext_pressure,
-                                  grid2D_rocks))},
                       size{grid2D_rocks->first_coord().mesh_size()},
                       PI{set_productivity_index(rock_field_props, grid2D_rocks)},
                       flow_axes1_value{
@@ -126,6 +128,13 @@ namespace GPN
                               Grid2D_t::l_margin + 1ll)},
                       is_permeable{rock_field_props.base_hydrodynamics.is_permeable}
                 {
+                    const_cast<ptr<const hydro_bc_type>&>(hydro_bc) = 
+                          std::make_shared<const hydro_bc_type>(
+                              grid2D_rocks,
+                              std::make_shared<const functor_type>(
+                                  history, rock_field_props.base_hydrodynamics.ext_pressure,
+                                  PI,
+                                  grid2D_rocks));
                 }
 
                 template <typename HistoryRecord_t>
