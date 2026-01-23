@@ -76,7 +76,7 @@ struct FunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
   {
     if (r == grid_ptr->second_coord().dual_front())
     {
-      return BC_descriptor::BC_II(-flow_field.get_heat_flow_in_axes2()(z_id, 0ll) * inlet_temp);
+      return BC_descriptor::BC_II(flow_field.get_heat_flow_in_axes2()(z_id, 0ll) * inlet_temp);
     }
 
     return BC_descriptor::BC_II(0.0);
