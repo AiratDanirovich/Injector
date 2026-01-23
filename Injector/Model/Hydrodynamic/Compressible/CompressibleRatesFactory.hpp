@@ -27,7 +27,7 @@ namespace GPN
 
             struct Solution
             {
-                Solution(const auto history) 
+                Solution(const auto history)
                 {
                     times.reserve(history->size());
                     states.reserve(history->size());
@@ -41,7 +41,7 @@ namespace GPN
             CompressibleRatesFactory(
                 cptr<Hydrodynamics_t> pressure_field,
                 const cptr<Grid2D_t> grid2D_rocks,
-                const Well_t &well,
+                const ptr<Well_t> well,
                 const ptr<History_t> history,
                 const Fluid_t &fluid)
                 : grid2D_rocks{grid2D_rocks},
@@ -70,11 +70,15 @@ namespace GPN
                 double t, RealType t_step)
             {
                 // this method only works at FixedRate injection
-                assert(history->regime() == InjectorRegimes::FixedRate);
+                assert((history->regime() == InjectorRegimes::FixedRate) ||
+                       (history->regime() == InjectorRegimes::FixedBottomHolePressure));
 
-                // the filed is updated at every time step
+                // the pressure field field is updated at every time step
                 // non-stationary hydrodynamics is assumed
                 pressure_field->set_pressure_field(t_step, get_history_record());
+                // set the flow in all cells of the well,
+                // taking RFP and WFP into account
+                well->set_well_flow_field(get_history_record(), pressure_field->get_rock_pressure());
 
                 const auto mid_time{history->get_current_record().mid_time};
                 if ((t < mid_time) && (t + t_step > mid_time))
@@ -91,23 +95,13 @@ namespace GPN
                     FaceValuesContainer::Zero(
                         first_size + 1ll,
                         second_size)};
-
-                axes1_value.col(0ll) = well.get_verticle_well_flow(get_history_record());
-                axes1_value.col(2ll) = well.get_verticle_cement_flow(get_history_record());
+                axes1_value.leftCols(3ll) = well->flow_axes1_value;
 
                 FaceValuesContainer axes2_value{
                     FaceValuesContainer::Zero(
                         first_size,
                         second_size + 1ll)};
-
-                const auto wfp{well.get_WFP(get_history_record())};
-
-                static_assert(Grid2D_t::l_margin == 3ll);
-                axes2_value.col(0ll) = 0.0;
-                axes2_value.col(1ll) = wfp;
-                axes2_value.col(2ll) = wfp;
-                axes2_value.col(Grid2D_t::l_margin) =
-                    well.get_RFP(get_history_record());
+                axes2_value.leftCols(4ll) = well->flow_axes2_value;
 
                 // face values of mobility are not defined at the domain boundaries
                 assert(mobility.face_vals_axes1.rows() == first_size - 1ll);
@@ -115,14 +109,10 @@ namespace GPN
                 assert(mobility.face_vals_axes2.rows() == first_size);
                 const auto second_size_rock{second_size - Grid2D_t::l_margin - 1ll};
                 assert(mobility.face_vals_axes2.cols() == second_size_rock);
-                //    axes2_value.middleCols(Grid2D_t::l_margin + 1ll, second_size_rock) =
-                //        mobility_factor;
 
                 const auto &P{get_pressure_field()};
                 for (auto col{Grid2D_t::l_margin + 1ll}, count{0ll}; count < second_size_rock; ++col, ++count)
-                {
-                    axes2_value.col(col) = mobility_factor.col(count) * (P.col(col-1ll) - P.col(col));
-                }
+                    axes2_value.col(col) = mobility_factor.col(count) * (P.col(col - 1ll) - P.col(col));
 
                 // volumetric flow field in two directions is calculated,
                 // once the pressure field is calculated
@@ -139,7 +129,7 @@ namespace GPN
             {
                 return Properties::JT_FieldFactory::create_spatial(*this).values();
             }
-            
+
             const auto get_temporal_JT_contribution() const
             {
                 return Properties::JT_FieldFactory::create_temporal(*this).values();
@@ -178,7 +168,7 @@ namespace GPN
         public:
             const cptr<OriginalGrid> grid2D;
             const cptr<Grid2D_t> grid2D_rocks;
-            const Well_t &well;
+            const ptr<Well_t> well;
             const ptr<History_t> history;
             const Fluid_t &fluid;
             ptr<Hydrodynamics_t> pressure_field;

@@ -200,7 +200,7 @@ namespace GPN
                 const Logs::StepProperty rfp{(is_permeable.log_vals * StepPropertyContainer::Constant(grid2D.first_coord().mesh_size(), rate)).eval()};
                 return ReservoirFlowField{
                     Logs::ZFlowRateLogFactory::create(0.0, grid2D.second_coord()),
-                    Logs::RFP{Logs::StepPropertyGrid{rfp, is_permeable.grid},
+                    Logs::RFP_weights{Logs::StepPropertyGrid{rfp, is_permeable.grid},
                               is_permeable},
                     grid2D};
             }

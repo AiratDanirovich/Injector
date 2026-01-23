@@ -71,21 +71,29 @@ struct FunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
   {
   }
 
-  RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType,
-                      const BCType) const override
+  BC_descriptor operator()(const ptrdiff_t z_id, const RealType r, const RealType,
+                      const BCType bc_type) const override
   {
+    assert(bc_type == BCType::second);
     if (r == grid_ptr->second_coord().dual_front())
     {
-      return flow_field.get_heat_flow_in_axes2()(z_id, 0ll) * inlet_temp;
+      return BC_descriptor::BC_II(flow_field.get_heat_flow_in_axes2()(z_id, 0ll) * inlet_temp);
     }
 
-    return 0.0;
+    if (r == grid_ptr->second_coord().dual_back())
+    {
+      return BC_descriptor::BC_II(0.0);
+    }
+    
+    throw std::runtime_error("Wrong r-node value is set.");
   }
 
-  RealType operator()(const RealType, const ptrdiff_t, const RealType,
-                      const BCType) const override
+  BC_descriptor operator()(const RealType, const ptrdiff_t, const RealType,
+                      const BCType bc_type) const override
   {
-    return 0.0;
+    assert(bc_type == BCType::second);    
+    return BC_descriptor::BC_II(0.0);
+  //  return 0.0;
   }
 
 protected:
