@@ -27,7 +27,7 @@ namespace GPN
                 BotHolePresFunctorBC(
                     const ptr<const History_t> history,
                     const Logs::ExternalPressure &ext_pressure,
-                    const StepPropertyContainer PI,
+                    const StepPropertyContainer& PI,
                     const ptr<const Grid2D_t> grid_ptr)
                     : BoundaryConditions::GeneralBC::BCFunctorBase{},
                       history{history},
