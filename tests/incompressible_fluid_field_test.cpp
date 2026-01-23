@@ -18,6 +18,7 @@
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Well/Well.hpp>
+#include <Injector/Model/Well/WellReservoirFlowProfileControl.hpp>
 #include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleRatesFactory.hpp>
 #include <Injector/Model/Hydrodynamic/Incompressible/IncompressibleFluid.hpp>
 
@@ -47,6 +48,7 @@ using namespace GPN::Grids;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
 using namespace GPN::Hydrodynamic;
+using namespace GPN::Wells::ResFlowProfileControl;
 
 const RealType tol{1e-12};
 
@@ -228,44 +230,54 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto rMin{grid_r.dual_front()};
     const auto rMax{grid_r.dual_back()};
 
-    const auto RFP_weights{
-        RFPFactory::create_from_container(
+    const Logs::RFP_weights RFP_w{
+        RFPFactory::create_from_container<Logs::RFP_weights>(
             RFP_weights_stencils,
             core_logs.is_permeable)};
-    CHECK(RFP_weights.log_vals.sum() == 1.0);
+    CHECK(RFP_w.log_vals.sum() == 1.0);
 
     const CrossFlows cross_flows{
-        RFP_weights, from_coords, to_layers};
+        from_coords, to_layers, RFP_w, core_logs.is_perforated};
     const auto WFP_weights{
-        create_WFP(
+        create_WFP_weights(
             core_logs.is_perforated,
-            RFP_weights,
-            cross_flows)};
+            RFP_w,
+            cross_flows.cross_flow_handler)};
     CHECK(WFP_weights.log_vals.sum() == 1.0);
 
-    const Well_Explicit well_explicit{
-        core_logs.is_permeable, core_logs.is_perforated, RFP_weights};
-
-    const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
     // history
     const shared_ptr<History> history{make_shared<History>(make_history(data))};
 
-    using IncompressibleFluidField_t =
+    using Well_t =
+        decltype(WellReservoirFlowProfileControl{
+        rock_field_props,
+        cross_flows,
+        history,
+        grid2D_rocks});
+
+    const ptr<Well_t> well{
+        std::make_shared<Well_t>(
+        rock_field_props,
+        cross_flows,
+        history,
+        grid2D_rocks)};
+
+    using FluidField_t =
         decltype(IncompressibleFluidField{
             start_time,
             water,
             rock_field_props,
-            well,
+            *well,
             history,
             grid2D_rocks});
 
     auto ptr_pressure_field{
-        make_shared<IncompressibleFluidField_t>(
+        make_shared<FluidField_t>(
             start_time,
             water,
             rock_field_props,
-            well,
+            *well,
             history,
             grid2D_rocks)};
 
@@ -277,7 +289,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     for (auto i{0ll}; i < history->size(); ++i)
     {
         const auto r{history->get_record(i)};
-        const auto rfp{well.get_RFP(r)};
+        const auto rfp{well->get_RFP(r)};
 
         pressure_field.set_pressure_field(0.0, r);
 
@@ -379,7 +391,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     // rates field factory
     FaceProperties::IncompressibleRatesFactory rates_factory{
         ptr_pressure_field,
-        grid2D_rocks, well, history, water};
+        grid2D_rocks, *well, history, water};
 
     // mock SolverManaer behavior
     for (auto t{0ll}; t < history->size(); ++t)

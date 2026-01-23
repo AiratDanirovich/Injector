@@ -97,7 +97,7 @@ TEST_CASE("RFP_reservoir")
 
     {
         const auto rfp{
-            RFPFactory::create_from_container(
+            RFPFactory::create_from_container<Logs::RFP>(
                 well.get_RFP(history_record), is_permeable)};
                 
         cout << "rfp:\n"

@@ -97,12 +97,12 @@
     "t_units": ["d", "h", "m", "s"],
     "history_type": "dynamic",
     "history_types": ["static", "dynamic"],
-    "control_type": "RFP",
+    "control_type": "bottomhole_pressure",
     "control types": ["RFP", "bottomhole_pressure"],
     "dynamic": {
       "t_major_step": [1.0, 1.0, 1.0],
       "well_rate": [0.002, 0.002, 0.001],
-      "bottom_hole_pressure": [260, 260, 260],
+      "bottomhole_pressure": [500, 500, 500],
       "inlet_temperature": [293, 293, 293]
     },
     "static": {
@@ -110,6 +110,7 @@
       "t_end": 672,
       "t_major_step": 96,
       "well_rate": 0.00231,
+      "bottomhole_pressure": 500,
       "inlet_temperature": 293
     }
   }

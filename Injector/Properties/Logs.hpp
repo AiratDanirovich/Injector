@@ -169,7 +169,7 @@ namespace GPN
         }
         auto operator/(const StepPropertyGrid &lhs, RealType c)
         {
-            return lhs*(1/c);
+            return lhs * (1 / c);
         }
         auto operator*(const StepPropertyGrid &lhs, const StepPropertyGrid &rhs)
         {
@@ -308,21 +308,51 @@ namespace GPN
         } // InternalUse
 
         struct RFP
-            : public InternalUse::RateWeights
+            : public StepPropertyGrid
         {
             RFP(const StepPropertyGrid &rfp,
-                const IsPermeable &is_permeable)
-                : InternalUse::RateWeights(rfp, is_permeable)
+                        const IsPermeable &indicator)
+                        :StepPropertyGrid{rfp}
+            {
+                assert(rfp.size() == indicator.size());
+                for (std::ptrdiff_t id{0ll}; id < rfp.size(); ++id)
+                    assert(
+                        ((indicator(id) == 1.0)) ||
+                        ((indicator(id) == 0.0) && (rfp(id) == 0.0)));
+            }
+        };
+        
+        struct RFP_weights
+            : public RFP
+        {
+            RFP_weights(const StepPropertyGrid &rfp,
+                        const IsPermeable &is_permeable)
+                : RFP{ InternalUse::RateWeights(rfp, is_permeable), is_permeable}
             {
             }
         };
 
         struct WFP
-            : public InternalUse::RateWeights
+            : public StepPropertyGrid
         {
             WFP(const StepPropertyGrid &wfp,
-                const IsPerforated &is_perforated)
-                : InternalUse::RateWeights(wfp, is_perforated)
+                        const IsPerforated &indicator)
+                : StepPropertyGrid{wfp}
+            {
+                assert(wfp.size() == indicator.size());
+                for (std::ptrdiff_t id{0ll}; id < wfp.size(); ++id)
+                    assert(
+                        ((indicator(id) == 1.0)) ||
+                        ((indicator(id) == 0.0) && (wfp(id) == 0.0)));
+            }
+        };
+        
+        struct WFP_weights
+            : public WFP
+        {
+            WFP_weights(const StepPropertyGrid &wfp,
+                        const IsPerforated &is_perforated)
+                : WFP{InternalUse::RateWeights{wfp, is_perforated}, is_perforated}
             {
             }
         };

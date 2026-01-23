@@ -18,7 +18,9 @@
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Well/Well.hpp>
-#include <Injector/Model/Well/WellReservoirFlowProfileControl.hpp>
+
+#include <Injector/Model/Well/WellBottomHolePressureControl.hpp>
+
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleRatesFactory.hpp>
@@ -55,17 +57,17 @@ using namespace std;
 using namespace GPN;
 using namespace GPN::Logs;
 using namespace GPN::CrossFlow;
+using namespace GPN::Wells::BotHolePresControl;
 using namespace GPN::Grids;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
 using namespace GPN::Hydrodynamic;
-using namespace GPN::Wells::ResFlowProfileControl;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::FullImplicit;
 
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
-    ifstream f("heatflow_test_data.json");
+    ifstream f("bothole_pres_test_data.json");
     REQUIRE(f.is_open());
     json data = json::parse(f);
 
@@ -148,24 +150,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const ExtrudedCasing extr_completion{
         VarExtrudedCasingFactory::create(completion)};
 
-    // cout << "radial dual grid stencils:\n"
-    //      << grid_r.dual_nodes.transpose() << endl;
-
-    // cout << "radial grid:\n"
-    //      << grid2D->second_coord.dual_nodes.transpose() << endl;
-    // cout << "vertical grid:\n"
-    //      << grid2D->first_coord.dual_nodes.transpose() << endl;
-
-    // cout << "radial grid cell centers:\n"
-    //      << grid2D->second_coord.mesh_nodes.transpose() << endl;
-    // cout << "vertical grid cell centers:\n"
-    //      << grid2D->first_coord.mesh_nodes.transpose() << endl;
-
-    // cout << "radial grid mesh steps:\n"
-    //      << grid2D->second_coord.mesh_steps.transpose() << endl;
-    // cout << "vertical grid mesh steps:\n"
-    //      << grid2D->first_coord.mesh_steps.transpose() << endl;
-
     const Logs::Rocks::CoreSampleLogs core_logs{
         is_permeable_stencils,
         is_perforated_stencils,
@@ -189,21 +173,19 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             water,
             grid2D_rocks};
 
+    // history
+    const shared_ptr<History> history{make_shared<History>(make_history(data))};
     // well
-    // const Well_KH well{
-    //     water, core_logs.is_permeable, core_logs.is_perforated, core_logs.permeability, well_holes, rMax};
-    const RFP_weights RFP_w{
+    const Logs::RFP_weights RFP_w{
         RFPFactory::create_from_container<Logs::RFP_weights>(
             RFP_weights_stencils,
             core_logs.is_permeable)};
     const CrossFlows cross_flows{
         from_coords, to_layers, RFP_w, core_logs.is_perforated};
 
-    // history
-    const shared_ptr<History> history{make_shared<History>(make_history(data))};
-
+            
     using Well_t =
-        decltype(WellReservoirFlowProfileControl{
+        decltype(WellBottomHolePressureControl{
         rock_field_props,
         cross_flows,
         history,
@@ -215,6 +197,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         cross_flows,
         history,
         grid2D_rocks)};
+
+    // const WellBottomHolePressureControl well_bothole{};
 
     const Logs::Rocks::HeatLogs heat_logs{
         solid_density_stencils,
@@ -232,11 +216,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         heat_logs, grid2D};
 
     // properties of material that fills the well up to the sandface
-    heat_props.apply_well(extr_completion, *well);
+    heat_props.apply_well(extr_completion, well);
 
     FaceProperties::Rocks::HeatFaceProps heat_face_props{
         heat_props, grid2D};
-    heat_face_props.apply_well(extr_completion, *well);
+    heat_face_props.apply_well(extr_completion, well);
     // fluid model for the pressure field
     using FluidField_t =
         decltype(CompressibleFluidField{
@@ -355,4 +339,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     //     f << ((state.cur_state /*- initial_temperature*/) / precision).round() * precision;
     //     f.close();
     // }
+
+    std::cout << "BottomHole pressure test : success!\n";
 }
