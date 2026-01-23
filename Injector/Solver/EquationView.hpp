@@ -45,19 +45,27 @@ namespace GPN
                     }
                     void add_rhs_type_II(const auto desc)
                     {
-                        bool flag{matrix.coeffRef(diag_id, diag_id) == 1.0};
-                        for (const auto id : neib_ids)
-                            flag = flag && (matrix.coeffRef(diag_id, id) == 0.0);
                         // add the given flux to the rhs,
                         // if type_I BC was not applied
                         // from the other face
-                        if (flag == false)
+                        if (is_type_I() == false)
                             rhs += desc.value;
                     }
                     void set_type_III(const auto desc)
                     {
-                        assert(false && "Set type III BC in FullImplicit Solver.");
+                        if(is_type_I() == false)
+                        {
+                            rhs += desc.value*desc.factor;
+                            matrix.coeffRef(diag_id, diag_id) += desc.factor;
+                        }
                     }
+                protected:
+                    bool is_type_I() const
+                    {// type I BC in the row, if main_diag == 1.0, and other cols == 0.0
+                        bool flag{matrix.coeffRef(diag_id, diag_id) == 1.0};
+                        for (const auto id : neib_ids)
+                            flag = flag && (matrix.coeffRef(diag_id, id) == 0.0);
+                        return flag;
                 };
     } // EqSolver
 } // GPN

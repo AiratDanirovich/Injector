@@ -52,7 +52,6 @@ namespace GPN
                         return BC_descriptor{value, factor};
                     }
 
-
                     const RealType value;
                     const RealType factor;
                     protected:
