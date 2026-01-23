@@ -31,7 +31,7 @@ namespace GPN
                     static_assert(Grid2D_t::l_margin == 3ll);
                 }
 
-                RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType,
+                BC_descriptor operator()(const ptrdiff_t z_id, const RealType r, const RealType,
                                     const BCType bc_type) const override
                 {
                     // boundary condition at sandface
@@ -39,28 +39,32 @@ namespace GPN
                     {
                         assert(bc_type == BCType::first);
                         const auto out{history->pressure()};
-                        return out;
+                        return BC_descriptor::BC_I(out);
+                    //    return out;
                     }
 
                     // boundary condition at external contour
                     if (r == grid_ptr->second_coord().dual_back())
                     {
                         assert(bc_type == BCType::first);
-                        return ext_pressure(z_id);
+                        return BC_descriptor::BC_I(ext_pressure(z_id));
+                    //    return ext_pressure(z_id);
                     }
 
                     assert(false);
-                    return 0.0;
+                    throw std::runtime_error("Wrong radial coordinate in BC.");
+                //    return 0.0;
                 }
 
-                RealType operator()(const RealType z, const ptrdiff_t, const RealType,
+                BC_descriptor operator()(const RealType z, const ptrdiff_t, const RealType,
                                     const BCType bc_type) const override
                 {
                     // boundary conditions are set exactly at domain boundaries
                     assert((z == grid_ptr->first_coord().dual_front()) || (z == grid_ptr->first_coord().dual_back()));
                     // assume zero "diffusion" flux in hydrodynamic equation
                     assert(bc_type == BCType::second);
-                    return 0.0;
+                    return BC_descriptor::BC_II(0.0);
+                //    return 0.0;
                 }
 
             protected:

@@ -41,7 +41,7 @@ namespace GPN
                     assert(std::abs(this->rfp.log_vals.sum() - 1.0) < 1e-12);
                 }
 
-                RealType operator()(const ptrdiff_t z_id, const RealType r, const RealType,
+                BC_descriptor operator()(const ptrdiff_t z_id, const RealType r, const RealType,
                                     const BCType bc_type) const override
                 {
                     // sandface
@@ -49,27 +49,30 @@ namespace GPN
                     {
                         assert(bc_type == BCType::second);
                         const auto out{rfp(z_id) * history->rate()};
-                        return out;
+                        return BC_descriptor::BC_II(out);
+                    //    return out;
                     }
                     // external contour
                     if (r == grid_ptr->second_coord().dual_back())
                     {
                         assert(bc_type == BCType::first);
-                        return ext_pressure(z_id);
+                        return BC_descriptor::BC_I(ext_pressure(z_id));
+                    //    return ext_pressure(z_id);
                     }
 
                     assert(false);
-                    return 0.0;
+                    throw std::runtime_error("Wrong radial coordinate in BC.");
                 }
 
-                RealType operator()(const RealType z, const ptrdiff_t, const RealType,
+                BC_descriptor operator()(const RealType z, const ptrdiff_t, const RealType,
                                     const BCType bc_type) const override
                 {
                     // boundary conditions are set exactly at domain boundaries
                     assert((z == grid_ptr->first_coord().dual_front()) || (z == grid_ptr->first_coord().dual_back()));
                     // assume zero diffusion flux in hydrodynamic equation
                     assert(bc_type == BCType::second);
-                    return 0.0;
+                    return BC_descriptor::BC_II(0.0);
+                //    return 0.0;
                 }
 
             protected:
