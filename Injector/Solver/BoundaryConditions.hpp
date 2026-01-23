@@ -43,14 +43,17 @@ namespace GPN
                 /// III: flux = factor*(T - value); prescribe both factor and value
                 struct BC_descriptor
                 {
+                    // I:   factor*T = value; factor = 1, prescribe value
                     static BC_descriptor BC_I(const RealType value)
                     {
                         return BC_descriptor{value, 1.0};
                     }
+                    // II:  flux = factor*T + value; factor = 0; prescribe value
                     static BC_descriptor BC_II(const RealType value)
                     {
                         return BC_descriptor{value, 0.0};
                     }
+                    // III: flux = factor*(T - value); prescribe both factor and value
                     static BC_descriptor BC_III(const RealType value, const RealType factor)
                     {
                         return BC_descriptor{value, factor};
