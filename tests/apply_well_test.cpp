@@ -258,7 +258,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
 
   const auto weights{
       RFPFactory::create_from_container<Logs::RFP_weights>(
-          weights_stencils,
+          StepProperty{weights_stencils},
           core_data.is_permeable)};
 
   // CHECK weights

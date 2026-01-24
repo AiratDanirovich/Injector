@@ -478,7 +478,7 @@ namespace GPN
                 const Logs::IsPermeable &is_permeable)
             {
                 return T{
-                    StepPropertyGrid{StepProperty{rfp}, is_permeable.grid},
+                    StepPropertyGrid{{rfp}, is_permeable.grid},
                     is_permeable};
             }
         };

@@ -232,7 +232,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     const Logs::RFP_weights RFP_w{
         RFPFactory::create_from_container<Logs::RFP_weights>(
-            RFP_weights_stencils,
+            StepProperty{RFP_weights_stencils},
             core_logs.is_permeable)};
     CHECK(RFP_w.log_vals.sum() == 1.0);
 
