@@ -194,7 +194,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     //     water, core_logs.is_permeable, core_logs.is_perforated, core_logs.permeability, well_holes, rMax};
     const RFP_weights RFP_w{
         RFPFactory::create_from_container<Logs::RFP_weights>(
-            RFP_weights_stencils,
+            StepProperty{RFP_weights_stencils},
             core_logs.is_permeable)};
     const CrossFlows cross_flows{
         from_coords, to_layers, RFP_w, core_logs.is_perforated};

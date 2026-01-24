@@ -72,7 +72,7 @@ TEST_CASE("CrossFlow", "")
 
     const Logs::RFP_weights RFP_w{
         RFPFactory::create_from_container<Logs::RFP_weights>(
-            RFP_weights_stencils,
+            StepProperty{RFP_weights_stencils},
             is_permeable)};
 
     const RealType total_rate{1.0};
