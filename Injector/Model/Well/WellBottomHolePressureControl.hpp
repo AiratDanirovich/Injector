@@ -203,9 +203,6 @@ namespace GPN
                     const HistoryRecord_t &record,
                     const auto &collector_pressure) const
                 {
-                std::cout << "depression at sandface:\n" << -(collector_pressure.col(0ll) - record.pressure*is_permeable.log_vals).transpose() << std::endl;
-
-                    // return (mobility * (collector_pressure.col(0ll) - record.pressure)).eval();
                     return Logs::RFPFactory::create_from_container<Logs::RFP>(
                         (PI * (collector_pressure.col(0ll) - record.pressure)).eval(),
                         is_permeable);
