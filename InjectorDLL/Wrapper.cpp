@@ -212,7 +212,7 @@ struct WrapperFactory
 
         const Logs::RFP_weights RFP_w{
             Logs::RFPFactory::create_from_container<Logs::RFP_weights>(
-                RFP_weights_stencils,
+                Logs::StepProperty{RFP_weights_stencils},
                 core_logs.is_permeable)};
         const CrossFlows cross_flows{
             from_coords, to_layers, RFP_w, core_logs.is_perforated};
@@ -581,11 +581,13 @@ Wrapper::Wrapper(const json &data)
     const std::string control_type{data["history"].value<std::string>("control_type", "RFP")};
     if (control_type == "RFP")
     {
+        std::cout << "Reservoir flow profile is used as well control condition...\n";
         using Well_t = GPN::Wells::ResFlowProfileControl::WellReservoirFlowProfileControl<History, Grids::CylinderGridRock, CrossFlows>;
         WrapperFactory<Well_t>::choose_well(data);
     }
     else if (control_type == "bottomhole_pressure")
     {
+        std::cout << "Bottomhole pressure is used as well control condition...\n";
         using Well_t = GPN::Wells::BotHolePresControl::WellBottomHolePressureControl<History, Grids::CylinderGridRock, CrossFlows>;
         WrapperFactory<Well_t>::choose_well(data);
     }
