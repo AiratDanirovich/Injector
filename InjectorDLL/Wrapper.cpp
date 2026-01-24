@@ -44,6 +44,7 @@
 #include <tests/includes/set_is_permeable_stencils.hpp>
 #include <tests/includes/IC_BC.hpp>
 #include <tests/includes/make_water.hpp>
+#include <tests/includes/make_history.hpp>
 
 #include <Eigen/Core>
 
@@ -121,13 +122,9 @@ struct WrapperFactory
         const RealType
             start_time{factor * data["history"]["start_time"].get<RealType>()};
         RealType t_minor_step{factor * data["history"]["t_minor_step"].get<RealType>()};
-        VR t_major_steps = data["history"]["dynamic"]["t_major_step"].get<VR>();
-        for (auto &v : t_major_steps)
-            v *= factor;
-        const auto &time_intervals{t_major_steps};
         /*temperatures*/
-        const VR well_rates = data["history"]["dynamic"]["well_rate"].get<VR>(); // m^3/s
-        const VR inlet_temperatures = data["history"]["dynamic"]["inlet_temperature"].get<VR>();
+        // const VR well_rates = data["history"]["dynamic"]["well_rate"].get<VR>(); // m^3/s
+        // const VR inlet_temperatures = data["history"]["dynamic"]["inlet_temperature"].get<VR>();
         /*well*/
         //    const auto casing{parse_completion(data)};
         /*END*/
@@ -218,16 +215,7 @@ struct WrapperFactory
             from_coords, to_layers, RFP_w, core_logs.is_perforated};
 
         // history
-        const ptr<History> history{make_shared<History>(
-            HistoryFactory::createFixedRate(
-                time_intervals, well_rates, inlet_temperatures))};
-
-        // using Well_t =
-        //     decltype(WellReservoirFlowProfileControl{
-        //         rock_field_props,
-        //         cross_flows,
-        //         history,
-        //         grid2D_rocks});
+        const ptr<History> history{make_shared<History>(make_history(data))};
 
         const ptr<Well_t> well{
             std::make_shared<Well_t>(
