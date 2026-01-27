@@ -74,10 +74,15 @@ TEST_CASE("CrossFlow", "")
         RFPFactory::create_from_container<Logs::RFP_weights>(
             StepProperty{RFP_weights_stencils},
             is_permeable)};
+    CHECK(RFP_weights_stencils.sum() == 1.0);
+
 
     const RealType total_rate{1.0};
     const CrossFlows cross_flows{
         from_coords, to_layers, RFP_w, is_perforated};
+    CHECK(cross_flows.wfp.sum() == 1.0);
+    CHECK(cross_flows.rfp.sum() == 1.0);
+
 
     cout << "flux weights: " << RFP_w.log_vals.transpose() << endl;
     const auto &dual_nodes{RFP_w.grid.dual_nodes};
