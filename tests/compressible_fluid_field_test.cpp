@@ -250,9 +250,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     }
                     // outside the cement
                     const auto piezo_cond{k / (mu * beta)};
-                    REQUIRE(
+                    CHECK(
                         std::isnan(piezo_cond) == false);
-                    REQUIRE(
+                    CHECK(
                         std::isinf(piezo_cond) == false);
                     if (r_well * r_well < 0.0001 * piezo_cond * t)
                     {
@@ -374,6 +374,25 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     for (auto col{0ll}; col < grid_r.dual_size(); ++col)
                         CHECK(flux2(row, col) == 0.0);
                 }
+
+                if(core_logs.is_permeable(row) == 1.0)
+                {
+                    if(base_hydrodynamics.medium_compressibility(row) == 0.0)
+                    {
+                        const auto r_max{grid_r.dual_back()};
+                        const auto thickness{grid2D_rocks->first_coord().volume(row)};
+                        const auto k{core_logs.permeability(row)};
+                        const auto p_ext{base_hydrodynamics.ext_pressure(row)};
+                        for(auto col{3ll}; col < grid_r.mesh_size()-1ll; ++col)
+                        {
+                            const auto r{grid_r.mesh_nodes(col)};
+                            const RealType ref_p{p_ext - 
+                                rfp(row)*water.viscosity / (2.0 * pi * thickness * k)*std::log(r/r_max)};
+                            CHECK_THAT(ref_p, WithinRel(P(row,col), tol));
+                        }
+                    }
+                }
+
             }
 #pragma endregion
 #pragma region VERTICAL-RATES

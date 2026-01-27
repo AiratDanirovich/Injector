@@ -155,7 +155,7 @@ TEST_CASE("Well_Test")
             CHECK(ring.heat_conductivity()(id) == conductivity.value(depth_id - 1ll));
 
             CHECK(ring.inner_radius(id) == inner_radius.value(depth_id - 1ll));
-            CHECK(ring.thickness(id) == thickness.value(depth_id - 1ll));
+            CHECK_THAT(ring.thickness(id), WithinRel(thickness.value(depth_id - 1ll), tol));
             CHECK(ring.inner_radius(id) + ring.thickness(id) == ring.outer_radius(id));
         }
         REQUIRE(depth_id == depth_stencils.size() - 1ull);
