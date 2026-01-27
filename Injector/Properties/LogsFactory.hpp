@@ -472,25 +472,25 @@ namespace GPN
 
         struct RFPFactory
         {
-            template <typename Container_t, typename IsPermeable_t>
+            template <typename T, typename Container_t>
             static auto create_from_container(
                 const Container_t &rfp,
-                const IsPermeable_t &is_permeable)
+                const Logs::IsPermeable &is_permeable)
             {
-                return RFP{
-                    StepPropertyGrid{StepProperty{rfp}, is_permeable.grid},
+                return T{
+                    StepPropertyGrid{{rfp}, is_permeable.grid},
                     is_permeable};
             }
         };
 
         struct WFPFactory
         {
-            template <typename Container_t, typename IsPerforated_t>
+            template <typename T, typename Container_t>
             static auto create_from_container(
                 const Container_t &wfp,
-                const IsPerforated_t &is_perforated)
+                const Logs::IsPerforated &is_perforated)
             {
-                return WFP{
+                return T{
                     StepPropertyGrid{{wfp}, is_perforated.grid},
                     is_perforated};
             }

@@ -7,21 +7,21 @@ namespace GPN
 {
     struct BCFunctor : public GPN::BoundaryConditions::GeneralBC::BCFunctorBase
     {
-        BCFunctor(const RealType val) : val{val} {}
+        BCFunctor(const RealType val) : out{BC_descriptor::BC_I(val)} {}
 
-        RealType operator()(const ptrdiff_t, const RealType, const RealType,
+        BC_descriptor operator()(const ptrdiff_t, const RealType, const RealType,
                             const BCType) const override
         {
-            return val;
+            return out;
         }
 
-        RealType operator()(const RealType, const ptrdiff_t, const RealType,
+        BC_descriptor operator()(const RealType, const ptrdiff_t, const RealType,
                             const BCType) const override
         {
-            return val;
+            return out;
         }
 
     protected:
-        const RealType val;
+        const BC_descriptor out;
     };
 } // GPN

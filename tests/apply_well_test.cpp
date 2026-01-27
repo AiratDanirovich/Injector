@@ -257,8 +257,8 @@ TEST_CASE("apply_well_test", "apply_well_test")
           GPN::HeatConductivity{heat_conductivity})};
 
   const auto weights{
-      RFPFactory::create_from_container(
-          weights_stencils,
+      RFPFactory::create_from_container<Logs::RFP_weights>(
+          StepProperty{weights_stencils},
           core_data.is_permeable)};
 
   // CHECK weights

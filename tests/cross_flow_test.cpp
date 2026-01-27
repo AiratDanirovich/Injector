@@ -7,19 +7,13 @@
 #include <Injector/Grids/Grids2D.hpp>
 #include <Injector/Grids/GridRefiners.hpp>
 
-#include <Injector/History/History.hpp>
-
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
-#include <Injector/Model/Well/Well.hpp>
 
 #include <Injector/Properties/Logs.hpp>
-#include <Injector/Properties/LogsFactory.hpp>
 
 #include "includes/transfer_to_eigen.hpp"
 #include "includes/set_is_permeable_stencils.hpp"
-#include "includes/make_history.hpp"
-#include "includes/make_water.hpp"
 
 #include <nlohmann/json.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -76,21 +70,26 @@ TEST_CASE("CrossFlow", "")
             is_permeable_stencils,
             grid_z)};
 
-    const auto RFP_weights{
-        RFPFactory::create_from_container(
-            RFP_weights_stencils,
+    const Logs::RFP_weights RFP_w{
+        RFPFactory::create_from_container<Logs::RFP_weights>(
+            StepProperty{RFP_weights_stencils},
             is_permeable)};
+    CHECK(RFP_weights_stencils.sum() == 1.0);
+
 
     const RealType total_rate{1.0};
     const CrossFlows cross_flows{
-        RFP_weights, from_coords, to_layers};
+        from_coords, to_layers, RFP_w, is_perforated};
+    CHECK(cross_flows.wfp.sum() == 1.0);
+    CHECK(cross_flows.rfp.sum() == 1.0);
 
-    cout << "flux weights: " << RFP_weights.log_vals.transpose() << endl;
-    const auto &dual_nodes{RFP_weights.grid.dual_nodes};
-    const auto &dual_stencils{RFP_weights.grid.dual_stencils};
-    for (auto i{0ull}; i < cross_flows.cross_flow_data.size(); ++i)
+
+    cout << "flux weights: " << RFP_w.log_vals.transpose() << endl;
+    const auto &dual_nodes{RFP_w.grid.dual_nodes};
+    const auto &dual_stencils{RFP_w.grid.dual_stencils};
+    for (auto i{0ull}; i < cross_flows.cross_flow_handler.size(); ++i)
     {
-        const auto &cf{cross_flows.cross_flow_data[i]};
+        const auto &cf{cross_flows.cross_flow_handler[i]};
         cout << "flux vector: " << cf.verticle_flux.transpose() << endl;
 
         auto to_id{0ll};
@@ -124,35 +123,7 @@ TEST_CASE("CrossFlow", "")
         for (auto j{std::min(to_id, from_id) + 1ll}; j < std::max(to_id, from_id) + 1ll; ++j)
         {
             INFO("top_id: " << j << ", to_id: " << to_id << ", from_id: " << from_id << ", dir: " << dir);
-            CHECK(cf.verticle_flux(j) == dir * RFP_weights(to_id));
+            CHECK(cf.verticle_flux(j) == dir * RFP_w(to_id));
         }
     }
-
-    const auto WFP_weights{
-        create_WFP(
-            is_perforated,
-            RFP_weights,
-            cross_flows)};
-
-    const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
-
-    // make fluid
-    const PhaseProperties water{make_water(data)};
-    // history
-    const ptr<History> history{make_shared<History>(make_history(data))};
-
-    // z-refiner
-    RefinerVerticle refiner{z_minor_step, is_permeable_stencils};
-    const VR r_stencils{0.0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9, 1.0};
-    const auto grid2D{
-        Grids::CylinderGridFactory::create(refiner,
-                                           Grids::Factory::generate_dual_grid_stencils_from_steps(
-                                               0.0, thickness),
-                                           r_stencils)};
-    // external pressure log
-    const auto external_pressure{
-        Logs::ExtPressureFactory::create(
-            ext_pressure_stencils,
-            is_permeable_stencils,
-            grid_z)};
 }
