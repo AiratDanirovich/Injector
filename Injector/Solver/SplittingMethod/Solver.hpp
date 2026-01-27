@@ -16,6 +16,7 @@
 #include <Injector/Solver/CapacityTerm.hpp>
 #include <Injector/Solver/SplittingMethod/SplitX.hpp>
 #include <Injector/Solver/SplittingMethod/SplitY.hpp>
+#include <Injector/Solver/EquationView.hpp>
 
 namespace GPN
 {
@@ -102,47 +103,47 @@ namespace GPN
                         factory.bc, factory.initial_moment};
                 }
 
-                template <typename Coefs_t>
-                struct EquationView
-                {
-                    using Matrix_t = Eigen::SparseMatrix<RealType>;
-                    EquationView(Matrix_t &A,
-                                 RealType &rhs,
-                                 const ptrdiff_t diag_id,
-                                 const Coefs_t &neib_ids)
-                        : matrix{A}, rhs{rhs},
-                          diag_id{diag_id},
-                          neib_ids{neib_ids}
-                    {
-                        assert(matrix.cols() > 1ll);
-                        for (const auto id : neib_ids)
-                        {
-                            assert(id >= 0ll);
-                            assert(id < matrix.cols() * matrix.cols());
-                        }
-                    }
+                // template <typename Coefs_t>
+                // struct EquationView
+                // {
+                //     using Matrix_t = Eigen::SparseMatrix<RealType>;
+                //     EquationView(Matrix_t &A,
+                //                  RealType &rhs,
+                //                  const ptrdiff_t diag_id,
+                //                  const Coefs_t &neib_ids)
+                //         : matrix{A}, rhs{rhs},
+                //           diag_id{diag_id},
+                //           neib_ids{neib_ids}
+                //     {
+                //         assert(matrix.cols() > 1ll);
+                //         for (const auto id : neib_ids)
+                //         {
+                //             assert(id >= 0ll);
+                //             assert(id < matrix.cols() * matrix.cols());
+                //         }
+                //     }
 
-                    Matrix_t &matrix;
-                    RealType &rhs;
-                    const ptrdiff_t diag_id;
-                    const Coefs_t &neib_ids;
+                //     Matrix_t &matrix;
+                //     RealType &rhs;
+                //     const ptrdiff_t diag_id;
+                //     const Coefs_t &neib_ids;
 
-                    void set_type_I(const RealType val)
-                    {
-                        // set diagonal value = 1.0
-                        matrix.coeffRef(diag_id, diag_id) = 1.0;
-                        // set non-diagonal values = 0.0
-                        for (const auto id : neib_ids)
-                            matrix.coeffRef(diag_id, id) = 0.0;
-                        //  set rhs = val to satisfy: 1.0*T = val
-                        rhs = val;
-                    }
-                    void add_rhs_type_II(const RealType val)
-                    {
-                        // add the given flux to the rhs
-                        rhs += val;
-                    }
-                };
+                //     void set_type_I(const RealType val)
+                //     {
+                //         // set diagonal value = 1.0
+                //         matrix.coeffRef(diag_id, diag_id) = 1.0;
+                //         // set non-diagonal values = 0.0
+                //         for (const auto id : neib_ids)
+                //             matrix.coeffRef(diag_id, id) = 0.0;
+                //         //  set rhs = val to satisfy: 1.0*T = val
+                //         rhs = val;
+                //     }
+                //     void add_rhs_type_II(const RealType val)
+                //     {
+                //         // add the given flux to the rhs
+                //         rhs += val;
+                //     }
+                // };
 
                 void advance(RealType tau)
                 {

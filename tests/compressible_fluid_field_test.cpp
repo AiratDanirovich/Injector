@@ -17,6 +17,7 @@
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Well/Well.hpp>
+#include <Injector/Model/Well/WellReservoirFlowProfileControl.hpp>
 
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleRatesFactory.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluid.hpp>
@@ -47,6 +48,7 @@ using namespace GPN::Grids;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
 using namespace GPN::Hydrodynamic;
+using namespace GPN::Wells::ResFlowProfileControl;
 
 using VR = std::vector<GPN::RealType>;
 
@@ -135,29 +137,44 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             base_hydrodynamics,
             water,
             grid2D_rocks};
-#pragma region MAKE-WELL
-    const auto RFP_weights{
-        RFPFactory::create_from_container(
-            RFP_weights_stencils,
-            core_logs.is_permeable)};
-    const CrossFlows cross_flows{
-        RFP_weights, from_coords, to_layers};
-    const auto WFP_weights{
-        create_WFP(
-            core_logs.is_perforated,
-            RFP_weights,
-            cross_flows)};
-    const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
-#pragma endregion
 #pragma region MAKE-HISTORY
     const ptr<History> history{make_shared<History>(make_history(data))};
+#pragma endregion
+#pragma region MAKE-WELL
+    const Logs::RFP_weights RFP_w{
+        RFPFactory::create_from_container<Logs::RFP_weights>(
+            StepProperty{RFP_weights_stencils},
+            core_logs.is_permeable)};
+    const CrossFlows cross_flows{
+        from_coords, to_layers, RFP_w, core_logs.is_perforated};
+    const auto WFP_weights{
+        create_WFP_weights(
+            core_logs.is_perforated,
+            RFP_w,
+            cross_flows.cross_flow_handler)};
+    // const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
+
+    using Well_t =
+        decltype(WellReservoirFlowProfileControl{
+        rock_field_props,
+        cross_flows,
+        history,
+        grid2D_rocks});
+
+    const ptr<Well_t> well{
+        std::make_shared<Well_t>(
+        rock_field_props,
+        cross_flows,
+        history,
+        grid2D_rocks)};
+
 #pragma endregion
     using CompressibleFluidField_t =
         decltype(CompressibleFluidField{
             start_time,
             water,
             rock_field_props,
-            well,
+            *well,
             history,
             grid2D_rocks});
     auto ptr_pressure_field{
@@ -165,7 +182,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             start_time,
             water,
             rock_field_props,
-            well,
+            *well,
             history,
             grid2D_rocks)};
     auto &pressure_field{*ptr_pressure_field};
@@ -204,7 +221,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         {
             const auto t{cur_time + step};
             rates_factory.set_flow_field(cur_time, step);
-            const auto rfp{well.get_RFP(history->get_current_record())};
+            const auto rfp{well->get_RFP(history->get_current_record())};
 #pragma region CHECK-PRESSURE
             const auto &P{pressure_field.current_pressure().values()};
             CHECK(rfp.rows() == grid_z.mesh_size());
@@ -233,9 +250,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     }
                     // outside the cement
                     const auto piezo_cond{k / (mu * beta)};
-                    REQUIRE(
+                    CHECK(
                         std::isnan(piezo_cond) == false);
-                    REQUIRE(
+                    CHECK(
                         std::isinf(piezo_cond) == false);
                     if (r_well * r_well < 0.0001 * piezo_cond * t)
                     {
@@ -288,11 +305,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             CHECK(flux2.rows() == grid_z.mesh_size());
             CHECK(flux2.cols() == grid_r.dual_size());
             const auto &mobility2{pressure_field.mobility.face_vals_axes2};
-            const auto wfp{well.get_WFP(history->get_current_record())};
+            const auto wfp{well->get_WFP(history->get_current_record())};
             CHECK(wfp.rows() == grid_z.mesh_size());
-            const auto cement_flow{well.get_verticle_cement_flow(history->get_current_record())};
+            const auto cement_flow{well->get_verticle_cement_flow(history->get_current_record())};
             CHECK(cement_flow.rows() == grid_z.dual_size());
-            const auto well_flow{well.get_verticle_well_flow(history->get_current_record())};
+            const auto well_flow{well->get_verticle_well_flow(history->get_current_record())};
             CHECK(well_flow.rows() == grid_z.dual_size());
             RealType well_loss_cum_sum{0.0};
 #pragma region HORIZONTAL-RATES
@@ -357,6 +374,25 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     for (auto col{0ll}; col < grid_r.dual_size(); ++col)
                         CHECK(flux2(row, col) == 0.0);
                 }
+
+                if(core_logs.is_permeable(row) == 1.0)
+                {
+                    if(base_hydrodynamics.medium_compressibility(row) == 0.0)
+                    {
+                        const auto r_max{grid_r.dual_back()};
+                        const auto thickness{grid2D_rocks->first_coord().volume(row)};
+                        const auto k{core_logs.permeability(row)};
+                        const auto p_ext{base_hydrodynamics.ext_pressure(row)};
+                        for(auto col{3ll}; col < grid_r.mesh_size()-1ll; ++col)
+                        {
+                            const auto r{grid_r.mesh_nodes(col)};
+                            const RealType ref_p{p_ext - 
+                                rfp(row)*water.viscosity / (2.0 * pi * thickness * k)*std::log(r/r_max)};
+                            CHECK_THAT(ref_p, WithinRel(P(row,col), tol));
+                        }
+                    }
+                }
+
             }
 #pragma endregion
 #pragma region VERTICAL-RATES
@@ -364,8 +400,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             {
                 { // flow in the tube
                     const auto col{0ll};
-                    CHECK(Q - well_loss_cum_sum == well_flow(row));
-                    CHECK(C * (Q - well_loss_cum_sum) == flux1(row, col));
+                    CHECK_THAT(Q - well_loss_cum_sum,
+                        WithinRel(well_flow(row), tol));
+                    CHECK_THAT(C * (Q - well_loss_cum_sum),
+                        WithinRel(flux1(row, col), tol));
                     if (row < grid_z.mesh_size())
                         well_loss_cum_sum += wfp(row);
                 }
