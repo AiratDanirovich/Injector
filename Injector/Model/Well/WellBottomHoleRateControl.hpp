@@ -200,6 +200,10 @@ namespace GPN
                 }
 
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
+                
+                const std::ptrdiff_t size;
+                const StepPropertyContainer PI;
+                const Logs::IsPermeable &is_permeable;
 
             protected:
                 template <typename HistoryRecord_t>
@@ -239,11 +243,7 @@ namespace GPN
                     }
                     return out;
                 }
-
-                const std::ptrdiff_t size;
-                const StepPropertyContainer PI;
-                const Logs::IsPermeable &is_permeable;
             };
-        } // BotHolePresControl
+        } // BotHoleRateControl
     } // Wells
 } // GPN
