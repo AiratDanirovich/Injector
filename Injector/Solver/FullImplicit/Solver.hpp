@@ -130,6 +130,8 @@ namespace GPN
                     }
 
                     // BC
+                    // update types of boundary conditions
+                    bc.set_bc_type(cur_time + tau);
                     applyBC(A, rhs);
 
                     state.cur_state = solve_linear_problem(A, rhs).array().reshaped(first_coord_size, second_coord_size);
@@ -408,8 +410,6 @@ namespace GPN
                 /// @param b Nx1 vector of the rhs of the algebraic problem
                 void applyBC(SpMatrix &A, Eigen::VectorX<RealType> &b)
                 {
-                    // update types of boundary conditions
-                    bc.set_bc_type(cur_time + tau);
                     { // west face
                         const auto col{0ll};
                         {
