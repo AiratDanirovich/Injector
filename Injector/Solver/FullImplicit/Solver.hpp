@@ -116,6 +116,14 @@ namespace GPN
                         assemble_x_noconvection(tripletList);
                     }
 
+                    assert(std::all_of(
+                        tripletList.cbegin(),
+                        tripletList.cend(),
+                        [](const auto &v)
+                        {
+                            return !std::isnan(v.value()) && !std::isinf(v.value());
+                        }));
+
                     A.setFromTriplets(tripletList.begin(), tripletList.end());
                     A.diagonal() = A.diagonal() + tau_factor.reshaped(A_size, 1ll).matrix();
 
@@ -128,6 +136,23 @@ namespace GPN
                     { // there is no convection field
                         rhs = assemble_RHS_noconvection(state, tau_factor, A_size);
                     }
+                    // if (!std::all_of(
+                    //         rhs.cbegin(),
+                    //         rhs.cend(),
+                    //         [](const auto &v)
+                    //         {
+                    //             return !std::isnan(v) && !std::isinf(v);
+                    //         }))
+                    //     std::cout << "rhs:\n"
+                    //               << rhs.transpose() << std::endl;
+
+                    assert(std::all_of(
+                        rhs.cbegin(),
+                        rhs.cend(),
+                        [](const auto &v)
+                        {
+                            return !std::isnan(v) && !std::isinf(v);
+                        }));
 
                     // BC
                     // update types of boundary conditions
@@ -136,8 +161,8 @@ namespace GPN
 
                     state.cur_state = solve_linear_problem(A, rhs).array().reshaped(first_coord_size, second_coord_size);
 
-                    for(auto col{0ll}; col < state.cur_state.cols(); ++col)
-                        for(auto row{0ll}; row < state.cur_state.rows(); ++row)
+                    for (auto col{0ll}; col < state.cur_state.cols(); ++col)
+                        for (auto row{0ll}; row < state.cur_state.rows(); ++row)
                         {
                             assert(!std::isnan(state.cur_state(row, col)) && !std::isinf(state.cur_state(row, col)));
                         }
@@ -155,11 +180,11 @@ namespace GPN
                 {
                     return (state.cur_state.array() * tau_factor +
                             convection_factory->get_spatial_JT_contribution() +
-                            convection_factory->get_temporal_JT_contribution()/tau)
+                            convection_factory->get_temporal_JT_contribution() / tau)
                         .reshaped(A_size, 1ll)
                         .matrix();
                 }
-                
+
                 RHS_t assemble_RHS_noconvection(
                     const auto state,
                     const auto tau_factor,
@@ -193,7 +218,7 @@ namespace GPN
                     return {time_moments, states};
                 }
 
-                const State::State2D& get_state() const
+                const State::State2D &get_state() const
                 {
                     return state;
                 }

@@ -137,6 +137,9 @@ namespace GPN
                       is_permeable{rock_field_props.base_hydrodynamics.is_permeable},
                       history{history}
                 {
+                    assert(std::all_of(PI.cbegin(), PI.cend(), [](const RealType v){return v >= 0.0;}));
+                    assert(std::any_of(PI.cbegin(), PI.cend(), [](const RealType v){return v > 0.0;}));
+
                     const_cast<ptr<const hydro_bc_type> &>(hydro_bc) =
                         std::make_shared<const hydro_bc_type>(
                             grid2D_rocks,
@@ -219,7 +222,9 @@ namespace GPN
                     const auto rate{record.rate};
                     const RealType term1{(PI * collector_pressure.col(0ll)).sum()};
                     assert(!std::isnan(rate) && !std::isinf(rate));
-                    return (term1 - rate) / PI.sum();
+                    const auto out{(term1 - rate) / PI.sum()};
+                    // std::cout << "P_bot: " << out << std::endl;
+                    return out;
                 }
 
             protected:

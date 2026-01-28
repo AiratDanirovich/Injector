@@ -11,6 +11,9 @@ namespace GPN
 {
     namespace Heat
     {
+        /// @brief Boundary condition for temperature equation. 
+        /// Depends on the flow hydrodynamic model Fieldfactory_t in reservoir.
+        /// @tparam Fieldfactory_t FaceProperties::CompressibleRatesFactory or FaceProperties::IncompressibleRatesFactory
         template <typename Fieldfactory_t>
         struct HeatBC : public BoundaryConditions::GeneralBC
         {
@@ -39,6 +42,11 @@ namespace GPN
         protected:
             const cptr<Fieldfactory_t> field_factory;
             const cptr<History> history;
+
+            bool is_outward_flux() const
+            {
+                
+            }
         };
     } // Heat
 } // GPN

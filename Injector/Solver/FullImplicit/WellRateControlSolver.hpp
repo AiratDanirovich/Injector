@@ -157,11 +157,24 @@ namespace GPN
                     A.reserve(A_size * 6ll);
 
                     TripletContainer tripletList{get_triplets(A_size)};
+                    assert(std::all_of(
+                        tripletList.cbegin(), 
+                        tripletList.cend(), 
+                        [](const auto& v){
+                            return !std::isnan(v.value()) && !std::isinf(v.value());
+                        }));
                     A.setFromTriplets(tripletList.begin(), tripletList.end());
 
                     const Eigen::ArrayXX<RealType> tau_factor{
                         time_factor.Divide(tau).eval()};
                     RHS_t rhs{assemble_RHS_noconvection(state, tau_factor, A_size)};
+                    
+                    assert(std::all_of(
+                        rhs.cbegin(), 
+                        rhs.cend(), 
+                        [](const auto& v){
+                            return !std::isnan(v) && !std::isinf(v);
+                        }));
 
                     // BC
                     // update types of boundary conditions
