@@ -23,6 +23,8 @@ namespace GPN
 {
     namespace EqSolver
     {
+        using TripletContainer = std::vector<Eigen::Triplet<RealType, ptrdiff_t>>;
+
         struct EmptyConvectionField
         {
         };
