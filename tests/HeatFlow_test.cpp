@@ -222,9 +222,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         from_coords, to_layers, RFP_w, core_logs.is_perforated};
 
     // history
-    const shared_ptr<History> history{make_shared<History>(make_history(data))};
     SECTION("WellReservoirFlowProfileControl")
     {
+        const shared_ptr<History> history{make_shared<History>(make_history(data))};
         using Well_t =
             decltype(WellReservoirFlowProfileControl{
                 rock_field_props,
@@ -353,6 +353,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     SECTION("WellBottomHolePressureControl")
     {
         data["history"]["control_type"] = "bottomhole_pressure";
+        const shared_ptr<History> history{make_shared<History>(make_history(data))};
         using Well_t =
             decltype(WellBottomHolePressureControl{
                 rock_field_props,

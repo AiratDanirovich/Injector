@@ -9,7 +9,7 @@
   },
   "collector": {
     "external_pressure": 
-                 [    0.0, 0.0, 260,  0.0, 260,   0.0, 260,  260,  0.0],
+                 [    0.0, 0.0, 500,  0.0, 500,   0.0, 500,  500,  0.0],
     "medium_compressibility": 
                  [    0.0, 0.0, 2E-8, 0.0, 2E-8,  0.0, 2E-8, 2E-8, 0.0],
     "thickness": [    50,  3,   0.3,  3,   0.3,   3,   0.3,  0.3,  3],  
@@ -102,7 +102,7 @@
     "dynamic": {
       "t_major_step": [1.0, 1.0, 1.0],
       "well_rate": [0.002, 0.002, 0.001],
-      "bottom_hole_pressure": [260, 260, 260],
+      "bottomhole_pressure": [260, 260, 260],
       "inlet_temperature": [293, 293, 293]
     },
     "static": {
