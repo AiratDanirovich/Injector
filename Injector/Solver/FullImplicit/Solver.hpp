@@ -136,6 +136,12 @@ namespace GPN
 
                     state.cur_state = solve_linear_problem(A, rhs).array().reshaped(first_coord_size, second_coord_size);
 
+                    for(auto col{0ll}; col < state.cur_state.cols(); ++col)
+                        for(auto row{0ll}; row < state.cur_state.rows(); ++row)
+                        {
+                            assert(!std::isnan(state.cur_state(row, col)) && !std::isinf(state.cur_state(row, col)));
+                        }
+
                     cur_time += tau;
 
                     return std::pair{std::move(A), std::move(rhs)};

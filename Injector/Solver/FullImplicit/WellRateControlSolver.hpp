@@ -169,6 +169,12 @@ namespace GPN
                     applyBC(A, rhs);
 
                     const auto solution{solve_linear_problem(A, rhs).array().reshaped(first_coord_size, second_coord_size)};
+                    
+                    for(auto it{solution.cbegin()}; it != solution.cend(); ++it)
+                        {
+                            assert(!std::isnan(*it) && !std::isinf(*it));
+                        }
+
                     state.cur_state = solution.topRows(A_size-2ll);
                     P_bot_memory = solution.bottomRows(1ll);
 
