@@ -59,6 +59,7 @@ add_catch2_test(HeatFlow_test)
 
 add_catch2_test(history_test)
 add_catch2_test(geotherma_test)
+add_catch2_test(hydrostatic_pressure_test)
 
 install(FILES ${PROJECT_SOURCE_DIR}/test_data/json_test_data.json
     DESTINATION $<TARGET_FILE_DIR:json_test>)

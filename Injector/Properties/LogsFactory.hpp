@@ -322,7 +322,7 @@ namespace GPN
                 return {
                     StepPropertyGrid{
                         StepPropertyContainer{
-                            (fluid.density*Gravity::value())*(q_grid-z_bot) + P_bot},
+                            (fluid.density*Gravity::value())*(q_grid.mesh_nodes-z_bot) + P_bot},
                         q_grid}};
             }
 
@@ -330,7 +330,7 @@ namespace GPN
             /// @param P_bot Const pressure value
             /// @param q_grid Mesh nodes for pressure calculation
             /// @return
-            static HydrostaticPressure create(
+            static HydrostaticPressure create_const(
                 const RealType P_bot,
                 const auto &q_grid)
             {
