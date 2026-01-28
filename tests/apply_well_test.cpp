@@ -358,7 +358,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
   }
 
   // properties of material that fills the well up to the Sandface
-  heat_props.apply_well(extr_completion, well);
+  heat_props.apply_well(extr_completion);
 
   // CHECK heat_props --- after "apply_well"
   {
@@ -449,7 +449,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
 
   FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
-  heat_face_props.apply_well(extr_completion, well);
+  heat_face_props.apply_well(extr_completion);
 
   // CHECK heat_face_props --- after "apply_well"
   {

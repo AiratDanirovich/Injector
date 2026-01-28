@@ -19,6 +19,7 @@
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Well/Well.hpp>
 #include <Injector/Model/Well/WellReservoirFlowProfileControl.hpp>
+#include <Injector/Model/Well/WellBottomHolePressureControl.hpp>
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleRatesFactory.hpp>
@@ -60,6 +61,7 @@ using namespace GPN::Phases;
 using namespace GPN::Completion;
 using namespace GPN::Hydrodynamic;
 using namespace GPN::Wells::ResFlowProfileControl;
+using namespace GPN::Wells::BotHolePresControl;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::FullImplicit;
 
@@ -189,6 +191,26 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             water,
             grid2D_rocks};
 
+    const Logs::Rocks::HeatLogs heat_logs{
+        solid_density_stencils,
+        solid_specific_heatcapacity_stencils,
+        solid_heatconductivity_stencils,
+        porosity_stencils,
+        water,
+        grid_z};
+
+    Properties::Rocks::HeatProps heat_props{
+        heat_logs, grid2D};
+    heat_props.apply_well(extr_completion);
+
+    FaceProperties::Rocks::HeatFaceProps heat_face_props{
+        heat_props, grid2D};
+    heat_face_props.apply_well(extr_completion);
+
+    std::unique_ptr<const Logs::Geotherma> geotherma{
+        make_unique<Logs::Geotherma>(
+            make_geotherma(data, grid2D))};
+
     // well
     // const Well_KH well{
     //     water, core_logs.is_permeable, core_logs.is_perforated, core_logs.permeability, well_holes, rMax};
@@ -201,136 +223,105 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     // history
     const shared_ptr<History> history{make_shared<History>(make_history(data))};
-
-    using Well_t =
-        decltype(WellReservoirFlowProfileControl{
-        rock_field_props,
-        cross_flows,
-        history,
-        grid2D_rocks});
-
-    const ptr<Well_t> well{
-        std::make_shared<Well_t>(
-        rock_field_props,
-        cross_flows,
-        history,
-        grid2D_rocks)};
-
-    const Logs::Rocks::HeatLogs heat_logs{
-        solid_density_stencils,
-        solid_specific_heatcapacity_stencils,
-        solid_heatconductivity_stencils,
-        porosity_stencils,
-        water,
-        grid_z};
-
-    std::unique_ptr<const Logs::Geotherma> geotherma{
-        make_unique<Logs::Geotherma>(
-            make_geotherma(data, grid2D))};
-
-    Properties::Rocks::HeatProps heat_props{
-        heat_logs, grid2D};
-
-    // properties of material that fills the well up to the sandface
-    heat_props.apply_well(extr_completion, *well);
-
-    FaceProperties::Rocks::HeatFaceProps heat_face_props{
-        heat_props, grid2D};
-    heat_face_props.apply_well(extr_completion, *well);
-    // fluid model for the pressure field
-    using FluidField_t =
-        decltype(CompressibleFluidField{
-            start_time,
-            water,
-            rock_field_props,
-            *well,
-            history,
-            grid2D_rocks});
-
-    auto ptr_pressure_field{
-        make_shared<FluidField_t>(
-            start_time,
-            water,
-            rock_field_props,
-            *well,
-            history,
-            grid2D_rocks)};
-
-    // rates field factory
-    using RatesFactory_t =
-        decltype(FaceProperties::CompressibleRatesFactory{
-            ptr_pressure_field,
-            grid2D_rocks, well, history, water});
-    auto ptr_rates_factory{make_shared<RatesFactory_t>(
-        ptr_pressure_field,
-        grid2D_rocks, well, history, water)};
-    // initial condition
-    const auto initial_state{GPN::ICFactory(start_time, grid2D, *geotherma)};
-    // boundary conditions
-    const GPN::Heat::HeatBC bc{
-        grid2D,
-        std::make_shared<GPN::FunctorBC<
-            History,
-            FluidField_t,
-            RatesFactory_t>>(
-            history, ptr_rates_factory, *geotherma, grid2D),
-        ptr_rates_factory};
-    // solver
-
-    using Solver_t = decltype(Solver{
-        heat_face_props.medium_heat_conductivity,
-        grid2D,
-        heat_props.medium_vol_heatcapacity,
-        ptr_rates_factory, initial_state,
-        bc, start_time});
-
-    auto solver_ptr{std::make_shared<Solver_t>(
-        heat_face_props.medium_heat_conductivity,
-        grid2D,
-        heat_props.medium_vol_heatcapacity,
-        ptr_rates_factory, initial_state,
-        bc, start_time)};
-
-    const auto &solver{*solver_ptr};
-
-    SolverManager solver_manager{history, solver_ptr};
-
-    solver_manager.run(t_minor_step);
-
-    const auto &[p_times, p_states] = ptr_rates_factory->solution;
-
-    // assert solution
-    const double tol = 1E-11;
-    const auto precision{1e-5};
-
-    const auto &rates_factory{*ptr_rates_factory};
-    // {
-    //     string path{std::string{"flow_field.txt"}};
-    //     ofstream f{path};
-    //     f << (rates_factory.get_heat_flow_in_axes1() / precision).round() * precision << endl
-    //       << endl;
-    //     f << (rates_factory.get_heat_flow_in_axes2() / precision).round() * precision << endl
-    //       << endl;
-    //     f.close();
-    // }
-    // maximum principle
-    const auto &[times, states] = solver.solution();
-    // overall heat balance
-    RealType cur_heat_incr = 0.0;
-    RealType cum_inlet_heat = 0.0;
-    //  cout << "volumetric heat capacity\n"
-    //       << heat_props.medium_vol_heatcapacity.its_values << endl;
-    for (auto t{1ll}; t < (ptrdiff_t)times.size(); ++t)
+    SECTION("WellReservoirFlowProfileControl")
     {
-        cur_heat_incr +=
-            ((states[t].cur_state - states[t - 1ll].cur_state) *
-             heat_props.medium_vol_heatcapacity.values() * grid2D->volumes())
-                .sum();
-        cum_inlet_heat +=
-            (times[t] - times[t - 1ll]) *
-            history->rates(t - 1ll) *
-            water.volumetric_heat_capacity * (history->temps(t - 1ll) /*- initial_temperature*/);
+        using Well_t =
+            decltype(WellReservoirFlowProfileControl{
+                rock_field_props,
+                cross_flows,
+                history,
+                grid2D_rocks});
 
+        const ptr<Well_t> well{
+            std::make_shared<Well_t>(
+                rock_field_props,
+                cross_flows,
+                history,
+                grid2D_rocks)};
+
+        // fluid model for the pressure field
+        using FluidField_t =
+            decltype(CompressibleFluidField{
+                start_time,
+                water,
+                rock_field_props,
+                *well,
+                history,
+                grid2D_rocks});
+
+        auto ptr_pressure_field{
+            make_shared<FluidField_t>(
+                start_time,
+                water,
+                rock_field_props,
+                *well,
+                history,
+                grid2D_rocks)};
+
+        // rates field factory
+        using RatesFactory_t =
+            decltype(FaceProperties::CompressibleRatesFactory{
+                ptr_pressure_field,
+                grid2D_rocks, well, history, water});
+        auto ptr_rates_factory{make_shared<RatesFactory_t>(
+            ptr_pressure_field,
+            grid2D_rocks, well, history, water)};
+        // initial condition
+        const auto initial_state{GPN::ICFactory(start_time, grid2D, *geotherma)};
+        // boundary conditions
+        const GPN::Heat::HeatBC bc{
+            grid2D,
+            std::make_shared<GPN::FunctorBC<
+                History,
+                FluidField_t,
+                RatesFactory_t>>(
+                history, ptr_rates_factory, *geotherma, grid2D),
+            ptr_rates_factory};
+        // solver
+
+        using Solver_t = decltype(Solver{
+            heat_face_props.medium_heat_conductivity,
+            grid2D,
+            heat_props.medium_vol_heatcapacity,
+            ptr_rates_factory, initial_state,
+            bc, start_time});
+
+        auto solver_ptr{std::make_shared<Solver_t>(
+            heat_face_props.medium_heat_conductivity,
+            grid2D,
+            heat_props.medium_vol_heatcapacity,
+            ptr_rates_factory, initial_state,
+            bc, start_time)};
+
+        const auto &solver{*solver_ptr};
+
+        SolverManager solver_manager{history, solver_ptr};
+
+        solver_manager.run(t_minor_step);
+
+        const auto &[p_times, p_states] = ptr_rates_factory->solution;
+
+        // assert solution
+        const double tol = 1E-11;
+        const auto precision{1e-5};
+
+        const auto &rates_factory{*ptr_rates_factory};
+        // {
+        //     string path{std::string{"flow_field.txt"}};
+        //     ofstream f{path};
+        //     f << (rates_factory.get_heat_flow_in_axes1() / precision).round() * precision << endl
+        //       << endl;
+        //     f << (rates_factory.get_heat_flow_in_axes2() / precision).round() * precision << endl
+        //       << endl;
+        //     f.close();
+        // }
+        // maximum principle
+        const auto &[times, states] = solver.solution();
+        // overall heat balance
+        RealType cur_heat_incr = 0.0;
+        RealType cum_inlet_heat = 0.0;
+        //  cout << "volumetric heat capacity\n"
+        //       << heat_props.medium_vol_heatcapacity.its_values << endl;
         for (auto t{1ll}; t < (ptrdiff_t)times.size(); ++t)
         {
             cur_heat_incr +=
@@ -342,11 +333,150 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 history->rates(t - 1ll) *
                 water.volumetric_heat_capacity * (history->temps(t - 1ll) /*- initial_temperature*/);
 
-            RealType rel_tol = std::abs(2.0 * (cur_heat_incr - cum_inlet_heat) / (cur_heat_incr + cum_inlet_heat));
-            //    CHECK(rel_tol < 0.05);
+            for (auto t{1ll}; t < (ptrdiff_t)times.size(); ++t)
+            {
+                cur_heat_incr +=
+                    ((states[t].cur_state - states[t - 1ll].cur_state) *
+                     heat_props.medium_vol_heatcapacity.values() * grid2D->volumes())
+                        .sum();
+                cum_inlet_heat +=
+                    (times[t] - times[t - 1ll]) *
+                    history->rates(t - 1ll) *
+                    water.volumetric_heat_capacity * (history->temps(t - 1ll) /*- initial_temperature*/);
+
+                RealType rel_tol = std::abs(2.0 * (cur_heat_incr - cum_inlet_heat) / (cur_heat_incr + cum_inlet_heat));
+                //    CHECK(rel_tol < 0.05);
+            }
         }
     }
-#pragma endregion
+
+    SECTION("WellBottomHolePressureControl")
+    {
+        data["history"]["control_type"] = "bottomhole_pressure";
+        using Well_t =
+            decltype(WellBottomHolePressureControl{
+                rock_field_props,
+                cross_flows,
+                history,
+                grid2D_rocks});
+
+        const ptr<Well_t> well{
+            std::make_shared<Well_t>(
+                rock_field_props,
+                cross_flows,
+                history,
+                grid2D_rocks)};
+
+        // fluid model for the pressure field
+        using FluidField_t =
+            decltype(CompressibleFluidField{
+                start_time,
+                water,
+                rock_field_props,
+                *well,
+                history,
+                grid2D_rocks});
+
+        auto ptr_pressure_field{
+            make_shared<FluidField_t>(
+                start_time,
+                water,
+                rock_field_props,
+                *well,
+                history,
+                grid2D_rocks)};
+
+        // rates field factory
+        using RatesFactory_t =
+            decltype(FaceProperties::CompressibleRatesFactory{
+                ptr_pressure_field,
+                grid2D_rocks, well, history, water});
+        auto ptr_rates_factory{make_shared<RatesFactory_t>(
+            ptr_pressure_field,
+            grid2D_rocks, well, history, water)};
+        // initial condition
+        const auto initial_state{GPN::ICFactory(start_time, grid2D, *geotherma)};
+        // boundary conditions
+        const GPN::Heat::HeatBC bc{
+            grid2D,
+            std::make_shared<GPN::FunctorBC<
+                History,
+                FluidField_t,
+                RatesFactory_t>>(
+                history, ptr_rates_factory, *geotherma, grid2D),
+            ptr_rates_factory};
+        // solver
+
+        using Solver_t = decltype(Solver{
+            heat_face_props.medium_heat_conductivity,
+            grid2D,
+            heat_props.medium_vol_heatcapacity,
+            ptr_rates_factory, initial_state,
+            bc, start_time});
+
+        auto solver_ptr{std::make_shared<Solver_t>(
+            heat_face_props.medium_heat_conductivity,
+            grid2D,
+            heat_props.medium_vol_heatcapacity,
+            ptr_rates_factory, initial_state,
+            bc, start_time)};
+
+        const auto &solver{*solver_ptr};
+
+        SolverManager solver_manager{history, solver_ptr};
+
+        solver_manager.run(t_minor_step);
+
+        const auto &[p_times, p_states] = ptr_rates_factory->solution;
+
+        // assert solution
+        const double tol = 1E-11;
+        const auto precision{1e-5};
+
+        const auto &rates_factory{*ptr_rates_factory};
+        // {
+        //     string path{std::string{"flow_field.txt"}};
+        //     ofstream f{path};
+        //     f << (rates_factory.get_heat_flow_in_axes1() / precision).round() * precision << endl
+        //       << endl;
+        //     f << (rates_factory.get_heat_flow_in_axes2() / precision).round() * precision << endl
+        //       << endl;
+        //     f.close();
+        // }
+        // maximum principle
+        const auto &[times, states] = solver.solution();
+        // overall heat balance
+        RealType cur_heat_incr = 0.0;
+        RealType cum_inlet_heat = 0.0;
+        //  cout << "volumetric heat capacity\n"
+        //       << heat_props.medium_vol_heatcapacity.its_values << endl;
+        for (auto t{1ll}; t < (ptrdiff_t)times.size(); ++t)
+        {
+            cur_heat_incr +=
+                ((states[t].cur_state - states[t - 1ll].cur_state) *
+                 heat_props.medium_vol_heatcapacity.values() * grid2D->volumes())
+                    .sum();
+            cum_inlet_heat +=
+                (times[t] - times[t - 1ll]) *
+                history->rates(t - 1ll) *
+                water.volumetric_heat_capacity * (history->temps(t - 1ll) /*- initial_temperature*/);
+
+            for (auto t{1ll}; t < (ptrdiff_t)times.size(); ++t)
+            {
+                cur_heat_incr +=
+                    ((states[t].cur_state - states[t - 1ll].cur_state) *
+                     heat_props.medium_vol_heatcapacity.values() * grid2D->volumes())
+                        .sum();
+                cum_inlet_heat +=
+                    (times[t] - times[t - 1ll]) *
+                    history->rates(t - 1ll) *
+                    water.volumetric_heat_capacity * (history->temps(t - 1ll) /*- initial_temperature*/);
+
+                RealType rel_tol = std::abs(2.0 * (cur_heat_incr - cum_inlet_heat) / (cur_heat_incr + cum_inlet_heat));
+                //    CHECK(rel_tol < 0.05);
+            }
+        }
+    }
     // {
     //     const auto &state = states.back();
     //     std::string path{std::string{"T_"} + std::to_string(0) + std::string{".txt"}};
