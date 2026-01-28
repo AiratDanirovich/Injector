@@ -86,8 +86,6 @@ namespace GPN
                         // update convection field
                         convection_factory->set_flow_field(cur_time, tau);
                     }
-                    // update types of boundary conditions
-                    bc.set_bc_type(cur_time + tau);
 
                     ptrdiff_t A_size{first_coord_size * second_coord_size};
                     assert(A_size == grid->mesh_size());
@@ -410,6 +408,8 @@ namespace GPN
                 /// @param b Nx1 vector of the rhs of the algebraic problem
                 void applyBC(SpMatrix &A, Eigen::VectorX<RealType> &b)
                 {
+                    // update types of boundary conditions
+                    bc.set_bc_type(cur_time + tau);
                     { // west face
                         const auto col{0ll};
                         {
