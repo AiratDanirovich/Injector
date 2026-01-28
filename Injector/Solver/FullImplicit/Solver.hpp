@@ -97,7 +97,7 @@ namespace GPN
 
                     A.reserve(A_size * 5ll);
 
-                    std::vector<Eigen::Triplet<RealType, ptrdiff_t>> tripletList;
+                    TripletContainer tripletList;
                     tripletList.reserve(6ll * A_size);
 
                     // tau_factor = capacity/tau multiplies Delta_u at different time moments,
