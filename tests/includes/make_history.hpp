@@ -56,7 +56,7 @@ auto make_history(const json &data)
         for (auto &v : t_major_steps)
             v = v * factor; // change units of time-steps to seconds
         const VR inlet_temps {data2["inlet_temperature"].get<VR>()};
-        if (control_type == "RFP")
+        if ((control_type == "RFP") || (control_type == "bottomhole_rate"))
         {
             const VR well_rates { data2["well_rate"].get<VR>()};
             return HistoryFactory::createFixedRate(t_major_steps, well_rates, inlet_temps);
@@ -86,8 +86,7 @@ auto make_history(const json &data)
         const RealType inlet_temperature{data2["inlet_temperature"].get<RealType>()};
         const std::vector<RealType> inlet_temps(t_major_steps.size(), inlet_temperature);
 
-
-        if (control_type == "RFP")
+        if ((control_type == "RFP") || (control_type == "bottomhole_rate"))
         {
             const RealType well_rate{data2["well_rate"].get<RealType>()}; // m^3/s
             const std::vector<RealType> well_rates(t_major_steps.size(), well_rate);
