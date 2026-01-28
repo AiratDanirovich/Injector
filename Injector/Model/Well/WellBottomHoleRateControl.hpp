@@ -27,6 +27,7 @@ namespace GPN
                 /// @param PI productivity index that multiplies pressure difference at sandface
                 /// @param grid_ptr
                 BotHoleRateFunctorBC(
+                    //    const RealType fluid_density,
                     const ptr<const History_t> history,
                     const Logs::ExternalPressure &ext_pressure,
                     const StepPropertyContainer &PI,
@@ -35,7 +36,7 @@ namespace GPN
                       history{history},
                       ext_pressure{ext_pressure},
                       PI{PI},
-                      grid_ptr{grid_ptr}
+                      grid_ptr{grid_ptr} //, fluid_weight{fluid_density*Gravity::value()}
                 {
                     static_assert(Grid2D_t::l_margin == 3ll);
                 }
@@ -47,7 +48,8 @@ namespace GPN
                     if (r == grid_ptr->second_coord().dual_front())
                     {
                         assert(bc_type == BCType::third);
-                        const auto out{history->pressure()};
+                        // const auto out{history->pressure()};
+                        const auto out{0.0 /*rho*g*dz*/};
                         return BC_descriptor::BC_III(out, PI(z_id));
                         //    return out;
                     }
@@ -76,11 +78,13 @@ namespace GPN
                     //    return 0.0;
                 }
 
+                const StepPropertyContainer &PI;
+                const ptr<const History_t> history;
+
             protected:
                 const Logs::ExternalPressure &ext_pressure;
-                const StepPropertyContainer &PI;
                 const ptr<const Grid2D_t> grid_ptr;
-                const ptr<const History_t> history;
+                //    const RealType fluid_weight;
             };
 
             struct BotHoleRateBC : public BoundaryConditions::GeneralBC
@@ -105,7 +109,7 @@ namespace GPN
                 typename Grid2D_t,
                 typename CrossFlow_t>
             struct WellBottomHoleRateControl : 
-                public CrossFlow_t, 
+                public CrossFlow_t,
                 public DefaultWellNumerics<1ll>
             {
                 using functor_type = BotHoleRateFunctorBC<History_t, Grid2D_t>;
@@ -130,7 +134,8 @@ namespace GPN
                           FaceValuesContainer::Zero(
                               grid2D_rocks->first_coord().mesh_size(),
                               Grid2D_t::l_margin + 1ll)},
-                      is_permeable{rock_field_props.base_hydrodynamics.is_permeable}
+                      is_permeable{rock_field_props.base_hydrodynamics.is_permeable},
+                      history{history}
                 {
                     const_cast<ptr<const hydro_bc_type> &>(hydro_bc) =
                         std::make_shared<const hydro_bc_type>(
@@ -200,10 +205,11 @@ namespace GPN
                 }
 
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
-                
+
                 const std::ptrdiff_t size;
                 const StepPropertyContainer PI;
                 const Logs::IsPermeable &is_permeable;
+                const cptr<History_t> history;
 
             protected:
                 template <typename HistoryRecord_t>

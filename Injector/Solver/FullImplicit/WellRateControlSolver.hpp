@@ -31,6 +31,8 @@
 #include <Injector/Solver/SplittingMethod/SplitY.hpp>
 #include <Injector/Solver/EquationView.hpp>
 
+#include <Injector/Model/Well/WellBottomHoleRateControl.hpp>
+
 namespace GPN
 {
     namespace EqSolver
@@ -47,8 +49,9 @@ namespace GPN
                 typename Grid2D_t,
                 typename Capacity_t,
                 typename ConvectionTermFactory_t,
-                typename BC_t>
-            struct Solver
+                typename BC_t,
+                typename Well_t>
+            struct WellRateControlSolver
             {
                 using SpMatrix = SplittingMethod::SpMatrix;
 
@@ -57,14 +60,16 @@ namespace GPN
 
                 template <
                     typename LaplaceFactor_t>
-                Solver(
+                WellRateControlSolver(
                     const LaplaceFactor_t &laplace_factor,
                     const cptr<Grid2D_t> grid,
                     const Capacity_t &time_factor,
                     ptr<ConvectionTermFactory_t> convection_factory,
                     const State::State2D &initial_state,
                     const BC_t &bc,
-                    const RealType initial_moment)
+                    const Well_t &well,
+                    const RealType initial_moment,
+                    const RealType P_bot_init = 0.0)
                     : splitX{laplace_factor, grid},
                       splitY{laplace_factor, grid},
                       time_factor{time_factor, *grid},
@@ -74,114 +79,124 @@ namespace GPN
                       second_coord_size{grid->second_coord().mesh_size()},
                       state{initial_state}, // init with initial condition
                       bc{bc},
-                      states(),
-                      time_moments(),
+                      well{well},
+                      states{},
+                      time_moments{},
+                      P_bots{},
+                      P_bot_memory{P_bot_init},
                       cur_time{initial_moment}
                 {
                     time_moments.reserve(10ull);
                     states.reserve(10ull);
                     save_state();
                 }
-                //        Solver(const Solver &) = default;
-                //        Solver(Solver &&) noexcept = default;
 
                 void save_state()
                 {
                     time_moments.push_back(cur_time);
                     states.emplace_back(state);
+                    P_bots.emplace_back(P_bot);
+                }
+
+                TripletList set_triplets(const ptrdiff_t A_size)
+                {
+                    TripletContainer tripletList;
+
+                    assert(A_size == grid->mesh_size() + 1ll);
+                    tripletList.reserve(8ll * A_size);
+#pragma region MASS-TRANSFER-IN-RESERVOIR
+#pragma region TEMPORAL-CONTRIBUTION-IN-RESERVOIR
+                    // take reservoir capacity into account
+                    const Eigen::ArrayXX<RealType> tau_factor{
+                        time_factor.Divide(tau).eval()};
+                    assert(tau_factor.rows() == A_size - 1ll);
+                    assert(tau_factor.cols() == A_size - 1ll);
+                    // append capacity to the matri diagonal
+                    for (auto row{0ll}; row < tau_factor.rows(); ++row)
+                        for (auto col{0ll}; col < tau_factor.cols(); ++col)
+                        {
+                            const auto l{grid->to_linear(row, col)};
+                            tripletList.emplace_back(l, l, tau_factor(row, col));
+                        }
+#pragma endregion
+#pragma region LAPLACE-TERM-IN-RESERVOIR
+                    // take Laplace contribution into account
+                    assemble_y_noconvection(tripletList);
+                    assemble_x_noconvection(tripletList);
+#pragma endregion
+#pragma endregion
+#pragma region WELL-CONDITION
+                    // take well condition into account
+                    const auto &PI{well.PI}; // well productivity index
+                    // set the P_bot coefficient
+                    const auto matrix_row{A_size - 1ll}; // id of unknown bottomhole pressure
+                    // set last matrix diag element
+                    tripletList.emplace_back(matrix_row, matrix_row, -PI.sum());
+                    // set P_i,3 coeffs if non-zero
+                    for (auto row{0}; row < PI.rows(); ++row)
+                    { // loop over every row of the sandface
+                        if (PI(row) != 0.0)
+                        {
+                            // set last matrix row
+                            const auto matrix_col{grid->to_linear(row, 0ll)};
+                            tripletList.emplace_back(matrix_row, matrix_col, PI(row));
+                            // set last matrix col
+                            tripletList.emplace_back(matrix_col, matrix_row, -PI(row));
+                        }
+                    }
+#pragma endregion
+                    return tripletList;
                 }
 
                 auto advance(const RealType tau)
                 {
-                    if constexpr (std::is_same_v<ConvectionTermFactory_t, EmptyConvectionField> == false)
-                    { // there is convection field
-                        // update convection field
-                        convection_factory->set_flow_field(cur_time, tau);
-                    }
-                    // update types of boundary conditions
-                    bc.set_bc_type(cur_time + tau);
-
-                    ptrdiff_t A_size{first_coord_size * second_coord_size};
-                    assert(A_size == grid->mesh_size());
-                    Eigen::SparseMatrix<RealType> A{// ctor for matrix
+                    ptrdiff_t A_size{first_coord_size * second_coord_size + 1ll};
+                    Eigen::SparseMatrix<RealType> A{// ctor for matrix, reservoir + bottomwell pressure
                                                     A_size,
                                                     A_size};
+                    A.reserve(A_size * 6ll);
 
-                    A.reserve(A_size * 5ll);
+                    TripletContainer tripletList{get_triplets(A_size)};
+                    A.setFromTriplets(tripletList.begin(), tripletList.end());
 
-                    std::vector<Eigen::Triplet<RealType, ptrdiff_t>> tripletList;
-                    tripletList.reserve(6ll * A_size);
-
-                    // tau_factor = capacity/tau multiplies Delta_u at different time moments,
-                    // i.e., t and t+tau
                     const Eigen::ArrayXX<RealType> tau_factor{
                         time_factor.Divide(tau).eval()};
-
-                    assert(A_size == tau_factor.size());
-
-                    if constexpr (std::is_same_v<ConvectionTermFactory_t, EmptyConvectionField> == false)
-                    { // there is convection field
-                        assemble_y(tripletList);
-                        assemble_x(tripletList);
-                    }
-                    else
-                    { // there is no convection field
-                        assemble_y_noconvection(tripletList);
-                        assemble_x_noconvection(tripletList);
-                    }
-
-                    A.setFromTriplets(tripletList.begin(), tripletList.end());
-                    A.diagonal() = A.diagonal() + tau_factor.reshaped(A_size, 1ll).matrix();
-
-                    RHS_t rhs{};
-                    if constexpr (std::is_same_v<ConvectionTermFactory_t, EmptyConvectionField> == false)
-                    { // there is convection field
-                        rhs = assemble_RHS(state, tau_factor, A_size, tau);
-                    }
-                    else
-                    { // there is no convection field
-                        rhs = assemble_RHS_noconvection(state, tau_factor, A_size);
-                    }
+                    RHS_t rhs{assemble_RHS_noconvection(state, tau_factor, A_size)};
 
                     // BC
+                    // update types of boundary conditions
+                    bc.set_bc_type(cur_time + tau);
                     applyBC(A, rhs);
 
-                    state.cur_state = solve_linear_problem(A, rhs).array().reshaped(first_coord_size, second_coord_size);
+                    const auto solution{solve_linear_problem(A, rhs).array().reshaped(first_coord_size, second_coord_size)};
+                    state.cur_state = solution.topRows(A_size-2ll);
+                    P_bot_memory = solution.bottomRows(1ll);
 
                     cur_time += tau;
 
                     return std::pair{std::move(A), std::move(rhs)};
                 }
 
-                RHS_t assemble_RHS(
-                    const auto state,
-                    const auto tau_factor,
-                    const auto A_size,
-                    const auto tau) const
-                {
-                    return (state.cur_state.array() * tau_factor +
-                            convection_factory->get_spatial_JT_contribution() +
-                            convection_factory->get_temporal_JT_contribution()/tau)
-                        .reshaped(A_size, 1ll)
-                        .matrix();
-                }
-                
                 RHS_t assemble_RHS_noconvection(
                     const auto state,
                     const auto tau_factor,
                     const auto A_size) const
                 {
-                    return (state.cur_state.array() * tau_factor)
-                        .reshaped(A_size, 1ll)
-                        .matrix();
+                    RHS_t rhs{RHS_t::Zero(upper_block.rows() + 1ll)};
+                    rhs.topRows(A_size-1ll) = (state.cur_state.array() * tau_factor)
+                                          .reshaped(A_size, 1ll)
+                                          .matrix();
+                    rhs.bottomRows(1ll) = well.history->rate();
+                    return rhs;
                 }
 
                 struct Solution
                 {
                     Solution(
                         const std::vector<RealType> &times,
-                        const std::vector<State::State2D> &states)
-                        : times{times}, states{states}
+                        const std::vector<State::State2D> &states,
+                        const std::vector<RealType> & P_bot)
+                        : times{times}, states{states}, P_bot{P_bot}
                     {
                     }
 
@@ -191,17 +206,23 @@ namespace GPN
                     }
 
                     const std::vector<RealType> &times;
+                    const std::vector<RealType> &P_bot;
                     const std::vector<State::State2D> &states;
                 };
 
                 Solution solution() const
                 {
-                    return {time_moments, states};
+                    return {time_moments, states, P_bot};
                 }
 
-                const State::State2D& get_state() const
+                const State::State2D &get_state() const
                 {
                     return state;
+                }
+
+                const RealType P_bot() const
+                {
+                    return P_bot_memory;
                 }
 
             protected:
@@ -244,58 +265,6 @@ namespace GPN
                     }
                 }
 
-                void assemble_x(auto &tripletList)
-                {
-                    const auto &split_flow_field_pos{
-                        convection_factory->get_heat_flow_in_axes2_pos()};
-                    const auto &split_flow_field_neg{
-                        convection_factory->get_heat_flow_in_axes2_neg()};
-
-                    const auto &pressure{convection_factory->get_pressure_field()};
-
-                    //  Take every line for a fixed x node.
-                    //  It is a row of 2D grid representation
-                    for (auto row{0ll}; row < first_coord_size; ++row)
-                    {
-                        // copy Laplace term in y-direction for a fixed x
-                        const SpMatrix &A{splitX.LaplaceTerm(row)};
-                        const auto &flow_plus{split_flow_field_pos.row(row)};
-                        const auto &flow_minus{split_flow_field_neg.row(row)};
-
-                        // upper diagonal
-                        for (auto col{0ll}; col < second_coord_size - 1ll; ++col)
-                        {
-                            const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l + first_coord_size,
-                                                     A.coeff(col, col + 1ll) + flow_minus(col + 1ll));
-                        }
-
-                        // main diagonal
-                        const auto diag{(
-                                            A.diagonal() +
-                                            (flow_plus.matrix().head(second_coord_size) -
-                                             flow_minus.matrix().tail(second_coord_size))
-                                                .transpose())
-                                            .eval()};
-
-                        for (auto col{0ll}; col < second_coord_size; ++col)
-                        {
-                            const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l, diag(col));
-                        }
-
-                        // lower diagonal
-                        for (auto col{1ll}; col < second_coord_size; ++col)
-                        {
-                            const auto l{grid->to_linear(row, col)};
-                            assert(l >= first_coord_size);
-                            tripletList.emplace_back(
-                                l, l - first_coord_size,
-                                A.coeff(col, col - 1ll) - flow_plus(col));
-                        }
-                    }
-                }
-
                 void assemble_y_noconvection(auto &tripletList)
                 {
                     // take every line for a fixed y-node.
@@ -334,58 +303,10 @@ namespace GPN
                     }
                 }
 
-                void assemble_y(auto &tripletList)
-                {
-                    const auto &split_flow_field_pos{
-                        convection_factory->get_heat_flow_in_axes1_pos()};
-                    const auto &split_flow_field_neg{
-                        convection_factory->get_heat_flow_in_axes1_neg()};
-
-                    // take every line for a fixed y-node.
-                    // It is a col of 2D grid representation
-                    for (auto col{0ll}; col < second_coord_size; ++col)
-                    {
-                        // Laplace term
-                        const SpMatrix &A{splitY.LaplaceTerm(col)};
-
-                        const auto &flow_plus{split_flow_field_pos.col(col)};
-                        const auto &flow_minus{split_flow_field_neg.col(col)};
-
-                        // upper diagonal
-                        for (auto row{0ll}; row < first_coord_size - 1ll; ++row)
-                        {
-                            const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l + 1ll,
-                                                     A.coeff(row, row + 1ll) + flow_minus(row + 1ll));
-                        }
-
-                        // main diagonal
-                        const auto diag{(
-                                            A.diagonal() +
-                                            flow_plus.matrix().head(first_coord_size) -
-                                            flow_minus.matrix().tail(first_coord_size))
-                                            .eval()};
-                        for (auto row{0ll}; row < first_coord_size; ++row)
-                        {
-                            const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l, diag(row));
-                        }
-
-                        // lower diagonal
-                        for (auto row{1ll}; row < first_coord_size; ++row)
-                        {
-                            const auto l{grid->to_linear(row, col)};
-                            assert(l >= 1ll);
-                            tripletList.emplace_back(
-                                l, l - 1ll,
-                                A.coeff(row, row - 1ll) - flow_plus(row));
-                        }
-                    }
-                }
-
                 const SplittingMethod::SplitX splitX;
                 const SplittingMethod::SplitY splitY;
                 BC_t bc;
+                const Well_t &well;
                 const TemporalTerm time_factor;
                 double cur_time;
                 // by reference!
@@ -396,8 +317,9 @@ namespace GPN
                 const std::ptrdiff_t first_coord_size;
                 const std::ptrdiff_t second_coord_size;
                 State::State2D state;
+                RealType P_bot_memory;
                 std::vector<State::State2D> states;
-                std::vector<RealType> time_moments;
+                std::vector<RealType> time_moments, P_bots;
 
             protected:
                 Eigen::SparseLU<SpMatrix> lu;
