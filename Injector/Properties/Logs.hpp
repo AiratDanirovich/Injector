@@ -244,7 +244,8 @@ namespace GPN
 
         /// @brief Indicator of cells with damaged column,
         /// so the liquid can leave the column,
-        /// to further flow vertically along the cement
+        /// to further flow vertically along the cement.
+        /// Ignores perforated cells.
         struct IsDamaged : public IndicatorProperty
         {
             using IndicatorProperty::IndicatorProperty;

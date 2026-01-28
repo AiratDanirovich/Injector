@@ -201,6 +201,7 @@ namespace GPN
                 is_perforated.log_vals,
                 is_perforated.grid)};
 
+            // assert flow against perforated and damaged cells
             for (auto i{0ll}; i < wfp_step_prop_grid.size(); ++i)
             {
                 assert(
