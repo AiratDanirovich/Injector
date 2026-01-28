@@ -4,6 +4,8 @@
 
 #include <Injector/Grids/Defines.h>
 
+#include <Injector/Model/Well/DefaultWellNmerics.hpp>
+
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Properties/Logs.hpp>
 
@@ -19,15 +21,15 @@ namespace GPN
             template <typename History_t, typename Grid2D_t>
             struct BotHoleRateFunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
             {
-                /// @brief 
-                /// @param history 
-                /// @param ext_pressure 
+                /// @brief
+                /// @param history
+                /// @param ext_pressure
                 /// @param PI productivity index that multiplies pressure difference at sandface
-                /// @param grid_ptr 
+                /// @param grid_ptr
                 BotHoleRateFunctorBC(
                     const ptr<const History_t> history,
                     const Logs::ExternalPressure &ext_pressure,
-                    const StepPropertyContainer& PI,
+                    const StepPropertyContainer &PI,
                     const ptr<const Grid2D_t> grid_ptr)
                     : BoundaryConditions::GeneralBC::BCFunctorBase{},
                       history{history},
@@ -39,7 +41,7 @@ namespace GPN
                 }
 
                 BC_descriptor operator()(const ptrdiff_t z_id, const RealType r, const RealType,
-                                    const BCType bc_type) const override
+                                         const BCType bc_type) const override
                 {
                     // boundary condition at sandface
                     if (r == grid_ptr->second_coord().dual_front())
@@ -47,7 +49,7 @@ namespace GPN
                         assert(bc_type == BCType::third);
                         const auto out{history->pressure()};
                         return BC_descriptor::BC_III(out, PI(z_id));
-                    //    return out;
+                        //    return out;
                     }
 
                     // boundary condition at external contour
@@ -55,28 +57,28 @@ namespace GPN
                     {
                         assert(bc_type == BCType::first);
                         return BC_descriptor::BC_I(ext_pressure(z_id));
-                    //    return ext_pressure(z_id);
+                        //    return ext_pressure(z_id);
                     }
 
                     assert(false);
                     throw std::runtime_error("Wrong radial coordinate in BC.");
-                //    return 0.0;
+                    //    return 0.0;
                 }
 
                 BC_descriptor operator()(const RealType z, const ptrdiff_t, const RealType,
-                                    const BCType bc_type) const override
+                                         const BCType bc_type) const override
                 {
                     // boundary conditions are set exactly at domain boundaries
                     assert((z == grid_ptr->first_coord().dual_front()) || (z == grid_ptr->first_coord().dual_back()));
                     // assume zero "diffusion" flux in hydrodynamic equation
                     assert(bc_type == BCType::second);
                     return BC_descriptor::BC_II(0.0);
-                //    return 0.0;
+                    //    return 0.0;
                 }
 
             protected:
                 const Logs::ExternalPressure &ext_pressure;
-                const StepPropertyContainer& PI;
+                const StepPropertyContainer &PI;
                 const ptr<const Grid2D_t> grid_ptr;
                 const ptr<const History_t> history;
             };
@@ -102,7 +104,9 @@ namespace GPN
                 typename History_t,
                 typename Grid2D_t,
                 typename CrossFlow_t>
-            struct WellBottomHoleRateControl : public CrossFlow_t
+            struct WellBottomHoleRateControl : 
+                public CrossFlow_t, 
+                public DefaultWellNumerics<1ll>
             {
                 using functor_type = BotHoleRateFunctorBC<History_t, Grid2D_t>;
                 using hydro_bc_type = BotHoleRateBC;
@@ -128,13 +132,13 @@ namespace GPN
                               Grid2D_t::l_margin + 1ll)},
                       is_permeable{rock_field_props.base_hydrodynamics.is_permeable}
                 {
-                    const_cast<ptr<const hydro_bc_type>&>(hydro_bc) = 
-                          std::make_shared<const hydro_bc_type>(
-                              grid2D_rocks,
-                              std::make_shared<const functor_type>(
-                                  history, rock_field_props.base_hydrodynamics.ext_pressure,
-                                  PI,
-                                  grid2D_rocks));
+                    const_cast<ptr<const hydro_bc_type> &>(hydro_bc) =
+                        std::make_shared<const hydro_bc_type>(
+                            grid2D_rocks,
+                            std::make_shared<const functor_type>(
+                                history, rock_field_props.base_hydrodynamics.ext_pressure,
+                                PI,
+                                grid2D_rocks));
                 }
 
                 template <typename HistoryRecord_t>
@@ -203,7 +207,8 @@ namespace GPN
                     const HistoryRecord_t &record,
                     const auto &collector_pressure) const
                 {
-                std::cout << "depression at sandface:\n" << -(collector_pressure.col(0ll) - record.pressure*is_permeable.log_vals).transpose() << std::endl;
+                    std::cout << "depression at sandface:\n"
+                              << -(collector_pressure.col(0ll) - record.pressure * is_permeable.log_vals).transpose() << std::endl;
 
                     // return (mobility * (collector_pressure.col(0ll) - record.pressure)).eval();
                     return Logs::RFPFactory::create_from_container<Logs::RFP>(

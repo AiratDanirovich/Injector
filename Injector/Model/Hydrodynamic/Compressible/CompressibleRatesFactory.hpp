@@ -73,7 +73,7 @@ namespace GPN
                 assert((history->regime() == InjectorRegimes::FixedRate) ||
                        (history->regime() == InjectorRegimes::FixedBottomHolePressure));
 
-                // the pressure field field is updated at every time step
+                // the pressure field is updated at every time step
                 // non-stationary hydrodynamics is assumed
                 pressure_field->set_pressure_field(t_step, get_history_record());
                 // set the flow in all cells of the well,
