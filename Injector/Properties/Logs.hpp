@@ -272,6 +272,18 @@ namespace GPN
             }
         };
 
+        struct HydrostaticPressure
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            HydrostaticPressure(
+                const StepPropertyGrid &pressure)
+                : StepPropertyGrid{pressure},
+                  AssertNonNegative{pressure}
+            {
+            }
+        };
+
         namespace InternalUse
         {
             /// @brief Rate distribution along the
