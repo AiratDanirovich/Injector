@@ -228,6 +228,15 @@ namespace GPN
             {
                 set_flux(rfp);
             }
+            CrossFlows(
+                const std::vector<RealType> &from_coords,
+                const std::vector<ptrdiff_t> &to_layers,
+                const Logs::IsPerforated &is_perforated)
+                : cross_flow_handler{
+                      from_coords, to_layers, is_perforated},
+                  is_perforated{is_perforated}
+            {
+            }
 
             void set_flux(const Logs::RFP &RFP_w)
             {

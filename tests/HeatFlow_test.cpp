@@ -213,19 +213,16 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         make_unique<Logs::Geotherma>(
             make_geotherma(data, grid2D))};
 
-    // well
-    // const Well_KH well{
-    //     water, core_logs.is_permeable, core_logs.is_perforated, core_logs.permeability, well_holes, rMax};
-    const RFP_weights RFP_w{
-        RFPFactory::create_from_container<Logs::RFP_weights>(
-            StepProperty{RFP_weights_stencils},
-            core_logs.is_permeable)};
-    const CrossFlows cross_flows{
-        from_coords, to_layers, RFP_w, core_logs.is_perforated};
-
     // history
     SECTION("WellReservoirFlowProfileControl")
     {
+        const RFP_weights RFP_w{
+            RFPFactory::create_from_container<Logs::RFP_weights>(
+                StepProperty{RFP_weights_stencils},
+                core_logs.is_permeable)};
+        const CrossFlows cross_flows{
+            from_coords, to_layers, RFP_w, core_logs.is_perforated};
+
         const shared_ptr<History> history{make_shared<History>(make_history(data))};
         using Well_t =
             decltype(WellReservoirFlowProfileControl{
@@ -355,6 +352,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     SECTION("WellBottomHolePressureControl")
     {
         data["history"]["control_type"] = "bottomhole_pressure";
+        const CrossFlows cross_flows{
+            from_coords, to_layers, core_logs.is_perforated};
         const shared_ptr<History> history{make_shared<History>(make_history(data))};
         using Well_t =
             decltype(WellBottomHolePressureControl{
@@ -483,6 +482,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     SECTION("WellBottomHoleRateControl")
     {
         data["history"]["control_type"] = "bottomhole_rate";
+        const CrossFlows cross_flows{
+            from_coords, to_layers, core_logs.is_perforated};
         const shared_ptr<History> history{make_shared<History>(make_history(data))};
         using Well_t =
             decltype(WellBottomHoleRateControl{
