@@ -44,7 +44,7 @@ namespace GPN
                 }
 
                 BC_descriptor operator()(const ptrdiff_t z_id, const RealType r, const RealType,
-                                    const BCType bc_type) const override
+                                         const BCType bc_type) const override
                 {
                     // sandface
                     if (r == grid_ptr->second_coord().dual_front())
@@ -52,14 +52,14 @@ namespace GPN
                         assert(bc_type == BCType::second);
                         const auto out{rfp(z_id) * history->rate()};
                         return BC_descriptor::BC_II(out);
-                    //    return out;
+                        //    return out;
                     }
                     // external contour
                     if (r == grid_ptr->second_coord().dual_back())
                     {
                         assert(bc_type == BCType::first);
                         return BC_descriptor::BC_I(ext_pressure(z_id));
-                    //    return ext_pressure(z_id);
+                        //    return ext_pressure(z_id);
                     }
 
                     assert(false);
@@ -67,14 +67,14 @@ namespace GPN
                 }
 
                 BC_descriptor operator()(const RealType z, const ptrdiff_t, const RealType,
-                                    const BCType bc_type) const override
+                                         const BCType bc_type) const override
                 {
                     // boundary conditions are set exactly at domain boundaries
                     assert((z == grid_ptr->first_coord().dual_front()) || (z == grid_ptr->first_coord().dual_back()));
                     // assume zero diffusion flux in hydrodynamic equation
                     assert(bc_type == BCType::second);
                     return BC_descriptor::BC_II(0.0);
-                //    return 0.0;
+                    //    return 0.0;
                 }
 
             protected:
@@ -176,7 +176,7 @@ namespace GPN
                 template <typename HistoryRecord_t>
                 RealType get_total_bottomhole_rate(
                     const HistoryRecord_t &record,
-                    const auto &/*collector_pressure*/) const
+                    const auto & /*collector_pressure*/) const
                 {
                     return record.rate;
                 }
