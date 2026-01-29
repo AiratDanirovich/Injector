@@ -39,10 +39,6 @@ namespace GPN
     {
         using TripletContainer = std::vector<Eigen::Triplet<RealType, ptrdiff_t>>;
 
-        struct EmptyConvectionField
-        {
-        };
-
         namespace FullImplicit
         {
             template <
@@ -98,7 +94,7 @@ namespace GPN
                     P_bots.emplace_back(P_bot);
                 }
 
-                TripletList set_triplets(const ptrdiff_t A_size)
+                TripletContainer set_triplets(const ptrdiff_t A_size, const RealType tau)
                 {
                     TripletContainer tripletList;
 
@@ -156,7 +152,7 @@ namespace GPN
                                                     A_size};
                     A.reserve(A_size * 6ll);
 
-                    TripletContainer tripletList{get_triplets(A_size)};
+                    TripletContainer tripletList{get_triplets(A_size, tau)};
                     assert(std::all_of(
                         tripletList.cbegin(), 
                         tripletList.cend(), 
@@ -201,7 +197,7 @@ namespace GPN
                     const auto tau_factor,
                     const auto A_size) const
                 {
-                    RHS_t rhs{RHS_t::Zero(upper_block.rows() + 1ll)};
+                    RHS_t rhs{RHS_t::Zero(A_size)};
                     rhs.topRows(A_size-1ll) = (state.cur_state.array() * tau_factor)
                                           .reshaped(A_size, 1ll)
                                           .matrix();
