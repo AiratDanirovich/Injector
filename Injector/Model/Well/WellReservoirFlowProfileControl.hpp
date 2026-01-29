@@ -105,9 +105,9 @@ namespace GPN
                 typename History_t,
                 typename Grid2D_t,
                 typename CrossFlow_t>
-            struct WellReservoirFlowProfileControl : 
-                public CrossFlow_t, 
-                public DefaultWellNumerics<0ll>
+            struct WellReservoirFlowProfileControl
+                : public CrossFlow_t,
+                  public DefaultWellNumerics<0ll>
             {
                 using functor_type = RFPControlFunctorBC<History_t, Grid2D_t>;
                 using hydro_bc_type = RFPControlBC;
