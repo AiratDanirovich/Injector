@@ -174,11 +174,11 @@ namespace GPN
                 template <typename HistoryRecord_t>
                 StepPropertyContainer get_pressure_at_sandface(
                     const HistoryRecord_t &record,
-                    const auto &) const
+                    const auto &collector_pressure) const
                 {
                     // Pressure at the level of NON-permeable layers is assumed zero.
                     // Pressure at permeable layers is equal to history->pressure()
-                    return StepPropertyContainer::Constant(size, record.pressure) * is_permeable.log_vals;
+                    return StepPropertyContainer::Constant(size, P_bot(record, collector_pressure)) * is_permeable.log_vals;
                 }
 
                 template <typename HistoryRecord_t>
