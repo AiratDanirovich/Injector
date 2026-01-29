@@ -54,8 +54,12 @@ namespace GPN
                         values.row(row) = buffer*rates_factory.fluid.JT;
                     }
                 }
+                
+                for(auto row{0ll}; row < values.rows(); ++row)
+                    for(auto col{0ll}; col < values.cols(); ++col)
+                        assert(!std::isnan(values(row,col)) && !std::isinf(values(row,col)));
 
-                return JT_SpatialComponent{values, grid2D_ptr};
+                return JT_SpatialComponent{std::move(values), grid2D_ptr};
             }
             
             static auto create_temporal(
@@ -79,6 +83,10 @@ namespace GPN
                 // inside the sandface is assumed zero
                 values.leftCols(rates_factory.grid2D_rocks->l_margin) = 0.0;
 
+                for(auto row{0ll}; row < values.rows(); ++row)
+                    for(auto col{0ll}; col < values.cols(); ++col)
+                        assert(!std::isnan(values(row,col)) && !std::isinf(values(row,col)));
+                        
                 return JT_SpatialComponent{std::move(values), grid2D_ptr};
             }
         };

@@ -158,6 +158,24 @@ namespace GPN
                     // update types of boundary conditions
                     bc.set_bc_type(cur_time + tau);
                     applyBC(A, rhs);
+                    
+                    // if (!std::all_of(
+                    //         rhs.cbegin(),
+                    //         rhs.cend(),
+                    //         [](const auto &v)
+                    //         {
+                    //             return !std::isnan(v) && !std::isinf(v);
+                    //         }))
+                    //     std::cout << "rhs:\n"
+                    //               << rhs.transpose() << std::endl;
+
+                    assert(std::all_of(
+                        rhs.cbegin(),
+                        rhs.cend(),
+                        [](const auto &v)
+                        {
+                            return !std::isnan(v) && !std::isinf(v);
+                        }));
 
                     state.cur_state = solve_linear_problem(A, rhs).array().reshaped(first_coord_size, second_coord_size);
 

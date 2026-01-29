@@ -96,12 +96,21 @@ namespace GPN
                         first_size + 1ll,
                         second_size)};
                 axes1_value.leftCols(3ll) = well->flow_axes1_value;
+                // other verticle flow components are zero
+
+                for (auto row{0ll}; row < axes1_value.leftCols(3ll).rows(); ++row)
+                    for (auto col{0ll}; col < axes1_value.leftCols(3ll).cols(); ++col)
+                        assert(!std::isnan(axes1_value(row, col)) && !std::isinf(axes1_value(row, col)));
 
                 FaceValuesContainer axes2_value{
                     FaceValuesContainer::Zero(
                         first_size,
                         second_size + 1ll)};
                 axes2_value.leftCols(4ll) = well->flow_axes2_value;
+
+                for (auto row{0ll}; row < axes2_value.leftCols(4ll).rows(); ++row)
+                    for (auto col{0ll}; col < axes2_value.leftCols(4ll).cols(); ++col)
+                        assert(!std::isnan(axes2_value(row, col)) && !std::isinf(axes2_value(row, col)));
 
                 // face values of mobility are not defined at the domain boundaries
                 assert(mobility.face_vals_axes1.rows() == first_size - 1ll);
@@ -112,7 +121,15 @@ namespace GPN
 
                 const auto &P{get_pressure_field()};
                 for (auto col{Grid2D_t::l_margin + 1ll}, count{0ll}; count < second_size_rock; ++col, ++count)
+                {
+                    for (auto row{0ll}; row < mobility_factor.rows(); ++row)
+                    {
+                        assert(!std::isnan(mobility_factor(row, count)) && !std::isinf(mobility_factor(row, count)));
+                        assert(!std::isnan(P.value(row,col-1ll)) && !std::isinf(P.value(row,col-1ll)));
+                        assert(!std::isnan(P.value(row,col)) && !std::isinf(P.value(row,col)));
+                    }
                     axes2_value.col(col) = mobility_factor.col(count) * (P.col(col - 1ll) - P.col(col));
+                }
 
                 // volumetric flow field in two directions is calculated,
                 // once the pressure field is calculated
