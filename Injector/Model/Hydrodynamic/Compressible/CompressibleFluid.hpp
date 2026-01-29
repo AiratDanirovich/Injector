@@ -82,6 +82,10 @@ namespace GPN
                     well.get_pressure_at_sandface(
                         history_record, rock_P);
 
+                for (auto row{0ll}; row < out.rows(); ++row)
+                    for (auto col{0ll}; col < out.cols(); ++col)
+                        assert(!std::isnan(out(row, col)) && !std::isinf(out(row, col)));
+                        
                 P_prev = P;
 
                 P = std::make_shared<Properties::Pressure<OriginalGrid>>(

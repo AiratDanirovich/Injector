@@ -163,19 +163,35 @@ namespace GPN
 
             const auto &get_heat_flow_in_axes1_pos() const
             {
-                return heat_flow_field->axes1_as_face_normal_pos;
+                const auto& values{heat_flow_field->axes1_as_face_normal_pos};
+                for(auto row{0ll}; row < values.rows(); ++row)
+                    for(auto col{0ll}; col < values.cols(); ++col)
+                        assert(!std::isnan(values(row,col)) && !std::isinf(values(row,col)));
+                return values;
             }
             const auto &get_heat_flow_in_axes2_pos() const
             {
-                return heat_flow_field->axes2_as_face_normal_pos;
+                const auto& values{heat_flow_field->axes2_as_face_normal_pos};
+                for(auto row{0ll}; row < values.rows(); ++row)
+                    for(auto col{0ll}; col < values.cols(); ++col)
+                        assert(!std::isnan(values(row,col)) && !std::isinf(values(row,col)));
+                return values;
             }
             const auto &get_heat_flow_in_axes1_neg() const
             {
-                return heat_flow_field->axes1_as_face_normal_neg;
+                const auto& values{heat_flow_field->axes1_as_face_normal_neg};
+                for(auto row{0ll}; row < values.rows(); ++row)
+                    for(auto col{0ll}; col < values.cols(); ++col)
+                        assert(!std::isnan(values(row,col)) && !std::isinf(values(row,col)));
+                return values;
             }
             const auto &get_heat_flow_in_axes2_neg() const
             {
-                return heat_flow_field->axes2_as_face_normal_neg;
+                const auto& values{heat_flow_field->axes2_as_face_normal_neg};
+                for(auto row{0ll}; row < values.rows(); ++row)
+                    for(auto col{0ll}; col < values.cols(); ++col)
+                        assert(!std::isnan(values(row,col)) && !std::isinf(values(row,col)));
+                return values;
             }
             const auto &get_pressure_field() const
             {
