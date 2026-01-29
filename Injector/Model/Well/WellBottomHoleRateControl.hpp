@@ -96,6 +96,7 @@ namespace GPN
                 {
                     bc_types[west_id] = BoundaryCondition::BCType::third;
                     bc_types[east_id] = BoundaryCondition::BCType::first;
+                    east_bc_type = std::vector<BoundaryCondition::BCType>(grid->first_coord().mesh_size(), bc_types[east_id]);
                 }
                 void set_bc_type(const RealType t)
                 {
