@@ -86,7 +86,7 @@ namespace GPN
                 for(auto row{0ll}; row < values.rows(); ++row)
                     for(auto col{0ll}; col < values.cols(); ++col)
                         assert(!std::isnan(values(row,col)) && !std::isinf(values(row,col)));
-                        
+
                 return JT_SpatialComponent{std::move(values), grid2D_ptr};
             }
         };
