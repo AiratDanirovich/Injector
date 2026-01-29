@@ -10,6 +10,7 @@
 #include <Injector/Properties/Logs.hpp>
 
 #include <Injector/Solver/BoundaryConditions.hpp>
+#include <Injector/Solver/FullImplicit/WellRateControlSolver.hpp>
 
 namespace GPN
 {
@@ -115,6 +116,15 @@ namespace GPN
             {
                 using functor_type = BotHoleRateFunctorBC<History_t, Grid2D_t>;
                 using hydro_bc_type = BotHoleRateBC;
+
+                template <
+                    typename Grid2D_t,
+                    typename Capacity_t,
+                    typename ConvectionTermFactory_t,
+                    typename BC_t>
+                using solver_type =
+                    EqSolver::FullImplicit::WellRateControlSolver<
+                        Grid2D_t, Capacity_t, ConvectionTermFactory_t, BC_t, WellBottomHoleRateControl<History_t, Grid2D_t, CrossFlow_t>>;
 
                 const ptr<const hydro_bc_type> hydro_bc;
 

@@ -10,6 +10,7 @@
 #include <Injector/Properties/Logs.hpp>
 
 #include <Injector/Solver/BoundaryConditions.hpp>
+#include <Injector/Solver/FullImplicit/Solver.hpp>
 
 namespace GPN
 {
@@ -111,6 +112,15 @@ namespace GPN
             {
                 using functor_type = BotHolePresFunctorBC<History_t, Grid2D_t>;
                 using hydro_bc_type = BotHolePresBC;
+                
+                template <
+                    typename Grid2D_t,
+                    typename Capacity_t,
+                    typename ConvectionTermFactory_t,
+                    typename BC_t>
+                using solver_type =
+                    EqSolver::FullImplicit::Solver<
+                        Grid2D_t, Capacity_t, ConvectionTermFactory_t, BC_t>;
 
                 const ptr<const hydro_bc_type> hydro_bc;
 
