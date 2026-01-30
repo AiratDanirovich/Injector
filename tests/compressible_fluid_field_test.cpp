@@ -304,7 +304,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             const auto flux2{rates_factory.get_heat_flow_in_axes2_neg() + rates_factory.get_heat_flow_in_axes2_pos()};
             CHECK(flux2.rows() == grid_z.mesh_size());
             CHECK(flux2.cols() == grid_r.dual_size());
-            const auto &mobility2{pressure_field.mobility.face_vals_axes2};
+            const auto &mobility2{pressure_field.face_mobility.face_vals_axes2};
             const auto wfp{well->get_WFP(history->get_current_record())};
             CHECK(wfp.rows() == grid_z.mesh_size());
             const auto cement_flow{well->get_verticle_cement_flow(history->get_current_record())};

@@ -3,6 +3,8 @@
 #include <memory>
 #include <vector>
 
+#include <Injector/Grids/Defines.h>
+
 #include <Injector/Properties/PhysicalField.hpp>
 
 #include <Injector/Model/Well/WellReservoirFlowProfileControl.hpp>
@@ -12,6 +14,7 @@
 
 #include <Injector/Solver/FullImplicit/Solver.hpp>
 #include <Injector/Solver/FullImplicit/WellRateControlSolver.hpp>
+#include <Injector/Solver/State2D.hpp>
 
 namespace GPN
 {
