@@ -91,7 +91,7 @@ namespace GPN
                 {
                     time_moments.push_back(cur_time);
                     states.emplace_back(state);
-                    P_bots.emplace_back(P_bot);
+                    P_bots.emplace_back(P_bot_memory);
                 }
 
                 TripletContainer set_triplets(const ptrdiff_t A_size, const RealType tau)
