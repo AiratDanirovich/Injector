@@ -105,8 +105,7 @@ namespace GPN
                     // take reservoir capacity into account
                     const Eigen::ArrayXX<RealType> tau_factor{
                         time_factor.Divide(tau).eval()};
-                    assert(tau_factor.rows() == A_size - 1ll);
-                    assert(tau_factor.cols() == A_size - 1ll);
+                    assert(tau_factor.rows()*tau_factor.cols() == A_size - 1ll);
                     // append capacity to the matri diagonal
                     for (auto row{0ll}; row < tau_factor.rows(); ++row)
                         for (auto col{0ll}; col < tau_factor.cols(); ++col)
@@ -178,7 +177,7 @@ namespace GPN
                     applyBC(A, rhs);
 
                     // 1D array
-                    const auto solution{
+                    const Eigen::VectorX<RealType> solution{
                         solve_linear_problem(A, rhs).array()};
                     
                     for(auto it{solution.cbegin()}; it != solution.cend(); ++it)
@@ -186,10 +185,10 @@ namespace GPN
                         assert(!std::isnan(*it) && !std::isinf(*it));
                     }
 
-                    const auto temp{solution.topRows(first_coord_size*second_coord_size).
+                    const auto temp{solution.topRows(A_size-1ll).
                         reshaped(first_coord_size, second_coord_size)};
 
-                    state.cur_state = solution.topRows(first_coord_size*second_coord_size).
+                    state.cur_state = solution.topRows(A_size-1ll).
                         reshaped(first_coord_size, second_coord_size);
                     P_bot_memory = solution.bottomRows(1ll)(0ll);
 
@@ -205,7 +204,7 @@ namespace GPN
                 {
                     RHS_t rhs{RHS_t::Zero(A_size)};
                     rhs.topRows(A_size-1ll) = (state.cur_state.array() * tau_factor)
-                                          .reshaped(A_size, 1ll)
+                                          .reshaped(A_size-1ll, 1ll)
                                           .matrix();
                     rhs.bottomRows(1ll)(0ll) = well.history->rate();
                     return rhs;

@@ -113,11 +113,11 @@ namespace GPN
                         assert(!std::isnan(axes2_value(row, col)) && !std::isinf(axes2_value(row, col)));
 
                 // face values of mobility are not defined at the domain boundaries
-                assert(mobility.face_vals_axes1.rows() == first_size - 1ll);
-                assert(mobility.face_vals_axes1.cols() == second_size - Grid2D_t::l_margin);
-                assert(mobility.face_vals_axes2.rows() == first_size);
+                assert(face_mobility.face_vals_axes1.rows() == first_size - 1ll);
+                assert(face_mobility.face_vals_axes1.cols() == second_size - Grid2D_t::l_margin);
+                assert(face_mobility.face_vals_axes2.rows() == first_size);
                 const auto second_size_rock{second_size - Grid2D_t::l_margin - 1ll};
-                assert(mobility.face_vals_axes2.cols() == second_size_rock);
+                assert(face_mobility.face_vals_axes2.cols() == second_size_rock);
 
                 const auto &P{get_pressure_field()};
                 for (auto col{Grid2D_t::l_margin + 1ll}, count{0ll}; count < second_size_rock; ++col, ++count)
