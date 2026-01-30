@@ -60,7 +60,7 @@ namespace GPN
                     const LaplaceFactor_t &laplace_factor,
                     const cptr<Grid2D_t> grid,
                     const Capacity_t &time_factor,
-                    ptr<ConvectionTermFactory_t> convection_factory,
+                    ptr<ConvectionTermFactory_t> /*convection_factory*/,
                     const State::State2D &initial_state,
                     const BC_t &bc,
                     const Well_t &well,
@@ -70,7 +70,7 @@ namespace GPN
                       splitY{laplace_factor, grid},
                       time_factor{time_factor, *grid},
                       grid{grid},
-                      convection_factory{convection_factory},
+                      // convection_factory{convection_factory},
                       first_coord_size{grid->first_coord().mesh_size()},
                       second_coord_size{grid->second_coord().mesh_size()},
                       state{initial_state}, // init with initial condition
@@ -331,7 +331,7 @@ namespace GPN
                 const TemporalTerm time_factor;
                 double cur_time;
                 // by reference!
-                ptr<ConvectionTermFactory_t> convection_factory;
+                // ptr<ConvectionTermFactory_t> convection_factory;
                 // required to keep grid in memory ////
                 const cptr<Grid2D_t> grid; //////////////
                 ///////////////////////////////////////
