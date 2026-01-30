@@ -243,7 +243,7 @@ namespace GPN
                     const auto rate{record.rate};
                     const RealType term1{(PI * collector_pressure.col(0ll)).sum()};
                     assert(!std::isnan(rate) && !std::isinf(rate));
-                    const auto out{(term1 - rate) / PI.sum()};
+                    const auto out{(term1 + rate) / PI.sum()};
                     // std::cout << "P_bot: " << out << std::endl;
                     return out;
                 }
