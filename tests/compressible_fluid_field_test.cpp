@@ -147,7 +147,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             grid2D_rocks};
     const auto &medium_compressibility_field{
         rock_field_props.medium_compressibility};
-        
+
 #pragma region MAKE-HISTORY
     const ptr<History> history{make_shared<History>(make_history(data))};
 #pragma endregion
@@ -242,14 +242,43 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 {
                     bool flag{(is_permeable(row) == 1.0) || (is_permeable(row) == 0.0)};
                     REQUIRE(flag);
+#pragma region VERIFY-PERMEABLE-LAYERS
                     if (is_permeable(row) == 1.0)
                     {
-#pragma region VERIFY-PERMEABLE-LAYERS
+#pragma region SANDFACE-BOUNDARY
                         {
                             const auto col{0ll};
                             const auto l{grid2D_rocks->to_linear(row, col)};
-                        }
+                            for (auto idx{0ll}; idx < l; ++idx)
+                                CHECK(A.coeff(l, idx) == 0.0);
+                            {
+                                const auto idx{l};
+                                const auto val{
+                                    grid2D_rocks->volume(row, col) *
+                                        medium_compressibility_field.value(row, col) / step +
+                                    2.0 * pi * permeability(row) * cell_thickness(row) / water.viscosity *
+                                        (1.0 / std::log(grid_rocks_r.mesh_nodes(col + 1ll) / grid_rocks_r.mesh_nodes(col)))};
 
+                                CHECK_THAT(A.coeff(l, idx),
+                                           WithinRel(val, exact_tol));
+                            }
+
+                            for (auto idx{l + 1ll}; idx < l + nz; ++idx)
+                                CHECK(A.coeff(l, idx) == 0.0);
+                            {
+                                const auto idx{l+nz};
+                                const auto val{
+                                    -2.0 * pi * permeability(row) * cell_thickness(row) / water.viscosity *
+                                        (1.0 / std::log(grid_rocks_r.mesh_nodes(col + 1ll) / grid_rocks_r.mesh_nodes(col)))};
+
+                                CHECK_THAT(A.coeff(l, idx),
+                                           WithinRel(val, exact_tol));
+                            }
+
+                            for (auto idx{l + nz + 1ll}; idx < A.cols(); ++idx)
+                                CHECK(A.coeff(l, idx) == 0.0);
+                        }
+#pragma endregion
                         for (auto col{1ll}; col < grid_rocks_r.mesh_size() - 1ll; ++col)
                         {
                             const auto l{grid2D_rocks->to_linear(row, col)};
@@ -290,6 +319,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                             for (auto idx{l + nz + 1ll}; idx < A.cols(); ++idx)
                                 CHECK(A.coeff(l, idx) == 0.0);
                         }
+#pragma region EXTERNAL-DOMAIN-BOUNDARY
                         {
                             const auto col{grid_rocks_r.mesh_size() - 1ll};
                             const auto l{grid2D_rocks->to_linear(row, col)};
@@ -301,9 +331,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                         }
 #pragma endregion
                     }
+#pragma endregion
+#pragma region VERIFY-NON_PERMEABLE-LAYERS
                     else
                     {
-#pragma region VERIFY-NON_PERMEABLE-LAYERS
                         for (auto col{0ll}; col < grid_rocks_r.mesh_size() - 1ll; ++col)
                         {
                             const auto l{grid2D_rocks->to_linear(row, col)};
@@ -314,6 +345,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                             for (auto idx{l + 1ll}; idx < A.cols(); ++idx)
                                 CHECK(A.coeff(l, idx) == 0.0);
                         }
+#pragma region EXTERNAL-DOMAIN-BOUNDARY
                         {
                             const auto col{grid_rocks_r.mesh_size() - 1ll};
                             const auto l{grid2D_rocks->to_linear(row, col)};
@@ -325,6 +357,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                         }
 #pragma endregion
                     }
+#pragma endregion
                 }
             }
 #pragma endregion
