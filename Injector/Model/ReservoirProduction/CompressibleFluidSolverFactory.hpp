@@ -34,7 +34,7 @@ namespace GPN
         template <typename Well_t>
         const static auto make_initial_state(const Well_t &well)
         {
-            return ICFactory(well.history->start_time, well.grid2D_rocks, well.rock_field_props.base_hydrodynamics.ext_pressure);
+            return Hydrodynamic::ICFactory(well.history->start_time, well.grid2D_rocks, well.rock_field_props.base_hydrodynamics.ext_pressure);
         }
 
     public:
