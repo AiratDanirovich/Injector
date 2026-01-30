@@ -56,6 +56,7 @@ using VR = std::vector<GPN::RealType>;
 
 const RealType pi{std::numbers::pi};
 const RealType tol{1e-8};
+const RealType exact_tol{1e-10};
 
 TEST_CASE("Solver", "SelfSimilarCyl")
 {
@@ -128,17 +129,25 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             permeability_stencils,
             grid_rocks_z};
 
+    const auto &is_permeable{core_logs.is_permeable};
+    const auto &permeability{core_logs.permeability};
+    const auto &cell_thickness{grid2D_rocks->first_coord().volumes()};
+
     Logs::Hydrodynamics::BaseHydrodynamics
         base_hydrodynamics(
             core_logs,
             medium_compressibility_stencils,
             ext_pressure_stencils);
+    const auto &ext_pressure{base_hydrodynamics.ext_pressure};
 
     Properties::Rocks::RocksProps
         rock_field_props{
             base_hydrodynamics,
             water,
             grid2D_rocks};
+    const auto &medium_compressibility_field{
+        rock_field_props.medium_compressibility};
+        
 #pragma region MAKE-HISTORY
     const ptr<History> history{make_shared<History>(make_history(data))};
 #pragma endregion
@@ -222,6 +231,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         for (size_t id{0ull}; id < internal_step_count; ++id, cur_time += step)
         {
             const auto t{cur_time + step};
+            const auto &P_prev{pressure_field.current_pressure().values()};
             rates_factory.set_flow_field(cur_time, step);
 #pragma region VERIFY-PRESSURE-PROBLEM-MATRIX
             const auto &A{pressure_field.get_solver()->get_problem_matrix()};
@@ -244,14 +254,14 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
             {
                 const auto rate{rfp(row)};
-                const auto p_ex{base_hydrodynamics.ext_pressure(row)};
+                const auto p_ex{ext_pressure(row)};
                 const auto h{grid_z.control_volumes(row)};
-                const auto k{core_logs.permeability(row)};
+                const auto k{permeability(row)};
                 const auto beta{base_hydrodynamics.medium_compressibility(row)};
                 // pressure is const inside completion
                 for (auto col{0ll}; col < 2ll; ++col)
                     CHECK(P(row, col) == P(row, 2ll));
-                if (core_logs.is_permeable(row) == 1.0)
+                if (is_permeable(row) == 1.0)
                 {     // in permeable layers
                     { // in the cement
                         auto col{2ll};
@@ -308,7 +318,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 {
                     for (auto col{0ll}; col < grid_r.mesh_size(); ++col)
                         CHECK(
-                            P(row, col) == base_hydrodynamics.ext_pressure(row));
+                            P(row, col) == ext_pressure(row));
                 }
             }
 #pragma endregion
@@ -331,7 +341,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 #pragma region HORIZONTAL-RATES
             for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
             {
-                const auto k{core_logs.permeability(row)};
+                const auto k{permeability(row)};
                 const auto h{grid_z.volume(row)};
 
                 if (core_logs.is_permeable(row) == 1.0)
@@ -397,8 +407,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     {
                         const auto r_max{grid_r.dual_back()};
                         const auto thickness{grid2D_rocks->first_coord().volume(row)};
-                        const auto k{core_logs.permeability(row)};
-                        const auto p_ext{base_hydrodynamics.ext_pressure(row)};
+                        const auto k{permeability(row)};
+                        const auto p_ext{ext_pressure(row)};
                         for (auto col{3ll}; col < grid_r.mesh_size() - 1ll; ++col)
                         {
                             const auto r{grid_r.mesh_nodes(col)};
