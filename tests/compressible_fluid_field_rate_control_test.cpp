@@ -17,9 +17,7 @@
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Well/Well.hpp>
-#include <Injector/Model/Well/WellReservoirFlowProfileControl.hpp>
 #include <Injector/Model/Well/WellBottomHoleRateControl.hpp>
-#include <Injector/Model/Well/WellBottomHolePressureControl.hpp>
 
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleRatesFactory.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluid.hpp>
@@ -50,7 +48,7 @@ using namespace GPN::Grids;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
 using namespace GPN::Hydrodynamic;
-using namespace GPN::Wells::ResFlowProfileControl;
+using namespace GPN::Wells::BotHoleRateControl;
 
 using VR = std::vector<GPN::RealType>;
 
@@ -152,21 +150,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const ptr<History> history{make_shared<History>(make_history(data))};
 #pragma endregion
 #pragma region MAKE-WELL
-    const Logs::RFP_weights RFP_w{
-        RFPFactory::create_from_container<Logs::RFP_weights>(
-            StepProperty{RFP_weights_stencils},
-            core_logs.is_permeable)};
     const CrossFlows cross_flows{
-        from_coords, to_layers, RFP_w, core_logs.is_perforated};
-    const auto WFP_weights{
-        create_WFP_weights(
-            core_logs.is_perforated,
-            RFP_w,
-            cross_flows.cross_flow_handler)};
-    // const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
+        from_coords, to_layers, core_logs.is_perforated};
 
     using Well_t =
-        decltype(WellReservoirFlowProfileControl{
+        decltype(WellBottomHoleRateControl{
             rock_field_props,
             cross_flows,
             history,
