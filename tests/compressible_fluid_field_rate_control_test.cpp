@@ -236,12 +236,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             rates_factory.set_flow_field(cur_time, step);
             const auto record{history->get_current_record()};
             const auto collector_pressure{ptr_pressure_field->get_rock_pressure()};
-            const RealType P_bot{well->P_bot(record, collector_pressure)};
 #pragma region VERIFY-PRESSURE-PROBLEM-MATRIX
             {
                 const auto &A{pressure_field.get_solver()->get_problem_matrix()};
 
                 const auto nz{grid_rocks_z.mesh_size()};
+                const auto nr{grid_rocks_r.mesh_size()};
                 for (auto row{0ll}; row < grid_rocks_z.mesh_size(); ++row)
                 {
                     bool flag{(is_permeable(row) == 1.0) || (is_permeable(row) == 0.0)};
@@ -271,19 +271,19 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                             for (auto idx{l + 1ll}; idx < l + nz; ++idx)
                                 CHECK(A.coeff(l, idx) == 0.0);
                             {
-                                const auto idx{l+nz};
+                                const auto idx{l + nz};
                                 const auto val{
                                     -2.0 * pi * permeability(row) * cell_thickness(row) / water.viscosity *
-                                        (1.0 / std::log(grid_rocks_r.mesh_nodes(col + 1ll) / grid_rocks_r.mesh_nodes(col)))};
+                                    (1.0 / std::log(grid_rocks_r.mesh_nodes(col + 1ll) / grid_rocks_r.mesh_nodes(col)))};
 
                                 CHECK_THAT(A.coeff(l, idx),
                                            WithinRel(val, exact_tol));
                             }
 
-                            for (auto idx{l + nz + 1ll}; idx < A.cols()-1ll; ++idx)
+                            for (auto idx{l + nz + 1ll}; idx < A.cols() - 1ll; ++idx)
                                 CHECK(A.coeff(l, idx) == 0.0);
                             { // check coef due to unknown P_bot
-                                const auto idx{A.cols()-1ll};
+                                const auto idx{A.cols() - 1ll};
                                 const auto val{-PI(row)};
                                 CHECK_THAT(A.coeff(l, idx),
                                            WithinRel(val, exact_tol));
@@ -370,6 +370,17 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     }
 #pragma endregion
                 }
+
+#pragma region P_BOT-PRESSURE-EQN
+                {
+                    const auto l{A.rows() - 1ll};
+                    for (auto idx{0ll}; idx < nz; ++idx)
+                        CHECK(A.coeff(l, idx) == -PI(idx));
+                    for (auto idx{nz}; idx < A.cols() - 1ll; ++idx)
+                        CHECK(A.coeff(l, idx) == 0.0);
+                    CHECK(A.coeff(l, l) == PI.sum());
+                }
+#pragma endregion
             }
 #pragma endregion
 
@@ -384,7 +395,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                             const auto col{0ll};
                             const auto l{grid2D_rocks->to_linear(row, col)};
                             const auto val{collector_pressure_prev(row, col) * grid2D_rocks->volume(row, col) *
-                                               medium_compressibility_field.value(row, col) / step};
+                                           medium_compressibility_field.value(row, col) / step};
                             CHECK_THAT(rhs(l),
                                        WithinRel(val, exact_tol));
                         }
@@ -412,8 +423,18 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                         }
                     }
                 }
+#pragma region P_BOT-PRESSURE-EQN
+                {
+                    const auto l{rhs.rows() - 1ll};
+                    CHECK(rhs(l) == record.rate);
+                }
+#pragma endregion
             }
 #pragma endregion
+
+            const RealType P_bot{well->P_bot(record, collector_pressure)};
+            const RealType P_bot_solver{pressure_field.get_solver()->solver->P_bot()};
+            CHECK_THAT(P_bot, WithinRel(P_bot_solver, exact_tol));
 
             const auto rfp{well->get_RFP(history->get_current_record())};
 #pragma region CHECK-PRESSURE
@@ -427,8 +448,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 const auto k{permeability(row)};
                 const auto beta{base_hydrodynamics.medium_compressibility(row)};
                 // pressure is const inside completion
+                const auto P_sandface{well->get_pressure_at_sandface(record, collector_pressure)};
+                CHECK(P_sandface(row) == P(row, 2ll));
                 for (auto col{0ll}; col < 2ll; ++col)
+                {
                     CHECK(P(row, col) == P(row, 2ll));
+                }
                 if (is_permeable(row) == 1.0)
                 {     // in permeable layers
                     { // in the cement
@@ -442,44 +467,16 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                                                                std::log(grid_r.mesh_nodes(3ll) / completion.sandface_radius(row)),
                                        tol));
                     }
-                    // outside the cement
-                    const auto piezo_cond{k / (mu * beta)};
-                    CHECK(
-                        std::isnan(piezo_cond) == false);
-                    CHECK(
-                        std::isinf(piezo_cond) == false);
-                    if (r_well * r_well < 0.0001 * piezo_cond * t)
+                    // external contour
                     {
-                        ++counter;
-                        for (auto col{left_margin}; col < grid_r.mesh_size() - 1ll; ++col)
-                        {
-                            const auto r{grid_r.mesh_nodes(col)};
-                            const auto ei{-std::expint(-r * r / (4.0 * piezo_cond * t))};
-                            const auto ref_val{
-                                rate * mu /
-                                (4.0 * pi * k * h) * ei};
-                            const auto calc_val{P(row, col) - p_ex};
-                            const auto stationary_p{-rate * mu /
-                                                    (2.0 * pi * k * h) *
-                                                    std::log(r / rMax)};
-                            // INFO("row: " << row << "; col: " << col
-                            // << "; r: " << r <<
-                            // "; ratio: " << ref_val / calc_val);
-                            // CHECK_THAT(
-                            //     calc_val/1e5,
-                            //     WithinRel(ref_val/1e5,
-                            //               tol));
-                        }
-                        {
-                            const auto col{grid_r.mesh_size() - 1ll};
-                            const auto r{grid_r.mesh_nodes(col)};
-                            const auto calc_val{P(row, col) - p_ex};
-                            INFO("row: " << row << "; r: " << r);
-                            CHECK_THAT(
-                                calc_val / 1e5,
-                                WithinAbs(0.0,
-                                          tol));
-                        }
+                        const auto col{grid_r.mesh_size() - 1ll};
+                        const auto r{grid_r.mesh_nodes(col)};
+                        const auto calc_val{P(row, col) - p_ex};
+                        INFO("row: " << row << "; r: " << r);
+                        CHECK_THAT(
+                            calc_val / 1e5,
+                            WithinAbs(0.0,
+                                      exact_tol*100));
                     }
                 }
                 else

@@ -120,13 +120,13 @@ namespace GPN
                     assemble_x_noconvection(tripletList);
 #pragma endregion
 #pragma endregion
-#pragma region WELL-CONDITION
+#pragma region WELL-BOUNDARY-CONDITION
                     // take well condition into account
                     const auto &PI{well.PI}; // well productivity index
                     // set the P_bot coefficient
                     const auto matrix_row{A_size - 1ll}; // id of unknown bottomhole pressure
                     // set last matrix diag element
-                    tripletList.emplace_back(matrix_row, matrix_row, -PI.sum());
+                    tripletList.emplace_back(matrix_row, matrix_row, PI.sum());
                     // set P_i,3 coeffs if non-zero
                     for (auto row{0}; row < PI.rows(); ++row)
                     { // loop over every row of the sandface
@@ -134,9 +134,9 @@ namespace GPN
                         {
                             // set last matrix row
                             const auto matrix_col{grid->to_linear(row, 0ll)};
-                            tripletList.emplace_back(matrix_row, matrix_col, PI(row));
+                            tripletList.emplace_back(A_size - 1ll, matrix_col, -PI(row));
                             // set last matrix col
-                            tripletList.emplace_back(matrix_col, matrix_row, -PI(row));
+                            tripletList.emplace_back(matrix_col, A_size - 1ll, -PI(row));
                         }
                     }
 #pragma endregion
