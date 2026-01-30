@@ -143,7 +143,7 @@ namespace GPN
                     return tripletList;
                 }
 
-                auto advance(const RealType tau)
+                void advance(const RealType tau)
                 {
                     ptrdiff_t A_size{first_coord_size * second_coord_size + 1ll};
                     A = Eigen::SparseMatrix<RealType> {// ctor for matrix, reservoir + bottomwell pressure
@@ -193,8 +193,6 @@ namespace GPN
                     P_bot_memory = solution.bottomRows(1ll)(0ll);
 
                     cur_time += tau;
-
-                    return std::pair{std::move(A), std::move(rhs)};
                 }
 
                 Eigen::SparseMatrix<RealType> A;

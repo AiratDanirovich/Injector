@@ -79,7 +79,7 @@ namespace GPN
                     states.emplace_back(state);
                 }
 
-                auto advance(const RealType tau)
+                void advance(const RealType tau)
                 {
                     if constexpr (std::is_same_v<ConvectionTermFactory_t, EmptyConvectionField> == false)
                     { // there is convection field
@@ -186,8 +186,6 @@ namespace GPN
                         }
 
                     cur_time += tau;
-
-                    return std::pair{std::move(A), std::move(rhs)};
                 }
 
                 Eigen::SparseMatrix<RealType> A;
