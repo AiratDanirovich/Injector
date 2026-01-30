@@ -61,6 +61,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     ifstream f("heatflow_test_data.json");
     REQUIRE(f.is_open());
     json data = json::parse(f);
+    data["history"]["control_type"] = "bottomhole_rate";
 
     /*collector*/
     const auto from_coords{data["collector"]["cross_flow"]["from_coord"].get<VR>()};
@@ -167,6 +168,18 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             history,
             grid2D_rocks)};
 
+    const auto &PI{well->PI};
+    for (auto row{0ll}; row < grid_rocks_z.mesh_size(); ++row)
+    {
+        const auto r3{grid_rocks_r.mesh_nodes(0ll)};
+        const auto sandface{grid_rocks_r.dual_nodes(0ll)};
+        const auto val{
+            2.0 * pi * cell_thickness(row) * permeability(row) / water.viscosity /
+            std::log(r3 / sandface)};
+        CHECK_THAT(PI(row), WithinRel(val, exact_tol));
+        CHECK(PI(row) >= 0.0);
+    }
+
 #pragma endregion
     using CompressibleFluidField_t =
         decltype(CompressibleFluidField{
@@ -219,8 +232,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         for (size_t id{0ull}; id < internal_step_count; ++id, cur_time += step)
         {
             const auto t{cur_time + step};
-            const auto &P_prev{pressure_field.current_pressure().values()};
+            const auto &collector_pressure_prev{ptr_pressure_field->get_rock_pressure()};
             rates_factory.set_flow_field(cur_time, step);
+            const auto record{history->get_current_record()};
+            const auto collector_pressure{ptr_pressure_field->get_rock_pressure()};
+            const RealType P_bot{well->P_bot(record, collector_pressure)};
 #pragma region VERIFY-PRESSURE-PROBLEM-MATRIX
             {
                 const auto &A{pressure_field.get_solver()->get_problem_matrix()};
@@ -245,7 +261,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                                     grid2D_rocks->volume(row, col) *
                                         medium_compressibility_field.value(row, col) / step +
                                     2.0 * pi * permeability(row) * cell_thickness(row) / water.viscosity *
-                                        (1.0 / std::log(grid_rocks_r.mesh_nodes(col + 1ll) / grid_rocks_r.mesh_nodes(col)))};
+                                        (1.0 / std::log(grid_rocks_r.mesh_nodes(col + 1ll) / grid_rocks_r.mesh_nodes(col))) +
+                                    PI(row)};
 
                                 CHECK_THAT(A.coeff(l, idx),
                                            WithinRel(val, exact_tol));
@@ -263,8 +280,14 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                                            WithinRel(val, exact_tol));
                             }
 
-                            for (auto idx{l + nz + 1ll}; idx < A.cols(); ++idx)
+                            for (auto idx{l + nz + 1ll}; idx < A.cols()-1ll; ++idx)
                                 CHECK(A.coeff(l, idx) == 0.0);
+                            { // check coef due to unknown P_bot
+                                const auto idx{A.cols()-1ll};
+                                const auto val{-PI(row)};
+                                CHECK_THAT(A.coeff(l, idx),
+                                           WithinRel(val, exact_tol));
+                            }
                         }
 #pragma endregion
                         for (auto col{1ll}; col < grid_rocks_r.mesh_size() - 1ll; ++col)
@@ -353,30 +376,27 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 #pragma region VERIFY-PRESSURE-PROBLEM-RHS
             {
                 const auto &rhs{pressure_field.get_solver()->get_problem_rhs()};
-                const auto rfp{well->get_RFP(history->get_current_record())};
-
                 for (auto row{0ll}; row < grid_rocks_z.mesh_size(); ++row)
                 {
                     if (is_permeable(row) == 1.0)
                     {
-                        {
+                        { // sandface boundary
                             const auto col{0ll};
                             const auto l{grid2D_rocks->to_linear(row, col)};
-                            const auto val{P_prev(row, col) * grid2D_rocks->volume(row, col) *
-                                               medium_compressibility_field.value(row, col) / step +
-                                           rfp(row)};
+                            const auto val{collector_pressure_prev(row, col) * grid2D_rocks->volume(row, col) *
+                                               medium_compressibility_field.value(row, col) / step};
                             CHECK_THAT(rhs(l),
                                        WithinRel(val, exact_tol));
                         }
                         for (auto col{1ll}; col < grid_rocks_r.mesh_size() - 1ll; ++col)
                         {
                             const auto l{grid2D_rocks->to_linear(row, col)};
-                            const auto val{P_prev(row, col) * grid2D_rocks->volume(row, col) *
+                            const auto val{collector_pressure_prev(row, col) * grid2D_rocks->volume(row, col) *
                                            medium_compressibility_field.value(row, col) / step};
                             CHECK_THAT(rhs(l),
                                        WithinRel(val, exact_tol));
                         }
-                        {
+                        { // external contour
                             const auto col{grid_rocks_r.mesh_size() - 1ll};
                             const auto l{grid2D_rocks->to_linear(row, col)};
                             CHECK(rhs(l) == ext_pressure(row));
