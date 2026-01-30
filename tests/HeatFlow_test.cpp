@@ -348,7 +348,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             }
         }
     }
-
     SECTION("WellBottomHolePressureControl")
     {
         data["history"]["control_type"] = "bottomhole_pressure";
@@ -609,12 +608,5 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             }
         }
     }
-    // {
-    //     const auto &state = states.back();
-    //     std::string path{std::string{"T_"} + std::to_string(0) + std::string{".txt"}};
-    //     std::ofstream f{path};
 
-    //     f << ((state.cur_state /*- initial_temperature*/) / precision).round() * precision;
-    //     f.close();
-    // }
 }
