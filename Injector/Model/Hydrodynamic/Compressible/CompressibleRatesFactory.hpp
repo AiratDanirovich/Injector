@@ -54,10 +54,10 @@ namespace GPN
                       grid2D_rocks->grid2D->first_coord().mesh_size()},
                   second_size{
                       grid2D_rocks->grid2D->second_coord().mesh_size()},
-                  mobility{pressure_field->mobility},
+                  face_mobility{pressure_field->face_mobility},
                   mobility_factor{
                       set_mobility_factor(
-                          pressure_field->mobility.face_vals_axes2,
+                          pressure_field->face_mobility.face_vals_axes2,
                           grid2D_rocks->first_coord().control_volumes)},
                   solution{history}
             {
@@ -207,7 +207,7 @@ namespace GPN
             ptr<Hydrodynamics_t> pressure_field;
 
         protected:
-            const FaceProperties::Mobility<Grid2D_t> &mobility;
+            const FaceProperties::Mobility<Grid2D_t> &face_mobility;
             const FaceValuesContainer mobility_factor;
             const ptrdiff_t first_size, second_size;
 
