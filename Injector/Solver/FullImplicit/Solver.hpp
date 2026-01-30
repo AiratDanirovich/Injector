@@ -89,7 +89,7 @@ namespace GPN
 
                     ptrdiff_t A_size{first_coord_size * second_coord_size};
                     assert(A_size == grid->mesh_size());
-                    Eigen::SparseMatrix<RealType> A{// ctor for matrix
+                    A = Eigen::SparseMatrix<RealType>{// ctor for matrix
                                                     A_size,
                                                     A_size};
 
