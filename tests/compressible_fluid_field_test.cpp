@@ -234,18 +234,145 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             const auto &P_prev{pressure_field.current_pressure().values()};
             rates_factory.set_flow_field(cur_time, step);
 #pragma region VERIFY-PRESSURE-PROBLEM-MATRIX
-            const auto &A{pressure_field.get_solver()->get_problem_matrix()};
-
-            for (auto row{1ll}; row < grid_rocks_z.mesh_size() - 1ll; ++row)
             {
-                for (auto col{1ll}; col < grid_rocks_r.mesh_size() - 1ll; ++col)
+                const auto &A{pressure_field.get_solver()->get_problem_matrix()};
+
+                const auto nz{grid_rocks_z.mesh_size()};
+                for (auto row{0ll}; row < grid_rocks_z.mesh_size(); ++row)
                 {
+                    bool flag{(is_permeable(row) == 1.0) || (is_permeable(row) == 0.0)};
+                    REQUIRE(flag);
+                    if (is_permeable(row) == 1.0)
+                    {
+#pragma region VERIFY-PERMEABLE-LAYERS
+                        {
+                            const auto col{0ll};
+                            const auto l{grid2D_rocks->to_linear(row, col)};
+                        }
+
+                        for (auto col{1ll}; col < grid_rocks_r.mesh_size() - 1ll; ++col)
+                        {
+                            const auto l{grid2D_rocks->to_linear(row, col)};
+                            for (auto idx{0ll}; idx < l - nz; ++idx)
+                                CHECK(A.coeff(l, idx) == 0.0);
+                            {
+                                const auto idx{l - nz};
+                                const auto val{
+                                    -2.0 * pi * permeability(row) * cell_thickness(row) / water.viscosity *
+                                    (1.0 / std::log(grid_rocks_r.mesh_nodes(col) / grid_rocks_r.mesh_nodes(col - 1ll)))};
+
+                                CHECK_THAT(A.coeff(l, idx),
+                                           WithinRel(val, exact_tol));
+                            }
+                            for (auto idx{l - nz + 1ll}; idx < l; ++idx)
+                                CHECK(A.coeff(l, idx) == 0.0);
+
+                            const auto val{
+                                grid2D_rocks->volume(row, col) *
+                                    medium_compressibility_field.value(row, col) / step +
+                                2.0 * pi * permeability(row) * cell_thickness(row) / water.viscosity *
+                                    (1.0 / std::log(grid_rocks_r.mesh_nodes(col + 1ll) / grid_rocks_r.mesh_nodes(col)) +
+                                     1.0 / std::log(grid_rocks_r.mesh_nodes(col) / grid_rocks_r.mesh_nodes(col - 1ll)))};
+
+                            CHECK_THAT(A.coeff(l, l),
+                                       WithinRel(val, exact_tol));
+
+                            for (auto idx{l + 1ll}; idx < l + nz; ++idx)
+                                CHECK(A.coeff(l, idx) == 0.0);
+                            {
+                                const auto idx{l + nz};
+                                const auto val{
+                                    -2.0 * pi * permeability(row) * cell_thickness(row) / water.viscosity *
+                                    (1.0 / std::log(grid_rocks_r.mesh_nodes(col + 1ll) / grid_rocks_r.mesh_nodes(col)))};
+                                CHECK_THAT(A.coeff(l, idx),
+                                           WithinRel(val, exact_tol));
+                            }
+                            for (auto idx{l + nz + 1ll}; idx < A.cols(); ++idx)
+                                CHECK(A.coeff(l, idx) == 0.0);
+                        }
+                        {
+                            const auto col{grid_rocks_r.mesh_size() - 1ll};
+                            const auto l{grid2D_rocks->to_linear(row, col)};
+                            for (auto idx{0ll}; idx < l; ++idx)
+                                CHECK(A.coeff(l, idx) == 0.0);
+                            CHECK(A.coeff(l, l) == 1.0);
+                            for (auto idx{l + 1ll}; idx < A.cols(); ++idx)
+                                CHECK(A.coeff(l, idx) == 0.0);
+                        }
+#pragma endregion
+                    }
+                    else
+                    {
+#pragma region VERIFY-NON_PERMEABLE-LAYERS
+                        for (auto col{0ll}; col < grid_rocks_r.mesh_size() - 1ll; ++col)
+                        {
+                            const auto l{grid2D_rocks->to_linear(row, col)};
+                            for (auto idx{0ll}; idx < l; ++idx)
+                                CHECK(A.coeff(l, idx) == 0.0);
+                            CHECK_THAT(A.coeff(l, l),
+                                       WithinRel(grid2D_rocks->volume(row, col) / step, exact_tol));
+                            for (auto idx{l + 1ll}; idx < A.cols(); ++idx)
+                                CHECK(A.coeff(l, idx) == 0.0);
+                        }
+                        {
+                            const auto col{grid_rocks_r.mesh_size() - 1ll};
+                            const auto l{grid2D_rocks->to_linear(row, col)};
+                            for (auto idx{0ll}; idx < l; ++idx)
+                                CHECK(A.coeff(l, idx) == 0.0);
+                            CHECK(A.coeff(l, l) == 1.0);
+                            for (auto idx{l + 1ll}; idx < A.cols(); ++idx)
+                                CHECK(A.coeff(l, idx) == 0.0);
+                        }
+#pragma endregion
+                    }
                 }
             }
-
 #pragma endregion
 
-            const auto &rhs{pressure_field.get_solver()->get_problem_rhs()};
+#pragma region VERIFY-PRESSURE-PROBLEM-RHS
+            {
+                const auto &rhs{pressure_field.get_solver()->get_problem_rhs()};
+                const auto rfp{well->get_RFP(history->get_current_record())};
+
+                for (auto row{0ll}; row < grid_rocks_z.mesh_size(); ++row)
+                {
+                    if (is_permeable(row) == 1.0)
+                    {
+                        {
+                            const auto col{0ll};
+                            const auto l{grid2D_rocks->to_linear(row, col)};
+                            const auto val{P_prev(row, col) * grid2D_rocks->volume(row, col) *
+                                               medium_compressibility_field.value(row, col) / step +
+                                           rfp(row)};
+                            CHECK_THAT(rhs(l),
+                                       WithinRel(val, exact_tol));
+                        }
+                        for (auto col{1ll}; col < grid_rocks_r.mesh_size() - 1ll; ++col)
+                        {
+                            const auto l{grid2D_rocks->to_linear(row, col)};
+                            const auto val{P_prev(row, col) * grid2D_rocks->volume(row, col) *
+                                           medium_compressibility_field.value(row, col) / step};
+                            CHECK_THAT(rhs(l),
+                                       WithinRel(val, exact_tol));
+                        }
+                        {
+                            const auto col{grid_rocks_r.mesh_size() - 1ll};
+                            const auto l{grid2D_rocks->to_linear(row, col)};
+                            CHECK(rhs(l) == ext_pressure(row));
+                        }
+                    }
+                    else
+                    {
+                        for (auto col{0ll}; col < grid_rocks_r.mesh_size(); ++col)
+                        {
+                            const auto l{grid2D_rocks->to_linear(row, col)};
+                            CHECK(rhs(l) == 0.0);
+                            CHECK(rhs(l) == ext_pressure(row));
+                        }
+                    }
+                }
+            }
+#pragma endregion
 
             const auto rfp{well->get_RFP(history->get_current_record())};
 #pragma region CHECK-PRESSURE
