@@ -112,6 +112,7 @@ namespace GPN
             {
                 using functor_type = BotHolePresFunctorBC<History_t, Grid2D_t>;
                 using hydro_bc_type = BotHolePresBC;
+                using grid_type = Grid2D_t;
                 
                 template <
                     typename Grid2D_t,

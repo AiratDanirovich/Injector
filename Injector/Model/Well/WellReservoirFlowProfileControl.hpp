@@ -112,6 +112,7 @@ namespace GPN
             {
                 using functor_type = RFPControlFunctorBC<History_t, Grid2D_t>;
                 using hydro_bc_type = RFPControlBC;
+                using grid_type = Grid2D_t;
 
                 template <
                     typename Grid2D_t,

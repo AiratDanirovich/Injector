@@ -116,6 +116,7 @@ namespace GPN
             {
                 using functor_type = BotHoleRateFunctorBC<History_t, Grid2D_t>;
                 using hydro_bc_type = BotHoleRateBC;
+                using grid_type = Grid2D_t;
 
                 template <
                     typename Grid2D_t,
@@ -124,7 +125,8 @@ namespace GPN
                     typename BC_t>
                 using solver_type =
                     EqSolver::FullImplicit::WellRateControlSolver<
-                        Grid2D_t, Capacity_t, ConvectionTermFactory_t, BC_t, WellBottomHoleRateControl<History_t, Grid2D_t, CrossFlow_t>>;
+                        Grid2D_t, Capacity_t, ConvectionTermFactory_t, BC_t,
+                        WellBottomHoleRateControl<History_t, Grid2D_t, CrossFlow_t>>;
 
                 const ptr<const hydro_bc_type> hydro_bc;
 
@@ -146,10 +148,13 @@ namespace GPN
                               grid2D_rocks->first_coord().mesh_size(),
                               Grid2D_t::l_margin + 1ll)},
                       is_permeable{rock_field_props.base_hydrodynamics.is_permeable},
-                      history{history}
+                      history{history},
+                      rock_field_props{rock_field_props}
                 {
-                    assert(std::all_of(PI.cbegin(), PI.cend(), [](const RealType v){return v >= 0.0;}));
-                    assert(std::any_of(PI.cbegin(), PI.cend(), [](const RealType v){return v > 0.0;}));
+                    assert(std::all_of(PI.cbegin(), PI.cend(), [](const RealType v)
+                                       { return v >= 0.0; }));
+                    assert(std::any_of(PI.cbegin(), PI.cend(), [](const RealType v)
+                                       { return v > 0.0; }));
 
                     const_cast<ptr<const hydro_bc_type> &>(hydro_bc) =
                         std::make_shared<const hydro_bc_type>(
@@ -224,6 +229,9 @@ namespace GPN
                 const StepPropertyContainer PI;
                 const Logs::IsPermeable &is_permeable;
                 const cptr<History_t> history;
+
+                const Properties::Rocks::RocksProps<Grid2D_t> &
+                    rock_field_props;
 
                 template <typename HistoryRecord_t>
                 const RealType P_bot(
