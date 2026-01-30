@@ -10,6 +10,7 @@
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Hydrodynamic/SomeFluidField.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluidSolver.hpp>
+#include <Injector/Model/ReservoirProduction/CompressibleFluidSolverFactory.hpp>
 
 #include <Injector/Solver/State2D.hpp>
 #include <Injector/Solver/FullImplicit/Solver.hpp>
@@ -34,7 +35,7 @@ namespace GPN
             using hydro_bc_type = typename Well_t::hydro_bc_type;
 
             using Solver_t =
-                EqSolver::FullImplicit::Solver<
+                typename Well_t:: template solver_type<
                     Grid2D_t,
                     Properties::MediumCompressibility<Grid2D_t>,
                     EqSolver::EmptyConvectionField,
@@ -54,18 +55,21 @@ namespace GPN
                       rock_field_props.base_hydrodynamics.porosity,
                       rock_field_props.base_hydrodynamics.ext_pressure,
                       well, history, grid2D_rocks->grid2D},
-                  mobility{
+                  face_mobility{
                     FaceProperties::Rocks::RocksFaceProps{rock_field_props, grid2D_rocks}.mobility},
                   first_size{grid2D_rocks->grid2D->first_coord().mesh_size()},
                   second_size{grid2D_rocks->grid2D->second_coord().mesh_size()},
                   grid2D_rocks{grid2D_rocks}
             {
-                solver =
-                    std::make_unique<CompressibleFluidSolver<Solver_t>>(set_solver(
-                        start_time, history,
-                        rock_field_props,
-                        mobility,
-                        grid2D_rocks));
+                solver = std::make_unique<CompressibleFluidSolver<Solver_t>>(
+                        CompressibleFluidSolverFactory::create_solver_ptr(well, *this)
+                );
+                // solver =
+                //     std::make_unique<CompressibleFluidSolver<Solver_t>>(set_solver(
+                //         start_time, history,
+                //         rock_field_props,
+                //         mobility,
+                //         grid2D_rocks));
             }
 
             template <typename HistoryRecord_t>
@@ -86,7 +90,7 @@ namespace GPN
                 for (auto row{0ll}; row < out.rows(); ++row)
                     for (auto col{0ll}; col < out.cols(); ++col)
                         assert(!std::isnan(out(row, col)) && !std::isinf(out(row, col)));
-                        
+
                 P_prev = P;
 
                 P = std::make_shared<Properties::Pressure<OriginalGrid>>(
@@ -105,49 +109,12 @@ namespace GPN
                 return solver->get_state().cur_state;
             }
 
-            const FaceProperties::Mobility<Grid2D_t> mobility;
+            const FaceProperties::Mobility<Grid2D_t> face_mobility;
 
         private:
             std::unique_ptr<CompressibleFluidSolver<Solver_t>> solver;
             const ptrdiff_t first_size, second_size;
             const cptr<Grid2D_t> grid2D_rocks;
-
-            auto set_solver(
-                const RealType start_time,
-                const cptr<History_t> history,
-                const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
-                const FaceProperties::Mobility<Grid2D_t> &mobility,
-                const cptr<Grid2D_t> grid2D_rocks)
-            {
-                const hydro_bc_type &bc{*(well.hydro_bc)};
-
-                const auto initial_state{ICFactory(start_time, grid2D_rocks, rock_field_props.base_hydrodynamics.ext_pressure)};
-
-                const auto ptr_rates_factory{std::make_shared<EqSolver::EmptyConvectionField>()};
-
-                const auto &is_permeable{rock_field_props.base_hydrodynamics.is_permeable};
-
-                const Properties::MediumCompressibility corrected_compressibility{
-                    Properties::Field<Grid2D_t>{
-                        rock_field_props.medium_compressibility.values().colwise() + (1.0 - is_permeable.log_vals),
-                        grid2D_rocks}};
-
-                using Solver_t = decltype(EqSolver::FullImplicit::Solver{
-                    /*rock_face_props.*/ mobility,
-                    grid2D_rocks,
-                    corrected_compressibility,
-                    ptr_rates_factory, initial_state,
-                    bc, start_time});
-
-                auto solver_ptr{std::make_shared<Solver_t>(
-                    /*rock_face_props.*/ mobility,
-                    grid2D_rocks,
-                    corrected_compressibility,
-                    ptr_rates_factory, initial_state,
-                    bc, start_time)};
-
-                return solver_ptr;
-            }
         };
     } // Hydrodynamic
 } // GPN
