@@ -18,6 +18,8 @@
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Well/Well.hpp>
 #include <Injector/Model/Well/WellReservoirFlowProfileControl.hpp>
+#include <Injector/Model/Well/WellBottomHoleRateControl.hpp>
+#include <Injector/Model/Well/WellBottomHolePressureControl.hpp>
 
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleRatesFactory.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluid.hpp>
@@ -156,17 +158,17 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     using Well_t =
         decltype(WellReservoirFlowProfileControl{
-        rock_field_props,
-        cross_flows,
-        history,
-        grid2D_rocks});
+            rock_field_props,
+            cross_flows,
+            history,
+            grid2D_rocks});
 
     const ptr<Well_t> well{
         std::make_shared<Well_t>(
-        rock_field_props,
-        cross_flows,
-        history,
-        grid2D_rocks)};
+            rock_field_props,
+            cross_flows,
+            history,
+            grid2D_rocks)};
 
 #pragma endregion
     using CompressibleFluidField_t =
@@ -221,6 +223,20 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         {
             const auto t{cur_time + step};
             rates_factory.set_flow_field(cur_time, step);
+#pragma region VERIFY-PRESSURE-PROBLEM-MATRIX
+            const auto &A{pressure_field.get_solver()->get_problem_matrix()};
+
+            for (auto row{1ll}; row < grid_rocks_z.mesh_size() - 1ll; ++row)
+            {
+                for (auto col{1ll}; col < grid_rocks_r.mesh_size() - 1ll; ++col)
+                {
+                }
+            }
+
+#pragma endregion
+
+            const auto &rhs{pressure_field.get_solver()->get_problem_rhs()};
+
             const auto rfp{well->get_RFP(history->get_current_record())};
 #pragma region CHECK-PRESSURE
             const auto &P{pressure_field.current_pressure().values()};
@@ -375,24 +391,23 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                         CHECK(flux2(row, col) == 0.0);
                 }
 
-                if(core_logs.is_permeable(row) == 1.0)
+                if (core_logs.is_permeable(row) == 1.0)
                 {
-                    if(base_hydrodynamics.medium_compressibility(row) == 0.0)
+                    if (base_hydrodynamics.medium_compressibility(row) == 0.0)
                     {
                         const auto r_max{grid_r.dual_back()};
                         const auto thickness{grid2D_rocks->first_coord().volume(row)};
                         const auto k{core_logs.permeability(row)};
                         const auto p_ext{base_hydrodynamics.ext_pressure(row)};
-                        for(auto col{3ll}; col < grid_r.mesh_size()-1ll; ++col)
+                        for (auto col{3ll}; col < grid_r.mesh_size() - 1ll; ++col)
                         {
                             const auto r{grid_r.mesh_nodes(col)};
-                            const RealType ref_p{p_ext - 
-                                rfp(row)*water.viscosity / (2.0 * pi * thickness * k)*std::log(r/r_max)};
-                            CHECK_THAT(ref_p, WithinRel(P(row,col), tol));
+                            const RealType ref_p{p_ext -
+                                                 rfp(row) * water.viscosity / (2.0 * pi * thickness * k) * std::log(r / r_max)};
+                            CHECK_THAT(ref_p, WithinRel(P(row, col), tol));
                         }
                     }
                 }
-
             }
 #pragma endregion
 #pragma region VERTICAL-RATES
@@ -401,9 +416,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 { // flow in the tube
                     const auto col{0ll};
                     CHECK_THAT(Q - well_loss_cum_sum,
-                        WithinRel(well_flow(row), tol));
+                               WithinRel(well_flow(row), tol));
                     CHECK_THAT(C * (Q - well_loss_cum_sum),
-                        WithinRel(flux1(row, col), tol));
+                               WithinRel(flux1(row, col), tol));
                     if (row < grid_z.mesh_size())
                         well_loss_cum_sum += wfp(row);
                 }
@@ -476,9 +491,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 {
                     for (auto col{3ll}; col < JT_temporal_term.cols(); ++col)
                     {
-                        const auto ref{ water.adiabatic_factor/step*grid2D->volume(row,col)*
-                            (rates_factory.pressure_field->P->value(row,col) -
-                        rates_factory.pressure_field->P_prev->value(row,col))};
+                        const auto ref{water.adiabatic_factor / step * grid2D->volume(row, col) *
+                                       (rates_factory.pressure_field->P->value(row, col) -
+                                        rates_factory.pressure_field->P_prev->value(row, col))};
                         CHECK(ref == JT_temporal_term.value(row, col));
                     }
                 }

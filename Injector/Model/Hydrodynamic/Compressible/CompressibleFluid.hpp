@@ -109,6 +109,11 @@ namespace GPN
                 return solver->get_state().cur_state;
             }
 
+            const auto& get_solver() const
+            {
+                return solver;
+            }
+
             const FaceProperties::Mobility<Grid2D_t> face_mobility;
 
         private:

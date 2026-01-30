@@ -146,7 +146,7 @@ namespace GPN
                 auto advance(const RealType tau)
                 {
                     ptrdiff_t A_size{first_coord_size * second_coord_size + 1ll};
-                    Eigen::SparseMatrix<RealType> A{// ctor for matrix, reservoir + bottomwell pressure
+                    A = Eigen::SparseMatrix<RealType> {// ctor for matrix, reservoir + bottomwell pressure
                                                     A_size,
                                                     A_size};
                     A.reserve(A_size * 6ll);
@@ -162,7 +162,7 @@ namespace GPN
 
                     const Eigen::ArrayXX<RealType> tau_factor{
                         time_factor.Divide(tau).eval()};
-                    RHS_t rhs{assemble_RHS_noconvection(state, tau_factor, A_size)};
+                    rhs = RHS_t{assemble_RHS_noconvection(state, tau_factor, A_size)};
                     
                     assert(std::all_of(
                         rhs.cbegin(), 
@@ -196,6 +196,9 @@ namespace GPN
 
                     return std::pair{std::move(A), std::move(rhs)};
                 }
+
+                Eigen::SparseMatrix<RealType> A;
+                RHS_t rhs;
 
                 RHS_t assemble_RHS_noconvection(
                     const auto state,

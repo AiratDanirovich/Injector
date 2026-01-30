@@ -127,7 +127,7 @@ namespace GPN
                     A.setFromTriplets(tripletList.begin(), tripletList.end());
                     A.diagonal() = A.diagonal() + tau_factor.reshaped(A_size, 1ll).matrix();
 
-                    RHS_t rhs{};
+                    rhs = RHS_t{};
                     if constexpr (std::is_same_v<ConvectionTermFactory_t, EmptyConvectionField> == false)
                     { // there is convection field
                         rhs = assemble_RHS(state, tau_factor, A_size, tau);
@@ -189,6 +189,9 @@ namespace GPN
 
                     return std::pair{std::move(A), std::move(rhs)};
                 }
+
+                Eigen::SparseMatrix<RealType> A;
+                RHS_t rhs;
 
                 RHS_t assemble_RHS(
                     const auto state,
