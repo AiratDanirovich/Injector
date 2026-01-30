@@ -142,6 +142,9 @@ namespace GPN
                           FaceValuesContainer::Zero(
                               grid2D_rocks->first_coord().mesh_size(),
                               Grid2D_t::l_margin + 1ll)},
+                      history{history},
+                      rock_field_props{rock_field_props},
+                      grid2D_rocks{grid2D_rocks},
                       is_permeable{rock_field_props.base_hydrodynamics.is_permeable}
                 {
                     const_cast<ptr<const hydro_bc_type>&>(hydro_bc) = 
@@ -212,6 +215,10 @@ namespace GPN
                 }
 
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
+                const cptr<Grid2D_t> grid2D_rocks;
+                const cptr<History_t> history;
+                const Properties::Rocks::RocksProps<Grid2D_t> &
+                    rock_field_props;
 
             protected:
                 template <typename HistoryRecord_t>

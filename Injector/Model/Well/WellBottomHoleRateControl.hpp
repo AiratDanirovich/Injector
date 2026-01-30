@@ -149,7 +149,8 @@ namespace GPN
                               Grid2D_t::l_margin + 1ll)},
                       is_permeable{rock_field_props.base_hydrodynamics.is_permeable},
                       history{history},
-                      rock_field_props{rock_field_props}
+                      rock_field_props{rock_field_props},
+                      grid2D_rocks{grid2D_rocks}
                 {
                     assert(std::all_of(PI.cbegin(), PI.cend(), [](const RealType v)
                                        { return v >= 0.0; }));
@@ -224,6 +225,7 @@ namespace GPN
                 }
 
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
+                const cptr<Grid2D_t> grid2D_rocks;
 
                 const std::ptrdiff_t size;
                 const StepPropertyContainer PI;

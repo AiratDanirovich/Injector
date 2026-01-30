@@ -147,7 +147,10 @@ namespace GPN
                       flow_axes2_value{
                           FaceValuesContainer::Zero(
                               grid2D_rocks->first_coord().mesh_size(),
-                              Grid2D_t::l_margin + 1ll)}
+                              Grid2D_t::l_margin + 1ll)},
+                      history{history},
+                      rock_field_props{rock_field_props},
+                      grid2D_rocks{grid2D_rocks}
                 {
                     assert(std::abs(well_base.rfp.sum() - 1.0) < 1e-12);
                     assert(std::abs(well_base.wfp.sum() - 1.0) < 1e-12);
@@ -213,6 +216,10 @@ namespace GPN
                 }
 
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
+                const cptr<Grid2D_t> grid2D_rocks;
+                const cptr<History_t> history;
+                const Properties::Rocks::RocksProps<Grid2D_t> &
+                    rock_field_props;
 
             private:
                 static auto set_resistivity(
