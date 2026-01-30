@@ -152,7 +152,7 @@ namespace GPN
                                                     A_size};
                     A.reserve(A_size * 6ll);
 
-                    TripletContainer tripletList{get_triplets(A_size, tau)};
+                    TripletContainer tripletList{set_triplets(A_size, tau)};
                     assert(std::all_of(
                         tripletList.cbegin(), 
                         tripletList.cend(), 
@@ -177,15 +177,21 @@ namespace GPN
                     bc.set_bc_type(cur_time + tau);
                     applyBC(A, rhs);
 
-                    const auto solution{solve_linear_problem(A, rhs).array().reshaped(first_coord_size, second_coord_size)};
+                    // 1D array
+                    const auto solution{
+                        solve_linear_problem(A, rhs).array()};
                     
                     for(auto it{solution.cbegin()}; it != solution.cend(); ++it)
-                        {
-                            assert(!std::isnan(*it) && !std::isinf(*it));
-                        }
+                    {
+                        assert(!std::isnan(*it) && !std::isinf(*it));
+                    }
 
-                    state.cur_state = solution.topRows(A_size-2ll);
-                    P_bot_memory = solution.bottomRows(1ll);
+                    const auto temp{solution.topRows(first_coord_size*second_coord_size).
+                        reshaped(first_coord_size, second_coord_size)};
+
+                    state.cur_state = solution.topRows(first_coord_size*second_coord_size).
+                        reshaped(first_coord_size, second_coord_size);
+                    P_bot_memory = solution.bottomRows(1ll)(0ll);
 
                     cur_time += tau;
 
@@ -201,7 +207,7 @@ namespace GPN
                     rhs.topRows(A_size-1ll) = (state.cur_state.array() * tau_factor)
                                           .reshaped(A_size, 1ll)
                                           .matrix();
-                    rhs.bottomRows(1ll) = well.history->rate();
+                    rhs.bottomRows(1ll)(0ll) = well.history->rate();
                     return rhs;
                 }
 
