@@ -5,7 +5,7 @@
 
 #include <Injector/Properties/PhysicalField.hpp>
 
-#include <Injector/Model/Well/WellBottomHoleRateControl.hpp>
+#include <Injector/Model/Well/WellReservoirFlowProfileControl.hpp>
 #include <Injector/Model/Well/WellBottomHolePressureControl.hpp>
 #include <Injector/Model/Well/WellBottomHoleRateControl.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluidSolver.hpp>
