@@ -214,11 +214,22 @@ namespace GPN
                     flow_axes2_value.col(3ll) = get_RFP(record);
                 }
 
+                template <typename HistoryRecord_t>
+                const RealType P_bot(
+                    const HistoryRecord_t &record,
+                    const auto &/*collector_pressure*/) const
+                {
+                    return record.pressure;
+                }
+
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
                 const cptr<Grid2D_t> grid2D_rocks;
                 const cptr<History_t> history;
                 const Properties::Rocks::RocksProps<Grid2D_t> &
                     rock_field_props;
+                const std::ptrdiff_t size;
+                const StepPropertyContainer PI;
+                const Logs::IsPermeable &is_permeable;
 
             protected:
                 template <typename HistoryRecord_t>
@@ -237,7 +248,7 @@ namespace GPN
                             }));
 
                     return Logs::RFPFactory::create_from_container<Logs::RFP>(
-                        (PI * (collector_pressure.col(0ll) - record.pressure)).eval(),
+                        -(PI * (collector_pressure.col(0ll) - record.pressure)).eval(),
                         is_permeable);
                 }
 
@@ -264,12 +275,6 @@ namespace GPN
                     }
                     return out;
                 }
-
-
-
-                const std::ptrdiff_t size;
-                const StepPropertyContainer PI;
-                const Logs::IsPermeable &is_permeable;
             };
         } // BotHolePresControl
     } // Wells
