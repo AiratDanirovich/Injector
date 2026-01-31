@@ -145,6 +145,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             grid2D_rocks};
     const auto &medium_compressibility_field{
         rock_field_props.medium_compressibility};
+    CHECK(medium_compressibility_field.rows() == grid_rocks_z.mesh_size());
+    CHECK(medium_compressibility_field.cols() == grid_rocks_r.mesh_size());
 
 #pragma region MAKE-HISTORY
     const ptr<History> history{make_shared<History>(make_history(data))};
@@ -225,12 +227,19 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             static_cast<size_t>(
                 std::abs(std::ceil(time_intervals[t_step] / numerical_step)))};
         const RealType step{time_intervals[t_step] / internal_step_count};
+        const auto record{history->get_current_record()};
 
         for (size_t id{0ull}; id < internal_step_count; ++id, cur_time += step)
         {
             const auto t{cur_time + step};
-            const auto &P_prev{pressure_field.current_pressure().values()};
+            const auto collector_pressure_prev{ptr_pressure_field->get_rock_pressure()};
+            CHECK(collector_pressure_prev.rows() == grid_rocks_z.mesh_size());
+            CHECK(collector_pressure_prev.cols() == grid_rocks_r.mesh_size());
+            // const auto &P_prev{pressure_field.current_pressure().values()};
             rates_factory.set_flow_field(cur_time, step);
+            const auto collector_pressure{ptr_pressure_field->get_rock_pressure()};
+            CHECK(collector_pressure.rows() == grid_rocks_z.mesh_size());
+            CHECK(collector_pressure.cols() == grid_rocks_r.mesh_size());
 #pragma region VERIFY-PRESSURE-PROBLEM-MATRIX
             {
                 const auto &A{pressure_field.get_solver()->get_problem_matrix()};
@@ -264,10 +273,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                             for (auto idx{l + 1ll}; idx < l + nz; ++idx)
                                 CHECK(A.coeff(l, idx) == 0.0);
                             {
-                                const auto idx{l+nz};
+                                const auto idx{l + nz};
                                 const auto val{
                                     -2.0 * pi * permeability(row) * cell_thickness(row) / water.viscosity *
-                                        (1.0 / std::log(grid_rocks_r.mesh_nodes(col + 1ll) / grid_rocks_r.mesh_nodes(col)))};
+                                    (1.0 / std::log(grid_rocks_r.mesh_nodes(col + 1ll) / grid_rocks_r.mesh_nodes(col)))};
 
                                 CHECK_THAT(A.coeff(l, idx),
                                            WithinRel(val, exact_tol));
@@ -372,17 +381,18 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                         {
                             const auto col{0ll};
                             const auto l{grid2D_rocks->to_linear(row, col)};
-                            const auto val{P_prev(row, col) * grid2D_rocks->volume(row, col) *
+                            const auto val{collector_pressure_prev(row, col) * grid2D_rocks->volume(row, col) *
                                                medium_compressibility_field.value(row, col) / step +
                                            rfp(row)};
-                            CHECK_THAT(rhs(l),
-                                       WithinRel(val, exact_tol));
+                             CHECK_THAT(rhs(l),
+                                        WithinRel(val, exact_tol));
                         }
                         for (auto col{1ll}; col < grid_rocks_r.mesh_size() - 1ll; ++col)
                         {
                             const auto l{grid2D_rocks->to_linear(row, col)};
-                            const auto val{P_prev(row, col) * grid2D_rocks->volume(row, col) *
+                            const auto val{collector_pressure_prev(row, col) * grid2D_rocks->volume(row, col) *
                                            medium_compressibility_field.value(row, col) / step};
+                            INFO("row: " << row << ", col: " << col << ", l: " << l);
                             CHECK_THAT(rhs(l),
                                        WithinRel(val, exact_tol));
                         }

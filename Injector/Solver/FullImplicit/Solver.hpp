@@ -136,15 +136,6 @@ namespace GPN
                     { // there is no convection field
                         rhs = assemble_RHS_noconvection(state, tau_factor, A_size);
                     }
-                    // if (!std::all_of(
-                    //         rhs.cbegin(),
-                    //         rhs.cend(),
-                    //         [](const auto &v)
-                    //         {
-                    //             return !std::isnan(v) && !std::isinf(v);
-                    //         }))
-                    //     std::cout << "rhs:\n"
-                    //               << rhs.transpose() << std::endl;
 
                     assert(std::all_of(
                         rhs.cbegin(),
@@ -159,15 +150,6 @@ namespace GPN
                     bc.set_bc_type(cur_time + tau);
                     applyBC(A, rhs);
                     
-                    // if (!std::all_of(
-                    //         rhs.cbegin(),
-                    //         rhs.cend(),
-                    //         [](const auto &v)
-                    //         {
-                    //             return !std::isnan(v) && !std::isinf(v);
-                    //         }))
-                    //     std::cout << "rhs:\n"
-                    //               << rhs.transpose() << std::endl;
 
                     assert(std::all_of(
                         rhs.cbegin(),
