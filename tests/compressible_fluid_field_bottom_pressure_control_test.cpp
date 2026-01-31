@@ -222,7 +222,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     for (auto t_step{0ll}; t_step < history->time_steps.size(); ++t_step)
     {
         history->advance();
-        const RealType Q{history->rate()};
 
         const size_t internal_step_count{
             static_cast<size_t>(
@@ -236,6 +235,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             rates_factory.set_flow_field(cur_time, step);
             const auto record{history->get_current_record()};
             const auto collector_pressure{ptr_pressure_field->get_rock_pressure()};
+            const RealType P_bot{well->P_bot(record, collector_pressure)};
+            //        std::cout << "P_bot:        " << P_bot << std::endl;
+            //        std::cout << "P_bot_solver: " << P_bot_solver << std::endl;
+            CHECK_THAT(P_bot, WithinRel(record.pressure, exact_tol));
 #pragma region VERIFY-PRESSURE-PROBLEM-MATRIX
             {
                 const auto &A{pressure_field.get_solver()->get_problem_matrix()};
@@ -280,14 +283,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                                            WithinRel(val, exact_tol));
                             }
 
-                            for (auto idx{l + nz + 1ll}; idx < A.cols() - 1ll; ++idx)
+                            for (auto idx{l + nz + 1ll}; idx < A.cols(); ++idx)
                                 CHECK(A.coeff(l, idx) == 0.0);
-                            { // check coef due to unknown P_bot
-                                const auto idx{A.cols() - 1ll};
-                                const auto val{-PI(row)};
-                                CHECK_THAT(A.coeff(l, idx),
-                                           WithinRel(val, exact_tol));
-                            }
                         }
 #pragma endregion
                         for (auto col{1ll}; col < grid_rocks_r.mesh_size() - 1ll; ++col)
@@ -370,17 +367,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     }
 #pragma endregion
                 }
-
-#pragma region P_BOT-PRESSURE-EQN
-                {
-                    const auto l{A.rows() - 1ll};
-                    for (auto idx{0ll}; idx < nz; ++idx)
-                        CHECK(A.coeff(l, idx) == -PI(idx));
-                    for (auto idx{nz}; idx < A.cols() - 1ll; ++idx)
-                        CHECK(A.coeff(l, idx) == 0.0);
-                    CHECK(A.coeff(l, l) == PI.sum());
-                }
-#pragma endregion
             }
 #pragma endregion
 
@@ -395,7 +381,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                             const auto col{0ll};
                             const auto l{grid2D_rocks->to_linear(row, col)};
                             const auto val{collector_pressure_prev(row, col) * grid2D_rocks->volume(row, col) *
-                                           medium_compressibility_field.value(row, col) / step};
+                                           medium_compressibility_field.value(row, col) / step +
+                                        P_bot*PI(row)};
                             CHECK_THAT(rhs(l),
                                        WithinRel(val, exact_tol));
                         }
@@ -423,21 +410,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                         }
                     }
                 }
-#pragma region P_BOT-PRESSURE-EQN
-                {
-                    const auto l{rhs.rows() - 1ll};
-                    CHECK(rhs(l) == record.rate);
-                }
-#pragma endregion
             }
 #pragma endregion
-
-            const RealType P_bot{well->P_bot(record, collector_pressure)};
-            //        std::cout << "P_bot:        " << P_bot << std::endl;
-            //        std::cout << "P_bot_solver: " << P_bot_solver << std::endl;
-            CHECK_THAT(P_bot, WithinRel(record.pressure, exact_tol));
-
             const auto rfp{well->get_RFP(history->get_current_record())};
+            const auto Q{rfp.sum()};
 #pragma region CHECK-PRESSURE
             const auto &P{pressure_field.current_pressure().values()};
             CHECK(rfp.rows() == grid_z.mesh_size());
@@ -507,7 +483,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             const auto wfp{well->get_WFP(history->get_current_record())};
             //        std::cout << "wfp:\n" << wfp.transpose() << std::endl;
             CHECK(wfp.rows() == grid_z.mesh_size());
-            CHECK_THAT(wfp.sum(), WithinRel(Q, exact_tol));
             CHECK_THAT(rfp.sum(), WithinRel(wfp.sum(), exact_tol));
             const auto cement_flow{well->get_verticle_cement_flow(history->get_current_record())};
             CHECK(cement_flow.rows() == grid_z.dual_size());
@@ -622,7 +597,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     if (std::abs(flux1(row, col) / C / Q) < exact_tol)
                     {
                         INFO("C: " << C << ", acc_flux: " << well_accum_cum_sum << ", flux1: " << flux1(row, col));
-                        CHECK_THAT(C * well_accum_cum_sum,
+                        CHECK_THAT(well_accum_cum_sum,
                                    WithinAbs(flux1(row, col) / C, exact_tol));
                     }
                     else

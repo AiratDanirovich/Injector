@@ -256,7 +256,7 @@ namespace GPN
 
                     // return (mobility * (collector_pressure.col(0ll) - record.pressure)).eval();
                     return Logs::RFPFactory::create_from_container<Logs::RFP>(
-                        (PI * (collector_pressure.col(0ll) - record.pressure)).eval(),
+                        -(PI * (collector_pressure.col(0ll) - record.pressure)).eval(),
                         is_permeable);
                 }
 

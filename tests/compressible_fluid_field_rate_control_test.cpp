@@ -623,7 +623,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     if (std::abs(flux1(row, col) / C / Q) < exact_tol)
                     {
                         INFO("C: " << C << ", acc_flux: " << well_accum_cum_sum << ", flux1: " << flux1(row, col));
-                        CHECK_THAT(C * well_accum_cum_sum,
+                        CHECK_THAT(well_accum_cum_sum,
                                    WithinAbs(flux1(row, col) / C, exact_tol));
                     }
                     else
