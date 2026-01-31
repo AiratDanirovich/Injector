@@ -278,9 +278,6 @@ TEST_CASE("apply_well_test", "apply_well_test")
     CHECK_THAT(weights_stencils.sum(), WithinRel(1.0, tol));
   }
 
-  const Well_Explicit well{
-      core_data.is_permeable, core_data.is_perforated, weights};
-
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
       solid_specific_heatcapacity_stencils,
@@ -358,7 +355,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
   }
 
   // properties of material that fills the well up to the Sandface
-  heat_props.apply_well(extr_completion, well);
+  heat_props.apply_well(extr_completion);
 
   // CHECK heat_props --- after "apply_well"
   {
@@ -449,7 +446,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
 
   FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
-  heat_face_props.apply_well(extr_completion, well);
+  heat_face_props.apply_well(extr_completion);
 
   // CHECK heat_face_props --- after "apply_well"
   {

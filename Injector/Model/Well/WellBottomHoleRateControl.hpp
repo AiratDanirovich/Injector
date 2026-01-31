@@ -10,52 +10,52 @@
 #include <Injector/Properties/Logs.hpp>
 
 #include <Injector/Solver/BoundaryConditions.hpp>
-#include <Injector/Solver/FullImplicit/Solver.hpp>
+#include <Injector/Solver/FullImplicit/WellRateControlSolver.hpp>
 
 namespace GPN
 {
     namespace Wells
     {
-        namespace ResFlowProfileControl
+        namespace BotHoleRateControl
         {
 #pragma region BOUNDARY-CONDITION
             template <typename History_t, typename Grid2D_t>
-            struct RFPControlFunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
+            struct BotHoleRateFunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
             {
                 /// @brief
                 /// @param history
                 /// @param ext_pressure
-                /// @param rfp log_vals of Logs::RFP_weights container
-                /// @param grid_ptr Grid in collector, outside the sandface
-                RFPControlFunctorBC(
+                /// @param PI productivity index that multiplies pressure difference at sandface
+                /// @param grid_ptr
+                BotHoleRateFunctorBC(
+                    //    const RealType fluid_density,
                     const ptr<const History_t> history,
                     const Logs::ExternalPressure &ext_pressure,
-                    const StepPropertyContainer &rfp,
-                    const Logs::IsPermeable &is_permeable,
+                    const StepPropertyContainer &PI,
                     const ptr<const Grid2D_t> grid_ptr)
                     : BoundaryConditions::GeneralBC::BCFunctorBase{},
                       history{history},
                       ext_pressure{ext_pressure},
-                      grid_ptr{grid_ptr},
-                      rfp{Logs::RFPFactory::create_from_container<Logs::RFP_weights>(
-                          rfp, is_permeable)}
+                      PI{PI},
+                      grid_ptr{grid_ptr} //, fluid_weight{fluid_density*Gravity::value()}
                 {
                     static_assert(Grid2D_t::l_margin == 3ll);
-                    assert(std::abs(this->rfp.log_vals.sum() - 1.0) < 1e-12);
                 }
 
                 BC_descriptor operator()(const ptrdiff_t z_id, const RealType r, const RealType,
                                          const BCType bc_type) const override
                 {
-                    // sandface
+                    // boundary condition at sandface
                     if (r == grid_ptr->second_coord().dual_front())
                     {
-                        assert(bc_type == BCType::second);
-                        const auto out{rfp(z_id) * history->rate()};
-                        return BC_descriptor::BC_II(out);
+                        assert(bc_type == BCType::third);
+                        // const auto out{history->pressure()};
+                        const auto out{0.0 /*rho*g*dz*/};
+                        return BC_descriptor::BC_III(out, PI(z_id));
                         //    return out;
                     }
-                    // external contour
+
+                    // boundary condition at external contour
                     if (r == grid_ptr->second_coord().dual_back())
                     {
                         assert(bc_type == BCType::first);
@@ -65,6 +65,7 @@ namespace GPN
 
                     assert(false);
                     throw std::runtime_error("Wrong radial coordinate in BC.");
+                    //    return 0.0;
                 }
 
                 BC_descriptor operator()(const RealType z, const ptrdiff_t, const RealType,
@@ -72,26 +73,29 @@ namespace GPN
                 {
                     // boundary conditions are set exactly at domain boundaries
                     assert((z == grid_ptr->first_coord().dual_front()) || (z == grid_ptr->first_coord().dual_back()));
-                    // assume zero diffusion flux in hydrodynamic equation
+                    // assume zero "diffusion" flux in hydrodynamic equation
                     assert(bc_type == BCType::second);
                     return BC_descriptor::BC_II(0.0);
                     //    return 0.0;
                 }
 
+                const StepPropertyContainer &PI;
+                const ptr<const History_t> history;
+
             protected:
                 const Logs::ExternalPressure &ext_pressure;
                 const ptr<const Grid2D_t> grid_ptr;
-                const Logs::RFP_weights rfp;
-                const ptr<const History_t> history;
+                //    const RealType fluid_weight;
             };
 
-            struct RFPControlBC : public BoundaryConditions::GeneralBC
+            struct BotHoleRateBC : public BoundaryConditions::GeneralBC
             {
                 template <typename Grid2D_t>
-                RFPControlBC(const cptr<Grid2D_t> &grid,
-                             const ptr<const BCFunctorBase> functor)
+                BotHoleRateBC(const cptr<Grid2D_t> &grid,
+                              const cptr<const BCFunctorBase> functor)
                     : BoundaryConditions::GeneralBC{grid, functor, BoundaryCondition::BCType::second}
                 {
+                    bc_types[west_id] = BoundaryCondition::BCType::third;
                     bc_types[east_id] = BoundaryCondition::BCType::first;
                     east_bc_type = std::vector<BoundaryCondition::BCType>(grid->first_coord().mesh_size(), bc_types[east_id]);
                 }
@@ -106,12 +110,12 @@ namespace GPN
                 typename History_t,
                 typename Grid2D_t,
                 typename CrossFlow_t>
-            struct WellReservoirFlowProfileControl
+            struct WellBottomHoleRateControl
                 : public CrossFlow_t,
-                  public DefaultWellNumerics<0ll>
+                  public DefaultWellNumerics<1ll>
             {
-                using functor_type = RFPControlFunctorBC<History_t, Grid2D_t>;
-                using hydro_bc_type = RFPControlBC;
+                using functor_type = BotHoleRateFunctorBC<History_t, Grid2D_t>;
+                using hydro_bc_type = BotHoleRateBC;
                 using grid_type = Grid2D_t;
 
                 template <
@@ -120,26 +124,21 @@ namespace GPN
                     typename ConvectionTermFactory_t,
                     typename BC_t>
                 using solver_type =
-                    EqSolver::FullImplicit::Solver<
-                        Grid2D_t, Capacity_t, ConvectionTermFactory_t, BC_t>;
+                    EqSolver::FullImplicit::WellRateControlSolver<
+                        Grid2D_t, Capacity_t, ConvectionTermFactory_t, BC_t,
+                        WellBottomHoleRateControl<History_t, Grid2D_t, CrossFlow_t>>;
 
                 const ptr<const hydro_bc_type> hydro_bc;
 
-                WellReservoirFlowProfileControl(
+                WellBottomHoleRateControl(
                     const Properties::Rocks::RocksProps<Grid2D_t> &
                         rock_field_props,
                     const CrossFlow_t &well_base,
                     const cptr<History_t> history,
                     const cptr<Grid2D_t> grid2D_rocks)
                     : CrossFlow_t{well_base},
-                      resistivity{set_resistivity(rock_field_props, well_base, grid2D_rocks)},
-                      hydro_bc{
-                          std::make_shared<const hydro_bc_type>(
-                              grid2D_rocks,
-                              std::make_shared<const functor_type>(
-                                  history, rock_field_props.base_hydrodynamics.ext_pressure,
-                                  well_base.rfp, rock_field_props.base_hydrodynamics.is_permeable,
-                                  grid2D_rocks))},
+                      size{grid2D_rocks->first_coord().mesh_size()},
+                      PI{set_productivity_index(rock_field_props, grid2D_rocks)},
                       flow_axes1_value{
                           FaceValuesContainer::Zero(
                               grid2D_rocks->first_coord().mesh_size() + 1ll,
@@ -148,35 +147,44 @@ namespace GPN
                           FaceValuesContainer::Zero(
                               grid2D_rocks->first_coord().mesh_size(),
                               Grid2D_t::l_margin + 1ll)},
+                      is_permeable{rock_field_props.base_hydrodynamics.is_permeable},
                       history{history},
                       rock_field_props{rock_field_props},
                       grid2D_rocks{grid2D_rocks}
                 {
-                    assert(std::abs(well_base.rfp.sum() - 1.0) < 1e-12);
-                    assert(std::abs(well_base.wfp.sum() - 1.0) < 1e-12);
+                    assert(std::all_of(PI.cbegin(), PI.cend(), [](const RealType v)
+                                       { return v >= 0.0; }));
+                    assert(std::any_of(PI.cbegin(), PI.cend(), [](const RealType v)
+                                       { return v > 0.0; }));
 
-                    static_assert(3ll == Grid2D_t::l_margin);
+                    const_cast<ptr<const hydro_bc_type> &>(hydro_bc) =
+                        std::make_shared<const hydro_bc_type>(
+                            grid2D_rocks,
+                            std::make_shared<const functor_type>(
+                                history, rock_field_props.base_hydrodynamics.ext_pressure,
+                                PI,
+                                grid2D_rocks));
                 }
 
                 template <typename HistoryRecord_t>
                 const auto get_RFP(const HistoryRecord_t &record) const
                 {
-                    return this->rfp * record.rate;
+                    return this->rfp;
                 }
                 template <typename HistoryRecord_t>
                 const auto get_WFP(const HistoryRecord_t &record) const
                 {
-                    return this->wfp * record.rate;
+                    return this->wfp;
                 }
                 template <typename HistoryRecord_t>
                 const auto get_verticle_cement_flow(const HistoryRecord_t &record) const
                 {
-                    return this->verticle_flux_in_cement * record.rate;
+                    return this->verticle_flux_in_cement;
                 }
                 template <typename HistoryRecord_t>
                 const auto get_verticle_well_flow(const HistoryRecord_t &record) const
                 {
-                    return this->verticle_flux_in_well * record.rate;
+                    return this->verticle_flux_in_well;
                 }
 
                 template <typename HistoryRecord_t>
@@ -184,13 +192,15 @@ namespace GPN
                     const HistoryRecord_t &record,
                     const auto &collector_pressure) const
                 {
-                    return collector_pressure.col(0ll) + record.rate * resistivity;
+                    // Pressure at the level of NON-permeable layers is assumed zero.
+                    // Pressure at permeable layers is equal to history->pressure()
+                    return StepPropertyContainer::Constant(size, P_bot(record, collector_pressure)) * is_permeable.log_vals;
                 }
 
                 template <typename HistoryRecord_t>
                 RealType get_total_bottomhole_rate(
                     const HistoryRecord_t &record,
-                    const auto & /*collector_pressure*/) const
+                    const auto &collector_pressure) const
                 {
                     return record.rate;
                 }
@@ -198,43 +208,71 @@ namespace GPN
                 template <typename HistoryRecord_t>
                 void set_well_flow_field(
                     const HistoryRecord_t &record,
-                    const auto &)
+                    const auto &collector_pressure)
                 {
-                    const auto rate{record.rate};
-
+                    this->set_flux(set_RFP(record, collector_pressure));
                     // set verticle flux
                     flow_axes1_value.col(0ll) = get_verticle_well_flow(record);
                     flow_axes1_value.col(1ll) = 0.0;
                     flow_axes1_value.col(2ll) = get_verticle_cement_flow(record);
                     // set radial flux
-                    const auto temp{get_WFP(record)};
                     static_assert(Grid2D_t::l_margin == 3ll);
+
                     flow_axes2_value.col(0ll) = 0.0;
-                    flow_axes2_value.col(1ll) = temp;
-                    flow_axes2_value.col(2ll) = temp;
+                    flow_axes2_value.col(1ll) = get_WFP(record);
+                    flow_axes2_value.col(2ll) = get_WFP(record);
                     flow_axes2_value.col(3ll) = get_RFP(record);
                 }
 
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
                 const cptr<Grid2D_t> grid2D_rocks;
+
+                const std::ptrdiff_t size;
+                const StepPropertyContainer PI;
+                const Logs::IsPermeable &is_permeable;
                 const cptr<History_t> history;
+
                 const Properties::Rocks::RocksProps<Grid2D_t> &
                     rock_field_props;
 
-            private:
-                static auto set_resistivity(
-                    const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
-                    const CrossFlow_t &well,
-                    cptr<Grid2D_t> grid2D_rocks)
+                template <typename HistoryRecord_t>
+                const RealType P_bot(
+                    const HistoryRecord_t &record,
+                    const auto &collector_pressure) const
                 {
+                    const auto rate{record.rate};
+                    const RealType term1{(PI * collector_pressure.col(0ll)).sum()};
+                    assert(!std::isnan(rate) && !std::isinf(rate));
+                    const auto out{(term1 + rate) / PI.sum()};
+                    return out;
+                }
+
+            protected:
+                template <typename HistoryRecord_t>
+                const auto set_RFP(
+                    const HistoryRecord_t &record,
+                    const auto &collector_pressure) const
+                {
+                    return Logs::RFPFactory::create_from_container<Logs::RFP>(
+                        -(PI * (collector_pressure.col(0ll) - P_bot(record, collector_pressure))).eval(),
+                        is_permeable);
+                }
+
+                static auto set_productivity_index(
+                    const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
+                    const ptr<const Grid2D_t> grid2D_rocks)
+                {
+                    // center of cell next to the well
                     const auto r3{grid2D_rocks->second_coord().mesh_nodes(0ll)};
+                    // sandface
                     const auto r2_face{grid2D_rocks->second_coord().dual_nodes(0ll)};
                     const auto two_pi{2.0 * std::numbers::pi_v<RealType>};
                     const auto is_permeable{rock_field_props.base_hydrodynamics.is_permeable.log_vals};
 
-                    Eigen::ArrayX<RealType> out{well.rfp / (two_pi / std::log(r3 / r2_face) *
-                                                            rock_field_props.mobility_axes2.col(Grid2D_t::l_margin) *
-                                                            grid2D_rocks->first_coord().volumes())};
+                    Eigen::ArrayX<RealType> out{
+                        two_pi / std::log(r3 / r2_face) *
+                        rock_field_props.mobility_axes2.col(Grid2D_t::l_margin) *
+                        grid2D_rocks->first_coord().volumes()};
 
                     for (auto row{0ll}; row < grid2D_rocks->first_coord().mesh_size(); ++row)
                     {
@@ -243,9 +281,7 @@ namespace GPN
                     }
                     return out;
                 }
-
-                const StepPropertyContainer resistivity;
             };
-        } // ResFlowProfileControl
+        } // BotHoleRateControl
     } // Wells
 } // GPN

@@ -84,6 +84,12 @@ namespace GPN
             {
                 return Properties::JT_FieldFactory::create_spatial(*this).values();
             }
+            
+            const auto get_temporal_JT_contribution() const
+            {
+                throw std::runtime_error("The temporal JT contribution was not tested for Incompressible fluid.");
+            //    return Properties::JT_FieldFactory::create_temporal(*this).values();
+            }
 
             const auto get_heat_flow_in_axes1() const
             {

@@ -244,7 +244,8 @@ namespace GPN
 
         /// @brief Indicator of cells with damaged column,
         /// so the liquid can leave the column,
-        /// to further flow vertically along the cement
+        /// to further flow vertically along the cement.
+        /// Ignores perforated cells.
         struct IsDamaged : public IndicatorProperty
         {
             using IndicatorProperty::IndicatorProperty;
@@ -269,6 +270,18 @@ namespace GPN
                 //     assert(
                 //         ((is_permeable(id) == 1.0) && (pressure(id) > 0.0)) ||
                 //         ((is_permeable(id) == 0.0) && (pressure(id) == 0.0)));
+            }
+        };
+
+        struct HydrostaticPressure
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            HydrostaticPressure(
+                const StepPropertyGrid &pressure)
+                : StepPropertyGrid{pressure},
+                  AssertNonNegative{pressure}
+            {
             }
         };
 
@@ -312,7 +325,7 @@ namespace GPN
         {
             RFP(const StepPropertyGrid &rfp,
                         const IsPermeable &indicator)
-                        :StepPropertyGrid{rfp}
+                        :StepPropertyGrid{rfp*indicator}
             {
                 assert(rfp.size() == indicator.size());
                 for (std::ptrdiff_t id{0ll}; id < rfp.size(); ++id)
@@ -337,7 +350,7 @@ namespace GPN
         {
             WFP(const StepPropertyGrid &wfp,
                         const IsPerforated &indicator)
-                : StepPropertyGrid{wfp}
+                : StepPropertyGrid{wfp*indicator}
             {
                 assert(wfp.size() == indicator.size());
                 for (std::ptrdiff_t id{0ll}; id < wfp.size(); ++id)
