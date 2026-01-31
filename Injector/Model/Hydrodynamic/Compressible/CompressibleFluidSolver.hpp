@@ -62,6 +62,15 @@ namespace GPN
                 return solver->get_state();
             }
 
+            const auto& get_problem_matrix() const
+            {
+                return solver->A;
+            }
+            const auto& get_problem_rhs() const
+            {
+                return solver->rhs;
+            }
+
             const ptr<Solver_t> solver;
         };
     } // Hydrodynamic
