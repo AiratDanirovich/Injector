@@ -232,7 +232,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         for (size_t id{0ull}; id < internal_step_count; ++id, cur_time += step)
         {
             const auto t{cur_time + step};
-            const auto &collector_pressure_prev{ptr_pressure_field->get_rock_pressure()};
+            const auto collector_pressure_prev{ptr_pressure_field->get_rock_pressure()};
             rates_factory.set_flow_field(cur_time, step);
             const auto record{history->get_current_record()};
             const auto collector_pressure{ptr_pressure_field->get_rock_pressure()};
