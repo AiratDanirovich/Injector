@@ -94,8 +94,8 @@
     "t_units": ["d", "h", "m", "s"],
     "history_type": "dynamic",
     "history_types": ["static", "dynamic"],
-    "control_type": "bottomhole_pressure",
-    "control types": ["RFP", "bottomhole_pressure"],
+    "control_type": "bottomhole_rate",
+    "control types": ["RFP", "bottomhole_pressure", "bottomhole_rate"],
     "dynamic": {
       "t_major_step": [0.1, 1.0, 1.0],
       "well_rate": [0.005, 0.005, 0.005],
