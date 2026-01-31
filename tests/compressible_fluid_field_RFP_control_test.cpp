@@ -501,6 +501,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             const auto &mobility2{pressure_field.face_mobility.face_vals_axes2};
             const auto wfp{well->get_WFP(history->get_current_record())};
             CHECK(wfp.rows() == grid_z.mesh_size());
+            CHECK_THAT(wfp.sum(), WithinRel(Q, exact_tol));
+            CHECK_THAT(rfp.sum(), WithinRel(wfp.sum(), exact_tol));
             const auto cement_flow{well->get_verticle_cement_flow(history->get_current_record())};
             CHECK(cement_flow.rows() == grid_z.dual_size());
             const auto well_flow{well->get_verticle_well_flow(history->get_current_record())};
