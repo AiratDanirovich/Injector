@@ -213,7 +213,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         make_unique<Logs::Geotherma>(
             make_geotherma(data, grid2D))};
 
-    // history
     SECTION("WellReservoirFlowProfileControl")
     {
         const RFP_weights RFP_w{

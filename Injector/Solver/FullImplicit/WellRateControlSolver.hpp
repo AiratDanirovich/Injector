@@ -120,13 +120,13 @@ namespace GPN
                     assemble_x_noconvection(tripletList);
 #pragma endregion
 #pragma endregion
-#pragma region WELL-CONDITION
+#pragma region WELL-BOUNDARY-CONDITION
                     // take well condition into account
                     const auto &PI{well.PI}; // well productivity index
                     // set the P_bot coefficient
                     const auto matrix_row{A_size - 1ll}; // id of unknown bottomhole pressure
                     // set last matrix diag element
-                    tripletList.emplace_back(matrix_row, matrix_row, -PI.sum());
+                    tripletList.emplace_back(matrix_row, matrix_row, PI.sum());
                     // set P_i,3 coeffs if non-zero
                     for (auto row{0}; row < PI.rows(); ++row)
                     { // loop over every row of the sandface
@@ -134,19 +134,19 @@ namespace GPN
                         {
                             // set last matrix row
                             const auto matrix_col{grid->to_linear(row, 0ll)};
-                            tripletList.emplace_back(matrix_row, matrix_col, PI(row));
+                            tripletList.emplace_back(A_size - 1ll, matrix_col, -PI(row));
                             // set last matrix col
-                            tripletList.emplace_back(matrix_col, matrix_row, -PI(row));
+                            tripletList.emplace_back(matrix_col, A_size - 1ll, -PI(row));
                         }
                     }
 #pragma endregion
                     return tripletList;
                 }
 
-                auto advance(const RealType tau)
+                void advance(const RealType tau)
                 {
                     ptrdiff_t A_size{first_coord_size * second_coord_size + 1ll};
-                    Eigen::SparseMatrix<RealType> A{// ctor for matrix, reservoir + bottomwell pressure
+                    A = Eigen::SparseMatrix<RealType> {// ctor for matrix, reservoir + bottomwell pressure
                                                     A_size,
                                                     A_size};
                     A.reserve(A_size * 6ll);
@@ -162,7 +162,7 @@ namespace GPN
 
                     const Eigen::ArrayXX<RealType> tau_factor{
                         time_factor.Divide(tau).eval()};
-                    RHS_t rhs{assemble_RHS_noconvection(state, tau_factor, A_size)};
+                    rhs = RHS_t{assemble_RHS_noconvection(state, tau_factor, A_size)};
                     
                     assert(std::all_of(
                         rhs.cbegin(), 
@@ -193,9 +193,10 @@ namespace GPN
                     P_bot_memory = solution.bottomRows(1ll)(0ll);
 
                     cur_time += tau;
-
-                    return std::pair{std::move(A), std::move(rhs)};
                 }
+
+                Eigen::SparseMatrix<RealType> A;
+                RHS_t rhs;
 
                 RHS_t assemble_RHS_noconvection(
                     const auto state,

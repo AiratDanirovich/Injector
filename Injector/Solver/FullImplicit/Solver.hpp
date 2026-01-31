@@ -79,7 +79,7 @@ namespace GPN
                     states.emplace_back(state);
                 }
 
-                auto advance(const RealType tau)
+                void advance(const RealType tau)
                 {
                     if constexpr (std::is_same_v<ConvectionTermFactory_t, EmptyConvectionField> == false)
                     { // there is convection field
@@ -89,7 +89,7 @@ namespace GPN
 
                     ptrdiff_t A_size{first_coord_size * second_coord_size};
                     assert(A_size == grid->mesh_size());
-                    Eigen::SparseMatrix<RealType> A{// ctor for matrix
+                    A = Eigen::SparseMatrix<RealType>{// ctor for matrix
                                                     A_size,
                                                     A_size};
 
@@ -127,7 +127,7 @@ namespace GPN
                     A.setFromTriplets(tripletList.begin(), tripletList.end());
                     A.diagonal() = A.diagonal() + tau_factor.reshaped(A_size, 1ll).matrix();
 
-                    RHS_t rhs{};
+                    rhs = RHS_t{};
                     if constexpr (std::is_same_v<ConvectionTermFactory_t, EmptyConvectionField> == false)
                     { // there is convection field
                         rhs = assemble_RHS(state, tau_factor, A_size, tau);
@@ -136,15 +136,6 @@ namespace GPN
                     { // there is no convection field
                         rhs = assemble_RHS_noconvection(state, tau_factor, A_size);
                     }
-                    // if (!std::all_of(
-                    //         rhs.cbegin(),
-                    //         rhs.cend(),
-                    //         [](const auto &v)
-                    //         {
-                    //             return !std::isnan(v) && !std::isinf(v);
-                    //         }))
-                    //     std::cout << "rhs:\n"
-                    //               << rhs.transpose() << std::endl;
 
                     assert(std::all_of(
                         rhs.cbegin(),
@@ -159,15 +150,6 @@ namespace GPN
                     bc.set_bc_type(cur_time + tau);
                     applyBC(A, rhs);
                     
-                    // if (!std::all_of(
-                    //         rhs.cbegin(),
-                    //         rhs.cend(),
-                    //         [](const auto &v)
-                    //         {
-                    //             return !std::isnan(v) && !std::isinf(v);
-                    //         }))
-                    //     std::cout << "rhs:\n"
-                    //               << rhs.transpose() << std::endl;
 
                     assert(std::all_of(
                         rhs.cbegin(),
@@ -186,9 +168,10 @@ namespace GPN
                         }
 
                     cur_time += tau;
-
-                    return std::pair{std::move(A), std::move(rhs)};
                 }
+
+                Eigen::SparseMatrix<RealType> A;
+                RHS_t rhs;
 
                 RHS_t assemble_RHS(
                     const auto state,

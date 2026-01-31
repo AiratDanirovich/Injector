@@ -278,9 +278,6 @@ TEST_CASE("apply_well_test", "apply_well_test")
     CHECK_THAT(weights_stencils.sum(), WithinRel(1.0, tol));
   }
 
-  const Well_Explicit well{
-      core_data.is_permeable, core_data.is_perforated, weights};
-
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
       solid_specific_heatcapacity_stencils,

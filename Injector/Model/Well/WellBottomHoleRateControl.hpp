@@ -243,8 +243,7 @@ namespace GPN
                     const auto rate{record.rate};
                     const RealType term1{(PI * collector_pressure.col(0ll)).sum()};
                     assert(!std::isnan(rate) && !std::isinf(rate));
-                    const auto out{(term1 - rate) / PI.sum()};
-                    // std::cout << "P_bot: " << out << std::endl;
+                    const auto out{(term1 + rate) / PI.sum()};
                     return out;
                 }
 
@@ -254,12 +253,8 @@ namespace GPN
                     const HistoryRecord_t &record,
                     const auto &collector_pressure) const
                 {
-                    std::cout << "depression at sandface:\n"
-                              << -(collector_pressure.col(0ll) - P_bot(record, collector_pressure) * is_permeable.log_vals).transpose() << std::endl;
-
-                    // return (mobility * (collector_pressure.col(0ll) - record.pressure)).eval();
                     return Logs::RFPFactory::create_from_container<Logs::RFP>(
-                        (PI * (collector_pressure.col(0ll) - P_bot(record, collector_pressure))).eval(),
+                        -(PI * (collector_pressure.col(0ll) - P_bot(record, collector_pressure))).eval(),
                         is_permeable);
                 }
 
