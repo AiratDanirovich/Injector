@@ -434,8 +434,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
             const RealType P_bot{well->P_bot(record, collector_pressure)};
             const RealType P_bot_solver{pressure_field.get_solver()->solver->P_bot()};
-    //        std::cout << "P_bot:        " << P_bot << std::endl;
-    //        std::cout << "P_bot_solver: " << P_bot_solver << std::endl;
+            //        std::cout << "P_bot:        " << P_bot << std::endl;
+            //        std::cout << "P_bot_solver: " << P_bot_solver << std::endl;
             CHECK_THAT(P_bot, WithinRel(P_bot_solver, exact_tol));
 
             const auto rfp{well->get_RFP(history->get_current_record())};
@@ -443,7 +443,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             const auto &P{pressure_field.current_pressure().values()};
             CHECK(rfp.rows() == grid_z.mesh_size());
 
-    //        std::cout << "rfp:\n" << rfp.transpose() << std::endl;
+            //        std::cout << "rfp:\n" << rfp.transpose() << std::endl;
 
             for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
             {
@@ -506,7 +506,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             CHECK(flux2.cols() == grid_r.dual_size());
             const auto &mobility2{pressure_field.face_mobility.face_vals_axes2};
             const auto wfp{well->get_WFP(history->get_current_record())};
-    //        std::cout << "wfp:\n" << wfp.transpose() << std::endl;
+            //        std::cout << "wfp:\n" << wfp.transpose() << std::endl;
             CHECK(wfp.rows() == grid_z.mesh_size());
             CHECK_THAT(wfp.sum(), WithinRel(Q, exact_tol));
             CHECK_THAT(rfp.sum(), WithinRel(wfp.sum(), exact_tol));
@@ -515,6 +515,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             const auto well_flow{well->get_verticle_well_flow(history->get_current_record())};
             CHECK(well_flow.rows() == grid_z.dual_size());
             RealType well_loss_cum_sum{0.0};
+            RealType well_accum_cum_sum{0.0};
 #pragma region HORIZONTAL-RATES
             for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
             {
@@ -598,27 +599,58 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             }
 #pragma endregion
 #pragma region VERTICAL-RATES
-            for (auto row{0ll}; row < grid_z.dual_size(); ++row)
+            //    std::cout << "well_loss_cum_sum:\n" << well_loss_cum_sum.transpose() << std::endl;
+            //    std::cout << "wfp:\n" << wfp.transpose() << std::endl;
+            //    std::cout << "Q: " << Q << std::endl;
+
+            for (auto row{grid_z.dual_size() - 1ll}; row >= 0ll; --row)
             {
                 { // flow in the tube
                     const auto col{0ll};
-                    CHECK_THAT(Q - well_loss_cum_sum,
-                               WithinRel(well_flow(row), tol));
-                    CHECK_THAT(C * (Q - well_loss_cum_sum),
-                               WithinRel(flux1(row, col), tol));
-                    if (row < grid_z.mesh_size())
-                        well_loss_cum_sum += wfp(row);
+                    INFO("row: " << row);
+                    if (well_accum_cum_sum == 0.0)
+                    {
+                        CHECK_THAT(
+                            well_accum_cum_sum,
+                            WithinAbs(well_flow(row), exact_tol));
+                    }
+                    else
+                    {
+                        CHECK_THAT(well_accum_cum_sum,
+                                   WithinRel(well_flow(row), tol));
+                    }
+
+                    if (std::abs(flux1(row, col) / C / Q) < exact_tol)
+                    {
+                        INFO("C: " << C << ", acc_flux: " << well_accum_cum_sum << ", flux1: " << flux1(row, col));
+                        CHECK_THAT(C * well_accum_cum_sum,
+                                   WithinAbs(flux1(row, col) / C, exact_tol));
+                    }
+                    else
+                    {
+                        INFO("C: " << C << ", acc_flux: " << well_accum_cum_sum << ", flux1: " << flux1(row, col));
+                        CHECK_THAT(well_accum_cum_sum,
+                                   WithinRel(flux1(row, col) / C, tol));
+                    }
+
+                    if (row > 0ll)
+                        well_accum_cum_sum += wfp(row - 1ll);
                 }
                 { // flow in the sandwich
                     const auto col{1ll};
+                    INFO("row: " << row);
                     CHECK(flux1(row, col) == 0.0);
                 }
                 { // flow in the cement
                     const auto col{2ll};
+                    INFO("row: " << row);
                     CHECK(flux1(row, col) == cement_flow(row));
                 }
                 for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
+                {
+                    INFO("row: " << row);
                     CHECK(flux1(row, col) == 0.0);
+                }
             }
 #pragma endregion
 #pragma endregion

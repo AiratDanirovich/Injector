@@ -244,7 +244,6 @@ namespace GPN
                     const RealType term1{(PI * collector_pressure.col(0ll)).sum()};
                     assert(!std::isnan(rate) && !std::isinf(rate));
                     const auto out{(term1 + rate) / PI.sum()};
-                    // std::cout << "P_bot: " << out << std::endl;
                     return out;
                 }
 
@@ -254,7 +253,6 @@ namespace GPN
                     const HistoryRecord_t &record,
                     const auto &collector_pressure) const
                 {
-                    // return (mobility * (collector_pressure.col(0ll) - record.pressure)).eval();
                     return Logs::RFPFactory::create_from_container<Logs::RFP>(
                         -(PI * (collector_pressure.col(0ll) - P_bot(record, collector_pressure))).eval(),
                         is_permeable);

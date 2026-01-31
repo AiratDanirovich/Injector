@@ -325,7 +325,7 @@ namespace GPN
         {
             RFP(const StepPropertyGrid &rfp,
                         const IsPermeable &indicator)
-                        :StepPropertyGrid{rfp}
+                        :StepPropertyGrid{rfp*indicator}
             {
                 assert(rfp.size() == indicator.size());
                 for (std::ptrdiff_t id{0ll}; id < rfp.size(); ++id)
@@ -350,7 +350,7 @@ namespace GPN
         {
             WFP(const StepPropertyGrid &wfp,
                         const IsPerforated &indicator)
-                : StepPropertyGrid{wfp}
+                : StepPropertyGrid{wfp*indicator}
             {
                 assert(wfp.size() == indicator.size());
                 for (std::ptrdiff_t id{0ll}; id < wfp.size(); ++id)
