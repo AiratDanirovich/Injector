@@ -21,6 +21,7 @@
 #include <Injector/Model/Well/Well.hpp>
 #include <Injector/Model/Well/WellReservoirFlowProfileControl.hpp>
 #include <Injector/Model/Well/WellBottomHolePressureControl.hpp>
+#include <Injector/Model/Well/WellBottomHoleRateControl.hpp>
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluid.hpp>
@@ -577,6 +578,12 @@ Wrapper::Wrapper(const json &data)
     {
         std::cout << "Bottomhole pressure is used as well control condition...\n";
         using Well_t = GPN::Wells::BotHolePresControl::WellBottomHolePressureControl<History, Grids::CylinderGridRock, CrossFlows>;
+        WrapperFactory<Well_t>::choose_well(data);
+    }
+    else if (control_type == "bottomhole_rate")
+    {
+        std::cout << "Bottomhole rate is used as well control condition...\n";
+        using Well_t = GPN::Wells::BotHoleRateControl::WellBottomHoleRateControl<History, Grids::CylinderGridRock, CrossFlows>;
         WrapperFactory<Well_t>::choose_well(data);
     }
     else
