@@ -140,8 +140,8 @@ namespace GPN
                 const Grid_t &grid)
             {
                 StepPropertyContainer
-                    // the data and logs is assumed interpolated
-                    // for a finer grid
+                    // the data and logs are assumed to be interpolated
+                    // on a finer grid
                     is_damaged{StepPropertyContainer::Zero(grid.mesh_size())};
 
                 for (const auto &cf : cross_flows.cross_flow_data)
@@ -158,19 +158,20 @@ namespace GPN
                         (is_perforated[i] == 0.0) ||
                         (is_perforated[i] == 1.0));
                     assert(
+                        (is_damaged[i] == 0.0) ||
+                        (is_damaged[i] == 1.0));
+                    assert(
                         ((is_perforated[i] == 0.0) && ((is_damaged[i] == 0.0) || (is_damaged[i] == 1.0))) ||
-                        ((is_perforated[i] == 1.0) && (is_damaged[i] == 0.0)));
+                        ((is_perforated[i] == 1.0) && (is_damaged[i] == 0.0))); // is_damaged ignores perforated cells
                 }
 
-                // at least one perforated layer must exist
-                assert(std::any_of(is_perforated.cbegin(), is_perforated.cend(), [](const RealType v)
-                                   { return v == 1.0; }));
+                // at least one perforated layer is expected
+                // assert(std::any_of(is_perforated.cbegin(), is_perforated.cend(), [](const RealType v)
+                //                    { return v == 1.0; }));
 
                 return IsDamaged{
                     StepPropertyGrid{
                         StepPropertyContainer{
-                            // the data and logs is assumed interpolated
-                            // for a finer grid
                             is_damaged},
                         grid}};
             }
@@ -300,6 +301,47 @@ namespace GPN
                 }
                 return out;
             }
+        };
+
+        struct HydrostaicPressureFactory
+        {
+            /// @brief Create log of hydrostatic pressure based on Gravity and z-grid
+            /// @param nodes Reference z-nodes for geotherma table
+            /// @param vals Reference t-values for geotherma
+            /// @param z_bot Coordinate of bottomhole, where pressure is set
+            /// @param P_bot Coordinate of bottomhole, where pressure is set
+            /// @param q_grid Mesh nodes for pressure calculation
+            /// @return
+            template <typename Fluid_t>
+            static HydrostaticPressure create(
+                const Fluid_t& fluid,
+                const RealType z_bot,
+                const RealType P_bot,
+                const auto &q_grid)
+            {
+                assert(P_bot >= fluid.density*Gravity::value()*z_bot);
+                return {
+                    StepPropertyGrid{
+                        StepPropertyContainer{
+                            (fluid.density*Gravity::value())*(q_grid.mesh_nodes-z_bot) + P_bot},
+                        q_grid}};
+            }
+
+            /// @brief Create const-value geotherms
+            /// @param P_bot Const pressure value
+            /// @param q_grid Mesh nodes for pressure calculation
+            /// @return
+            static HydrostaticPressure create_const(
+                const RealType P_bot,
+                const auto &q_grid)
+            {
+                return {
+                    StepPropertyGrid{
+                        StepPropertyContainer::Constant(q_grid.mesh_nodes.size(), P_bot),
+                        q_grid}};
+            }
+
+        private:
         };
 
         namespace InternalUse

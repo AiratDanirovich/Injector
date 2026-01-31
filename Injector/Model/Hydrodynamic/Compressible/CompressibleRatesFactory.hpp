@@ -54,10 +54,10 @@ namespace GPN
                       grid2D_rocks->grid2D->first_coord().mesh_size()},
                   second_size{
                       grid2D_rocks->grid2D->second_coord().mesh_size()},
-                  mobility{pressure_field->mobility},
+                  face_mobility{pressure_field->face_mobility},
                   mobility_factor{
                       set_mobility_factor(
-                          pressure_field->mobility.face_vals_axes2,
+                          pressure_field->face_mobility.face_vals_axes2,
                           grid2D_rocks->first_coord().control_volumes)},
                   solution{history}
             {
@@ -73,7 +73,7 @@ namespace GPN
                 assert((history->regime() == InjectorRegimes::FixedRate) ||
                        (history->regime() == InjectorRegimes::FixedBottomHolePressure));
 
-                // the pressure field field is updated at every time step
+                // the pressure field is updated at every time step
                 // non-stationary hydrodynamics is assumed
                 pressure_field->set_pressure_field(t_step, get_history_record());
                 // set the flow in all cells of the well,
@@ -96,6 +96,11 @@ namespace GPN
                         first_size + 1ll,
                         second_size)};
                 axes1_value.leftCols(3ll) = well->flow_axes1_value;
+                // other verticle flow components are zero
+
+                for (auto row{0ll}; row < axes1_value.leftCols(3ll).rows(); ++row)
+                    for (auto col{0ll}; col < axes1_value.leftCols(3ll).cols(); ++col)
+                        assert(!std::isnan(axes1_value(row, col)) && !std::isinf(axes1_value(row, col)));
 
                 FaceValuesContainer axes2_value{
                     FaceValuesContainer::Zero(
@@ -103,16 +108,28 @@ namespace GPN
                         second_size + 1ll)};
                 axes2_value.leftCols(4ll) = well->flow_axes2_value;
 
+                for (auto row{0ll}; row < axes2_value.leftCols(4ll).rows(); ++row)
+                    for (auto col{0ll}; col < axes2_value.leftCols(4ll).cols(); ++col)
+                        assert(!std::isnan(axes2_value(row, col)) && !std::isinf(axes2_value(row, col)));
+
                 // face values of mobility are not defined at the domain boundaries
-                assert(mobility.face_vals_axes1.rows() == first_size - 1ll);
-                assert(mobility.face_vals_axes1.cols() == second_size - Grid2D_t::l_margin);
-                assert(mobility.face_vals_axes2.rows() == first_size);
+                assert(face_mobility.face_vals_axes1.rows() == first_size - 1ll);
+                assert(face_mobility.face_vals_axes1.cols() == second_size - Grid2D_t::l_margin);
+                assert(face_mobility.face_vals_axes2.rows() == first_size);
                 const auto second_size_rock{second_size - Grid2D_t::l_margin - 1ll};
-                assert(mobility.face_vals_axes2.cols() == second_size_rock);
+                assert(face_mobility.face_vals_axes2.cols() == second_size_rock);
 
                 const auto &P{get_pressure_field()};
                 for (auto col{Grid2D_t::l_margin + 1ll}, count{0ll}; count < second_size_rock; ++col, ++count)
+                {
+                    for (auto row{0ll}; row < mobility_factor.rows(); ++row)
+                    {
+                        assert(!std::isnan(mobility_factor(row, count)) && !std::isinf(mobility_factor(row, count)));
+                        assert(!std::isnan(P.value(row,col-1ll)) && !std::isinf(P.value(row,col-1ll)));
+                        assert(!std::isnan(P.value(row,col)) && !std::isinf(P.value(row,col)));
+                    }
                     axes2_value.col(col) = mobility_factor.col(count) * (P.col(col - 1ll) - P.col(col));
+                }
 
                 // volumetric flow field in two directions is calculated,
                 // once the pressure field is calculated
@@ -146,19 +163,35 @@ namespace GPN
 
             const auto &get_heat_flow_in_axes1_pos() const
             {
-                return heat_flow_field->axes1_as_face_normal_pos;
+                const auto& values{heat_flow_field->axes1_as_face_normal_pos};
+                for(auto row{0ll}; row < values.rows(); ++row)
+                    for(auto col{0ll}; col < values.cols(); ++col)
+                        assert(!std::isnan(values(row,col)) && !std::isinf(values(row,col)));
+                return values;
             }
             const auto &get_heat_flow_in_axes2_pos() const
             {
-                return heat_flow_field->axes2_as_face_normal_pos;
+                const auto& values{heat_flow_field->axes2_as_face_normal_pos};
+                for(auto row{0ll}; row < values.rows(); ++row)
+                    for(auto col{0ll}; col < values.cols(); ++col)
+                        assert(!std::isnan(values(row,col)) && !std::isinf(values(row,col)));
+                return values;
             }
             const auto &get_heat_flow_in_axes1_neg() const
             {
-                return heat_flow_field->axes1_as_face_normal_neg;
+                const auto& values{heat_flow_field->axes1_as_face_normal_neg};
+                for(auto row{0ll}; row < values.rows(); ++row)
+                    for(auto col{0ll}; col < values.cols(); ++col)
+                        assert(!std::isnan(values(row,col)) && !std::isinf(values(row,col)));
+                return values;
             }
             const auto &get_heat_flow_in_axes2_neg() const
             {
-                return heat_flow_field->axes2_as_face_normal_neg;
+                const auto& values{heat_flow_field->axes2_as_face_normal_neg};
+                for(auto row{0ll}; row < values.rows(); ++row)
+                    for(auto col{0ll}; col < values.cols(); ++col)
+                        assert(!std::isnan(values(row,col)) && !std::isinf(values(row,col)));
+                return values;
             }
             const auto &get_pressure_field() const
             {
@@ -174,7 +207,7 @@ namespace GPN
             ptr<Hydrodynamics_t> pressure_field;
 
         protected:
-            const FaceProperties::Mobility<Grid2D_t> &mobility;
+            const FaceProperties::Mobility<Grid2D_t> &face_mobility;
             const FaceValuesContainer mobility_factor;
             const ptrdiff_t first_size, second_size;
 
