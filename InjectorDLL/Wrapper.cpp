@@ -234,11 +234,11 @@ struct WrapperFactory
 
         Properties::Rocks::HeatProps heat_props{
             heat_logs, grid2D};
-        heat_props.apply_well(extr_completion, *well);
+        heat_props.apply_well(extr_completion);
 
         FaceProperties::Rocks::HeatFaceProps heat_face_props{
             heat_props, grid2D};
-        heat_face_props.apply_well(extr_completion, *well);
+        heat_face_props.apply_well(extr_completion);
 
         // external pressure log
         const auto external_pressure{
