@@ -56,7 +56,7 @@ const RealType pi{std::numbers::pi};
 const RealType tol{1e-8};
 const RealType exact_tol{1e-10};
 
-TEST_CASE("Solver", "SelfSimilarCyl")
+TEST_CASE("CompressibleFluid", "RFP_control")
 {
     ifstream f("heatflow_test_data.json");
     REQUIRE(f.is_open());
