@@ -401,7 +401,7 @@ namespace GPN
                 assert(compressibility.size() == is_permeable.size());
                 for (std::ptrdiff_t id{0ll}; id < compressibility.size(); ++id)
                     assert(
-                        ((is_permeable(id) == 1.0) && (compressibility(id) > 0.0)) ||
+                        ((is_permeable(id) == 1.0) && (compressibility(id) >= 0.0)) ||
                         ((is_permeable(id) == 0.0) && (compressibility(id) == 0.0)));
             }
         };
