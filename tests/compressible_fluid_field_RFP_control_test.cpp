@@ -119,6 +119,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto &grid_rocks_z{grid2D_rocks->first_coord()};
     const auto &grid_rocks_r{grid2D_rocks->second_coord()};
 
+    std::cout << "is_permeable:\n" << is_permeable_stencils.transpose() << std::endl;
+    std::cout << "is_perforated:\n" << is_perforated_stencils.transpose() << std::endl;
+
     Logs::Rocks::CoreSampleLogs
         core_logs{
             is_permeable_stencils,
