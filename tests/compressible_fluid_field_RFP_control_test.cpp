@@ -452,8 +452,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                             const auto val{collector_pressure_prev(row, col) * grid2D_rocks->volume(row, col) *
                                                medium_compressibility_field.value(row, col) / step +
                                            rfp(row)};
-                             CHECK_THAT(rhs(l),
-                                        WithinRel(val, exact_tol));
+                            CHECK_THAT(rhs(l),
+                                       WithinRel(val, exact_tol));
                         }
                         for (auto col{1ll}; col < grid_rocks_r.mesh_size() - 1ll; ++col)
                         {
@@ -564,8 +564,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             CHECK(flux1.rows() == grid_z.dual_size());
             CHECK(flux1.cols() == grid_r.mesh_size());
             const auto flux2{
-                (rates_factory.get_heat_flow_in_axes2_neg() + 
-                rates_factory.get_heat_flow_in_axes2_pos()).eval()};
+                (rates_factory.get_heat_flow_in_axes2_neg() +
+                 rates_factory.get_heat_flow_in_axes2_pos())
+                    .eval()};
 
             // std::cout << "is_perforated:\n" << core_logs.is_perforated.log_vals.transpose() << std::endl;
             // std::cout << "is_permeable:\n" << core_logs.is_permeable.log_vals.transpose() << std::endl;
@@ -700,7 +701,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 }
                 { // flow in the cement
                     const auto col{2ll};
-                    CHECK(flux1(row, col) / C  == cement_flow(row));
+                    CHECK(flux1(row, col) / C == cement_flow(row));
                 }
                 for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
                     CHECK(flux1(row, col) == 0.0);
@@ -763,7 +764,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 {
                     for (auto col{left_margin}; col < JT_temporal_term.cols(); ++col)
                     {
-                        const auto ref{porosity(row)*water.adiabatic_factor * grid2D->volume(row, col) *
+                        const auto ref{porosity(row) * water.adiabatic_factor * grid2D->volume(row, col) *
                                        (rates_factory.pressure_field->P->value(row, col) -
                                         rates_factory.pressure_field->P_prev->value(row, col))};
                         INFO("row: " << row << ", col: " << col);
