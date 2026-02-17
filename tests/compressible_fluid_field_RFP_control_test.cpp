@@ -115,7 +115,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     const cptr<Grids::CylinderGridRock> grid2D_rocks{
         make_shared<Grids::CylinderGridRock>(grid2D)};
-    constexpr auto left_margin{3ll};
+    const auto left_margin{grid2D_rocks->l_margin};
     const auto &grid_rocks_z{grid2D_rocks->first_coord()};
     const auto &grid_rocks_r{grid2D_rocks->second_coord()};
 
@@ -518,7 +518,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                         CHECK(flux2(row, col) == 0.0);
                     }
                     {
-                        for (auto col{1ll}; col <= 2ll; ++col)
+                        for (auto col{1ll}; col < left_margin; ++col)
                         {
                             CHECK(flux2(row, col) == C * wfp(row));
                         }
@@ -564,7 +564,18 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 }
                 else
                 { // check horizontal rates in impermeable layers
-                    for (auto col{0ll}; col < grid_r.dual_size(); ++col)
+                    {
+                        const auto col{0ll};
+                        CHECK(flux2(row, col) == 0.0);
+                    }
+                    for (auto col{1ll}; col < left_margin; ++col)
+                    {
+                        // this comes from cross flow data
+                        INFO("row: " << row << ", col: " << col);
+                        CHECK(flux2(row, col) == C * wfp(row));
+                    }
+
+                    for (auto col{left_margin}; col < grid_r.dual_size(); ++col)
                     {
                         INFO("row: " << row << ", col: " << col);
                         CHECK(flux2(row, col) == 0.0);
