@@ -117,3 +117,9 @@ auto read_minor_step(const json &data)
     using namespace GPN;
     return data["history"]["t_minor_step"].get<RealType>()*read_units_factor(data);
 }
+
+auto read_start_time(const json &data)
+{
+    using namespace GPN;
+    return data["history"]["start_time"].get<RealType>()*read_units_factor(data);
+}
