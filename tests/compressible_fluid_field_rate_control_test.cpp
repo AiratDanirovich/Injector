@@ -658,7 +658,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 { // flow in the cement
                     const auto col{2ll};
                     INFO("row: " << row);
-                    CHECK(flux1(row, col) == cement_flow(row));
+                    CHECK(flux1(row, col) / C == cement_flow(row));
                 }
                 for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
                 {

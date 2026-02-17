@@ -119,8 +119,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto &grid_rocks_z{grid2D_rocks->first_coord()};
     const auto &grid_rocks_r{grid2D_rocks->second_coord()};
 
-    std::cout << "is_permeable:\n" << is_permeable_stencils.transpose() << std::endl;
-    std::cout << "is_perforated:\n" << is_perforated_stencils.transpose() << std::endl;
+    // std::cout << "is_permeable:\n" << is_permeable_stencils.transpose() << std::endl;
+    // std::cout << "is_perforated:\n" << is_perforated_stencils.transpose() << std::endl;
 
     Logs::Rocks::CoreSampleLogs
         core_logs{
@@ -492,7 +492,14 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             const auto flux1{rates_factory.get_heat_flow_in_axes1_neg() + rates_factory.get_heat_flow_in_axes1_pos()};
             CHECK(flux1.rows() == grid_z.dual_size());
             CHECK(flux1.cols() == grid_r.mesh_size());
-            const auto flux2{rates_factory.get_heat_flow_in_axes2_neg() + rates_factory.get_heat_flow_in_axes2_pos()};
+            const auto flux2{
+                (rates_factory.get_heat_flow_in_axes2_neg() + 
+                rates_factory.get_heat_flow_in_axes2_pos()).eval()};
+
+            // std::cout << "is_perforated:\n" << core_logs.is_perforated.log_vals.transpose() << std::endl;
+            // std::cout << "is_permeable:\n" << core_logs.is_permeable.log_vals.transpose() << std::endl;
+            // std::cout << "flux2:\n" << flux2.leftCols(6ll) << std::endl;
+
             CHECK(flux2.rows() == grid_z.mesh_size());
             CHECK(flux2.cols() == grid_r.dual_size());
             const auto &mobility2{pressure_field.face_mobility.face_vals_axes2};
@@ -602,6 +609,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             }
 #pragma endregion
 #pragma region VERTICAL-RATES
+
+            // std::cout << "flux1:\n" << flux1.leftCols(6ll) << std::endl;
+
             for (auto row{0ll}; row < grid_z.dual_size(); ++row)
             {
                 { // flow in the tube
@@ -619,7 +629,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 }
                 { // flow in the cement
                     const auto col{2ll};
-                    CHECK(flux1(row, col) == cement_flow(row));
+                    CHECK(flux1(row, col) / C  == cement_flow(row));
                 }
                 for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
                     CHECK(flux1(row, col) == 0.0);
