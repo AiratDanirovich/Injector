@@ -569,9 +569,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     }
                 }
                 else
-                { // check horizontal rates in impermeble layers
+                { // check horizontal rates in impermeable layers
                     for (auto col{0ll}; col < grid_r.dual_size(); ++col)
+                    {
+                        INFO("row: " << row << ", col: " << col);
                         CHECK(flux2(row, col) == 0.0);
+                    }
                 }
 
                 if (core_logs.is_permeable(row) == 1.0)
