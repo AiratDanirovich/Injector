@@ -548,9 +548,23 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     }
                 }
                 else
-                { // check horizontal rates in impermeble layers
-                    for (auto col{0ll}; col < grid_r.dual_size(); ++col)
+                { // check horizontal rates in impermeable layers
+                    {
+                        const auto col{0ll};
                         CHECK(flux2(row, col) == 0.0);
+                    }
+                    for (auto col{1ll}; col < left_margin; ++col)
+                    {
+                        // this comes from cross flow data
+                        INFO("row: " << row << ", col: " << col);
+                        CHECK(flux2(row, col) == C * wfp(row));
+                    }
+
+                    for (auto col{left_margin}; col < grid_r.dual_size(); ++col)
+                    {
+                        INFO("row: " << row << ", col: " << col);
+                        CHECK(flux2(row, col) == 0.0);
+                    }
                 }
 
                 if (core_logs.is_permeable(row) == 1.0)
