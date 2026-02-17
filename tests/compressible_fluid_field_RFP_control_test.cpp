@@ -161,12 +161,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             core_logs.is_permeable)};
     const CrossFlows cross_flows{
         from_coords, to_layers, RFP_w, core_logs.is_perforated};
-    const auto WFP_weights{
-        create_WFP_weights(
-            core_logs.is_perforated,
-            RFP_w,
-            cross_flows.cross_flow_handler)};
-    // const Well_CrossFlow well{RFP_weights, WFP_weights, cross_flows};
 
     using Well_t =
         decltype(WellReservoirFlowProfileControl{
