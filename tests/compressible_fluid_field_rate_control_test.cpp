@@ -214,8 +214,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto r_sandface{well_holes.sandface_radius};
     CHECK(r_sandface == grid_r.dual_nodes(3ll));
     CHECK(r_sandface == grid_rocks_r.dual_front());
-    const auto &time_intervals{history->time_steps};
-    const auto numerical_step{data["history"]["t_minor_step"].get<RealType>()};
+    const auto &time_intervals{history->time_steps}; 
+    const auto numerical_step{read_minor_step(data)};
     RealType cur_time{start_time};
     ptrdiff_t counter{0ll};
     // mock SolverManager::run
