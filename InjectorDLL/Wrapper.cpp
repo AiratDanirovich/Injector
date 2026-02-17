@@ -107,12 +107,8 @@ struct WrapperFactory
             r_max_step{data["grid"]["r_log_grid"]["r_max_step"].get<RealType>()},
             z_minor_step{data["grid"]["z_minor_step"].get<RealType>()}; // m
         /*history*/
-        const auto factor{read_units_factor(data)};
-
-        const RealType
-            start_time{factor * data["history"]["start_time"].get<RealType>()};
-        const RealType 
-            t_minor_step{read_minor_step(data)};
+        const RealType start_time{read_start_time(data)};
+        const RealType t_minor_step{read_minor_step(data)};
         /*temperatures*/
         // const VR well_rates = data["history"]["dynamic"]["well_rate"].get<VR>(); // m^3/s
         // const VR inlet_temperatures = data["history"]["dynamic"]["inlet_temperature"].get<VR>();
@@ -121,9 +117,9 @@ struct WrapperFactory
         /*END*/
 
         const auto &data2 = data["collector"]["geotherma"]["interpolate"];
-        const VR geotherma_nodes = data2["z_nodes"].get<VR>();
-        const VR geotherma_vals = data2["t_vals"].get<VR>();
-        const RealType z_top = data2["z_top"].get<RealType>();
+        const VR geotherma_nodes{data2["z_nodes"].get<VR>()};
+        const VR geotherma_vals{data2["t_vals"].get<VR>()};
+        const RealType z_top{data2["z_top"].get<RealType>()};
 
         cout << "Simulation is started." << endl;
         cout << "Please wait..." << endl;
