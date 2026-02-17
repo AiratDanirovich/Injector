@@ -70,7 +70,6 @@ namespace GPN
                 const auto& adiabatic_factor{
                     p_field.fluid.adiabatic_factor};
 
-
                 const auto /*not &*/ grid2D_ptr{rates_factory.grid2D};
                 const auto first_coord_size{
                     grid2D_ptr->first_coord().mesh_size()};

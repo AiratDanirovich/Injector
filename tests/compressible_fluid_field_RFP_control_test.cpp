@@ -132,6 +132,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     const auto &is_permeable{core_logs.is_permeable};
     const auto &permeability{core_logs.permeability};
+    const auto &porosity{core_logs.porosity};
     const auto &cell_thickness{grid2D_rocks->first_coord().volumes()};
 
     Logs::Hydrodynamics::BaseHydrodynamics
@@ -686,15 +687,16 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 }
 
                 {
-                    for (auto col{0ll}; col < 3ll; ++col)
+                    for (auto col{0ll}; col < left_margin; ++col)
                         CHECK(JT_temporal_term.value(row, col) == 0.0);
                 }
                 {
-                    for (auto col{3ll}; col < JT_temporal_term.cols(); ++col)
+                    for (auto col{left_margin}; col < JT_temporal_term.cols(); ++col)
                     {
-                        const auto ref{water.adiabatic_factor / step * grid2D->volume(row, col) *
+                        const auto ref{porosity(row)*water.adiabatic_factor * grid2D->volume(row, col) *
                                        (rates_factory.pressure_field->P->value(row, col) -
                                         rates_factory.pressure_field->P_prev->value(row, col))};
+                        INFO("row: " << row << ", col: " << col);
                         CHECK(ref == JT_temporal_term.value(row, col));
                     }
                 }
