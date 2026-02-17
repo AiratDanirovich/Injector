@@ -221,13 +221,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         history->advance();
         const RealType Q{history->rate()};
 
-        const size_t internal_step_count{
+        const auto internal_step_count{
             static_cast<size_t>(
                 std::abs(std::ceil(time_intervals[t_step] / numerical_step)))};
         const RealType step{time_intervals[t_step] / internal_step_count};
         const auto record{history->get_current_record()};
 
-        for (size_t id{0ull}; id < internal_step_count; ++id, cur_time += step)
+        for (auto id{0ull}; id < internal_step_count; ++id, cur_time += step)
         {
             const auto t{cur_time + step};
             const auto collector_pressure_prev{ptr_pressure_field->get_rock_pressure()};
