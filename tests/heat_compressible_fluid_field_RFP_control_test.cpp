@@ -438,7 +438,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 }
             }
 #pragma endregion
-
 #pragma region VERIFY-PRESSURE-PROBLEM-RHS
             {
                 const auto &rhs{pressure_field.get_solver()->get_problem_rhs()};
