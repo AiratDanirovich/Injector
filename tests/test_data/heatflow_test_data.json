@@ -129,7 +129,7 @@
       }
    },
    "grid": {
-      "z_minor_step": 20,
+      "z_minor_step": 110,
       "r_start": 0,
       "r_end": 3,
       "r_grid_type": "log",
