@@ -285,6 +285,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto numerical_step{read_minor_step(data)};
     RealType cur_time{start_time};
     ptrdiff_t counter{0ll};
+    const auto &capacity{heat_props.medium_vol_heatcapacity.values()};
+    const auto &heat_conductivity{heat_logs.medium_heat_conductivity.log_vals};
+    const auto &f_conductivity_1{heat_face_props.medium_heat_conductivity.face_vals_axes1};
+    const auto &f_conductivity_2{heat_face_props.medium_heat_conductivity.face_vals_axes2};
     // mock SolverManager::run
     for (auto t_step{0ll}; t_step < history->time_steps.size(); ++t_step)
     {
@@ -304,9 +308,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             CHECK(collector_pressure_prev.rows() == grid_rocks_z.mesh_size());
             CHECK(collector_pressure_prev.cols() == grid_rocks_r.mesh_size());
             // const auto &P_prev{pressure_field.current_pressure().values()};
-            
+
             solver_ptr->advance(step);
-            
+
             const auto collector_pressure{ptr_pressure_field->get_rock_pressure()};
             CHECK(collector_pressure.rows() == grid_rocks_z.mesh_size());
             CHECK(collector_pressure.cols() == grid_rocks_r.mesh_size());
@@ -760,7 +764,17 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
                 {
                     for (auto col{0ll}; col < left_margin; ++col)
+                    {
+                        INFO("row: " << row << ", col: " << col);
                         CHECK(JT_temporal_term.value(row, col) == 0.0);
+                    }
+                }
+                {
+                    for (auto col{0ll}; col < left_margin-1ll; ++col)
+                    {
+                        INFO("row: " << row << ", col: " << col);
+                        CHECK(JT_term.value(row, col) == 0.0);
+                    }
                 }
                 {
                     for (auto col{left_margin}; col < JT_temporal_term.cols(); ++col)
