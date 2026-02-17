@@ -248,7 +248,7 @@ namespace GPN
                             }));
 
                     return Logs::RFPFactory::create_from_container<Logs::RFP>(
-                        -(PI * (collector_pressure.col(0ll) - record.pressure)).eval(),
+                        StepPropertyContainer{-(PI * (collector_pressure.col(0ll) - record.pressure)).eval()},
                         is_permeable);
                 }
 
