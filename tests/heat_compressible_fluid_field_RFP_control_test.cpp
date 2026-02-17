@@ -770,7 +770,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     }
                 }
                 {
-                    for (auto col{0ll}; col < left_margin-1ll; ++col)
+                    for (auto col{0ll}; col < left_margin - 1ll; ++col)
                     {
                         INFO("row: " << row << ", col: " << col);
                         CHECK(JT_term.value(row, col) == 0.0);
@@ -790,8 +790,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
 #pragma endregion
         }
-    
-        solver_ptr->save_state();    
+
+        solver_ptr->save_state();
     }
     //    INFO("At least a single point should be checked by analytical expression!");
     //    CHECK(counter > 0ll);
