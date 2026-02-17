@@ -123,8 +123,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     // make grid2D
     // r_stencils
+    const auto well_holes{WellHoles{WellHolesFactory::create(completion)}};
     const VR r_stencils{
-        WellHoles{WellHolesFactory::create(completion)}.get_stencils(
+        well_holes.get_stencils(
             data["grid"]["r_start"].get<RealType>(),
             data["grid"]["r_end"].get<RealType>())};
     // r-refiner
