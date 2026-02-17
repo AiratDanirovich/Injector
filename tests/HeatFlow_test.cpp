@@ -104,7 +104,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         z_minor_step{data["grid"]["z_minor_step"].get<RealType>()}; // m
     //  const ptrdiff_t rNodes{data["grid"]["rNodes"]};
     /*history*/
-    const auto t_minor_step{data["history"]["t_minor_step"].get<RealType>()};
+    const auto t_minor_step{read_minor_step(data)};
     const auto start_time{data["history"]["start_time"].get<RealType>()};
     /*temperatures*/
     /*completion*/

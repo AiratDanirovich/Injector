@@ -130,6 +130,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     const auto &is_permeable{core_logs.is_permeable};
     const auto &permeability{core_logs.permeability};
+    const auto &porosity{core_logs.porosity};
     const auto &cell_thickness{grid2D_rocks->first_coord().volumes()};
 
     Logs::Hydrodynamics::BaseHydrodynamics
@@ -214,8 +215,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto r_sandface{well_holes.sandface_radius};
     CHECK(r_sandface == grid_r.dual_nodes(3ll));
     CHECK(r_sandface == grid_rocks_r.dual_front());
-    const auto &time_intervals{history->time_steps};
-    const auto numerical_step{data["history"]["t_minor_step"].get<RealType>()};
+    const auto &time_intervals{history->time_steps}; 
+    const auto numerical_step{read_minor_step(data)};
     RealType cur_time{start_time};
     ptrdiff_t counter{0ll};
     // mock SolverManager::run
@@ -574,9 +575,23 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     }
                 }
                 else
-                { // check horizontal rates in impermeble layers
-                    for (auto col{0ll}; col < grid_r.dual_size(); ++col)
+                { // check horizontal rates in impermeable layers
+                    {
+                        const auto col{0ll};
                         CHECK(flux2(row, col) == 0.0);
+                    }
+                    for (auto col{1ll}; col < left_margin; ++col)
+                    {
+                        // this comes from cross flow data
+                        INFO("row: " << row << ", col: " << col);
+                        CHECK(flux2(row, col) == C * wfp(row));
+                    }
+
+                    for (auto col{left_margin}; col < grid_r.dual_size(); ++col)
+                    {
+                        INFO("row: " << row << ", col: " << col);
+                        CHECK(flux2(row, col) == 0.0);
+                    }
                 }
 
                 if (core_logs.is_permeable(row) == 1.0)
@@ -644,7 +659,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 { // flow in the cement
                     const auto col{2ll};
                     INFO("row: " << row);
-                    CHECK(flux1(row, col) == cement_flow(row));
+                    CHECK(flux1(row, col) / C == cement_flow(row));
                 }
                 for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
                 {
@@ -704,15 +719,16 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 }
 
                 {
-                    for (auto col{0ll}; col < 3ll; ++col)
+                    for (auto col{0ll}; col < left_margin; ++col)
                         CHECK(JT_temporal_term.value(row, col) == 0.0);
                 }
                 {
-                    for (auto col{3ll}; col < JT_temporal_term.cols(); ++col)
+                    for (auto col{left_margin}; col < JT_temporal_term.cols(); ++col)
                     {
-                        const auto ref{water.adiabatic_factor / step * grid2D->volume(row, col) *
+                        const auto ref{porosity(row)*water.adiabatic_factor * grid2D->volume(row, col) *
                                        (rates_factory.pressure_field->P->value(row, col) -
                                         rates_factory.pressure_field->P_prev->value(row, col))};
+                        INFO("row: " << row << ", col: " << col);
                         CHECK(ref == JT_temporal_term.value(row, col));
                     }
                 }
