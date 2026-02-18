@@ -50,7 +50,7 @@ auto read_z_ref(const json &data)
     using namespace GPN;
     try
     {
-        return data["hydrostat"]["hydrostat"]["z_ref"].get<RealType>();
+        return data["collector"]["hydrostat"]["z_ref"].get<RealType>();
     }
     catch(...)
     {
