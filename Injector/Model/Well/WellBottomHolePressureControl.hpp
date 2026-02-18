@@ -130,6 +130,7 @@ namespace GPN
                         rock_field_props,
                     const CrossFlow_t &well_base,
                     const cptr<History_t> history,
+                    const Logs::HydrostaticPressure &hydrostatic_pressure,
                     const cptr<Grid2D_t> grid2D_rocks)
                     : CrossFlow_t{well_base},
                       size{grid2D_rocks->first_coord().mesh_size()},
