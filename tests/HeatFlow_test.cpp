@@ -367,6 +367,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 rock_field_props,
                 cross_flows,
                 history,
+                water,
                 grid2D_rocks)};
 
         // fluid model for the pressure field
