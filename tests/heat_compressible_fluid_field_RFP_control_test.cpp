@@ -540,8 +540,15 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                                 {
                                     const auto val{
                                         val_base +
+                                        flux1_pos(row, col) +
                                         f_conductivity_1(row, col) * grid2D->face_area_axes1(col) - flux1_neg(row + 1ll, col)};
-                                    INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                    INFO(
+                                        "row: " << row << 
+                                        ", col: " << col << 
+                                        ", l: " << l << 
+                                        ", flux1: " << flux1(row+1ll, col) << 
+                                        ", flux1_neg: " << flux1_neg(row+1ll, col) << 
+                                        ", flux2: " << flux2(row, col+1ll));
                                     CHECK_THAT(A.coeff(l, idx),
                                                WithinRel(val, exact_tol));
                                 }
@@ -842,7 +849,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     {
                         const auto l{grid2D->to_linear(row, col)};
                         const auto val{
-                            (row == 0ll ? flux1_pos(row, col) : 0.0) // well inlet BC
+                            (row == 0ll ? flux1_pos(row, col)*history->temperature() : 0.0) // well inlet BC
                             + (temperature_prev(row, col) * capacity(row, col) * grid2D->volume(row, col) + JT_temporal_term.value(row, col)) / step + JT_term.value(row, col)};
                         INFO("row: " << row << ", col: " << col << ", l: " << l);
                         CHECK_THAT(rhs(l),
