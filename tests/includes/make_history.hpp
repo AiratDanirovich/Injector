@@ -45,6 +45,19 @@ auto read_units_factor(const json &data)
     return factor;
 }
 
+auto read_z_ref(const json &data)
+{
+    using namespace GPN;
+    try
+    {
+        return data["collector"]["hydrostat"]["z_ref"].get<RealType>();
+    }
+    catch(...)
+    {
+        return 100.0;
+    }
+}
+
 auto make_history(const json &data)
 {
     using namespace GPN;
@@ -72,7 +85,7 @@ auto make_history(const json &data)
             VR bothole_pressure = data2["bottomhole_pressure"].get<VR>();
             for (auto &v : bothole_pressure)
                 v = v * Atm2Pa; // change units of pressure to Pa
-            return HistoryFactory::createFixedPressure(t_major_steps, bothole_pressure, inlet_temps);
+            return HistoryFactory::createFixedPressure(t_major_steps, bothole_pressure, inlet_temps, read_z_ref(data));
         }
         else
             throw std::runtime_error("Incorrect history control type.");
@@ -102,7 +115,7 @@ auto make_history(const json &data)
         {
             const RealType bothole_pressure{Atm2Pa*data2["bothole_pressure"].get<RealType>()}; // 
             const std::vector<RealType> bothole_pressures(t_major_steps.size(), bothole_pressure);
-            return HistoryFactory::createFixedPressure(t_major_steps, bothole_pressures, inlet_temps);
+            return HistoryFactory::createFixedPressure(t_major_steps, bothole_pressures, inlet_temps, read_z_ref(data));
         }
         else
             throw std::runtime_error("Incorrect history control type.");

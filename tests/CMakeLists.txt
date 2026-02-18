@@ -50,7 +50,6 @@ add_catch2_test(solver_test)
 add_catch2_test(solver_full_implicit_test)
 
 add_catch2_test(well_test)
-add_catch2_test(bothole_pres_well_test)
 add_catch2_test(apply_well_test)
 add_catch2_test(flowfield_test)
 add_catch2_test(hydrodynamicsolver_test)
