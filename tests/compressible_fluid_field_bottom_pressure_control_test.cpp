@@ -197,15 +197,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const CrossFlows cross_flows{
         from_coords, to_layers, core_logs.is_perforated};
 
-    const Logs::HydrostaticPressure hydrostatic_pressure{
-        Logs::HydrostaicPressureFactory::create(water, history->z_ref, history->pressure(), grid_z)};
-
     using Well_t =
         decltype(WellBottomHolePressureControl{
             rock_field_props,
             cross_flows,
             history,
-            hydrostatic_pressure,
+            water,
             grid2D_rocks});
 
     const ptr<Well_t> well{
@@ -213,7 +210,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             rock_field_props,
             cross_flows,
             history,
-            hydrostatic_pressure,
+            water,
             grid2D_rocks)};
 
     const auto &PI{well->PI};
