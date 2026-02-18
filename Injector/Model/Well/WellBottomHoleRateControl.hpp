@@ -41,7 +41,8 @@ namespace GPN
                       history{history},
                       ext_pressure{ext_pressure},
                       PI{PI},
-                      grid_ptr{grid_ptr}, // fluid_weight{fluid_density*Gravity::value()},
+                      grid_ptr{grid_ptr}, 
+                      fluid_weight{hydrostatic_factory.fluid.density*Gravity::value()},
                       hydrostatic_factory{hydrostatic_factory}
                 {
                     static_assert(Grid2D_t::l_margin == 3ll);
@@ -55,7 +56,7 @@ namespace GPN
                     {
                         assert(bc_type == BCType::third);
                         // const auto out{history->pressure()};
-                        const auto out{0.0 /*rho*g*dz*/};
+                        const auto out{0.0 /*fluid_weight*dz*/};
                         return BC_descriptor::BC_III(out, PI(z_id));
                         //    return out;
                     }
@@ -90,7 +91,7 @@ namespace GPN
             protected:
                 const Logs::ExternalPressure &ext_pressure;
                 const ptr<const Grid2D_t> grid_ptr;
-                //    const RealType fluid_weight;
+                const RealType fluid_weight;
                 
                 const HydrostaticPressureFactory_t &hydrostatic_factory;
             };
