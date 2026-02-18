@@ -135,14 +135,12 @@ namespace GPN
 
                 const ptr<const hydro_bc_type> hydro_bc;
 
-                const Logs::HydrostaticPressureFactory<Fluid_t, typename Grid2D_t::Axes1Coordinate_t> hydrostatic_factory;
-
                 WellBottomHolePressureControl(
                     const Properties::Rocks::RocksProps<Grid2D_t> &
                         rock_field_props,
                     const CrossFlow_t &well_base,
                     const cptr<History_t> history,
-                    const Fluid_t fluid,
+                    const Fluid_t& fluid,
                     const cptr<Grid2D_t> grid2D_rocks)
                     : CrossFlow_t{well_base},
                       size{grid2D_rocks->first_coord().mesh_size()},
@@ -255,12 +253,14 @@ namespace GPN
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
                 const cptr<Grid2D_t> grid2D_rocks;
                 const cptr<History_t> history;
-                const Fluid_t fluid;
+                const Fluid_t& fluid;
                 const Properties::Rocks::RocksProps<Grid2D_t> &
                     rock_field_props;
                 const std::ptrdiff_t size;
                 const StepPropertyContainer PI;
                 const Logs::IsPermeable &is_permeable;
+                const Logs::HydrostaticPressureFactory<Fluid_t, typename Grid2D_t::Axes1Coordinate_t> 
+                    hydrostatic_factory;
 
             protected:
                 template <typename HistoryRecord_t>
