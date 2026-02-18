@@ -45,6 +45,19 @@ auto read_units_factor(const json &data)
     return factor;
 }
 
+auto read_z_ref(const json &data)
+{
+    using namespace GPN;
+    try
+    {
+        return data["hydrostat"]["hydrostat"]["z_ref"].get<RealType>();
+    }
+    catch(...)
+    {
+        return 100.0;
+    }
+}
+
 auto make_history(const json &data)
 {
     using namespace GPN;
