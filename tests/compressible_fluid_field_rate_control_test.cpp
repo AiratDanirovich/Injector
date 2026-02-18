@@ -201,6 +201,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             rock_field_props,
             cross_flows,
             history,
+            water,
             grid2D_rocks});
 
     const ptr<Well_t> well{
@@ -208,6 +209,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             rock_field_props,
             cross_flows,
             history,
+            water,
             grid2D_rocks)};
 
     const auto &PI{well->PI};

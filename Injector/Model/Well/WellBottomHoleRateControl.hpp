@@ -107,6 +107,7 @@ namespace GPN
 #pragma endregion
             template <
                 typename History_t,
+                typename Fluid_t,
                 typename Grid2D_t,
                 typename CrossFlow_t>
             struct WellBottomHoleRateControl
@@ -125,7 +126,7 @@ namespace GPN
                 using solver_type =
                     EqSolver::FullImplicit::WellRateControlSolver<
                         Grid2D_t, Capacity_t, ConvectionTermFactory_t, BC_t,
-                        WellBottomHoleRateControl<History_t, Grid2D_t, CrossFlow_t>>;
+                        WellBottomHoleRateControl<History_t, Fluid_t, Grid2D_t, CrossFlow_t>>;
 
                 const ptr<const hydro_bc_type> hydro_bc;
 
@@ -134,6 +135,7 @@ namespace GPN
                         rock_field_props,
                     const CrossFlow_t &well_base,
                     const cptr<History_t> history,
+                    const Fluid_t& fluid,
                     const cptr<Grid2D_t> grid2D_rocks)
                     : CrossFlow_t{well_base},
                       size{grid2D_rocks->first_coord().mesh_size()},
@@ -148,8 +150,10 @@ namespace GPN
                               Grid2D_t::l_margin + 1ll)},
                       is_permeable{rock_field_props.base_hydrodynamics.is_permeable},
                       history{history},
+                      fluid{fluid},
                       rock_field_props{rock_field_props},
-                      grid2D_rocks{grid2D_rocks}
+                      grid2D_rocks{grid2D_rocks},
+                      hydrostatic_factory{history->z_ref, fluid, grid2D_rocks->first_coord()}
                 {
                     assert(std::all_of(PI.cbegin(), PI.cend(), [](const RealType v)
                                        { return v >= 0.0; }));
@@ -225,14 +229,15 @@ namespace GPN
 
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
                 const cptr<Grid2D_t> grid2D_rocks;
-
+                const cptr<History_t> history;
+                const Fluid_t& fluid;
+                const Properties::Rocks::RocksProps<Grid2D_t> &
+                    rock_field_props;
                 const std::ptrdiff_t size;
                 const StepPropertyContainer PI;
                 const Logs::IsPermeable &is_permeable;
-                const cptr<History_t> history;
-
-                const Properties::Rocks::RocksProps<Grid2D_t> &
-                    rock_field_props;
+                const Logs::HydrostaticPressureFactory<Fluid_t, typename Grid2D_t::Axes1Coordinate_t> 
+                    hydrostatic_factory;
 
                 template <typename HistoryRecord_t>
                 const RealType P_bot(
