@@ -230,7 +230,8 @@
       "control_type": "RFP",
       "control types": [
          "RFP",
-         "bottomhole_pressure"
+         "bottomhole_pressure",
+         "bottomhole_rate"
       ],
       "dynamic": {
          "t_major_step": [
