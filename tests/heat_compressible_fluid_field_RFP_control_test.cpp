@@ -17,7 +17,7 @@
 #include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Well/Well.hpp>
-#include <Injector/Model/Well/WellBottomHolePressureControl.hpp>
+#include <Injector/Model/Well/WellReservoirFlowProfileControl.hpp>
 
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleRatesFactory.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluid.hpp>
@@ -53,7 +53,7 @@ using namespace GPN::Grids;
 using namespace GPN::Phases;
 using namespace GPN::Completion;
 using namespace GPN::Hydrodynamic;
-using namespace GPN::Wells::BotHolePresControl;
+using namespace GPN::Wells::ResFlowProfileControl;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::FullImplicit;
 
@@ -68,7 +68,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     ifstream f("heatflow_test_data.json");
     REQUIRE(f.is_open());
     json data = json::parse(f);
-    data["history"]["control_type"] = "bottomhole_pressure";
 
     /*collector*/
     const auto from_coords{data["collector"]["cross_flow"]["from_coord"].get<VR>()};
@@ -86,7 +85,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto ext_pressure_stencils{transfer_to_eigen(data["collector"]["external_pressure"].get<VR>(), 1e5)};
     const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"].get<VR>())};
     const auto is_permeable_stencils{set_is_permeable_stencils(is_perforated_stencils, to_layers)};
-       
+
     // heat logs
     const auto solid_heatconductivity_stencils{transfer_to_eigen(data["collector"]["heatConductivity"].get<VR>())};
     const auto solid_density_stencils{transfer_to_eigen(data["collector"]["solidDensity"].get<VR>())};
@@ -130,12 +129,15 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     const cptr<Grids::CylinderGridRock> grid2D_rocks{
         make_shared<Grids::CylinderGridRock>(grid2D)};
-    constexpr auto left_margin{3ll};
+    const auto left_margin{grid2D_rocks->l_margin};
     const auto &grid_rocks_z{grid2D_rocks->first_coord()};
     const auto &grid_rocks_r{grid2D_rocks->second_coord()};
 
     const ExtrudedCasing extr_completion{
         VarExtrudedCasingFactory::create(completion)};
+
+    // std::cout << "is_permeable:\n" << is_permeable_stencils.transpose() << std::endl;
+    // std::cout << "is_perforated:\n" << is_perforated_stencils.transpose() << std::endl;
 
     Logs::Rocks::CoreSampleLogs
         core_logs{
@@ -189,16 +191,19 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             make_geotherma(data, grid2D))};
 #pragma endregion
 
-
 #pragma region MAKE-HISTORY
     const ptr<History> history{make_shared<History>(make_history(data))};
 #pragma endregion
 #pragma region MAKE-WELL
+    const Logs::RFP_weights RFP_w{
+        RFPFactory::create_from_container<Logs::RFP_weights>(
+            StepProperty{RFP_weights_stencils},
+            core_logs.is_permeable)};
     const CrossFlows cross_flows{
-        from_coords, to_layers, core_logs.is_perforated};
+        from_coords, to_layers, RFP_w, core_logs.is_perforated};
 
     using Well_t =
-        decltype(WellBottomHolePressureControl{
+        decltype(WellReservoirFlowProfileControl{
             rock_field_props,
             cross_flows,
             history,
@@ -210,18 +215,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             cross_flows,
             history,
             grid2D_rocks)};
-
-    const auto &PI{well->PI};
-    for (auto row{0ll}; row < grid_rocks_z.mesh_size(); ++row)
-    {
-        const auto r3{grid_rocks_r.mesh_nodes(0ll)};
-        const auto sandface{grid_rocks_r.dual_nodes(0ll)};
-        const auto val{
-            2.0 * pi * cell_thickness(row) * permeability(row) / water.viscosity /
-            std::log(r3 / sandface)};
-        CHECK_THAT(PI(row), WithinRel(val, exact_tol));
-        CHECK(PI(row) >= 0.0);
-    }
 
 #pragma endregion
     using CompressibleFluidField_t =
@@ -292,33 +285,41 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto numerical_step{read_minor_step(data)};
     RealType cur_time{start_time};
     ptrdiff_t counter{0ll};
+    const auto &capacity{heat_props.medium_vol_heatcapacity.values()};
+    const auto &heat_conductivity{heat_logs.medium_heat_conductivity.log_vals};
+    const auto &f_conductivity_1{heat_face_props.medium_heat_conductivity.face_vals_axes1};
+    const auto &f_conductivity_2{heat_face_props.medium_heat_conductivity.face_vals_axes2};
     // mock SolverManager::run
     for (auto t_step{0ll}; t_step < history->time_steps.size(); ++t_step)
     {
         history->advance();
+        const RealType Q{history->rate()};
 
-        const size_t internal_step_count{
+        const auto internal_step_count{
             static_cast<size_t>(
                 std::abs(std::ceil(time_intervals[t_step] / numerical_step)))};
         const RealType step{time_intervals[t_step] / internal_step_count};
+        const auto record{history->get_current_record()};
 
-        for (size_t id{0ull}; id < internal_step_count; ++id, cur_time += step)
+        for (auto id{0ull}; id < internal_step_count; ++id, cur_time += step)
         {
             const auto t{cur_time + step};
             const auto collector_pressure_prev{ptr_pressure_field->get_rock_pressure()};
-            rates_factory.set_flow_field(cur_time, step);
-            const auto record{history->get_current_record()};
+            const Eigen::ArrayXX<RealType> temperature_prev{solver_ptr->get_state()};
+            CHECK(collector_pressure_prev.rows() == grid_rocks_z.mesh_size());
+            CHECK(collector_pressure_prev.cols() == grid_rocks_r.mesh_size());
+            // const auto &P_prev{pressure_field.current_pressure().values()};
+
+            solver_ptr->advance(step);
+
             const auto collector_pressure{ptr_pressure_field->get_rock_pressure()};
-            const RealType P_bot{well->P_bot(record, collector_pressure)};
-            //        std::cout << "P_bot:        " << P_bot << std::endl;
-            //        std::cout << "P_bot_solver: " << P_bot_solver << std::endl;
-            CHECK_THAT(P_bot, WithinRel(record.pressure, exact_tol));
+            CHECK(collector_pressure.rows() == grid_rocks_z.mesh_size());
+            CHECK(collector_pressure.cols() == grid_rocks_r.mesh_size());
 #pragma region VERIFY-PRESSURE-PROBLEM-MATRIX
             {
                 const auto &A{pressure_field.get_solver()->get_problem_matrix()};
 
                 const auto nz{grid_rocks_z.mesh_size()};
-                const auto nr{grid_rocks_r.mesh_size()};
                 for (auto row{0ll}; row < grid_rocks_z.mesh_size(); ++row)
                 {
                     bool flag{(is_permeable(row) == 1.0) || (is_permeable(row) == 0.0)};
@@ -338,8 +339,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                                     grid2D_rocks->volume(row, col) *
                                         medium_compressibility_field.value(row, col) / step +
                                     2.0 * pi * permeability(row) * cell_thickness(row) / water.viscosity *
-                                        (1.0 / std::log(grid_rocks_r.mesh_nodes(col + 1ll) / grid_rocks_r.mesh_nodes(col))) +
-                                    PI(row)};
+                                        (1.0 / std::log(grid_rocks_r.mesh_nodes(col + 1ll) / grid_rocks_r.mesh_nodes(col)))};
 
                                 CHECK_THAT(A.coeff(l, idx),
                                            WithinRel(val, exact_tol));
@@ -443,20 +443,21 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 }
             }
 #pragma endregion
-
 #pragma region VERIFY-PRESSURE-PROBLEM-RHS
             {
                 const auto &rhs{pressure_field.get_solver()->get_problem_rhs()};
+                const auto rfp{well->get_RFP(history->get_current_record())};
+
                 for (auto row{0ll}; row < grid_rocks_z.mesh_size(); ++row)
                 {
                     if (is_permeable(row) == 1.0)
                     {
-                        { // sandface boundary
+                        {
                             const auto col{0ll};
                             const auto l{grid2D_rocks->to_linear(row, col)};
                             const auto val{collector_pressure_prev(row, col) * grid2D_rocks->volume(row, col) *
-                                           medium_compressibility_field.value(row, col) / step +
-                                        P_bot*PI(row)};
+                                               medium_compressibility_field.value(row, col) / step +
+                                           rfp(row)};
                             CHECK_THAT(rhs(l),
                                        WithinRel(val, exact_tol));
                         }
@@ -465,10 +466,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                             const auto l{grid2D_rocks->to_linear(row, col)};
                             const auto val{collector_pressure_prev(row, col) * grid2D_rocks->volume(row, col) *
                                            medium_compressibility_field.value(row, col) / step};
+                            INFO("row: " << row << ", col: " << col << ", l: " << l);
                             CHECK_THAT(rhs(l),
                                        WithinRel(val, exact_tol));
                         }
-                        { // external contour
+                        {
                             const auto col{grid_rocks_r.mesh_size() - 1ll};
                             const auto l{grid2D_rocks->to_linear(row, col)};
                             CHECK(rhs(l) == ext_pressure(row));
@@ -486,14 +488,401 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 }
             }
 #pragma endregion
+#pragma region VERIFY-HEAT-PROBLEM-MATRIX
+            {
+                const auto &A{solver_ptr->A};
+                const auto flux1{rates_factory.get_heat_flow_in_axes1_neg() + rates_factory.get_heat_flow_in_axes1_pos()};
+                const auto &flux1_pos{rates_factory.get_heat_flow_in_axes1_pos()};
+                const auto &flux1_neg{rates_factory.get_heat_flow_in_axes1_neg()};
+                const auto flux2{rates_factory.get_heat_flow_in_axes2_neg() + rates_factory.get_heat_flow_in_axes2_pos()};
+                const auto &flux2_pos{rates_factory.get_heat_flow_in_axes2_pos()};
+                const auto &flux2_neg{rates_factory.get_heat_flow_in_axes2_neg()};
+
+                const auto nz{grid_z.mesh_size()};
+                for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
+                {
+                    bool flag{(is_permeable(row) == 1.0) || (is_permeable(row) == 0.0)};
+                    REQUIRE(flag);
+                    {
+#pragma region TUBE-FLOW
+                        {
+                            const auto col{0ll};
+                            const auto l{grid2D->to_linear(row, col)};
+                            {
+                                for (auto idx{0ll}; idx < l - 1ll; ++idx)
+                                {
+                                    INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                    CHECK(A.coeff(l, idx) == 0.0);
+                                }
+                            }
+                            {
+                                const auto idx{l - 1ll};
+                                if ((row >= 1ll))
+                                {
+                                    const auto val{
+                                        -flux1_pos(row, col) +
+                                        -f_conductivity_1(row - 1ll, col) * grid2D->face_area_axes1(col)};
+                                    INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                    CHECK_THAT(A.coeff(l, idx),
+                                               WithinRel(val, exact_tol));
+                                }
+                            }
+
+                            {
+                                const auto idx{l};
+                                const auto val_base{
+                                    -flux2_neg(row, col + 1ll) +
+                                    f_conductivity_2(row, col) * grid2D->face_area_axes2(row) +
+                                    grid2D->volume(row, col) / step *
+                                        (capacity(row, col))};
+
+                                if ((row == 0ll))
+                                {
+                                    const auto val{
+                                        val_base +
+                                        flux1_pos(row, col) +
+                                        f_conductivity_1(row, col) * grid2D->face_area_axes1(col) - flux1_neg(row + 1ll, col)};
+                                    INFO(
+                                        "row: " << row << 
+                                        ", col: " << col << 
+                                        ", l: " << l << 
+                                        ", flux1: " << flux1(row+1ll, col) << 
+                                        ", flux1_neg: " << flux1_neg(row+1ll, col) << 
+                                        ", flux2: " << flux2(row, col+1ll));
+                                    CHECK_THAT(A.coeff(l, idx),
+                                               WithinRel(val, exact_tol));
+                                }
+                                else
+                                {
+                                    if ((row == grid_z.mesh_size() - 1ll))
+                                    {
+                                        const auto val{
+                                            val_base +
+                                            f_conductivity_1(row - 1ll, col) * grid2D->face_area_axes1(col) + flux1_pos(row, col)};
+                                        INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                        CHECK_THAT(A.coeff(l, idx),
+                                                   WithinRel(val, exact_tol));
+                                    }
+                                    else
+                                    {
+                                        const auto val{
+                                            val_base +
+                                            f_conductivity_1(row, col) * grid2D->face_area_axes1(col) - flux1_neg(row + 1ll, col) +
+                                            f_conductivity_1(row - 1ll, col) * grid2D->face_area_axes1(col) + flux1_pos(row, col)};
+                                        INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                        CHECK_THAT(A.coeff(l, idx),
+                                                   WithinRel(val, exact_tol));
+                                    }
+                                }
+                            }
+                            {
+                                const auto idx{l + 1ll};
+                                if ((row < grid_z.mesh_size() - 1ll))
+                                {
+                                    const auto val{
+                                        flux1_neg(row + 1ll, col) +
+                                        -f_conductivity_1(row, col) * grid2D->face_area_axes1(col)};
+                                    INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                    CHECK_THAT(A.coeff(l, idx),
+                                               WithinRel(val, exact_tol));
+                                }
+                            }
+
+                            for (auto idx{l + 2ll}; idx < l + nz; ++idx)
+                                CHECK(A.coeff(l, idx) == 0.0);
+                            {
+                                const auto idx{l + nz};
+                                const auto val{
+                                    flux2_neg(row, col + 1ll) +
+                                    -f_conductivity_2(row, col) * grid2D->face_area_axes2(row)};
+
+                                CHECK_THAT(A.coeff(l, idx),
+                                           WithinRel(val, exact_tol));
+                            }
+
+                            {
+                                for (auto idx{l + nz + 1ll}; idx < A.cols(); ++idx)
+                                    CHECK(A.coeff(l, idx) == 0.0);
+                            }
+                        }
+#pragma endregion
+#pragma region ROCKS-CELLS-AND-WELL-CELLS
+                        for (auto col{1ll}; col < grid_r.mesh_size() - 1ll; ++col)
+                        {
+                            const auto l{grid2D->to_linear(row, col)};
+                            for (auto idx{0ll}; idx < l - nz; ++idx)
+                                CHECK(A.coeff(l, idx) == 0.0);
+                            {
+                                const auto idx{l - nz};
+                                const auto val{
+                                    -flux2_pos(row, col) +
+                                    -f_conductivity_2(row, col - 1ll) * grid2D->face_area_axes2(row)};
+
+                                CHECK_THAT(A.coeff(l, idx),
+                                           WithinRel(val, exact_tol));
+                            }
+                            for (auto idx{l - nz + 1ll}; idx < l - 1ll; ++idx)
+                                CHECK(A.coeff(l, idx) == 0.0);
+
+                            {
+                                const auto idx{l - 1ll};
+                                if ((row >= 1ll))
+                                {
+                                    const auto val{
+                                        -flux1_pos(row, col) +
+                                        -f_conductivity_1(row - 1ll, col) * grid2D->face_area_axes1(col)};
+                                    INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                    CHECK_THAT(A.coeff(l, idx),
+                                               WithinRel(val, exact_tol));
+                                }
+                            }
+
+                            {
+                                const auto idx{l};
+                                const auto val_base{
+                                    -flux2_neg(row, col + 1ll) +
+                                    flux2_pos(row, col) +
+                                    f_conductivity_2(row, col) * grid2D->face_area_axes2(row) +
+                                    f_conductivity_2(row, col - 1ll) * grid2D->face_area_axes2(row) +
+                                    grid2D->volume(row, col) / step *
+                                        (capacity(row, col))};
+
+                                if ((row == 0ll))
+                                {
+                                    const auto val{
+                                        val_base +
+                                        f_conductivity_1(row, col) * grid2D->face_area_axes1(col) - flux1_neg(row + 1ll, col)};
+                                    INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                    CHECK_THAT(A.coeff(l, idx),
+                                               WithinRel(val, exact_tol));
+                                }
+                                else
+                                {
+                                    if ((row == grid_z.mesh_size() - 1ll))
+                                    {
+                                        const auto val{
+                                            val_base +
+                                            f_conductivity_1(row - 1ll, col) * grid2D->face_area_axes1(col) + flux1_pos(row, col)};
+                                        INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                        CHECK_THAT(A.coeff(l, idx),
+                                                   WithinRel(val, exact_tol));
+                                    }
+                                    else
+                                    {
+                                        const auto val{
+                                            val_base +
+                                            f_conductivity_1(row, col) * grid2D->face_area_axes1(col) - flux1_neg(row + 1ll, col) +
+                                            f_conductivity_1(row - 1ll, col) * grid2D->face_area_axes1(col) + flux1_pos(row, col)};
+                                        INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                        CHECK_THAT(A.coeff(l, idx),
+                                                   WithinRel(val, exact_tol));
+                                    }
+                                }
+                            }
+                            {
+                                const auto idx{l + 1ll};
+                                if ((row < grid_z.mesh_size() - 1ll))
+                                {
+                                    const auto val{
+                                        flux1_neg(row + 1ll, col) +
+                                        -f_conductivity_1(row, col) * grid2D->face_area_axes1(col)};
+                                    INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                    CHECK_THAT(A.coeff(l, idx),
+                                               WithinRel(val, exact_tol));
+                                }
+                            }
+
+                            for (auto idx{l + 2ll}; idx < l + nz; ++idx)
+                                CHECK(A.coeff(l, idx) == 0.0);
+
+                            {
+                                const auto idx{l + nz};
+                                const auto val{
+                                    flux2_neg(row, col + 1ll) +
+                                    -f_conductivity_2(row, col) * grid2D->face_area_axes2(row)};
+
+                                CHECK_THAT(A.coeff(l, idx),
+                                           WithinRel(val, exact_tol));
+                            }
+                            for (auto idx{l + nz + 1ll}; idx < A.cols(); ++idx)
+                                CHECK(A.coeff(l, idx) == 0.0);
+                        }
+#pragma endregion
+#pragma region EXTERNAL-DOMAIN-BOUNDARY
+                        {
+                            const auto col{grid_r.mesh_size() - 1ll};
+                            const auto l{grid2D->to_linear(row, col)};
+                            if (
+                                //    (is_permeable(row) == 1.0)
+                                // &&
+                                (collector_pressure.rightCols(1ll)(row, 0ll) >= collector_pressure.rightCols(2ll)(row, 0ll)))
+                            {
+                                // fluid flows towards the well,
+                                // temperature BC is of the first type
+                                for (auto idx{0ll}; idx < l - 1ll; ++idx)
+                                {
+                                    INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                    CHECK(A.coeff(l, idx) == 0.0);
+                                }
+                                {
+                                    const auto idx{l};
+                                    CHECK(A.coeff(l, idx) == 1.0);
+                                }
+                                for (auto idx{l + 1ll}; idx < A.cols(); ++idx)
+                                {
+                                    INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                    CHECK(A.coeff(l, idx) == 0.0);
+                                }
+                            }
+                            else
+                            {
+                                {
+                                    for (auto idx{0ll}; idx < l - nz; ++idx)
+                                    {
+                                        INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                        CHECK(A.coeff(l, idx) == 0.0);
+                                    }
+                                }
+                                {
+                                    const auto idx{l - nz};
+                                    const auto val{
+                                        -flux2_pos(row, col) +
+                                        -f_conductivity_2(row, col - 1ll) * grid2D->face_area_axes2(row)};
+
+                                    INFO("row: " << row << ", col: " << col << ", l: " << l << ", A.cols: " << A.cols() << ", flux2: " << flux2(row, col));
+                                    CHECK_THAT(A.coeff(l, idx),
+                                               WithinRel(val, exact_tol));
+                                }
+
+                                for (auto idx{l - nz + 1}; idx < l - 1ll; ++idx)
+                                    CHECK(A.coeff(l, idx) == 0.0);
+                                {
+                                    const auto idx{l - 1ll};
+                                    if ((row >= 1ll))
+                                    {
+                                        const auto val{
+                                            -flux1_pos(row, col) +
+                                            -f_conductivity_1(row - 1ll, col) * grid2D->face_area_axes1(col)};
+                                        INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                        CHECK_THAT(A.coeff(l, idx),
+                                                   WithinRel(val, exact_tol));
+                                    }
+                                }
+
+                                {
+                                    const auto idx{l};
+                                    const auto val_base{
+                                        flux2_pos(row, col) +
+                                        f_conductivity_2(row, col - 1ll) * grid2D->face_area_axes2(row) +
+                                        grid2D->volume(row, col) / step *
+                                            (capacity(row, col))};
+
+                                    if ((row == 0ll))
+                                    {
+                                        const auto val{
+                                            val_base +
+                                            f_conductivity_1(row, col) * grid2D->face_area_axes1(col) - flux1_neg(row + 1ll, col)};
+                                        INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                        CHECK_THAT(A.coeff(l, idx),
+                                                   WithinRel(val, exact_tol));
+                                    }
+                                    else
+                                    {
+                                        if ((row == grid_z.mesh_size() - 1ll))
+                                        {
+                                            const auto val{
+                                                val_base +
+                                                f_conductivity_1(row - 1ll, col) * grid2D->face_area_axes1(col) + flux1_pos(row, col)};
+                                            INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                            CHECK_THAT(A.coeff(l, idx),
+                                                       WithinRel(val, exact_tol));
+                                        }
+                                        else
+                                        {
+                                            const auto val{
+                                                val_base +
+                                                f_conductivity_1(row, col) * grid2D->face_area_axes1(col) - flux1_neg(row + 1ll, col) +
+                                                f_conductivity_1(row - 1ll, col) * grid2D->face_area_axes1(col) + flux1_pos(row, col)};
+                                            INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                            CHECK_THAT(A.coeff(l, idx),
+                                                       WithinRel(val, exact_tol));
+                                        }
+                                    }
+                                }
+                                {
+                                    const auto idx{l + 1ll};
+                                    if ((row < grid_z.mesh_size() - 1ll))
+                                    {
+                                        const auto val{
+                                            flux1_neg(row + 1ll, col) +
+                                            -f_conductivity_1(row, col) * grid2D->face_area_axes1(col)};
+                                        INFO("row: " << row << ", col: " << col << ", l: " << l);
+                                        CHECK_THAT(A.coeff(l, idx),
+                                                   WithinRel(val, exact_tol));
+                                    }
+                                }
+
+                                for (auto idx{l + 2ll}; idx < A.cols(); ++idx)
+                                    CHECK(A.coeff(l, idx) == 0.0);
+                            }
+                        }
+#pragma endregion
+                    }
+                }
+            }
+#pragma region VERIFY-HEAT-PROBLEM-RHS
+            {
+                const auto &rhs{solver_ptr->rhs};
+                const auto flux1{rates_factory.get_heat_flow_in_axes1_neg() + rates_factory.get_heat_flow_in_axes1_pos()};
+                const auto &flux1_pos{rates_factory.get_heat_flow_in_axes1_pos()};
+                const auto &flux1_neg{rates_factory.get_heat_flow_in_axes1_neg()};
+                const auto flux2{rates_factory.get_heat_flow_in_axes2_neg() + rates_factory.get_heat_flow_in_axes2_pos()};
+                const auto &flux2_pos{rates_factory.get_heat_flow_in_axes2_pos()};
+                const auto &flux2_neg{rates_factory.get_heat_flow_in_axes2_neg()};
+
+                const auto JT_term{Properties::JT_FieldFactory::create_spatial(rates_factory)};
+                const auto JT_temporal_term{Properties::JT_FieldFactory::create_temporal(rates_factory)};
+
+                for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
+                {
+                    for (auto col{0ll}; col < grid_r.mesh_size() - 1ll; ++col)
+                    {
+                        const auto l{grid2D->to_linear(row, col)};
+                        const auto val{
+                            (row == 0ll ? flux1_pos(row, col)*history->temperature() : 0.0) // well inlet BC
+                            + (temperature_prev(row, col) * capacity(row, col) * grid2D->volume(row, col) + JT_temporal_term.value(row, col)) / step + JT_term.value(row, col)};
+                        INFO("row: " << row << ", col: " << col << ", l: " << l);
+                        CHECK_THAT(rhs(l),
+                                   WithinRel(val, exact_tol));
+                    }
+                    {
+                        const auto col{grid_r.mesh_size() - 1ll};
+                        const auto l{grid2D->to_linear(row, col)};
+                        if (
+                            //    (is_permeable(row) == 1.0)
+                            // &&
+                            (collector_pressure.rightCols(1ll)(row, 0ll) >= collector_pressure.rightCols(2ll)(row, 0ll)))
+                        {
+                            CHECK(rhs(l) == (*geotherma)(row));
+                        }
+                        else
+                        {
+                            const auto val{
+                                (row == 0ll ? flux1_pos(row, col) : 0.0) // well inlet BC
+                                + (temperature_prev(row, col) * capacity(row, col) * grid2D->volume(row, col) + JT_temporal_term.value(row, col)) / step + JT_term.value(row, col)};
+                            INFO("row: " << row << ", col: " << col << ", l: " << l);
+                            CHECK_THAT(rhs(l),
+                                       WithinRel(val, exact_tol));
+                        }
+                    }
+                }
+            }
+#pragma endregion
+#pragma endregion
             const auto rfp{well->get_RFP(history->get_current_record())};
-            const auto Q{rfp.sum()};
 #pragma region CHECK-PRESSURE
             const auto &P{pressure_field.current_pressure().values()};
             CHECK(rfp.rows() == grid_z.mesh_size());
-
-            //        std::cout << "rfp:\n" << rfp.transpose() << std::endl;
-
             for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
             {
                 const auto rate{rfp(row)};
@@ -501,17 +890,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 const auto h{grid_z.control_volumes(row)};
                 const auto k{permeability(row)};
                 const auto beta{base_hydrodynamics.medium_compressibility(row)};
-#pragma region CHECK-RFP
-                CHECK(rate == -PI(row) * (collector_pressure(row, 0ll) - P_bot));
-#pragma endregion
-
                 // pressure is const inside completion
-                const auto P_sandface{well->get_pressure_at_sandface(record, collector_pressure)};
-                CHECK(P_sandface(row) == P(row, 2ll));
                 for (auto col{0ll}; col < 2ll; ++col)
-                {
                     CHECK(P(row, col) == P(row, 2ll));
-                }
                 if (is_permeable(row) == 1.0)
                 {     // in permeable layers
                     { // in the cement
@@ -525,16 +906,44 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                                                                std::log(grid_r.mesh_nodes(3ll) / completion.sandface_radius(row)),
                                        tol));
                     }
-                    // external contour
+                    // outside the cement
+                    const auto piezo_cond{k / (mu * beta)};
+                    CHECK(
+                        std::isnan(piezo_cond) == false);
+                    // CHECK(
+                    //     std::isinf(piezo_cond) == false);
+                    if (r_well * r_well < 0.0001 * piezo_cond * t)
                     {
-                        const auto col{grid_r.mesh_size() - 1ll};
-                        const auto r{grid_r.mesh_nodes(col)};
-                        const auto calc_val{P(row, col) - p_ex};
-                        INFO("row: " << row << "; r: " << r);
-                        CHECK_THAT(
-                            calc_val / 1e5,
-                            WithinAbs(0.0,
-                                      exact_tol * 100));
+                        ++counter;
+                        for (auto col{left_margin}; col < grid_r.mesh_size() - 1ll; ++col)
+                        {
+                            const auto r{grid_r.mesh_nodes(col)};
+                            const auto ei{-std::expint(-r * r / (4.0 * piezo_cond * t))};
+                            const auto ref_val{
+                                rate * mu /
+                                (4.0 * pi * k * h) * ei};
+                            const auto calc_val{P(row, col) - p_ex};
+                            const auto stationary_p{-rate * mu /
+                                                    (2.0 * pi * k * h) *
+                                                    std::log(r / rMax)};
+                            // INFO("row: " << row << "; col: " << col
+                            // << "; r: " << r <<
+                            // "; ratio: " << ref_val / calc_val);
+                            // CHECK_THAT(
+                            //     calc_val/1e5,
+                            //     WithinRel(ref_val/1e5,
+                            //               tol));
+                        }
+                        {
+                            const auto col{grid_r.mesh_size() - 1ll};
+                            const auto r{grid_r.mesh_nodes(col)};
+                            const auto calc_val{P(row, col) - p_ex};
+                            INFO("row: " << row << "; r: " << r);
+                            CHECK_THAT(
+                                calc_val / 1e5,
+                                WithinAbs(0.0,
+                                          tol));
+                        }
                     }
                 }
                 else
@@ -550,34 +959,41 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             const auto flux1{rates_factory.get_heat_flow_in_axes1_neg() + rates_factory.get_heat_flow_in_axes1_pos()};
             CHECK(flux1.rows() == grid_z.dual_size());
             CHECK(flux1.cols() == grid_r.mesh_size());
-            const auto flux2{rates_factory.get_heat_flow_in_axes2_neg() + rates_factory.get_heat_flow_in_axes2_pos()};
+            const auto flux2{
+                (rates_factory.get_heat_flow_in_axes2_neg() +
+                 rates_factory.get_heat_flow_in_axes2_pos())
+                    .eval()};
+
+            // std::cout << "is_perforated:\n" << core_logs.is_perforated.log_vals.transpose() << std::endl;
+            // std::cout << "is_permeable:\n" << core_logs.is_permeable.log_vals.transpose() << std::endl;
+            // std::cout << "flux2:\n" << flux2.leftCols(6ll) << std::endl;
+
             CHECK(flux2.rows() == grid_z.mesh_size());
             CHECK(flux2.cols() == grid_r.dual_size());
             const auto &mobility2{pressure_field.face_mobility.face_vals_axes2};
             const auto wfp{well->get_WFP(history->get_current_record())};
-            //        std::cout << "wfp:\n" << wfp.transpose() << std::endl;
             CHECK(wfp.rows() == grid_z.mesh_size());
+            CHECK_THAT(wfp.sum(), WithinRel(Q, exact_tol));
             CHECK_THAT(rfp.sum(), WithinRel(wfp.sum(), exact_tol));
             const auto cement_flow{well->get_verticle_cement_flow(history->get_current_record())};
             CHECK(cement_flow.rows() == grid_z.dual_size());
             const auto well_flow{well->get_verticle_well_flow(history->get_current_record())};
             CHECK(well_flow.rows() == grid_z.dual_size());
             RealType well_loss_cum_sum{0.0};
-            RealType well_accum_cum_sum{0.0};
 #pragma region HORIZONTAL-RATES
             for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
             {
                 const auto k{permeability(row)};
                 const auto h{grid_z.volume(row)};
 
-                if (is_permeable(row) == 1.0)
+                if (core_logs.is_permeable(row) == 1.0)
                 { // check horizontal rates in permeable layer
                     {
                         const auto col{0ll};
                         CHECK(flux2(row, col) == 0.0);
                     }
                     {
-                        for (auto col{1ll}; col <= 2ll; ++col)
+                        for (auto col{1ll}; col < left_margin; ++col)
                         {
                             CHECK(flux2(row, col) == C * wfp(row));
                         }
@@ -661,58 +1077,30 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             }
 #pragma endregion
 #pragma region VERTICAL-RATES
-            //    std::cout << "well_loss_cum_sum:\n" << well_loss_cum_sum.transpose() << std::endl;
-            //    std::cout << "wfp:\n" << wfp.transpose() << std::endl;
-            //    std::cout << "Q: " << Q << std::endl;
 
-            for (auto row{grid_z.dual_size() - 1ll}; row >= 0ll; --row)
+            // std::cout << "flux1:\n" << flux1.leftCols(6ll) << std::endl;
+
+            for (auto row{0ll}; row < grid_z.dual_size(); ++row)
             {
                 { // flow in the tube
                     const auto col{0ll};
-                    INFO("row: " << row);
-                    if (well_accum_cum_sum == 0.0)
-                    {
-                        CHECK_THAT(
-                            well_accum_cum_sum,
-                            WithinAbs(well_flow(row), exact_tol));
-                    }
-                    else
-                    {
-                        CHECK_THAT(well_accum_cum_sum,
-                                   WithinRel(well_flow(row), tol));
-                    }
-
-                    if (std::abs(flux1(row, col) / C / Q) < exact_tol)
-                    {
-                        INFO("C: " << C << ", acc_flux: " << well_accum_cum_sum << ", flux1: " << flux1(row, col));
-                        CHECK_THAT(well_accum_cum_sum,
-                                   WithinAbs(flux1(row, col) / C, exact_tol));
-                    }
-                    else
-                    {
-                        INFO("C: " << C << ", acc_flux: " << well_accum_cum_sum << ", flux1: " << flux1(row, col));
-                        CHECK_THAT(well_accum_cum_sum,
-                                   WithinRel(flux1(row, col) / C, tol));
-                    }
-
-                    if (row > 0ll)
-                        well_accum_cum_sum += wfp(row - 1ll);
+                    CHECK_THAT(Q - well_loss_cum_sum,
+                               WithinRel(well_flow(row), tol));
+                    CHECK_THAT(C * (Q - well_loss_cum_sum),
+                               WithinRel(flux1(row, col), tol));
+                    if (row < grid_z.mesh_size())
+                        well_loss_cum_sum += wfp(row);
                 }
                 { // flow in the sandwich
                     const auto col{1ll};
-                    INFO("row: " << row);
                     CHECK(flux1(row, col) == 0.0);
                 }
                 { // flow in the cement
                     const auto col{2ll};
-                    INFO("row: " << row);
                     CHECK(flux1(row, col) / C == cement_flow(row));
                 }
                 for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
-                {
-                    INFO("row: " << row);
                     CHECK(flux1(row, col) == 0.0);
-                }
             }
 #pragma endregion
 #pragma endregion
@@ -767,12 +1155,22 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
                 {
                     for (auto col{0ll}; col < left_margin; ++col)
+                    {
+                        INFO("row: " << row << ", col: " << col);
                         CHECK(JT_temporal_term.value(row, col) == 0.0);
+                    }
+                }
+                {
+                    for (auto col{0ll}; col < left_margin - 1ll; ++col)
+                    {
+                        INFO("row: " << row << ", col: " << col);
+                        CHECK(JT_term.value(row, col) == 0.0);
+                    }
                 }
                 {
                     for (auto col{left_margin}; col < JT_temporal_term.cols(); ++col)
                     {
-                        const auto ref{porosity(row)*water.adiabatic_factor * grid2D->volume(row, col) *
+                        const auto ref{porosity(row) * water.adiabatic_factor * grid2D->volume(row, col) *
                                        (rates_factory.pressure_field->P->value(row, col) -
                                         rates_factory.pressure_field->P_prev->value(row, col))};
                         INFO("row: " << row << ", col: " << col);
@@ -783,6 +1181,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
 #pragma endregion
         }
+
+        solver_ptr->save_state();
     }
     //    INFO("At least a single point should be checked by analytical expression!");
     //    CHECK(counter > 0ll);
