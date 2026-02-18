@@ -34,7 +34,6 @@ namespace GPN
                 BotHoleRateFunctorBC(
                     //    const RealType fluid_density,
                     const ptr<const History_t> history,
-                    const Logs::IsPermeable &is_permeable,
                     const Logs::ExternalPressure &ext_pressure,
                     const HydrostaticPressureFactory_t &hydrostatic_factory,
                     const StepPropertyContainer &PI,
@@ -43,7 +42,6 @@ namespace GPN
                       history{history},
                       ext_pressure{ext_pressure},
                       PI{PI},
-                      is_permeable{is_permeable},
                       grid_ptr{grid_ptr},
                       fluid_weight{hydrostatic_factory.fluid.density * Gravity::value()},
                       hydrostatic_factory{hydrostatic_factory}
@@ -60,7 +58,7 @@ namespace GPN
                         assert(bc_type == BCType::third);
                         // const auto out{history->pressure()};
                         const auto dz{hydrostatic_factory.z_ref - hydrostatic_factory.grid_z.mesh_nodes(z_id)};
-                        const auto out{fluid_weight * dz * is_permeable(z_id)};
+                        const auto out{fluid_weight * dz};
                         return BC_descriptor::BC_III(out, PI(z_id));
                         //    return out;
                     }
@@ -98,7 +96,6 @@ namespace GPN
                 const RealType fluid_weight;
 
                 const HydrostaticPressureFactory_t &hydrostatic_factory;
-                const Logs::IsPermeable &is_permeable;
             };
 
             struct BotHoleRateBC : public BoundaryConditions::GeneralBC
@@ -178,7 +175,6 @@ namespace GPN
                             grid2D_rocks,
                             std::make_shared<const functor_type>(
                                 history,
-                                rock_field_props.base_hydrodynamics.is_permeable,
                                 rock_field_props.base_hydrodynamics.ext_pressure,
                                 hydrostatic_factory,
                                 PI,
