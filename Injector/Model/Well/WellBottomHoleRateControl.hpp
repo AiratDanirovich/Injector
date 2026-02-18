@@ -24,6 +24,7 @@ namespace GPN
             {
             protected:
                 using HydrostaticPressureFactory_t = Logs::HydrostaticPressureFactory<Fluid_t, typename Grid2D_t::Axes1Coordinate_t>;
+
             public:
                 /// @brief
                 /// @param history
@@ -33,6 +34,7 @@ namespace GPN
                 BotHoleRateFunctorBC(
                     //    const RealType fluid_density,
                     const ptr<const History_t> history,
+                    const Logs::IsPermeable &is_permeable,
                     const Logs::ExternalPressure &ext_pressure,
                     const HydrostaticPressureFactory_t &hydrostatic_factory,
                     const StepPropertyContainer &PI,
@@ -41,8 +43,9 @@ namespace GPN
                       history{history},
                       ext_pressure{ext_pressure},
                       PI{PI},
-                      grid_ptr{grid_ptr}, 
-                      fluid_weight{hydrostatic_factory.fluid.density*Gravity::value()},
+                      is_permeable{is_permeable},
+                      grid_ptr{grid_ptr},
+                      fluid_weight{hydrostatic_factory.fluid.density * Gravity::value()},
                       hydrostatic_factory{hydrostatic_factory}
                 {
                     static_assert(Grid2D_t::l_margin == 3ll);
@@ -56,7 +59,8 @@ namespace GPN
                     {
                         assert(bc_type == BCType::third);
                         // const auto out{history->pressure()};
-                        const auto out{0.0 /*fluid_weight*dz*/};
+                        const auto dz{hydrostatic_factory.z_ref - hydrostatic_factory.grid_z.mesh_nodes(z_id)};
+                        const auto out{fluid_weight * dz * is_permeable(z_id)};
                         return BC_descriptor::BC_III(out, PI(z_id));
                         //    return out;
                     }
@@ -92,8 +96,9 @@ namespace GPN
                 const Logs::ExternalPressure &ext_pressure;
                 const ptr<const Grid2D_t> grid_ptr;
                 const RealType fluid_weight;
-                
+
                 const HydrostaticPressureFactory_t &hydrostatic_factory;
+                const Logs::IsPermeable &is_permeable;
             };
 
             struct BotHoleRateBC : public BoundaryConditions::GeneralBC
@@ -143,7 +148,7 @@ namespace GPN
                         rock_field_props,
                     const CrossFlow_t &well_base,
                     const cptr<History_t> history,
-                    const Fluid_t& fluid,
+                    const Fluid_t &fluid,
                     const cptr<Grid2D_t> grid2D_rocks)
                     : CrossFlow_t{well_base},
                       size{grid2D_rocks->first_coord().mesh_size()},
@@ -172,7 +177,9 @@ namespace GPN
                         std::make_shared<const hydro_bc_type>(
                             grid2D_rocks,
                             std::make_shared<const functor_type>(
-                                history, rock_field_props.base_hydrodynamics.ext_pressure,
+                                history,
+                                rock_field_props.base_hydrodynamics.is_permeable,
+                                rock_field_props.base_hydrodynamics.ext_pressure,
                                 hydrostatic_factory,
                                 PI,
                                 grid2D_rocks));
@@ -239,13 +246,13 @@ namespace GPN
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
                 const cptr<Grid2D_t> grid2D_rocks;
                 const cptr<History_t> history;
-                const Fluid_t& fluid;
+                const Fluid_t &fluid;
                 const Properties::Rocks::RocksProps<Grid2D_t> &
                     rock_field_props;
                 const std::ptrdiff_t size;
                 const StepPropertyContainer PI;
                 const Logs::IsPermeable &is_permeable;
-                const Logs::HydrostaticPressureFactory<Fluid_t, typename Grid2D_t::Axes1Coordinate_t> 
+                const Logs::HydrostaticPressureFactory<Fluid_t, typename Grid2D_t::Axes1Coordinate_t>
                     hydrostatic_factory;
 
                 template <typename HistoryRecord_t>
