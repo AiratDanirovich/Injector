@@ -200,6 +200,7 @@ namespace GPN
                     [](const RealType x)
                     { return x >= 0.0; }));
             }
+            AssertNonNegative() = default;
         };
 #pragma region INDICATORS
         /// @brief Property that must only contain {0; 1} values
@@ -279,8 +280,8 @@ namespace GPN
         {
             HydrostaticPressure(
                 const StepPropertyGrid &pressure)
-                : StepPropertyGrid{pressure},
-                  AssertNonNegative{pressure}
+                : StepPropertyGrid{pressure}
+                // , AssertNonNegative{pressure}
             {
             }
         };
