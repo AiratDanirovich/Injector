@@ -245,7 +245,8 @@ namespace GPN
         static auto createFixedRate(
             const auto &time_steps,
             const auto &rates,
-            const auto &temps)
+            const auto &temps,
+            const RealType z_ref)
         {
             const std::vector<InjectorRegimes::Type> regimes(
                 rates.size(),
@@ -268,7 +269,7 @@ namespace GPN
                 Logs::InjectorTemperature{Logs::StepPropertyGrid{
                     temps, time}},
                 regimes,
-                std::numeric_limits<double>::quiet_NaN()};
+                z_ref};
         }
 
         static auto createFixedPressure(

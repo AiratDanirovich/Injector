@@ -78,7 +78,7 @@ auto make_history(const json &data)
         if ((control_type == "RFP") || (control_type == "bottomhole_rate"))
         {
             const VR well_rates { data2["well_rate"].get<VR>()};
-            return HistoryFactory::createFixedRate(t_major_steps, well_rates, inlet_temps);
+            return HistoryFactory::createFixedRate(t_major_steps, well_rates, inlet_temps, read_z_ref(data));
         }
         else if (control_type == "bottomhole_pressure")
         {
@@ -109,7 +109,7 @@ auto make_history(const json &data)
         {
             const RealType well_rate{data2["well_rate"].get<RealType>()}; // m^3/s
             const std::vector<RealType> well_rates(t_major_steps.size(), well_rate);
-            return HistoryFactory::createFixedRate(t_major_steps, well_rates, inlet_temps);
+            return HistoryFactory::createFixedRate(t_major_steps, well_rates, inlet_temps, read_z_ref(data));
         }
         else if (control_type == "bottomhole_pressure")
         {
