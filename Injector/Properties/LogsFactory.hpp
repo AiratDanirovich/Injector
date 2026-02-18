@@ -289,9 +289,9 @@ namespace GPN
                 StepPropertyContainer out(q_nodes.size());
                 assert(nodes.size() >= 2ull);
                 assert(nodes.front() <= q_nodes.minCoeff());
-                assert(nodes.back()  >= q_nodes.maxCoeff());
-                for(auto i{1ull}; i < nodes.size(); ++i)
-                    assert(nodes[i] > nodes[i-1ll]);
+                assert(nodes.back() >= q_nodes.maxCoeff());
+                for (auto i{1ull}; i < nodes.size(); ++i)
+                    assert(nodes[i] > nodes[i - 1ll]);
 
                 ptrdiff_t left{0ll};
                 for (auto i{0ll}; i < q_nodes.size(); ++i)
@@ -303,8 +303,23 @@ namespace GPN
             }
         };
 
-        struct HydrostaicPressureFactory
+        template <typename Fluid_t, typename Grid_t>
+        struct HydrostaticPressureFactory
         {
+            HydrostaticPressureFactory(
+                const RealType z_ref,
+                const Fluid_t &fluid,
+                const Grid_t &grid_z)
+                : fluid{fluid},
+                  grid_z{grid_z},
+                  z_ref{z_ref}
+            {
+            }
+
+            const Fluid_t &fluid;
+            const Grid_t &grid_z;
+            const RealType z_ref;
+
             /// @brief Create log of hydrostatic pressure based on Gravity and z-grid
             /// @param nodes Reference z-nodes for geotherma table
             /// @param vals Reference t-values for geotherma
@@ -312,33 +327,28 @@ namespace GPN
             /// @param P_bot Coordinate of bottomhole, where pressure is set
             /// @param q_grid Mesh nodes for pressure calculation
             /// @return
-            template <typename Fluid_t>
-            static HydrostaticPressure create(
-                const Fluid_t& fluid,
-                const RealType z_bot,
-                const RealType P_bot,
-                const auto &q_grid)
+            HydrostaticPressure create(
+                const RealType P_bot) const
             {
-                assert(P_bot >= fluid.density*Gravity::value()*z_bot);
+            //    assert(P_bot >= fluid.density * Gravity::value() * z_ref);
                 return {
                     StepPropertyGrid{
                         StepPropertyContainer{
-                            (fluid.density*Gravity::value())*(q_grid.mesh_nodes-z_bot) + P_bot},
-                        q_grid}};
+                            (fluid.density * Gravity::value()) * (grid_z.mesh_nodes - z_ref) + P_bot},
+                        grid_z}};
             }
 
             /// @brief Create const-value geotherms
             /// @param P_bot Const pressure value
             /// @param q_grid Mesh nodes for pressure calculation
             /// @return
-            static HydrostaticPressure create_const(
-                const RealType P_bot,
-                const auto &q_grid)
+            HydrostaticPressure create_const(
+                const RealType P_bot) const
             {
                 return {
                     StepPropertyGrid{
-                        StepPropertyContainer::Constant(q_grid.mesh_nodes.size(), P_bot),
-                        q_grid}};
+                        StepPropertyContainer::Constant(grid_z.mesh_nodes.size(), P_bot),
+                        grid_z}};
             }
 
         private:

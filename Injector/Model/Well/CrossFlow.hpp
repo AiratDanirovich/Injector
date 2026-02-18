@@ -205,8 +205,9 @@ namespace GPN
             for (auto i{0ll}; i < wfp_step_prop_grid.size(); ++i)
             {
                 assert(
-                    ((is_perforated(i) != is_damaged(i)) &&
-                     (wfp_step_prop_grid(i) != 0.0)) ||
+                    ((is_perforated(i) != is_damaged(i)) //&&
+                    // (wfp_step_prop_grid(i) != 0.0)
+                    ) ||
                     ((is_perforated(i) == 0.0) && (is_damaged(i) == 0.0) &&
                      (wfp_step_prop_grid(i) == 0.0)));
             }

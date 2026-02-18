@@ -20,6 +20,7 @@
 
 using namespace std;
 using namespace GPN;
+using namespace GPN::Logs;
 using namespace Catch;
 using namespace Catch::Matchers;
 
@@ -31,11 +32,11 @@ const auto z_grid_stencils{
 
 const RealType z_top{0.0};
 
-const RealType z_bot{1000};
+const RealType z_ref{1000};
 
 const auto fluid{Phases::FluidFactory::create_water(0.0, 0.0)};
 
-const RealType P_bot{Gravity::value()*fluid.density*z_bot+1};
+const RealType P_bot{Gravity::value()*fluid.density*z_ref+1};
 
 const RealType slope{Gravity::value()*fluid.density};
 
@@ -43,16 +44,18 @@ TEST_CASE("HydrostaticPressureTest")
 {
     {
         const auto grid{Grids::Factory::create_axes<CoordinateTypes::Z>(z_grid_stencils)};
-        const auto hydrostatic_pressure{Logs::HydrostaicPressureFactory::create(fluid, z_bot, P_bot, grid)};
+        const Logs::HydrostaticPressureFactory hydrostatic_factory{z_ref, fluid, grid};
+        const auto hydrostatic_pressure{hydrostatic_factory.create(P_bot)};
 
         const auto &mesh{grid.mesh_nodes};
         CHECK(hydrostatic_pressure.size() == grid.mesh_nodes.size());
         for (auto i{0ll}; i < hydrostatic_pressure.size(); ++i)
-            CHECK_THAT(P_bot + slope * (mesh(i) - z_bot), WithinRel(hydrostatic_pressure(i), 1E-10));
+            CHECK_THAT(P_bot + slope * (mesh(i) - z_ref), WithinRel(hydrostatic_pressure(i), 1E-10));
     }
     {
         const auto grid{Grids::Factory::create_axes<CoordinateTypes::Z>(z_grid_stencils)};
-        const auto hydrostatic_pressure{Logs::HydrostaicPressureFactory::create_const(P_bot, grid)};
+        const Logs::HydrostaticPressureFactory hydrostatic_factory{z_ref, fluid, grid};
+        const auto hydrostatic_pressure{hydrostatic_factory.create_const(P_bot)};
 
         const auto &mesh{grid.mesh_nodes};
         CHECK(hydrostatic_pressure.size() == grid.mesh_nodes.size());

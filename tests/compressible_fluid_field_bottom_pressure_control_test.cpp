@@ -21,16 +21,21 @@
 
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleRatesFactory.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluid.hpp>
+#include <Injector/Model/Heat/HeatBoundaryConditions.hpp>
 
 #include <Injector/Properties/LogsFactory.hpp>
 #include <Injector/Properties/JT_FieldFactory.hpp>
+#include <Injector/Solver/FullImplicit/Solver.hpp>
+#include <Injector/Solver/SolverManager.hpp>
 
 #include "includes/transfer_to_eigen.hpp"
 #include "includes/make_history.hpp"
+#include "includes/make_geotherma.hpp"
 #include "includes/set_is_permeable_stencils.hpp"
 #include "includes/make_r_stencils.hpp"
 #include "includes/get_completion.hpp"
 #include "includes/make_water.hpp"
+#include "includes/IC_BC.hpp"
 
 #include <nlohmann/json.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -49,6 +54,8 @@ using namespace GPN::Phases;
 using namespace GPN::Completion;
 using namespace GPN::Hydrodynamic;
 using namespace GPN::Wells::BotHolePresControl;
+using namespace GPN::EqSolver;
+using namespace GPN::EqSolver::FullImplicit;
 
 using VR = std::vector<GPN::RealType>;
 
@@ -79,6 +86,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto ext_pressure_stencils{transfer_to_eigen(data["collector"]["external_pressure"].get<VR>(), 1e5)};
     const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"].get<VR>())};
     const auto is_permeable_stencils{set_is_permeable_stencils(is_perforated_stencils, to_layers)};
+
+    // heat logs
+    const auto solid_heatconductivity_stencils{transfer_to_eigen(data["collector"]["heatConductivity"].get<VR>())};
+    const auto solid_density_stencils{transfer_to_eigen(data["collector"]["solidDensity"].get<VR>())};
+    const auto solid_specific_heatcapacity_stencils{transfer_to_eigen(data["collector"]["solidSpecificHeatCapacity"].get<VR>())};
 
     const auto start_time{data["history"]["start_time"].get<RealType>()};
 
@@ -113,12 +125,17 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         Grids::CylinderGridFactory::create(
             z_refiner, z_stencils,
             r_nodes)};
+    const auto &grid_z{grid2D->first_coord()};
+    const auto &grid_r{grid2D->second_coord()};
 
     const cptr<Grids::CylinderGridRock> grid2D_rocks{
         make_shared<Grids::CylinderGridRock>(grid2D)};
     constexpr auto left_margin{3ll};
     const auto &grid_rocks_z{grid2D_rocks->first_coord()};
     const auto &grid_rocks_r{grid2D_rocks->second_coord()};
+
+    const ExtrudedCasing extr_completion{
+        VarExtrudedCasingFactory::create(completion)};
 
     Logs::Rocks::CoreSampleLogs
         core_logs{
@@ -130,6 +147,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     const auto &is_permeable{core_logs.is_permeable};
     const auto &permeability{core_logs.permeability};
+    const auto &porosity{core_logs.porosity};
     const auto &cell_thickness{grid2D_rocks->first_coord().volumes()};
 
     Logs::Hydrodynamics::BaseHydrodynamics
@@ -146,6 +164,30 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             grid2D_rocks};
     const auto &medium_compressibility_field{
         rock_field_props.medium_compressibility};
+    CHECK(medium_compressibility_field.rows() == grid_rocks_z.mesh_size());
+    CHECK(medium_compressibility_field.cols() == grid_rocks_r.mesh_size());
+
+#pragma region HEAT-SETTINGS
+    const Logs::Rocks::HeatLogs heat_logs{
+        solid_density_stencils,
+        solid_specific_heatcapacity_stencils,
+        solid_heatconductivity_stencils,
+        porosity_stencils,
+        water,
+        grid_z};
+
+    Properties::Rocks::HeatProps heat_props{
+        heat_logs, grid2D};
+    heat_props.apply_well(extr_completion);
+
+    FaceProperties::Rocks::HeatFaceProps heat_face_props{
+        heat_props, grid2D};
+    heat_face_props.apply_well(extr_completion);
+
+    std::unique_ptr<const Logs::Geotherma> geotherma{
+        make_unique<Logs::Geotherma>(
+            make_geotherma(data, grid2D))};
+#pragma endregion
 
 #pragma region MAKE-HISTORY
     const ptr<History> history{make_shared<History>(make_history(data))};
@@ -159,6 +201,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             rock_field_props,
             cross_flows,
             history,
+            water,
             grid2D_rocks});
 
     const ptr<Well_t> well{
@@ -166,6 +209,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             rock_field_props,
             cross_flows,
             history,
+            water,
             grid2D_rocks)};
 
     const auto &PI{well->PI};
@@ -200,12 +244,43 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     auto &pressure_field{*ptr_pressure_field};
 
     // rates field factory
-    FaceProperties::CompressibleRatesFactory rates_factory{
+    using RatesFactory_t =
+        decltype(FaceProperties::CompressibleRatesFactory{
+            ptr_pressure_field,
+            grid2D_rocks, well, history, water});
+    auto ptr_rates_factory{make_shared<RatesFactory_t>(
         ptr_pressure_field,
-        grid2D_rocks, well, history, water};
+        grid2D_rocks, well, history, water)};
+    RatesFactory_t &rates_factory{*ptr_rates_factory};
 
-    const auto &grid_z{grid2D->first_coord()};
-    const auto &grid_r{grid2D->second_coord()};
+    const auto initial_state{GPN::ICFactory(start_time, grid2D, *geotherma)};
+    // boundary conditions
+    const GPN::Heat::HeatBC bc{
+        grid2D,
+        std::make_shared<GPN::FunctorBC<
+            History,
+            CompressibleFluidField_t,
+            RatesFactory_t>>(
+            history, ptr_rates_factory, *geotherma, grid2D),
+        ptr_rates_factory};
+    // solver
+    using Solver_t = decltype(Solver{
+        heat_face_props.medium_heat_conductivity,
+        grid2D,
+        heat_props.medium_vol_heatcapacity,
+        ptr_rates_factory, initial_state,
+        bc, start_time});
+
+    auto solver_ptr{std::make_shared<Solver_t>(
+        heat_face_props.medium_heat_conductivity,
+        grid2D,
+        heat_props.medium_vol_heatcapacity,
+        ptr_rates_factory, initial_state,
+        bc, start_time)};
+
+    const auto &solver{*solver_ptr};
+
+    SolverManager solver_manager{history, solver_ptr};
 
     //    const auto rMin{grid_r.dual_front()};
     const auto rMax{grid_r.dual_back()};
@@ -215,7 +290,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     CHECK(r_sandface == grid_r.dual_nodes(3ll));
     CHECK(r_sandface == grid_rocks_r.dual_front());
     const auto &time_intervals{history->time_steps};
-    const auto numerical_step{data["history"]["t_minor_step"].get<RealType>()};
+    const auto numerical_step{read_minor_step(data)};
     RealType cur_time{start_time};
     ptrdiff_t counter{0ll};
     // mock SolverManager::run
@@ -236,9 +311,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             const auto record{history->get_current_record()};
             const auto collector_pressure{ptr_pressure_field->get_rock_pressure()};
             const RealType P_bot{well->P_bot(record, collector_pressure)};
-            //        std::cout << "P_bot:        " << P_bot << std::endl;
-            //        std::cout << "P_bot_solver: " << P_bot_solver << std::endl;
+            const auto P_well{well->well_pressure_profile(record, collector_pressure)};
             CHECK_THAT(P_bot, WithinRel(record.pressure, exact_tol));
+            CHECK(well->P_bot(record, collector_pressure) == history->pressure());
 #pragma region VERIFY-PRESSURE-PROBLEM-MATRIX
             {
                 const auto &A{pressure_field.get_solver()->get_problem_matrix()};
@@ -381,8 +456,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                             const auto col{0ll};
                             const auto l{grid2D_rocks->to_linear(row, col)};
                             const auto val{collector_pressure_prev(row, col) * grid2D_rocks->volume(row, col) *
-                                           medium_compressibility_field.value(row, col) / step +
-                                        P_bot*PI(row)};
+                                               medium_compressibility_field.value(row, col) / step +
+                                           P_well(row) * PI(row)};
                             CHECK_THAT(rhs(l),
                                        WithinRel(val, exact_tol));
                         }
@@ -418,8 +493,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             const auto &P{pressure_field.current_pressure().values()};
             CHECK(rfp.rows() == grid_z.mesh_size());
 
-            //        std::cout << "rfp:\n" << rfp.transpose() << std::endl;
-
             for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
             {
                 const auto rate{rfp(row)};
@@ -428,7 +501,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 const auto k{permeability(row)};
                 const auto beta{base_hydrodynamics.medium_compressibility(row)};
 #pragma region CHECK-RFP
-                CHECK(rate == -PI(row) * (collector_pressure(row, 0ll) - P_bot));
+                CHECK(rate == -PI(row) * (collector_pressure(row, 0ll) - P_well(row)));
 #pragma endregion
 
                 // pressure is const inside completion
@@ -464,11 +537,17 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     }
                 }
                 else
-                {
+                { // in impermeable layers
                     for (auto col{0ll}; col < grid_r.mesh_size(); ++col)
                         CHECK(
                             P(row, col) == ext_pressure(row));
                 }
+#pragma region CHECK-WELL-PRESSURE
+                {
+                    INFO("ror: " << row << ", density: " << water.density << ", g: " << Gravity::value() << ", depth: " << grid_z.mesh_nodes(row));
+                    CHECK(P_well(row) == record.pressure + water.density * Gravity::value() * (grid_z.mesh_nodes(row) - history->z_ref));
+                }
+#pragma endregion
             }
 #pragma endregion
 #pragma region CHECK-RATES
@@ -548,9 +627,23 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     }
                 }
                 else
-                { // check horizontal rates in impermeble layers
-                    for (auto col{0ll}; col < grid_r.dual_size(); ++col)
+                { // check horizontal rates in impermeable layers
+                    {
+                        const auto col{0ll};
                         CHECK(flux2(row, col) == 0.0);
+                    }
+                    for (auto col{1ll}; col < left_margin; ++col)
+                    {
+                        // this comes from cross flow data
+                        INFO("row: " << row << ", col: " << col);
+                        CHECK(flux2(row, col) == C * wfp(row));
+                    }
+
+                    for (auto col{left_margin}; col < grid_r.dual_size(); ++col)
+                    {
+                        INFO("row: " << row << ", col: " << col);
+                        CHECK(flux2(row, col) == 0.0);
+                    }
                 }
 
                 if (core_logs.is_permeable(row) == 1.0)
@@ -618,7 +711,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 { // flow in the cement
                     const auto col{2ll};
                     INFO("row: " << row);
-                    CHECK(flux1(row, col) == cement_flow(row));
+                    CHECK(flux1(row, col) / C == cement_flow(row));
                 }
                 for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
                 {
@@ -678,15 +771,16 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 }
 
                 {
-                    for (auto col{0ll}; col < 3ll; ++col)
+                    for (auto col{0ll}; col < left_margin; ++col)
                         CHECK(JT_temporal_term.value(row, col) == 0.0);
                 }
                 {
-                    for (auto col{3ll}; col < JT_temporal_term.cols(); ++col)
+                    for (auto col{left_margin}; col < JT_temporal_term.cols(); ++col)
                     {
-                        const auto ref{water.adiabatic_factor / step * grid2D->volume(row, col) *
+                        const auto ref{porosity(row) * water.adiabatic_factor * grid2D->volume(row, col) *
                                        (rates_factory.pressure_field->P->value(row, col) -
                                         rates_factory.pressure_field->P_prev->value(row, col))};
+                        INFO("row: " << row << ", col: " << col);
                         CHECK(ref == JT_temporal_term.value(row, col));
                     }
                 }

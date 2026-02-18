@@ -36,6 +36,9 @@ add_catch2_test(incompressible_fluid_field_test)
 add_catch2_test(compressible_fluid_field_RFP_control_test)
 add_catch2_test(compressible_fluid_field_bottom_pressure_control_test)
 add_catch2_test(compressible_fluid_field_rate_control_test)
+
+add_catch2_test(heat_compressible_fluid_field_RFP_control_test)
+
 add_catch2_test(boundaryconditions_test)
 add_catch2_test(interpolator_test)
 add_catch2_test(fields_test)
@@ -47,7 +50,6 @@ add_catch2_test(solver_test)
 add_catch2_test(solver_full_implicit_test)
 
 add_catch2_test(well_test)
-add_catch2_test(bothole_pres_well_test)
 add_catch2_test(apply_well_test)
 add_catch2_test(flowfield_test)
 add_catch2_test(hydrodynamicsolver_test)

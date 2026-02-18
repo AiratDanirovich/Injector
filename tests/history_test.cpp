@@ -47,7 +47,7 @@ TEST_CASE("HistoryTest")
             Logs::RawDataFactory::generate_pressures(
                 time_moments),
             Logs::RawDataFactory::generate_temperatures(
-                time_moments))};
+                time_moments), 100)};
 
     const auto history_rate{
         HistoryFactory::createFixedRate(

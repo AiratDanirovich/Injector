@@ -104,7 +104,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         z_minor_step{data["grid"]["z_minor_step"].get<RealType>()}; // m
     //  const ptrdiff_t rNodes{data["grid"]["rNodes"]};
     /*history*/
-    const auto t_minor_step{data["history"]["t_minor_step"].get<RealType>()};
+    const auto t_minor_step{read_minor_step(data)};
     const auto start_time{data["history"]["start_time"].get<RealType>()};
     /*temperatures*/
     /*completion*/
@@ -123,8 +123,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 
     // make grid2D
     // r_stencils
+    const auto well_holes{WellHoles{WellHolesFactory::create(completion)}};
     const VR r_stencils{
-        WellHoles{WellHolesFactory::create(completion)}.get_stencils(
+        well_holes.get_stencils(
             data["grid"]["r_start"].get<RealType>(),
             data["grid"]["r_end"].get<RealType>())};
     // r-refiner
@@ -238,7 +239,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 grid2D_rocks)};
 
         // fluid model for the pressure field
-        using FluidField_t =
+        using CompressibleFluidField_t =
             decltype(CompressibleFluidField{
                 start_time,
                 water,
@@ -248,7 +249,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 grid2D_rocks});
 
         auto ptr_pressure_field{
-            make_shared<FluidField_t>(
+            make_shared<CompressibleFluidField_t>(
                 start_time,
                 water,
                 rock_field_props,
@@ -271,7 +272,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             grid2D,
             std::make_shared<GPN::FunctorBC<
                 History,
-                FluidField_t,
+                CompressibleFluidField_t,
                 RatesFactory_t>>(
                 history, ptr_rates_factory, *geotherma, grid2D),
             ptr_rates_factory};
@@ -358,6 +359,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 rock_field_props,
                 cross_flows,
                 history,
+                water,
                 grid2D_rocks});
 
         const ptr<Well_t> well{
@@ -365,10 +367,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 rock_field_props,
                 cross_flows,
                 history,
+                water,
                 grid2D_rocks)};
 
         // fluid model for the pressure field
-        using FluidField_t =
+        using CompressibleFluidField_t =
             decltype(CompressibleFluidField{
                 start_time,
                 water,
@@ -378,7 +381,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 grid2D_rocks});
 
         auto ptr_pressure_field{
-            make_shared<FluidField_t>(
+            make_shared<CompressibleFluidField_t>(
                 start_time,
                 water,
                 rock_field_props,
@@ -401,7 +404,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             grid2D,
             std::make_shared<GPN::FunctorBC<
                 History,
-                FluidField_t,
+                CompressibleFluidField_t,
                 RatesFactory_t>>(
                 history, ptr_rates_factory, *geotherma, grid2D),
             ptr_rates_factory};
