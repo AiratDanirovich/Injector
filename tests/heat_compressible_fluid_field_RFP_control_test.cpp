@@ -305,6 +305,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         {
             const auto t{cur_time + step};
             const auto collector_pressure_prev{ptr_pressure_field->get_rock_pressure()};
+            const Eigen::ArrayXX<RealType> temperature_prev{solver_ptr->get_state()};
             CHECK(collector_pressure_prev.rows() == grid_rocks_z.mesh_size());
             CHECK(collector_pressure_prev.cols() == grid_rocks_r.mesh_size());
             // const auto &P_prev{pressure_field.current_pressure().values()};
@@ -705,10 +706,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                             const auto col{grid_r.mesh_size() - 1ll};
                             const auto l{grid2D->to_linear(row, col)};
                             if (
-                            //    (is_permeable(row) == 1.0) 
-                            // &&
-                                (collector_pressure.rightCols(1ll)(row, 0ll) >= collector_pressure.rightCols(2ll)(row, 0ll))
-                            )
+                                //    (is_permeable(row) == 1.0)
+                                // &&
+                                (collector_pressure.rightCols(1ll)(row, 0ll) >= collector_pressure.rightCols(2ll)(row, 0ll)))
                             {
                                 // fluid flows towards the well,
                                 // temperature BC is of the first type
@@ -742,12 +742,12 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                                         -flux2_pos(row, col) +
                                         -f_conductivity_2(row, col - 1ll) * grid2D->face_area_axes2(row)};
 
-                                    INFO("row: " << row << ", col: " << col << ", l: " << l << ", A.cols: " << A.cols() << ", flux2: " << flux2(row,col));
+                                    INFO("row: " << row << ", col: " << col << ", l: " << l << ", A.cols: " << A.cols() << ", flux2: " << flux2(row, col));
                                     CHECK_THAT(A.coeff(l, idx),
                                                WithinRel(val, exact_tol));
                                 }
 
-                                for (auto idx{l -nz+1}; idx < l -1ll; ++idx)
+                                for (auto idx{l - nz + 1}; idx < l - 1ll; ++idx)
                                     CHECK(A.coeff(l, idx) == 0.0);
                                 {
                                     const auto idx{l - 1ll};
@@ -823,6 +823,54 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     }
                 }
             }
+#pragma region VERIFY-HEAT-PROBLEM-RHS
+            {
+                const auto &rhs{solver_ptr->rhs};
+                const auto flux1{rates_factory.get_heat_flow_in_axes1_neg() + rates_factory.get_heat_flow_in_axes1_pos()};
+                const auto &flux1_pos{rates_factory.get_heat_flow_in_axes1_pos()};
+                const auto &flux1_neg{rates_factory.get_heat_flow_in_axes1_neg()};
+                const auto flux2{rates_factory.get_heat_flow_in_axes2_neg() + rates_factory.get_heat_flow_in_axes2_pos()};
+                const auto &flux2_pos{rates_factory.get_heat_flow_in_axes2_pos()};
+                const auto &flux2_neg{rates_factory.get_heat_flow_in_axes2_neg()};
+
+                const auto JT_term{Properties::JT_FieldFactory::create_spatial(rates_factory)};
+                const auto JT_temporal_term{Properties::JT_FieldFactory::create_temporal(rates_factory)};
+
+                for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
+                {
+                    for (auto col{0ll}; col < grid_r.mesh_size() - 1ll; ++col)
+                    {
+                        const auto l{grid2D->to_linear(row, col)};
+                        const auto val{
+                            (row == 0ll ? flux1_pos(row, col) : 0.0) // well inlet BC
+                            + (temperature_prev(row, col) * capacity(row, col) * grid2D->volume(row, col) + JT_temporal_term.value(row, col)) / step + JT_term.value(row, col)};
+                        INFO("row: " << row << ", col: " << col << ", l: " << l);
+                        CHECK_THAT(rhs(l),
+                                   WithinRel(val, exact_tol));
+                    }
+                    {
+                        const auto col{grid_r.mesh_size() - 1ll};
+                        const auto l{grid2D->to_linear(row, col)};
+                        if (
+                            //    (is_permeable(row) == 1.0)
+                            // &&
+                            (collector_pressure.rightCols(1ll)(row, 0ll) >= collector_pressure.rightCols(2ll)(row, 0ll)))
+                        {
+                            CHECK(rhs(l) == (*geotherma)(row));
+                        }
+                        else
+                        {
+                            const auto val{
+                                (row == 0ll ? flux1_pos(row, col) : 0.0) // well inlet BC
+                                + (temperature_prev(row, col) * capacity(row, col) * grid2D->volume(row, col) + JT_temporal_term.value(row, col)) / step + JT_term.value(row, col)};
+                            INFO("row: " << row << ", col: " << col << ", l: " << l);
+                            CHECK_THAT(rhs(l),
+                                       WithinRel(val, exact_tol));
+                        }
+                    }
+                }
+            }
+#pragma endregion
 #pragma endregion
             const auto rfp{well->get_RFP(history->get_current_record())};
 #pragma region CHECK-PRESSURE
