@@ -192,16 +192,6 @@ namespace GPN
                 }
 
                 template <typename HistoryRecord_t>
-                StepPropertyContainer get_pressure_at_sandface(
-                    const HistoryRecord_t &record,
-                    const auto &) const
-                {
-                    // Pressure at the level of NON-permeable layers is assumed zero.
-                    // Pressure at permeable layers is equal to history->pressure()
-                    return StepPropertyContainer::Constant(size, record.pressure) * is_permeable.log_vals;
-                }
-
-                template <typename HistoryRecord_t>
                 RealType get_total_bottomhole_rate(
                     const HistoryRecord_t &record,
                     const auto &collector_pressure) const
@@ -248,6 +238,16 @@ namespace GPN
                 {                        
                     return hydrostatic_factory.create(
                         P_bot(history->get_current_record(), collector_pressure));
+                }
+                
+                template <typename HistoryRecord_t>
+                StepPropertyContainer get_pressure_at_sandface(
+                    const HistoryRecord_t &record,
+                    const auto &collector_pressure) const
+                {
+                    // Pressure at the level of NON-permeable layers is assumed zero.
+                    // Pressure at permeable layers is equal to history->pressure()
+                    return well_pressure_profile(record, collector_pressure).log_vals * is_permeable.log_vals;
                 }
 
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;

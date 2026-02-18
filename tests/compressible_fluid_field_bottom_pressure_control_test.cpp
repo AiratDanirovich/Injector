@@ -311,9 +311,9 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             const auto record{history->get_current_record()};
             const auto collector_pressure{ptr_pressure_field->get_rock_pressure()};
             const RealType P_bot{well->P_bot(record, collector_pressure)};
-            //        std::cout << "P_bot:        " << P_bot << std::endl;
-            //        std::cout << "P_bot_solver: " << P_bot_solver << std::endl;
+            const auto P_well{well->well_pressure_profile(record, collector_pressure)};
             CHECK_THAT(P_bot, WithinRel(record.pressure, exact_tol));
+            CHECK(well->P_bot(record, collector_pressure) == history->pressure());
 #pragma region VERIFY-PRESSURE-PROBLEM-MATRIX
             {
                 const auto &A{pressure_field.get_solver()->get_problem_matrix()};
@@ -457,7 +457,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                             const auto l{grid2D_rocks->to_linear(row, col)};
                             const auto val{collector_pressure_prev(row, col) * grid2D_rocks->volume(row, col) *
                                                medium_compressibility_field.value(row, col) / step +
-                                           P_bot * PI(row)};
+                                           P_well(row) * PI(row)};
                             CHECK_THAT(rhs(l),
                                        WithinRel(val, exact_tol));
                         }
@@ -501,7 +501,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 const auto k{permeability(row)};
                 const auto beta{base_hydrodynamics.medium_compressibility(row)};
 #pragma region CHECK-RFP
-                CHECK(rate == -PI(row) * (collector_pressure(row, 0ll) - P_bot));
+                CHECK(rate == -PI(row) * (collector_pressure(row, 0ll) - P_well(row)));
 #pragma endregion
 
                 // pressure is const inside completion
@@ -542,8 +542,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                         CHECK(
                             P(row, col) == ext_pressure(row));
                 }
-#pragma region CECK-WELL-PRESSURE
-
+#pragma region CHECK-WELL-PRESSURE
+                {
+                    INFO("ror: " << row << ", density: " << water.density << ", g: " << Gravity::value() << ", depth: " << grid_z.mesh_nodes(row));
+                    CHECK(P_well(row) == record.pressure + water.density * Gravity::value() * (grid_z.mesh_nodes(row) - history->z_ref));
+                }
 #pragma endregion
             }
 #pragma endregion
