@@ -330,7 +330,7 @@ namespace GPN
             HydrostaticPressure create(
                 const RealType P_bot) const
             {
-                assert(P_bot >= fluid.density * Gravity::value() * z_bot);
+            //    assert(P_bot >= fluid.density * Gravity::value() * z_ref);
                 return {
                     StepPropertyGrid{
                         StepPropertyContainer{

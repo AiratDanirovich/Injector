@@ -245,7 +245,7 @@ namespace GPN
                 const auto well_pressure_profile(
                     const HistoryRecord_t &record,
                     const auto &collector_pressure) const
-                {
+                {                        
                     return hydrostatic_factory.create(
                         P_bot(history->get_current_record(), collector_pressure));
                 }
