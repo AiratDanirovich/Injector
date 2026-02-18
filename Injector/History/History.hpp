@@ -117,6 +117,7 @@ namespace GPN
                 const Logs::SurfacePressure &pressures,
                 const Logs::InjectorTemperature &temps,
                 const std::vector<InjectorRegimes::Type> &regimes,
+                const RealType z_ref,
                 const RealType start_time = 0.0)
             : rates{rates},
               pressures{pressures},
@@ -125,7 +126,8 @@ namespace GPN
               time_moments{set_time_moments(rates.grid.dual_steps, start_time)},
               regimes{regimes},
               pos{-1ll},
-              start_time{start_time}
+              start_time{start_time},
+              z_ref{z_ref}
         {
             assert(rates.size() == time_steps.size());
             assert(pressures.size() == time_steps.size());
@@ -221,7 +223,7 @@ namespace GPN
         const Logs::InjectorTemperature temps;
         const DualStepsContainer time_steps;
         const std::vector<double> time_moments;
-        const RealType start_time;
+        const RealType start_time, z_ref;
 
     private:
         ptrdiff_t pos;
@@ -265,13 +267,15 @@ namespace GPN
                     p, time}},
                 Logs::InjectorTemperature{Logs::StepPropertyGrid{
                     temps, time}},
-                regimes};
+                regimes,
+                std::numeric_limits<double>::quiet_NaN()};
         }
 
         static auto createFixedPressure(
             const auto &time_steps,
             const auto &pressure,
-            const auto &temps)
+            const auto &temps,
+            const RealType z_ref)
         {
             const std::vector<InjectorRegimes::Type> regimes(
                 pressure.size(),
@@ -293,7 +297,8 @@ namespace GPN
                     pressure, time}},
                 Logs::InjectorTemperature{Logs::StepPropertyGrid{
                     temps, time}},
-                regimes};
+                regimes,
+                z_ref};
         }
     };
 } // GPN
