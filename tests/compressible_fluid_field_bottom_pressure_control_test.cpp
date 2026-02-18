@@ -86,7 +86,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     const auto ext_pressure_stencils{transfer_to_eigen(data["collector"]["external_pressure"].get<VR>(), 1e5)};
     const auto is_perforated_stencils{transfer_to_eigen(data["collector"]["is_perforated"].get<VR>())};
     const auto is_permeable_stencils{set_is_permeable_stencils(is_perforated_stencils, to_layers)};
-       
+
     // heat logs
     const auto solid_heatconductivity_stencils{transfer_to_eigen(data["collector"]["heatConductivity"].get<VR>())};
     const auto solid_density_stencils{transfer_to_eigen(data["collector"]["solidDensity"].get<VR>())};
@@ -188,7 +188,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         make_unique<Logs::Geotherma>(
             make_geotherma(data, grid2D))};
 #pragma endregion
-
 
 #pragma region MAKE-HISTORY
     const ptr<History> history{make_shared<History>(make_history(data))};
@@ -457,8 +456,8 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                             const auto col{0ll};
                             const auto l{grid2D_rocks->to_linear(row, col)};
                             const auto val{collector_pressure_prev(row, col) * grid2D_rocks->volume(row, col) *
-                                           medium_compressibility_field.value(row, col) / step +
-                                        P_bot*PI(row)};
+                                               medium_compressibility_field.value(row, col) / step +
+                                           P_bot * PI(row)};
                             CHECK_THAT(rhs(l),
                                        WithinRel(val, exact_tol));
                         }
@@ -493,8 +492,6 @@ TEST_CASE("Solver", "SelfSimilarCyl")
 #pragma region CHECK-PRESSURE
             const auto &P{pressure_field.current_pressure().values()};
             CHECK(rfp.rows() == grid_z.mesh_size());
-
-            //        std::cout << "rfp:\n" << rfp.transpose() << std::endl;
 
             for (auto row{0ll}; row < grid_z.mesh_size(); ++row)
             {
@@ -540,11 +537,14 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                     }
                 }
                 else
-                {
+                { // in impermeable layers
                     for (auto col{0ll}; col < grid_r.mesh_size(); ++col)
                         CHECK(
                             P(row, col) == ext_pressure(row));
                 }
+#pragma region CECK-WELL-PRESSURE
+
+#pragma endregion
             }
 #pragma endregion
 #pragma region CHECK-RATES
@@ -774,7 +774,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 {
                     for (auto col{left_margin}; col < JT_temporal_term.cols(); ++col)
                     {
-                        const auto ref{porosity(row)*water.adiabatic_factor * grid2D->volume(row, col) *
+                        const auto ref{porosity(row) * water.adiabatic_factor * grid2D->volume(row, col) *
                                        (rates_factory.pressure_field->P->value(row, col) -
                                         rates_factory.pressure_field->P_prev->value(row, col))};
                         INFO("row: " << row << ", col: " << col);
