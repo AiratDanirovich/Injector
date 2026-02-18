@@ -105,7 +105,6 @@ namespace GPN
                 }
             };
 #pragma endregion
-
             template <
                 typename History_t,
                 typename Grid2D_t,

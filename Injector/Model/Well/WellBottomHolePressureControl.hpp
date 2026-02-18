@@ -110,7 +110,6 @@ namespace GPN
                 }
             };
 #pragma endregion
-
             template <
                 typename History_t,
                 typename Fluid_t,
