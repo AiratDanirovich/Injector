@@ -33,7 +33,12 @@ add_catch2_test(cross_flow_test)
 add_catch2_test(grid_test)
 add_catch2_test(initialstate_test)
 add_catch2_test(incompressible_fluid_field_test)
-add_catch2_test(compressible_fluid_field_test)
+add_catch2_test(compressible_fluid_field_RFP_control_test)
+add_catch2_test(compressible_fluid_field_bottom_pressure_control_test)
+add_catch2_test(compressible_fluid_field_rate_control_test)
+
+add_catch2_test(heat_compressible_fluid_field_RFP_control_test)
+
 add_catch2_test(boundaryconditions_test)
 add_catch2_test(interpolator_test)
 add_catch2_test(fields_test)
@@ -59,6 +64,7 @@ add_catch2_test(HeatFlow_test)
 
 add_catch2_test(history_test)
 add_catch2_test(geotherma_test)
+add_catch2_test(hydrostatic_pressure_test)
 
 install(FILES ${PROJECT_SOURCE_DIR}/test_data/json_test_data.json
     DESTINATION $<TARGET_FILE_DIR:json_test>)
