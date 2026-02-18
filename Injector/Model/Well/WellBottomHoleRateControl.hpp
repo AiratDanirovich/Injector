@@ -203,16 +203,6 @@ namespace GPN
                 }
 
                 template <typename HistoryRecord_t>
-                StepPropertyContainer get_pressure_at_sandface(
-                    const HistoryRecord_t &record,
-                    const auto &collector_pressure) const
-                {
-                    // Pressure at the level of NON-permeable layers is assumed zero.
-                    // Pressure at permeable layers is equal to history->pressure()
-                    return StepPropertyContainer::Constant(size, P_bot(record, collector_pressure)) * is_permeable.log_vals;
-                }
-
-                template <typename HistoryRecord_t>
                 RealType get_total_bottomhole_rate(
                     const HistoryRecord_t &record,
                     const auto &collector_pressure) const
@@ -238,6 +228,30 @@ namespace GPN
                     flow_axes2_value.col(2ll) = get_WFP(record);
                     flow_axes2_value.col(3ll) = get_RFP(record);
                 }
+                
+                const RealType z_ref() const
+                {
+                    return history->z_ref;
+                }
+
+                template <typename HistoryRecord_t>
+                const auto well_pressure_profile(
+                    const HistoryRecord_t &record,
+                    const auto &collector_pressure) const
+                {                        
+                    return hydrostatic_factory.create(
+                        P_bot(history->get_current_record(), collector_pressure));
+                }
+                
+                template <typename HistoryRecord_t>
+                StepPropertyContainer get_pressure_at_sandface(
+                    const HistoryRecord_t &record,
+                    const auto &collector_pressure) const
+                {
+                    // Pressure at the level of NON-permeable layers is assumed zero.
+                    // Pressure at permeable layers is equal to history->pressure()
+                    return well_pressure_profile(record, collector_pressure).log_vals * is_permeable.log_vals;
+                }
 
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
                 const cptr<Grid2D_t> grid2D_rocks;
@@ -257,7 +271,9 @@ namespace GPN
                     const auto &collector_pressure) const
                 {
                     const auto rate{record.rate};
-                    const RealType term1{(PI * collector_pressure.col(0ll)).sum()};
+                    const auto weight{fluid.density*Gravity::value()};
+                    const auto dz{grid2D_rocks->first_coord().mesh_nodes-z_ref()};
+                    const RealType term1{(PI * (collector_pressure.col(0ll) - weight*dz)).sum()};
                     assert(!std::isnan(rate) && !std::isinf(rate));
                     const auto out{(term1 + rate) / PI.sum()};
                     return out;
