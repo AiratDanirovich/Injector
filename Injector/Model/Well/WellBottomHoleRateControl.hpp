@@ -19,9 +19,12 @@ namespace GPN
         namespace BotHoleRateControl
         {
 #pragma region BOUNDARY-CONDITION
-            template <typename History_t, typename Grid2D_t>
+            template <typename Fluid_t, typename History_t, typename Grid2D_t>
             struct BotHoleRateFunctorBC : public BoundaryConditions::GeneralBC::BCFunctorBase
             {
+            protected:
+                using HydrostaticPressureFactory_t = Logs::HydrostaticPressureFactory<Fluid_t, typename Grid2D_t::Axes1Coordinate_t>;
+            public:
                 /// @brief
                 /// @param history
                 /// @param ext_pressure
@@ -31,13 +34,15 @@ namespace GPN
                     //    const RealType fluid_density,
                     const ptr<const History_t> history,
                     const Logs::ExternalPressure &ext_pressure,
+                    const HydrostaticPressureFactory_t &hydrostatic_factory,
                     const StepPropertyContainer &PI,
                     const ptr<const Grid2D_t> grid_ptr)
                     : BoundaryConditions::GeneralBC::BCFunctorBase{},
                       history{history},
                       ext_pressure{ext_pressure},
                       PI{PI},
-                      grid_ptr{grid_ptr} //, fluid_weight{fluid_density*Gravity::value()}
+                      grid_ptr{grid_ptr}, // fluid_weight{fluid_density*Gravity::value()},
+                      hydrostatic_factory{hydrostatic_factory}
                 {
                     static_assert(Grid2D_t::l_margin == 3ll);
                 }
@@ -86,6 +91,8 @@ namespace GPN
                 const Logs::ExternalPressure &ext_pressure;
                 const ptr<const Grid2D_t> grid_ptr;
                 //    const RealType fluid_weight;
+                
+                const HydrostaticPressureFactory_t &hydrostatic_factory;
             };
 
             struct BotHoleRateBC : public BoundaryConditions::GeneralBC
@@ -114,7 +121,7 @@ namespace GPN
                 : public CrossFlow_t,
                   public DefaultWellNumerics<1ll>
             {
-                using functor_type = BotHoleRateFunctorBC<History_t, Grid2D_t>;
+                using functor_type = BotHoleRateFunctorBC<Fluid_t, History_t, Grid2D_t>;
                 using hydro_bc_type = BotHoleRateBC;
                 using grid_type = Grid2D_t;
 
@@ -165,6 +172,7 @@ namespace GPN
                             grid2D_rocks,
                             std::make_shared<const functor_type>(
                                 history, rock_field_props.base_hydrodynamics.ext_pressure,
+                                hydrostatic_factory,
                                 PI,
                                 grid2D_rocks));
                 }

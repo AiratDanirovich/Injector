@@ -83,12 +83,13 @@ namespace GPN
                     return BC_descriptor::BC_II(0.0);
                 //    return 0.0;
                 }
+                
+                const StepPropertyContainer& PI;
+                const ptr<const History_t> history;
 
             protected:
                 const Logs::ExternalPressure &ext_pressure;
-                const StepPropertyContainer& PI;
                 const ptr<const Grid2D_t> grid_ptr;
-                const ptr<const History_t> history;
                 
                 const HydrostaticPressureFactory_t &hydrostatic_factory;
             };
