@@ -359,9 +359,9 @@ TEST_CASE("apply_well_test", "apply_well_test")
 
   // CHECK heat_props --- after "apply_well"
   {
-    const auto &capacity = heat_props.medium_vol_heatcapacity.values();
-    const auto &heat_conductivity_1 = heat_props.medium_heat_conductivity_axes1.values();
-    const auto &heat_conductivity_2 = heat_props.medium_heat_conductivity_axes2.values();
+    const auto &capacity {heat_props.medium_vol_heatcapacity.values()};
+    const auto &heat_conductivity_1 {heat_props.medium_heat_conductivity_axes1.values()};
+    const auto &heat_conductivity_2 {heat_props.medium_heat_conductivity_axes2.values()};
     const auto flow_area{Flow.area()};
 
     const Eigen::ArrayX<RealType> temp{Flow.volumetric_heat_capacity() *
@@ -454,9 +454,9 @@ TEST_CASE("apply_well_test", "apply_well_test")
     // volumetric_heat_capacity
     //  const auto &capacity = heat_props.medium_vol_heatcapacity.values();
     //  const auto &porosity = core_data.porosity.log_vals;
-    const auto &heat_conductivity = heat_logs.medium_heat_conductivity.log_vals;
-    const auto &f_conductivity_1 = heat_face_props.medium_heat_conductivity.face_vals_axes1;
-    const auto &f_conductivity_2 = heat_face_props.medium_heat_conductivity.face_vals_axes2;
+    const auto &heat_conductivity { heat_logs.medium_heat_conductivity.log_vals };
+    const auto &f_conductivity_1 { heat_face_props.medium_heat_conductivity.face_vals_axes1 };
+    const auto &f_conductivity_2 { heat_face_props.medium_heat_conductivity.face_vals_axes2 };
 
     // CHECK f_conductivity_2
     {
