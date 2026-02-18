@@ -168,6 +168,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             porosity_stencils,
             permeability_stencils,
             grid_z};
+    const auto& porosity{core_logs.porosity};
 
     Logs::Hydrodynamics::BaseHydrodynamics
         base_hydrodynamics(
@@ -314,7 +315,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                             tol));
                 }
 
-                for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
+                for (auto col{left_margin}; col < grid_r.mesh_size(); ++col)
                     CHECK_THAT(
                         P.value(row, col),
                         WithinRel(
@@ -326,7 +327,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             }
             else
             {
-                for (auto col{3ll}; col < grid_r.mesh_size(); ++col)
+                for (auto col{left_margin}; col < grid_r.mesh_size(); ++col)
                     CHECK(
                         P.value(row, col) == base_hydrodynamics.ext_pressure(row));
             }
@@ -437,15 +438,21 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             }
 
             {
-                for (auto col{0ll}; col < 3ll; ++col)
+                for (auto col{0ll}; col < left_margin; ++col)
                     CHECK(JT_temporal_term.value(row, col) == 0.0);
             }
             {
-                for (auto col{3ll}; col < JT_temporal_term.cols(); ++col)
+                for (auto col{left_margin}; col < JT_temporal_term.cols(); ++col)
                 {
-                    const auto ref{water.adiabatic_factor / history->time_steps[t] *
+                    const auto ref{water.adiabatic_factor*grid2D->volume(row, col)*porosity(row) *
                                    (rates_factory.pressure_field->P->value(row, col) -
                                     rates_factory.pressure_field->P_prev->value(row, col))};
+                    INFO(
+                        "row: " << row << 
+                        ", col: " << col << 
+                        ", t_id: " << t << 
+                        ", rows: " << grid2D_rocks->first_coord().mesh_size() << 
+                        ", cols: " << grid2D->second_coord().mesh_size());
                     CHECK(ref == JT_temporal_term.value(row, col));
                 }
             }

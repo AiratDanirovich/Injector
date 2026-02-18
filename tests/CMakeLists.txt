@@ -33,7 +33,12 @@ add_catch2_test(cross_flow_test)
 add_catch2_test(grid_test)
 add_catch2_test(initialstate_test)
 add_catch2_test(incompressible_fluid_field_test)
-add_catch2_test(compressible_fluid_field_test)
+add_catch2_test(compressible_fluid_field_RFP_control_test)
+add_catch2_test(compressible_fluid_field_bottom_pressure_control_test)
+add_catch2_test(compressible_fluid_field_rate_control_test)
+
+add_catch2_test(heat_compressible_fluid_field_RFP_control_test)
+
 add_catch2_test(boundaryconditions_test)
 add_catch2_test(interpolator_test)
 add_catch2_test(fields_test)

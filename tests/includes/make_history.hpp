@@ -26,14 +26,10 @@
 
 using VR = std::vector<GPN::RealType>;
 
-auto make_history(const json &data)
+auto read_units_factor(const json &data)
 {
     using namespace GPN;
-    using namespace GPN::Logs;
-    
-    const RealType Atm2Pa{1e5};
-#pragma region SET-UNIT-OF-TIME
-    const std::string t_unit = data["history"]["t_unit"].get<std::string>();
+    const std::string t_unit{data["history"]["t_unit"].get<std::string>()};
     RealType factor{1.0};
     if (t_unit == "d")
         factor = 24 * 60 * 60;
@@ -45,7 +41,17 @@ auto make_history(const json &data)
         factor = 1;
     else
         throw std::runtime_error("Incorrect unit of time.");
-#pragma endregion
+
+    return factor;
+}
+
+auto make_history(const json &data)
+{
+    using namespace GPN;
+    using namespace GPN::Logs;
+    
+    const RealType Atm2Pa{1e5};
+    const RealType factor{read_units_factor(data)};
 #pragma region CHOOSE-HISTORY-TYPE
     const std::string history_type{data["history"]["history_type"].get<std::string>()};
     const std::string control_type{data["history"].value<std::string>("control_type", "RFP")};
@@ -56,7 +62,7 @@ auto make_history(const json &data)
         for (auto &v : t_major_steps)
             v = v * factor; // change units of time-steps to seconds
         const VR inlet_temps {data2["inlet_temperature"].get<VR>()};
-        if (control_type == "RFP")
+        if ((control_type == "RFP") || (control_type == "bottomhole_rate"))
         {
             const VR well_rates { data2["well_rate"].get<VR>()};
             return HistoryFactory::createFixedRate(t_major_steps, well_rates, inlet_temps);
@@ -86,8 +92,7 @@ auto make_history(const json &data)
         const RealType inlet_temperature{data2["inlet_temperature"].get<RealType>()};
         const std::vector<RealType> inlet_temps(t_major_steps.size(), inlet_temperature);
 
-
-        if (control_type == "RFP")
+        if ((control_type == "RFP") || (control_type == "bottomhole_rate"))
         {
             const RealType well_rate{data2["well_rate"].get<RealType>()}; // m^3/s
             const std::vector<RealType> well_rates(t_major_steps.size(), well_rate);
@@ -105,4 +110,16 @@ auto make_history(const json &data)
     else
         throw std::runtime_error("Incorrect history type descriptor.");
 #pragma endregion
+}
+
+auto read_minor_step(const json &data)
+{
+    using namespace GPN;
+    return data["history"]["t_minor_step"].get<RealType>()*read_units_factor(data);
+}
+
+auto read_start_time(const json &data)
+{
+    using namespace GPN;
+    return data["history"]["start_time"].get<RealType>()*read_units_factor(data);
 }

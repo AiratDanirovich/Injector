@@ -4,10 +4,13 @@
 
 #include <Injector/Grids/Defines.h>
 
+#include <Injector/Model/Well/DefaultWellNmerics.hpp>
+
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Properties/Logs.hpp>
 
 #include <Injector/Solver/BoundaryConditions.hpp>
+#include <Injector/Solver/FullImplicit/Solver.hpp>
 
 namespace GPN
 {
@@ -42,7 +45,7 @@ namespace GPN
                 }
 
                 BC_descriptor operator()(const ptrdiff_t z_id, const RealType r, const RealType,
-                                    const BCType bc_type) const override
+                                         const BCType bc_type) const override
                 {
                     // sandface
                     if (r == grid_ptr->second_coord().dual_front())
@@ -50,14 +53,14 @@ namespace GPN
                         assert(bc_type == BCType::second);
                         const auto out{rfp(z_id) * history->rate()};
                         return BC_descriptor::BC_II(out);
-                    //    return out;
+                        //    return out;
                     }
                     // external contour
                     if (r == grid_ptr->second_coord().dual_back())
                     {
                         assert(bc_type == BCType::first);
                         return BC_descriptor::BC_I(ext_pressure(z_id));
-                    //    return ext_pressure(z_id);
+                        //    return ext_pressure(z_id);
                     }
 
                     assert(false);
@@ -65,14 +68,14 @@ namespace GPN
                 }
 
                 BC_descriptor operator()(const RealType z, const ptrdiff_t, const RealType,
-                                    const BCType bc_type) const override
+                                         const BCType bc_type) const override
                 {
                     // boundary conditions are set exactly at domain boundaries
                     assert((z == grid_ptr->first_coord().dual_front()) || (z == grid_ptr->first_coord().dual_back()));
                     // assume zero diffusion flux in hydrodynamic equation
                     assert(bc_type == BCType::second);
                     return BC_descriptor::BC_II(0.0);
-                //    return 0.0;
+                    //    return 0.0;
                 }
 
             protected:
@@ -90,6 +93,7 @@ namespace GPN
                     : BoundaryConditions::GeneralBC{grid, functor, BoundaryCondition::BCType::second}
                 {
                     bc_types[east_id] = BoundaryCondition::BCType::first;
+                    east_bc_type = std::vector<BoundaryCondition::BCType>(grid->first_coord().mesh_size(), bc_types[east_id]);
                 }
                 void set_bc_type(const RealType t)
                 {
@@ -102,10 +106,22 @@ namespace GPN
                 typename History_t,
                 typename Grid2D_t,
                 typename CrossFlow_t>
-            struct WellReservoirFlowProfileControl : public CrossFlow_t
+            struct WellReservoirFlowProfileControl
+                : public CrossFlow_t,
+                  public DefaultWellNumerics<0ll>
             {
                 using functor_type = RFPControlFunctorBC<History_t, Grid2D_t>;
                 using hydro_bc_type = RFPControlBC;
+                using grid_type = Grid2D_t;
+
+                template <
+                    typename Grid2D_t,
+                    typename Capacity_t,
+                    typename ConvectionTermFactory_t,
+                    typename BC_t>
+                using solver_type =
+                    EqSolver::FullImplicit::Solver<
+                        Grid2D_t, Capacity_t, ConvectionTermFactory_t, BC_t>;
 
                 const ptr<const hydro_bc_type> hydro_bc;
 
@@ -131,7 +147,10 @@ namespace GPN
                       flow_axes2_value{
                           FaceValuesContainer::Zero(
                               grid2D_rocks->first_coord().mesh_size(),
-                              Grid2D_t::l_margin + 1ll)}
+                              Grid2D_t::l_margin + 1ll)},
+                      history{history},
+                      rock_field_props{rock_field_props},
+                      grid2D_rocks{grid2D_rocks}
                 {
                     assert(std::abs(well_base.rfp.sum() - 1.0) < 1e-12);
                     assert(std::abs(well_base.wfp.sum() - 1.0) < 1e-12);
@@ -171,7 +190,7 @@ namespace GPN
                 template <typename HistoryRecord_t>
                 RealType get_total_bottomhole_rate(
                     const HistoryRecord_t &record,
-                    const auto &/*collector_pressure*/) const
+                    const auto & /*collector_pressure*/) const
                 {
                     return record.rate;
                 }
@@ -197,6 +216,10 @@ namespace GPN
                 }
 
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
+                const cptr<Grid2D_t> grid2D_rocks;
+                const cptr<History_t> history;
+                const Properties::Rocks::RocksProps<Grid2D_t> &
+                    rock_field_props;
 
             private:
                 static auto set_resistivity(

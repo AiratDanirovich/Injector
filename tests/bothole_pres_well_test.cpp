@@ -216,11 +216,11 @@ TEST_CASE("Solver", "SelfSimilarCyl")
         heat_logs, grid2D};
 
     // properties of material that fills the well up to the sandface
-    heat_props.apply_well(extr_completion, well);
+    heat_props.apply_well(extr_completion);
 
     FaceProperties::Rocks::HeatFaceProps heat_face_props{
         heat_props, grid2D};
-    heat_face_props.apply_well(extr_completion, well);
+    heat_face_props.apply_well(extr_completion);
     // fluid model for the pressure field
     using FluidField_t =
         decltype(CompressibleFluidField{

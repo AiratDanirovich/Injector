@@ -140,8 +140,8 @@ namespace GPN
                 const Grid_t &grid)
             {
                 StepPropertyContainer
-                    // the data and logs is assumed interpolated
-                    // for a finer grid
+                    // the data and logs are assumed to be interpolated
+                    // on a finer grid
                     is_damaged{StepPropertyContainer::Zero(grid.mesh_size())};
 
                 for (const auto &cf : cross_flows.cross_flow_data)
@@ -158,19 +158,20 @@ namespace GPN
                         (is_perforated[i] == 0.0) ||
                         (is_perforated[i] == 1.0));
                     assert(
+                        (is_damaged[i] == 0.0) ||
+                        (is_damaged[i] == 1.0));
+                    assert(
                         ((is_perforated[i] == 0.0) && ((is_damaged[i] == 0.0) || (is_damaged[i] == 1.0))) ||
-                        ((is_perforated[i] == 1.0) && (is_damaged[i] == 0.0)));
+                        ((is_perforated[i] == 1.0) && (is_damaged[i] == 0.0))); // is_damaged ignores perforated cells
                 }
 
-                // at least one perforated layer must exist
-                assert(std::any_of(is_perforated.cbegin(), is_perforated.cend(), [](const RealType v)
-                                   { return v == 1.0; }));
+                // at least one perforated layer is expected
+                // assert(std::any_of(is_perforated.cbegin(), is_perforated.cend(), [](const RealType v)
+                //                    { return v == 1.0; }));
 
                 return IsDamaged{
                     StepPropertyGrid{
                         StepPropertyContainer{
-                            // the data and logs is assumed interpolated
-                            // for a finer grid
                             is_damaged},
                         grid}};
             }

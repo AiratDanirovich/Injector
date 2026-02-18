@@ -100,9 +100,12 @@ namespace GPN
                 const TimeStep time_step)
                 : pressure{pressure}, rate{rate}, type{type},
                   start_time{start_time}, time_step{time_step},
-                  end_time{start_time+time_step},
-                  mid_time{start_time + time_step/2.0}
+                  end_time{start_time + time_step},
+                  mid_time{start_time + time_step / 2.0}
             {
+                assert(
+                    ((type == InjectorRegimes::Type::FixedRate) && (!std::isnan(rate) && std::isnan(pressure))) ||
+                    ((type == InjectorRegimes::Type::FixedBottomHolePressure) && (std::isnan(rate) && !std::isnan(pressure))));
             }
             const RealType rate;
             const RealType pressure;
@@ -113,14 +116,16 @@ namespace GPN
         History(const Logs::InjectorRate &rates,
                 const Logs::SurfacePressure &pressures,
                 const Logs::InjectorTemperature &temps,
-                const std::vector<InjectorRegimes::Type> &regimes)
+                const std::vector<InjectorRegimes::Type> &regimes,
+                const RealType start_time = 0.0)
             : rates{rates},
               pressures{pressures},
               temps{temps},
               time_steps{rates.grid.dual_steps},
-              time_moments{set_time_moments(rates.grid.dual_steps)},
+              time_moments{set_time_moments(rates.grid.dual_steps, start_time)},
               regimes{regimes},
-              pos{-1ll}
+              pos{-1ll},
+              start_time{start_time}
         {
             assert(rates.size() == time_steps.size());
             assert(pressures.size() == time_steps.size());
@@ -162,6 +167,13 @@ namespace GPN
             return pos;
         }
 
+        const auto regime() const
+        {
+            assert(pos >= 0ll);
+            assert(pos < (ptrdiff_t)size());
+            return regimes[pos];
+        }
+        
         const auto temperature() const
         {
             assert(pos >= 0ll);
@@ -172,19 +184,15 @@ namespace GPN
         {
             assert(pos >= 0ll);
             assert(pos < (ptrdiff_t)size());
+            assert(regime() == InjectorRegimes::Type::FixedBottomHolePressure);
             return pressures(pos);
         }
 
-        const auto regime() const
-        {
-            assert(pos >= 0ll);
-            assert(pos < (ptrdiff_t)size());
-            return regimes[pos];
-        }
         const auto rate() const
         {
             assert(pos >= 0ll);
             assert(pos < (ptrdiff_t)size());
+            assert(regime() == InjectorRegimes::Type::FixedRate);
             return rates(pos);
         }
 
@@ -193,8 +201,8 @@ namespace GPN
             assert(idx >= 0ll);
             assert(idx < (ptrdiff_t)size());
             return Record{
-                Pressure{pressures(idx)}, 
-                Rate{rates(idx)}, 
+                Pressure{pressures(idx)},
+                Rate{rates(idx)},
                 regimes[idx],
                 StartTime{time_moments[idx]},
                 TimeStep{time_steps(idx)}};
@@ -213,13 +221,15 @@ namespace GPN
         const Logs::InjectorTemperature temps;
         const DualStepsContainer time_steps;
         const std::vector<double> time_moments;
+        const RealType start_time;
 
     private:
         ptrdiff_t pos;
 
-        std::vector<double> set_time_moments(const DualStepsContainer &time_steps)
+        std::vector<double> set_time_moments(
+            const DualStepsContainer &time_steps, const RealType start_time)
         {
-            std::vector<double> time_moments(time_steps.size() + 1ll, 0.0);
+            std::vector<double> time_moments(time_steps.size() + 1ll, start_time);
             std::partial_sum(
                 time_steps.cbegin(),
                 time_steps.cend(),
