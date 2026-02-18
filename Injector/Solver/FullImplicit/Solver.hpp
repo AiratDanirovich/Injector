@@ -375,8 +375,9 @@ namespace GPN
                         for (auto row{0ll}; row < first_coord_size - 1ll; ++row)
                         {
                             const auto l{grid->to_linear(row, col)};
-                            tripletList.emplace_back(l, l + 1ll,
-                                                     A.coeff(row, row + 1ll) + flow_minus(row + 1ll));
+                            tripletList.emplace_back(
+                                l, l + 1ll,
+                                A.coeff(row, row + 1ll) + flow_minus(row + 1ll));
                         }
 
                         // main diagonal

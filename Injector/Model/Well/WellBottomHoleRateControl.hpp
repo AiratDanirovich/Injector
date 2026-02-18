@@ -254,7 +254,7 @@ namespace GPN
                     const auto &collector_pressure) const
                 {
                     return Logs::RFPFactory::create_from_container<Logs::RFP>(
-                        -(PI * (collector_pressure.col(0ll) - P_bot(record, collector_pressure))).eval(),
+                        StepPropertyContainer{-(PI * (collector_pressure.col(0ll) - P_bot(record, collector_pressure))).eval()},
                         is_permeable);
                 }
 
