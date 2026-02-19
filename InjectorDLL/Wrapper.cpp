@@ -222,6 +222,7 @@ struct WrapperFactory
                 rock_field_props,
                 cross_flows,
                 history,
+                water,
                 grid2D_rocks)};
 
         const Logs::Rocks::HeatLogs heat_logs{
@@ -234,11 +235,11 @@ struct WrapperFactory
 
         Properties::Rocks::HeatProps heat_props{
             heat_logs, grid2D};
-        heat_props.apply_well(extr_completion, *well);
+        heat_props.apply_well(extr_completion);
 
         FaceProperties::Rocks::HeatFaceProps heat_face_props{
             heat_props, grid2D};
-        heat_face_props.apply_well(extr_completion, *well);
+        heat_face_props.apply_well(extr_completion);
 
         // external pressure log
         const auto external_pressure{
@@ -576,7 +577,7 @@ Wrapper::Wrapper(const json &data)
     else if (control_type == "bottomhole_pressure")
     {
         std::cout << "Bottomhole pressure is used as well control condition...\n";
-        using Well_t = GPN::Wells::BotHolePresControl::WellBottomHolePressureControl<History, Grids::CylinderGridRock, CrossFlows>;
+        using Well_t = GPN::Wells::BotHolePresControl::WellBottomHolePressureControl<History, PhasePropertiesJT, Grids::CylinderGridRock, CrossFlows>;
         WrapperFactory<Well_t>::choose_well(data);
     }
     else
