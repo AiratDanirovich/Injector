@@ -207,6 +207,7 @@ TEST_CASE("CompressibleFluid", "RFP_control")
             rock_field_props,
             cross_flows,
             history,
+            water,
             grid2D_rocks});
 
     const ptr<Well_t> well{
@@ -214,6 +215,7 @@ TEST_CASE("CompressibleFluid", "RFP_control")
             rock_field_props,
             cross_flows,
             history,
+            water,
             grid2D_rocks)};
 
 #pragma endregion

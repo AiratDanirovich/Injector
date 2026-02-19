@@ -104,6 +104,7 @@ namespace GPN
 
             template <
                 typename History_t,
+                typename Fluid_t,
                 typename Grid2D_t,
                 typename CrossFlow_t>
             struct WellReservoirFlowProfileControl
@@ -130,6 +131,7 @@ namespace GPN
                         rock_field_props,
                     const CrossFlow_t &well_base,
                     const cptr<History_t> history,
+                    const Fluid_t &,
                     const cptr<Grid2D_t> grid2D_rocks)
                     : CrossFlow_t{well_base},
                       resistivity{set_resistivity(rock_field_props, well_base, grid2D_rocks)},
