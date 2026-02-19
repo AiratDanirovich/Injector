@@ -28,6 +28,11 @@ set(HEADER_FILES
     Wrapper.h
 )
 
+if (MSVC)
+    # error C1128: number of sections exceeded object file format limit: compile with /bigobj
+    add_compile_options(/bigobj)
+endif()
+
 # Create the shared library (DLL)
 add_library(InjectorGPNDLL SHARED ${HEADER_FILES}
     ${SOURCE_FILES})
