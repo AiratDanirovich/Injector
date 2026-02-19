@@ -13,6 +13,7 @@ using namespace GPN::Logs;
 // Tests Cylinder grid, (r; z)
 TEST_CASE("HistoryTest")
 {
+    const auto z_ref{100.0};
 #pragma region MAKE-TIME-GRID
     const auto time_moments{
         Grids::Factory::generate_dual_grid_stencils_uniform(
@@ -55,7 +56,7 @@ TEST_CASE("HistoryTest")
             Logs::RawDataFactory::generate_rates(
                 time_moments),
             Logs::RawDataFactory::generate_temperatures(
-                time_moments))};
+                time_moments), z_ref)};
 
     const auto &grid{history_rate.rates.grid};
     for (auto id{0ll}; id < grid.dual_nodes.size(); ++id)
