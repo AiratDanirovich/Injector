@@ -153,6 +153,8 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
   const std::ptrdiff_t nLayers{3ull};
   const VR thickness(nLayers, 0.01); // each layer is 1m thick
 
+  const auto z_ref{100.0};
+
   const VR porosity(nLayers, 1e-16);
   const VR is_permeable_stencils(nLayers, 1.0);
   const LogValuesContainer porosity_stencils{LogValuesContainer::Constant(nLayers, 0.0)};
@@ -219,7 +221,7 @@ TEST_CASE("SolverManager", "SelfSimilarCyl")
   const std::vector<RealType> rates(time_intervals.size(), 1.0);
   const std::vector<RealType> inlet_temperature_set(time_intervals.size(), 0.0);
   const ptr<History> history{make_shared<History>(
-      HistoryFactory::createFixedRate(time_intervals, rates, inlet_temperature_set))};
+      HistoryFactory::createFixedRate(time_intervals, rates, inlet_temperature_set, z_ref))};
 
   // exact solution
   ExactSolution es{heat_props.medium_vol_heatcapacity,

@@ -287,11 +287,9 @@ namespace GPN
                 }
 
                 template <
-                    typename Completion_t,
-                    typename Well_t>
+                    typename Completion_t>
                 void apply_well(
-                    const Completion_t &completion,
-                    const Well_t &well)
+                    const Completion_t &completion)
                 {
 #pragma region SET-HEAT-CAPACITY
                     // first column -- inside the tube, contains only water
@@ -390,11 +388,9 @@ namespace GPN
                 }
 
                 template <
-                    typename Completion_t,
-                    typename Well_t>
+                    typename Completion_t>
                 void apply_well(
-                    const Completion_t &completion,
-                    const Well_t &well)
+                    const Completion_t &completion)
                 {
                     using namespace std;
                     const auto &grid_r{grid2D->second_coord()};

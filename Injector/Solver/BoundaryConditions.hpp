@@ -56,6 +56,7 @@ namespace GPN
                     // III: flux = factor*(T - value); prescribe both factor and value
                     static BC_descriptor BC_III(const RealType value, const RealType factor)
                     {
+                        // value*factor multiplication takes place on reading
                         return BC_descriptor{value, factor};
                     }
 
@@ -99,7 +100,8 @@ namespace GPN
                       grid->second_coord().dual_front(),
                       grid->second_coord().dual_back()},
                   functor{functor},
-                  t{0.0}
+                  t{0.0},
+                  east_bc_type(grid->first_coord().mesh_size(), bc_types[east_id])
             {
             }
 
@@ -141,7 +143,9 @@ namespace GPN
             {
                 const RealType y{fixed_coords[east_id]};
                 const BoundaryCondition::BCType
-                    bc_type{bc_types[east_id]};
+                    bc_type{ east_bc_type[i]
+                        //bc_types[east_id]
+                        };
                 if (bc_type == BoundaryCondition::BCType::first)
                 {
                     view.set_type_I((*functor)(i, y, t, bc_type));
@@ -199,10 +203,11 @@ namespace GPN
         protected:
             RealType t;
             std::array<BoundaryCondition::BCType, 4ull> bc_types;
+            std::vector<BoundaryCondition::BCType> east_bc_type;
             const std::array<RealType, 4ull> fixed_coords;
             const ptr<const BCFunctorBase> functor;
 
-            const size_t west_id{2ull}, east_id{3ull}, south_id{0ull}, north_id{1ull};
+            static const size_t west_id{2ull}, east_id{3ull}, south_id{0ull}, north_id{1ull};
         };
     } // BoundaryConditions
 } // GPN

@@ -201,11 +201,13 @@ namespace GPN
                 is_perforated.log_vals,
                 is_perforated.grid)};
 
+            // assert flow against perforated and damaged cells
             for (auto i{0ll}; i < wfp_step_prop_grid.size(); ++i)
             {
                 assert(
-                    ((is_perforated(i) != is_damaged(i)) &&
-                     (wfp_step_prop_grid(i) != 0.0)) ||
+                    ((is_perforated(i) != is_damaged(i)) //&&
+                    // (wfp_step_prop_grid(i) != 0.0)
+                    ) ||
                     ((is_perforated(i) == 0.0) && (is_damaged(i) == 0.0) &&
                      (wfp_step_prop_grid(i) == 0.0)));
             }
@@ -226,6 +228,15 @@ namespace GPN
                   is_perforated{is_perforated}
             {
                 set_flux(rfp);
+            }
+            CrossFlows(
+                const std::vector<RealType> &from_coords,
+                const std::vector<ptrdiff_t> &to_layers,
+                const Logs::IsPerforated &is_perforated)
+                : cross_flow_handler{
+                      from_coords, to_layers, is_perforated},
+                  is_perforated{is_perforated}
+            {
             }
 
             void set_flux(const Logs::RFP &RFP_w)

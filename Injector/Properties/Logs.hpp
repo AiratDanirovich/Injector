@@ -200,6 +200,7 @@ namespace GPN
                     [](const RealType x)
                     { return x >= 0.0; }));
             }
+            AssertNonNegative() = default;
         };
 #pragma region INDICATORS
         /// @brief Property that must only contain {0; 1} values
@@ -244,7 +245,8 @@ namespace GPN
 
         /// @brief Indicator of cells with damaged column,
         /// so the liquid can leave the column,
-        /// to further flow vertically along the cement
+        /// to further flow vertically along the cement.
+        /// Ignores perforated cells.
         struct IsDamaged : public IndicatorProperty
         {
             using IndicatorProperty::IndicatorProperty;
@@ -272,19 +274,31 @@ namespace GPN
             }
         };
 
+        struct HydrostaticPressure
+            : public StepPropertyGrid,
+              private AssertNonNegative
+        {
+            HydrostaticPressure(
+                const StepPropertyGrid &pressure)
+                : StepPropertyGrid{pressure}
+                // , AssertNonNegative{pressure}
+            {
+            }
+        };
+
         namespace InternalUse
         {
             /// @brief Rate distribution along the
             /// layers
             struct RateWeights
-                : public StepPropertyGrid,
-                  private AssertNonNegative
+                : public StepPropertyGrid
+            //    , private AssertNonNegative
             {
                 RateWeights(
                     const StepPropertyGrid &weights,
                     const StepPropertyGrid &indicator)
-                    : StepPropertyGrid{normalize(weights)},
-                      AssertNonNegative{weights}
+                    : StepPropertyGrid{normalize(weights)}
+            //        , AssertNonNegative{weights}
                 {
                     assert(weights.size() == indicator.size());
                     for (std::ptrdiff_t id{0ll}; id < weights.size(); ++id)
@@ -312,7 +326,7 @@ namespace GPN
         {
             RFP(const StepPropertyGrid &rfp,
                         const IsPermeable &indicator)
-                        :StepPropertyGrid{rfp}
+                        :StepPropertyGrid{rfp*indicator}
             {
                 assert(rfp.size() == indicator.size());
                 for (std::ptrdiff_t id{0ll}; id < rfp.size(); ++id)
@@ -337,7 +351,7 @@ namespace GPN
         {
             WFP(const StepPropertyGrid &wfp,
                         const IsPerforated &indicator)
-                : StepPropertyGrid{wfp}
+                : StepPropertyGrid{wfp*indicator}
             {
                 assert(wfp.size() == indicator.size());
                 for (std::ptrdiff_t id{0ll}; id < wfp.size(); ++id)
@@ -386,10 +400,10 @@ namespace GPN
                   AssertNonNegative{compressibility}
             {
                 assert(compressibility.size() == is_permeable.size());
-                // for (std::ptrdiff_t id{0ll}; id < compressibility.size(); ++id)
-                //     assert(
-                //         ((is_permeable(id) == 1.0) && (compressibility(id) > 0.0)) ||
-                //         ((is_permeable(id) == 0.0) && (compressibility(id) == 0.0)));
+                for (std::ptrdiff_t id{0ll}; id < compressibility.size(); ++id)
+                    assert(
+                        ((is_permeable(id) == 1.0) && (compressibility(id) >= 0.0)) ||
+                        ((is_permeable(id) == 0.0) && (compressibility(id) == 0.0)));
             }
         };
 

@@ -278,9 +278,6 @@ TEST_CASE("apply_well_test", "apply_well_test")
     CHECK_THAT(weights_stencils.sum(), WithinRel(1.0, tol));
   }
 
-  const Well_Explicit well{
-      core_data.is_permeable, core_data.is_perforated, weights};
-
   const Logs::Rocks::HeatLogs heat_logs{
       solid_density_stencils,
       solid_specific_heatcapacity_stencils,
@@ -358,13 +355,13 @@ TEST_CASE("apply_well_test", "apply_well_test")
   }
 
   // properties of material that fills the well up to the Sandface
-  heat_props.apply_well(extr_completion, well);
+  heat_props.apply_well(extr_completion);
 
   // CHECK heat_props --- after "apply_well"
   {
-    const auto &capacity = heat_props.medium_vol_heatcapacity.values();
-    const auto &heat_conductivity_1 = heat_props.medium_heat_conductivity_axes1.values();
-    const auto &heat_conductivity_2 = heat_props.medium_heat_conductivity_axes2.values();
+    const auto &capacity {heat_props.medium_vol_heatcapacity.values()};
+    const auto &heat_conductivity_1 {heat_props.medium_heat_conductivity_axes1.values()};
+    const auto &heat_conductivity_2 {heat_props.medium_heat_conductivity_axes2.values()};
     const auto flow_area{Flow.area()};
 
     const Eigen::ArrayX<RealType> temp{Flow.volumetric_heat_capacity() *
@@ -449,7 +446,7 @@ TEST_CASE("apply_well_test", "apply_well_test")
 
   FaceProperties::Rocks::HeatFaceProps heat_face_props{
       heat_props, grid2D};
-  heat_face_props.apply_well(extr_completion, well);
+  heat_face_props.apply_well(extr_completion);
 
   // CHECK heat_face_props --- after "apply_well"
   {
@@ -457,9 +454,9 @@ TEST_CASE("apply_well_test", "apply_well_test")
     // volumetric_heat_capacity
     //  const auto &capacity = heat_props.medium_vol_heatcapacity.values();
     //  const auto &porosity = core_data.porosity.log_vals;
-    const auto &heat_conductivity = heat_logs.medium_heat_conductivity.log_vals;
-    const auto &f_conductivity_1 = heat_face_props.medium_heat_conductivity.face_vals_axes1;
-    const auto &f_conductivity_2 = heat_face_props.medium_heat_conductivity.face_vals_axes2;
+    const auto &heat_conductivity { heat_logs.medium_heat_conductivity.log_vals };
+    const auto &f_conductivity_1 { heat_face_props.medium_heat_conductivity.face_vals_axes1 };
+    const auto &f_conductivity_2 { heat_face_props.medium_heat_conductivity.face_vals_axes2 };
 
     // CHECK f_conductivity_2
     {
