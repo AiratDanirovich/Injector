@@ -3,6 +3,7 @@
 # https://cgold.readthedocs.io/en/latest/overview/cmake-can.html
 # https://stackoverflow.com/questions/17511496/how-to-create-a-shared-library-with-cmake
 # https://vector-of-bool.github.io/docs/vscode-cmake-tools/configuring.html
+# https://coderefinery.github.io/cmake-workshop/
 # https://coderefinery.github.io/cmake-workshop/flags-definitions-debugging/
 # https://cmake.org/cmake/help/latest/guide/tutorial/Packaging%20Debug%20and%20Release.html
 # https://coderefinery.github.io/cmake-workshop/fetch-content/
