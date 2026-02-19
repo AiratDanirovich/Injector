@@ -580,6 +580,12 @@ Wrapper::Wrapper(const json &data)
         using Well_t = GPN::Wells::BotHolePresControl::WellBottomHolePressureControl     <History, PhasePropertiesJT, Grids::CylinderGridRock, CrossFlows>;
         WrapperFactory<Well_t>::choose_well(data);
     }
+    else if (control_type == "bottomhole_rate")
+    {
+        std::cout << "Bottomhole rate is used as well control condition...\n";
+        using Well_t = GPN::Wells::BotHoleRateControl::WellBottomHoleRateControl         <History, PhasePropertiesJT, Grids::CylinderGridRock, CrossFlows>;
+        WrapperFactory<Well_t>::choose_well(data);
+    }
     else
         throw std::runtime_error("Incorrect well control type.");
 }
