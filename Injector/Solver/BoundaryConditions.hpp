@@ -56,7 +56,8 @@ namespace GPN
                     // III: flux = factor*(T - value); prescribe both factor and value
                     static BC_descriptor BC_III(const RealType value, const RealType factor)
                     {
-                        return BC_descriptor{factor*value, factor};
+                        // value*factor multiplication takes place on reading
+                        return BC_descriptor{value, factor};
                     }
 
                     const RealType value;

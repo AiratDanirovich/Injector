@@ -105,7 +105,7 @@ namespace GPN
                     // take reservoir capacity into account
                     const Eigen::ArrayXX<RealType> tau_factor{
                         time_factor.Divide(tau).eval()};
-                    assert(tau_factor.rows()*tau_factor.cols() == A_size - 1ll);
+                    assert(tau_factor.rows() * tau_factor.cols() == A_size - 1ll);
                     // append capacity to the matri diagonal
                     for (auto row{0ll}; row < tau_factor.rows(); ++row)
                         for (auto col{0ll}; col < tau_factor.cols(); ++col)
@@ -146,16 +146,17 @@ namespace GPN
                 void advance(const RealType tau)
                 {
                     ptrdiff_t A_size{first_coord_size * second_coord_size + 1ll};
-                    A = Eigen::SparseMatrix<RealType> {// ctor for matrix, reservoir + bottomwell pressure
-                                                    A_size,
-                                                    A_size};
+                    A = Eigen::SparseMatrix<RealType>{// ctor for matrix, reservoir + bottomwell pressure
+                                                      A_size,
+                                                      A_size};
                     A.reserve(A_size * 6ll);
 
                     TripletContainer tripletList{set_triplets(A_size, tau)};
                     assert(std::all_of(
-                        tripletList.cbegin(), 
-                        tripletList.cend(), 
-                        [](const auto& v){
+                        tripletList.cbegin(),
+                        tripletList.cend(),
+                        [](const auto &v)
+                        {
                             return !std::isnan(v.value()) && !std::isinf(v.value());
                         }));
                     A.setFromTriplets(tripletList.begin(), tripletList.end());
@@ -163,11 +164,12 @@ namespace GPN
                     const Eigen::ArrayXX<RealType> tau_factor{
                         time_factor.Divide(tau).eval()};
                     rhs = RHS_t{assemble_RHS_noconvection(state, tau_factor, A_size)};
-                    
+
                     assert(std::all_of(
-                        rhs.cbegin(), 
-                        rhs.cend(), 
-                        [](const auto& v){
+                        rhs.cbegin(),
+                        rhs.cend(),
+                        [](const auto &v)
+                        {
                             return !std::isnan(v) && !std::isinf(v);
                         }));
 
@@ -179,16 +181,16 @@ namespace GPN
                     // 1D array
                     const Eigen::VectorX<RealType> solution{
                         solve_linear_problem(A, rhs).array()};
-                    
-                    for(auto it{solution.cbegin()}; it != solution.cend(); ++it)
+
+                    for (auto it{solution.cbegin()}; it != solution.cend(); ++it)
                     {
                         assert(!std::isnan(*it) && !std::isinf(*it));
                     }
 
-                    const auto temp{solution.topRows(A_size-1ll).
+                    const auto temp{solution.topRows(A_size - 1ll).
                         reshaped(first_coord_size, second_coord_size)};
 
-                    state.cur_state = solution.topRows(A_size-1ll).
+                    state.cur_state = solution.topRows(A_size - 1ll).
                         reshaped(first_coord_size, second_coord_size);
                     P_bot_memory = solution.bottomRows(1ll)(0ll);
 
@@ -204,10 +206,14 @@ namespace GPN
                     const auto A_size) const
                 {
                     RHS_t rhs{RHS_t::Zero(A_size)};
-                    rhs.topRows(A_size-1ll) = (state.cur_state.array() * tau_factor)
-                                          .reshaped(A_size-1ll, 1ll)
-                                          .matrix();
-                    rhs.bottomRows(1ll)(0ll) = well.history->rate();
+                    rhs.topRows(A_size - 1ll) = (state.cur_state.array() * tau_factor)
+                                                    .reshaped(A_size - 1ll, 1ll)
+                                                    .matrix();
+
+                    const RealType weight{Gravity::value() * well.fluid.density};
+                    const auto dz{(grid->first_coord().mesh_nodes - well.history->z_ref).eval()};
+                    rhs.bottomRows(1ll)(0ll) = well.history->rate() -
+                                               (weight * well.PI * dz).sum();
                     return rhs;
                 }
 
@@ -216,7 +222,7 @@ namespace GPN
                     Solution(
                         const std::vector<RealType> &times,
                         const std::vector<State::State2D> &states,
-                        const std::vector<RealType> & P_bot)
+                        const std::vector<RealType> &P_bot)
                         : times{times}, states{states}, P_bot{P_bot}
                     {
                     }

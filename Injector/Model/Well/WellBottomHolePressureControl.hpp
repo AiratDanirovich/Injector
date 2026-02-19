@@ -270,13 +270,6 @@ namespace GPN
                 {
                     const StepPropertyContainer depression_at_sandface{
                         -(collector_pressure.col(0ll) - record.pressure*is_permeable.log_vals)};
-                    // assert(
-                    //     std::all_of(
-                    //         collector_pressure.cbegin(), 
-                    //         collector_pressure.cend(), 
-                    //         [](const RealType v){
-                    //             return !std::isnan(v);
-                    //         }));
                     assert(
                         std::all_of(
                             depression_at_sandface.cbegin(), 
@@ -285,11 +278,11 @@ namespace GPN
                                 return !std::isnan(v);
                             }));
 
-                    // return (mobility * (collector_pressure.col(0ll) - record.pressure)).eval();
                     return Logs::RFPFactory::create_from_container<Logs::RFP>(
-                        StepPropertyContainer{-(PI * (
-                            collector_pressure.col(0ll) - 
-                            well_pressure_profile(record, collector_pressure).log_vals)).eval()},
+                        StepPropertyContainer{(
+                            PI * (
+                                well_pressure_profile(record, collector_pressure).log_vals - 
+                                collector_pressure.col(0ll))).eval()},
                         is_permeable);
                 }
 
