@@ -590,7 +590,14 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             const auto wfp{well->get_WFP(history->get_current_record())};
             //        std::cout << "wfp:\n" << wfp.transpose() << std::endl;
             CHECK(wfp.rows() == grid_z.mesh_size());
-            CHECK_THAT(wfp.sum(), WithinRel(Q, exact_tol));
+            if(Q == 0.0)
+            {
+                CHECK_THAT(wfp.sum(), WithinAbs(Q, exact_tol));
+            }
+            else
+            {
+                CHECK_THAT(wfp.sum(), WithinRel(Q, exact_tol));
+            }
             CHECK_THAT(rfp.sum(), WithinRel(wfp.sum(), exact_tol));
             const auto cement_flow{well->get_verticle_cement_flow(history->get_current_record())};
             CHECK(cement_flow.rows() == grid_z.dual_size());
