@@ -571,13 +571,13 @@ Wrapper::Wrapper(const json &data)
     if (control_type == "RFP")
     {
         std::cout << "Reservoir flow profile is used as well control condition...\n";
-        using Well_t = GPN::Wells::ResFlowProfileControl::WellReservoirFlowProfileControl<History, Grids::CylinderGridRock, CrossFlows>;
+        using Well_t = GPN::Wells::ResFlowProfileControl::WellReservoirFlowProfileControl<History, PhasePropertiesJT, Grids::CylinderGridRock, CrossFlows>;
         WrapperFactory<Well_t>::choose_well(data);
     }
     else if (control_type == "bottomhole_pressure")
     {
         std::cout << "Bottomhole pressure is used as well control condition...\n";
-        using Well_t = GPN::Wells::BotHolePresControl::WellBottomHolePressureControl<History, PhasePropertiesJT, Grids::CylinderGridRock, CrossFlows>;
+        using Well_t = GPN::Wells::BotHolePresControl::WellBottomHolePressureControl     <History, PhasePropertiesJT, Grids::CylinderGridRock, CrossFlows>;
         WrapperFactory<Well_t>::choose_well(data);
     }
     else
