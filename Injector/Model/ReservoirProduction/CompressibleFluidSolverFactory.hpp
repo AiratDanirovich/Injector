@@ -43,14 +43,15 @@ namespace GPN
     public:
         template <
             typename History_t,
+            typename Fluid_t,
             typename Grid2D_t,
             typename CrossFlow_t,
             typename FluidField_t>
         static auto create_solver_ptr(
-            const Wells::BotHoleRateControl::WellBottomHoleRateControl<History_t, Grid2D_t, CrossFlow_t> &well,
+            const Wells::BotHoleRateControl::WellBottomHoleRateControl<History_t, Fluid_t, Grid2D_t, CrossFlow_t> &well,
             const FluidField_t &fluid_field)
         {
-            using Well_t = Wells::BotHoleRateControl::WellBottomHoleRateControl<History_t, Grid2D_t, CrossFlow_t>;
+            using Well_t = Wells::BotHoleRateControl::WellBottomHoleRateControl<History_t, Fluid_t, Grid2D_t, CrossFlow_t>;
 
             using hydro_bc_type = typename Well_t::hydro_bc_type;
 

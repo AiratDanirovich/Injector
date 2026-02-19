@@ -83,12 +83,13 @@ namespace GPN
                     return BC_descriptor::BC_II(0.0);
                 //    return 0.0;
                 }
+                
+                const StepPropertyContainer& PI;
+                const ptr<const History_t> history;
 
             protected:
                 const Logs::ExternalPressure &ext_pressure;
-                const StepPropertyContainer& PI;
                 const ptr<const Grid2D_t> grid_ptr;
-                const ptr<const History_t> history;
                 
                 const HydrostaticPressureFactory_t &hydrostatic_factory;
             };
@@ -110,7 +111,6 @@ namespace GPN
                 }
             };
 #pragma endregion
-
             template <
                 typename History_t,
                 typename Fluid_t,
@@ -270,13 +270,6 @@ namespace GPN
                 {
                     const StepPropertyContainer depression_at_sandface{
                         -(collector_pressure.col(0ll) - record.pressure*is_permeable.log_vals)};
-                    // assert(
-                    //     std::all_of(
-                    //         collector_pressure.cbegin(), 
-                    //         collector_pressure.cend(), 
-                    //         [](const RealType v){
-                    //             return !std::isnan(v);
-                    //         }));
                     assert(
                         std::all_of(
                             depression_at_sandface.cbegin(), 
@@ -285,11 +278,11 @@ namespace GPN
                                 return !std::isnan(v);
                             }));
 
-                    // return (mobility * (collector_pressure.col(0ll) - record.pressure)).eval();
                     return Logs::RFPFactory::create_from_container<Logs::RFP>(
-                        StepPropertyContainer{-(PI * (
-                            collector_pressure.col(0ll) - 
-                            well_pressure_profile(record, collector_pressure).log_vals)).eval()},
+                        StepPropertyContainer{(
+                            PI * (
+                                well_pressure_profile(record, collector_pressure).log_vals - 
+                                collector_pressure.col(0ll))).eval()},
                         is_permeable);
                 }
 
