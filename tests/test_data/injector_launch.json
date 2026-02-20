@@ -92,7 +92,7 @@
   },
   "history": {
     "start_time": 0.0,
-    "t_minor_step": 1200,
+    "t_minor_step": 0.25,
     "t_unit": "s",
     "t_units": ["d", "h", "m", "s"],
     "history_type": "dynamic",
