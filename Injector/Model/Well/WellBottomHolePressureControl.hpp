@@ -178,7 +178,7 @@ namespace GPN
                         P_bot(Base::history->get_current_record(), collector_pressure),
                         get_total_bottomhole_rate(record, collector_pressure));
 
-                                        const StepPropertyContainer depression_at_sandface{
+                    const StepPropertyContainer depression_at_sandface{
                         -(collector_pressure.col(0ll) - record.pressure * Base::is_permeable.log_vals)};
                     assert(
                         std::all_of(
