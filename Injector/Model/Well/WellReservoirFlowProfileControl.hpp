@@ -136,7 +136,7 @@ namespace GPN
                     const cptr<History_t> history,
                     const Fluid_t &,
                     const cptr<Grid2D_t> grid2D_rocks)
-                    : Base{rock_field_props, well_base, grid2D_rocks},
+                    : Base{rock_field_props, well_base, history, grid2D_rocks},
                       resistivity{set_resistivity(rock_field_props, well_base, grid2D_rocks)},
                       hydro_bc{
                           std::make_shared<const hydro_bc_type>(
@@ -144,8 +144,7 @@ namespace GPN
                               std::make_shared<const functor_type>(
                                   history, rock_field_props.base_hydrodynamics.ext_pressure,
                                   well_base.rfp, rock_field_props.base_hydrodynamics.is_permeable,
-                                  grid2D_rocks))},
-                      rock_field_props{rock_field_props}
+                                  grid2D_rocks))}
                 {
                     assert(std::abs(well_base.rfp.sum() - 1.0) < 1e-12);
                     assert(std::abs(well_base.wfp.sum() - 1.0) < 1e-12);
@@ -181,9 +180,6 @@ namespace GPN
                         vert_cem_flow_,
                         wfp_, rfp_);
                 }
-
-                const Properties::Rocks::RocksProps<Grid2D_t> &
-                    rock_field_props;
 
             protected:
                 template <typename HistoryRecord_t>

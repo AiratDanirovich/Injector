@@ -154,7 +154,6 @@ namespace GPN
                       size{grid2D_rocks->first_coord().mesh_size()},
                       is_permeable{rock_field_props.base_hydrodynamics.is_permeable},
                       fluid{fluid},
-                      rock_field_props{rock_field_props},
                       hydrostatic_factory{history->z_ref, fluid, grid2D_rocks->first_coord()}
                 {
                     const_cast<ptr<const hydro_bc_type> &>(hydro_bc) =
@@ -208,8 +207,6 @@ namespace GPN
                 }
 
                 const Fluid_t &fluid;
-                const Properties::Rocks::RocksProps<Grid2D_t> &
-                    rock_field_props;
                 const std::ptrdiff_t size;
                 const Logs::IsPermeable &is_permeable;
                 const Logs::HydrostaticPressureFactory<Fluid_t, typename Grid2D_t::Axes1Coordinate_t>
@@ -238,7 +235,7 @@ namespace GPN
                     return Logs::RFPFactory::create_from_container<Logs::RFP>(
                         StepPropertyContainer{(
                                                   Base::PI * (well_pressure_profile(record, collector_pressure).log_vals -
-                                                        collector_pressure.col(0ll)))
+                                                              collector_pressure.col(0ll)))
                                                   .eval()},
                         is_permeable);
                 }
