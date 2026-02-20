@@ -113,6 +113,14 @@ namespace GPN
 
                 for (auto col{Grid2D_t::l_margin + 1ll}, count{0ll}; col < second_size; ++col, ++count)
                     axes2_value.col(col) = collector_rates(count, col, P); // = well->rfp
+                
+                
+                if ((t < mid_time) && (t + t_step > mid_time))
+                {
+                    /*Properties::Pressure<Grid2D_t>*/
+                    rates.times.push_back(t + t_step / 2.0);
+                    rates.states.emplace_back(axes2_value.rightCols(second_size + 1ll - Grid2D_t::l_margin));
+                }
 
                 // volumetric flow field in two directions is calculated,
                 // once the pressure field is calculated
