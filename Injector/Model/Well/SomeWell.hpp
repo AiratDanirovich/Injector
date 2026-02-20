@@ -50,7 +50,8 @@ namespace GPN
                           Grid2D_t::l_margin + 1ll)},
                   history{history},
                   PI{set_productivity_index(rock_field_props, grid2D_rocks)},
-                  rock_field_props{rock_field_props}
+                  rock_field_props{rock_field_props},
+                  is_permeable{rock_field_props.base_hydrodynamics.is_permeable}
             {
                 static_assert(Grid2D_t::l_margin == 3ll);
 
@@ -106,6 +107,7 @@ namespace GPN
             const cptr<History_t> history;
             const Properties::Rocks::RocksProps<Grid2D_t> &
                 rock_field_props;
+            const Logs::IsPermeable &is_permeable;
 
         protected:
             static auto set_productivity_index(
@@ -130,6 +132,18 @@ namespace GPN
                         out(row) = 0.0;
                 }
                 return out;
+            }
+
+            const auto set_RFP(
+                const auto &well_pres_prof,
+                const auto &collector_pressure) const
+            {
+                return Logs::RFPFactory::create_from_container<Logs::RFP>(
+                    StepPropertyContainer{(
+                                              PI * (well_pres_prof -
+                                                          collector_pressure.col(0ll)))
+                                              .eval()},
+                    is_permeable);
             }
 
             template <typename HistoryRecord_t>

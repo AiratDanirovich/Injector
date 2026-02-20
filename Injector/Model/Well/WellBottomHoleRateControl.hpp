@@ -152,7 +152,6 @@ namespace GPN
                     const cptr<Grid2D_t> grid2D_rocks)
                     : Base{rock_field_props, well_base, history, grid2D_rocks},
                       size{grid2D_rocks->first_coord().mesh_size()},
-                      is_permeable{rock_field_props.base_hydrodynamics.is_permeable},
                       fluid{fluid},
                       hydrostatic_factory{history->z_ref, fluid, grid2D_rocks->first_coord()}
                 {
@@ -180,7 +179,12 @@ namespace GPN
                     const HistoryRecord_t &record,
                     const auto &collector_pressure)
                 {
-                    Base::set_flux(set_RFP(record, collector_pressure));
+                    const auto well_pres_prof{
+                        well_pressure_profile(record, collector_pressure).log_vals};
+                    Base::set_flux(
+                        Base::set_RFP(
+                            well_pres_prof, 
+                            collector_pressure));
                     Base::set_well_flow_field(
                         Base::get_verticle_well_flow(record),
                         Base::get_verticle_cement_flow(record),
@@ -203,12 +207,11 @@ namespace GPN
                 {
                     // Pressure at the level of NON-permeable layers is assumed zero.
                     // Pressure at permeable layers is equal to history->pressure()
-                    return well_pressure_profile(record, collector_pressure).log_vals * is_permeable.log_vals;
+                    return well_pressure_profile(record, collector_pressure).log_vals * Base::is_permeable.log_vals;
                 }
 
                 const Fluid_t &fluid;
                 const std::ptrdiff_t size;
-                const Logs::IsPermeable &is_permeable;
                 const Logs::HydrostaticPressureFactory<Fluid_t, typename Grid2D_t::Axes1Coordinate_t>
                     hydrostatic_factory;
 
@@ -224,20 +227,6 @@ namespace GPN
                     assert(!std::isnan(rate) && !std::isinf(rate));
                     const auto out{(rate - term1) / Base::PI.sum()};
                     return out;
-                }
-
-            protected:
-                template <typename HistoryRecord_t>
-                const auto set_RFP(
-                    const HistoryRecord_t &record,
-                    const auto &collector_pressure) const
-                {
-                    return Logs::RFPFactory::create_from_container<Logs::RFP>(
-                        StepPropertyContainer{(
-                                                  Base::PI * (well_pressure_profile(record, collector_pressure).log_vals -
-                                                              collector_pressure.col(0ll)))
-                                                  .eval()},
-                        is_permeable);
                 }
             };
         } // BotHoleRateControl

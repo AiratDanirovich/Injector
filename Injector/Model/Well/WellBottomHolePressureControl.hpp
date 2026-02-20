@@ -149,7 +149,6 @@ namespace GPN
                     : Base{rock_field_props, well_base, history, grid2D_rocks},
                       size{grid2D_rocks->first_coord().mesh_size()},
                       fluid{fluid},
-                      is_permeable{rock_field_props.base_hydrodynamics.is_permeable},
                       hydrostatic_factory{history->z_ref, fluid, grid2D_rocks->first_coord()}
                 {
                     const_cast<ptr<const hydro_bc_type> &>(hydro_bc) =
@@ -175,11 +174,26 @@ namespace GPN
                     const HistoryRecord_t &record,
                     const auto &collector_pressure)
                 {
-                    this->set_flux(set_RFP(record, collector_pressure));
+                    const auto well_pres_prof{
+                        well_pressure_profile(record, collector_pressure).log_vals};
+                    Base::set_flux(
+                        Base::set_RFP(
+                            well_pres_prof, collector_pressure));
                     Base::set_well_flow_field(
                         Base::get_verticle_well_flow(record),
                         Base::get_verticle_cement_flow(record),
                         Base::get_WFP(record), Base::get_RFP(record));
+
+                                        const StepPropertyContainer depression_at_sandface{
+                        -(collector_pressure.col(0ll) - record.pressure * Base::is_permeable.log_vals)};
+                    assert(
+                        std::all_of(
+                            depression_at_sandface.cbegin(),
+                            depression_at_sandface.cend(),
+                            [](const RealType v)
+                            {
+                                return !std::isnan(v);
+                            }));
                 }
 
                 template <typename HistoryRecord_t>
@@ -198,12 +212,11 @@ namespace GPN
                 {
                     // Pressure at the level of NON-permeable layers is assumed zero.
                     // Pressure at permeable layers is equal to history->pressure()
-                    return well_pressure_profile(record, collector_pressure).log_vals * is_permeable.log_vals;
+                    return well_pressure_profile(record, collector_pressure).log_vals * Base::is_permeable.log_vals;
                 }
 
                 const Fluid_t &fluid;
                 const std::ptrdiff_t size;
-                const Logs::IsPermeable &is_permeable;
                 const Logs::HydrostaticPressureFactory<Fluid_t, typename Grid2D_t::Axes1Coordinate_t>
                     hydrostatic_factory;
 
@@ -213,31 +226,6 @@ namespace GPN
                     const auto & /*collector_pressure*/) const
                 {
                     return record.pressure;
-                }
-
-            protected:
-                template <typename HistoryRecord_t>
-                const auto set_RFP(
-                    const HistoryRecord_t &record,
-                    const auto &collector_pressure) const
-                {
-                    const StepPropertyContainer depression_at_sandface{
-                        -(collector_pressure.col(0ll) - record.pressure * is_permeable.log_vals)};
-                    assert(
-                        std::all_of(
-                            depression_at_sandface.cbegin(),
-                            depression_at_sandface.cend(),
-                            [](const RealType v)
-                            {
-                                return !std::isnan(v);
-                            }));
-
-                    return Logs::RFPFactory::create_from_container<Logs::RFP>(
-                        StepPropertyContainer{(
-                                                  Base::PI * (well_pressure_profile(record, collector_pressure).log_vals -
-                                                        collector_pressure.col(0ll)))
-                                                  .eval()},
-                        is_permeable);
                 }
             };
         } // BotHolePresControl
