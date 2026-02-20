@@ -122,7 +122,6 @@ namespace GPN
             {
                 using Base = CrossFlow_t;
 
-
                 using functor_type = BotHolePresFunctorBC<Fluid_t, History_t, Grid2D_t>;
                 using hydro_bc_type = BotHolePresBC;
                 using grid_type = Grid2D_t;
@@ -221,17 +220,17 @@ namespace GPN
                     flow_axes2_value.col(3ll) = get_RFP(record);
                 }
 
+                const RealType z_ref() const
+                {
+                    return history->z_ref;
+                }
+
                 template <typename HistoryRecord_t>
                 const RealType P_bot(
                     const HistoryRecord_t &record,
                     const auto &/*collector_pressure*/) const
                 {
                     return record.pressure;
-                }
-
-                const RealType z_ref() const
-                {
-                    return history->z_ref;
                 }
 
                 template <typename HistoryRecord_t>
