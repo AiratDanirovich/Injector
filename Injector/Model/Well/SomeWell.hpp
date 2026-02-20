@@ -22,13 +22,11 @@ namespace GPN
         {
             using Base = CrossFlow_t;
 
-            struct Solution
+            struct Solution1D
             {
-                Solution(const auto history)
+                Solution1D(const auto history)
                 {
                     times.reserve(history->size());
-                    bottom_pressure.reserve(history->size());
-                    bottom_rate.reserve(history->size());
 
                     rfp.reserve(history->size());
                     wfp.reserve(history->size());
@@ -37,15 +35,40 @@ namespace GPN
                     well_pressure.reserve(history->size());
                 }
 
-                std::vector<RealType> times, bottom_pressure, bottom_rate;
+                std::vector<RealType> times;
                 std::vector<EqSolver::State::State1D>
                     rfp, wfp,
                     verticle_cement_flow,
                     verticle_well_flow,
                     well_pressure;
             };
+            struct SolutionPoint
+            {
+                SolutionPoint(const auto history)
+                    : z_ref{history->z_ref}
+                {
+                    times.reserve(10 * history->size());
+                    bottom_pressure.reserve(10 * history->size());
+                    bottom_rate.reserve(10 * history->size());
+                }
+                std::vector<RealType> times, bottom_pressure, bottom_rate;
+                const RealType z_ref;
 
-            Solution solution;
+                const auto output() const
+                {
+                    Eigen::ArrayXX<RealType> out(static_cast<ptrdiff_t>(times.size()), 3ll);
+                    for(auto row{0ll}; row < out.rows(); ++row)
+                    {
+                        out(row, 0ll) = times[row];
+                        out(row, 1ll) = bottom_pressure[row]/1E5;
+                        out(row, 2ll) = bottom_rate[row];
+                    }
+                    return out;
+                }
+            };
+
+            Solution1D solution1D;
+            SolutionPoint solutionPoint;
 
             SomeWell(
                 const Properties::Rocks::RocksProps<Grid2D_t> &
@@ -69,7 +92,8 @@ namespace GPN
                   is_permeable{rock_field_props.base_hydrodynamics.is_permeable},
                   bottom_pressure{0.0},
                   bottom_rate{0.0},
-                  solution{history},
+                  solution1D{history},
+                  solutionPoint{history},
                   well_pressure{StepPropertyContainer::Constant(grid2D_rocks->first_coord().mesh_size(), 0.0)}
             {
                 static_assert(Grid2D_t::l_margin == 3ll);
@@ -109,15 +133,16 @@ namespace GPN
                     const auto mid_time{history->get_current_record().mid_time};
                     if ((t < mid_time) && (t + t_step > mid_time))
                     {
-                        solution.times.push_back(t + t_step / 2.0);
-                        solution.bottom_pressure.push_back(bottom_pressure);
-                        solution.bottom_rate.push_back(bottom_rate);
-                        solution.rfp.emplace_back(RFP());
-                        solution.wfp.emplace_back(WFP());
-                        solution.verticle_cement_flow.emplace_back(verticle_cement_flow());
-                        solution.verticle_well_flow.emplace_back(verticle_well_flow());
-                        solution.well_pressure.emplace_back(well_pressure);
+                        solution1D.times.push_back(t + t_step / 2.0);
+                        solution1D.rfp.emplace_back(RFP());
+                        solution1D.wfp.emplace_back(WFP());
+                        solution1D.verticle_cement_flow.emplace_back(verticle_cement_flow());
+                        solution1D.verticle_well_flow.emplace_back(verticle_well_flow());
+                        solution1D.well_pressure.emplace_back(well_pressure);
                     }
+                    solutionPoint.times.push_back(t + t_step);
+                    solutionPoint.bottom_pressure.push_back(bottom_pressure);
+                    solutionPoint.bottom_rate.push_back(bottom_rate);
                 }
 #pragma endregion
             }
