@@ -176,7 +176,8 @@ namespace GPN
                         Base::get_verticle_cement_flow(record),
                         Base::get_WFP(record), Base::get_RFP(record),
                         P_bot(Base::history->get_current_record(), collector_pressure),
-                        get_total_bottomhole_rate(record, collector_pressure));
+                        get_total_bottomhole_rate(record, collector_pressure),
+                        well_pres_prof);
 
                     const StepPropertyContainer depression_at_sandface{
                         -(collector_pressure.col(0ll) - record.pressure * Base::is_permeable.log_vals)};
@@ -213,6 +214,7 @@ namespace GPN
                 const std::ptrdiff_t size;
                 const Logs::HydrostaticPressureFactory<Fluid_t, typename Grid2D_t::Axes1Coordinate_t>
                     hydrostatic_factory;
+
             protected:
                 template <typename HistoryRecord_t>
                 const RealType P_bot(
@@ -221,7 +223,7 @@ namespace GPN
                 {
                     return record.pressure;
                 }
-                
+
                 template <typename HistoryRecord_t>
                 RealType get_total_bottomhole_rate(
                     const HistoryRecord_t &record,

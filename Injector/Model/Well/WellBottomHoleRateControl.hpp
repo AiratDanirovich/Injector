@@ -182,16 +182,8 @@ namespace GPN
                         Base::get_verticle_cement_flow(record),
                         Base::get_WFP(record), Base::get_RFP(record),
                         P_bot(record, collector_pressure),
-                        get_total_bottomhole_rate(record, collector_pressure));
-                }
-
-                template <typename HistoryRecord_t>
-                const auto well_pressure_profile(
-                    const HistoryRecord_t &record,
-                    const auto &collector_pressure) const
-                {
-                    return hydrostatic_factory.create(
-                        P_bot(Base::history->get_current_record(), collector_pressure));
+                        get_total_bottomhole_rate(record, collector_pressure),
+                        well_pres_prof);
                 }
 
                 template <typename HistoryRecord_t>
@@ -230,6 +222,15 @@ namespace GPN
                     const auto &collector_pressure) const
                 {
                     return record.rate;
+                }
+                
+                template <typename HistoryRecord_t>
+                const auto well_pressure_profile(
+                    const HistoryRecord_t &record,
+                    const auto &collector_pressure) const
+                {
+                    return hydrostatic_factory.create(
+                        P_bot(Base::history->get_current_record(), collector_pressure));
                 }
             };
         } // BotHoleRateControl

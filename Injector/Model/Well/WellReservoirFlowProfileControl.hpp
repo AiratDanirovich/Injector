@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <limits>
 
 #include <Injector/Grids/Defines.h>
 
@@ -134,7 +135,7 @@ namespace GPN
                         rock_field_props,
                     const CrossFlow_t &well_base,
                     const cptr<History_t> history,
-                    const Fluid_t &,
+                    const Fluid_t &fluid,
                     const cptr<Grid2D_t> grid2D_rocks)
                     : Base{rock_field_props, well_base, history, grid2D_rocks},
                       resistivity{set_resistivity(rock_field_props, well_base, grid2D_rocks)},
@@ -144,7 +145,9 @@ namespace GPN
                               std::make_shared<const functor_type>(
                                   history, rock_field_props.base_hydrodynamics.ext_pressure,
                                   well_base.rfp, rock_field_props.base_hydrodynamics.is_permeable,
-                                  grid2D_rocks))}
+                                  grid2D_rocks))},
+                      hydrostatic_factory{history->z_ref, fluid, grid2D_rocks->first_coord()},
+                      fluid{fluid}
                 {
                     assert(std::abs(well_base.rfp.sum() - 1.0) < 1e-12);
                     assert(std::abs(well_base.wfp.sum() - 1.0) < 1e-12);
@@ -159,14 +162,6 @@ namespace GPN
                 }
 
                 template <typename HistoryRecord_t>
-                RealType get_total_bottomhole_rate(
-                    const HistoryRecord_t &record,
-                    const auto & /*collector_pressure*/) const
-                {
-                    return record.rate;
-                }
-
-                template <typename HistoryRecord_t>
                 void set_well_flow_field(
                     const HistoryRecord_t &record,
                     const auto &collector_pressure)
@@ -175,11 +170,19 @@ namespace GPN
                     const auto wfp_{get_WFP(record)};
                     const auto vert_cem_flow_{get_verticle_cement_flow(record)};
                     const auto vert_well_flow_{get_verticle_well_flow(record)};
+                    const auto well_p{hydrostatic_factory.create(std::numeric_limits<RealType>::quiet_NaN())};
                     Base::set_well_flow_field(
                         vert_well_flow_,
                         vert_cem_flow_,
-                        wfp_, rfp_, 100E5, 0.0);
+                        wfp_, rfp_, 
+                        std::numeric_limits<RealType>::quiet_NaN(), 
+                        get_total_bottomhole_rate(record, collector_pressure),
+                        well_p.log_vals);
                 }
+
+                const Fluid_t &fluid;
+                const Logs::HydrostaticPressureFactory<Fluid_t, typename Grid2D_t::Axes1Coordinate_t>
+                    hydrostatic_factory;
 
             protected:
                 template <typename HistoryRecord_t>
@@ -201,6 +204,16 @@ namespace GPN
                 const auto get_verticle_well_flow(const HistoryRecord_t &record) const
                 {
                     return Base::verticle_flux_in_well * record.rate;
+                }
+
+
+                
+                template <typename HistoryRecord_t>
+                RealType get_total_bottomhole_rate(
+                    const HistoryRecord_t &record,
+                    const auto & /*collector_pressure*/) const
+                {
+                    return record.rate;
                 }
 
             private:

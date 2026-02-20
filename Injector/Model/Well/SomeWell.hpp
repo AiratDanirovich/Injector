@@ -1,9 +1,11 @@
 #pragma once
 
 #include <vector>
+#include <numeric>
 #include <Eigen/Dense>
 
 #include <Injector/Grids/Defines.h>
+#include <Injector/Properties/Logs.hpp>
 #include <Injector/Model/Collector.hpp>
 
 #include <Injector/Solver/State1D.hpp>
@@ -53,7 +55,8 @@ namespace GPN
                   rock_field_props{rock_field_props},
                   is_permeable{rock_field_props.base_hydrodynamics.is_permeable},
                   bottom_pressure{0.0},
-                  bottom_rate{0.0}
+                  bottom_rate{0.0},
+                  well_pressure{StepPropertyContainer::Constant(grid2D_rocks->first_coord().mesh_size(), 0.0)}
             {
                 static_assert(Grid2D_t::l_margin == 3ll);
 
@@ -69,10 +72,12 @@ namespace GPN
                 const auto &wfp,
                 const auto &rfp,
                 const auto p_bot,
-                const auto q_bot)
+                const auto q_bot,
+                const auto well_p)
             {
-                const_cast<RealType&>(bottom_pressure) = p_bot;
-                const_cast<RealType&>(bottom_rate) = q_bot;
+                const_cast<RealType &>(bottom_pressure) = p_bot;
+                const_cast<RealType &>(bottom_rate) = q_bot;
+                const_cast<StepPropertyContainer &>(well_pressure) = well_p;
 
                 // set verticle flux
                 flow_axes1_value.col(0ll) = vert_well_flow;
@@ -109,7 +114,19 @@ namespace GPN
                 return flow_axes1_value.col(0ll);
             }
 
+            const auto well_rate() const
+            {
+                const auto wfp{WFP()};
+                auto out{StepPropertyContainer::Zero(wfp.size() + 1ll)};
+                std::partial_sum(
+                    wfp.cbegin(), wfp.cend(), out.begin() + 1ll,
+                    std::plus<RealType>{});
+                assert(out(0ll) == 0.0);
+                return (bottom_rate - out).eval();
+            }
             const RealType bottom_pressure, bottom_rate;
+
+            const StepPropertyContainer well_pressure;
 #pragma endregion
 
             FaceValuesContainer flow_axes1_value, flow_axes2_value;
@@ -119,7 +136,6 @@ namespace GPN
             const Properties::Rocks::RocksProps<Grid2D_t> &
                 rock_field_props;
             const Logs::IsPermeable &is_permeable;
-
 
         protected:
             static auto set_productivity_index(
@@ -153,7 +169,7 @@ namespace GPN
                 return Logs::RFPFactory::create_from_container<Logs::RFP>(
                     StepPropertyContainer{(
                                               PI * (well_pres_prof -
-                                                          collector_pressure.col(0ll)))
+                                                    collector_pressure.col(0ll)))
                                               .eval()},
                     is_permeable);
             }
