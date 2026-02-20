@@ -120,6 +120,9 @@ namespace GPN
                 public CrossFlow_t, 
                 public DefaultWellNumerics<0ll>
             {
+                using Base = CrossFlow_t;
+
+
                 using functor_type = BotHolePresFunctorBC<Fluid_t, History_t, Grid2D_t>;
                 using hydro_bc_type = BotHolePresBC;
                 using grid_type = Grid2D_t;
@@ -173,22 +176,22 @@ namespace GPN
                 template <typename HistoryRecord_t>
                 const auto get_RFP(const HistoryRecord_t &record) const
                 {
-                    return this->rfp;
+                    return Base::rfp;
                 }
                 template <typename HistoryRecord_t>
                 const auto get_WFP(const HistoryRecord_t &record) const
                 {
-                    return this->wfp;
+                    return Base::wfp;
                 }
                 template <typename HistoryRecord_t>
                 const auto get_verticle_cement_flow(const HistoryRecord_t &record) const
                 {
-                    return this->verticle_flux_in_cement;
+                    return Base::verticle_flux_in_cement;
                 }
                 template <typename HistoryRecord_t>
                 const auto get_verticle_well_flow(const HistoryRecord_t &record) const
                 {
-                    return this->verticle_flux_in_well;
+                    return Base::verticle_flux_in_well;
                 }
 
                 template <typename HistoryRecord_t>

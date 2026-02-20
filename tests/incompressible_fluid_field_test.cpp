@@ -394,7 +394,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     // rates field factory
     FaceProperties::IncompressibleRatesFactory rates_factory{
         ptr_pressure_field,
-        grid2D_rocks, *well, history, water};
+        grid2D_rocks, well, history, water};
 
     // mock SolverManaer behavior
     for (auto t{0ll}; t < history->size(); ++t)

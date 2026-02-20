@@ -625,6 +625,7 @@ TEST_CASE("CompressibleFluid", "RFP_control")
                         const auto ref_rate{
                             -2.0 * C * pi * k * h / mu *
                             (P(row, col) - P(row, col - 1ll)) / std::log(r_next / r)};
+                        INFO("row: " << row << ", col: " << col);
                         CHECK_THAT(flux2(row, col),
                                    WithinRel(ref_rate, 1e-10));
                     }
