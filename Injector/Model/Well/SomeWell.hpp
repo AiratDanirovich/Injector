@@ -13,6 +13,7 @@ namespace GPN
     namespace Wells
     {
         template <
+            typename History_t,
             typename Grid2D_t,
             typename CrossFlow_t>
         struct SomeWell : public CrossFlow_t
@@ -35,6 +36,7 @@ namespace GPN
                 const Properties::Rocks::RocksProps<Grid2D_t> &
                     rock_field_props,
                 const CrossFlow_t &well_base,
+                const cptr<History_t> history,
                 const cptr<Grid2D_t> grid2D_rocks)
                 : Base{well_base},
                   grid2D_rocks{grid2D_rocks},
@@ -46,6 +48,7 @@ namespace GPN
                       FaceValuesContainer::Zero(
                           grid2D_rocks->first_coord().mesh_size(),
                           Grid2D_t::l_margin + 1ll)},
+                      history{history},
                   PI{set_productivity_index(rock_field_props, grid2D_rocks)}
             {
                 static_assert(Grid2D_t::l_margin == 3ll);
@@ -74,6 +77,11 @@ namespace GPN
                 flow_axes2_value.col(3ll) = rfp;
             }
 
+                const RealType z_ref() const
+                {
+                    return history->z_ref;
+                }
+
             const auto RFP() const
             {
                 return flow_axes2_value.col(3ll);
@@ -94,6 +102,7 @@ namespace GPN
             FaceValuesContainer flow_axes1_value, flow_axes2_value;
             const cptr<Grid2D_t> grid2D_rocks;
             const StepPropertyContainer PI;
+            const cptr<History_t> history;
 
         protected:
             static auto set_productivity_index(

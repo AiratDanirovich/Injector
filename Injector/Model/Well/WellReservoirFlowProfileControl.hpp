@@ -110,9 +110,9 @@ namespace GPN
                 typename CrossFlow_t>
             struct WellReservoirFlowProfileControl
                 : public DefaultWellNumerics<0ll>,
-                  public SomeWell<Grid2D_t, CrossFlow_t>
+                  public SomeWell<History_t, Grid2D_t, CrossFlow_t>
             {
-                using Base = SomeWell<Grid2D_t, CrossFlow_t>;
+                using Base = SomeWell<History_t, Grid2D_t, CrossFlow_t>;
 
                 using functor_type = RFPControlFunctorBC<History_t, Grid2D_t>;
                 using hydro_bc_type = RFPControlBC;
@@ -145,7 +145,6 @@ namespace GPN
                                   history, rock_field_props.base_hydrodynamics.ext_pressure,
                                   well_base.rfp, rock_field_props.base_hydrodynamics.is_permeable,
                                   grid2D_rocks))},
-                      history{history},
                       rock_field_props{rock_field_props}
                 {
                     assert(std::abs(well_base.rfp.sum() - 1.0) < 1e-12);
@@ -183,7 +182,6 @@ namespace GPN
                         wfp_, rfp_);
                 }
 
-                const cptr<History_t> history;
                 const Properties::Rocks::RocksProps<Grid2D_t> &
                     rock_field_props;
 
