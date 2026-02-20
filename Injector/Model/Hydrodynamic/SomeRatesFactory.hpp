@@ -48,8 +48,6 @@ namespace GPN
                       grid2D_rocks->grid2D->first_coord().mesh_size()},
                   second_size{
                       grid2D_rocks->grid2D->second_coord().mesh_size()}
-                 //     ,
-                //  second_size_rock{grid2D_rocks->grid2D->second_coord().mesh_size() - Grid2D_t::l_margin - 1ll}
             {
             }
 
@@ -125,16 +123,6 @@ namespace GPN
                             axes2_value},
                         // multiply by heat capacity
                         fluid.volumetric_heat_capacity);
-
-                // // volumetric heat flow field in two directions is calculated,
-                // // once the pressure field is calculated
-                // heat_flow_field =
-                //     std::make_shared<FaceProperties::HeatFlowField>(
-                //         // create ReservoirFlowField
-                //         FaceProperties::FlowFactory::create_from_well(
-                //             history->get_current_record(), well, *grid2D),
-                //         // multiply by heat capacity
-                //         fluid.volumetric_heat_capacity);
             }
 
             const auto &get_pressure_field() const
