@@ -118,9 +118,8 @@ namespace GPN
                         solution.wfp.emplace_back(WFP());
                         solution.verticle_cement_flow.emplace_back(verticle_cement_flow());
                         solution.verticle_well_flow.emplace_back(verticle_well_flow());
-                        const auto temp{cumulative_well_rate()};
-                    //    solution.cumulative_well_rate.emplace_back(cumulative_well_rate());
-                        // solution.well_pressure.emplace_back(well_pressure);
+                        solution.cumulative_well_rate.emplace_back(cumulative_well_rate());
+                        solution.well_pressure.emplace_back(well_pressure);
                     }
                 }
 #pragma endregion
@@ -149,14 +148,14 @@ namespace GPN
                 return flow_axes1_value.col(0ll);
             }
 
-            const Eigen::ArrayX<RealType> cumulative_well_rate() const
+            const auto cumulative_well_rate() const
             {
                 const auto wfp{WFP()};
-                auto out{StepPropertyContainer::Zero(wfp.size() + 1ll)};
-                // std::partial_sum(
-                //     wfp.cbegin(), wfp.cend(), out.begin() + 1ll,
-                //     std::plus<RealType>{});
-                // assert(out(0ll) == 0.0);
+                StepPropertyContainer out{StepPropertyContainer::Zero(wfp.size() + 1ll)};
+                std::partial_sum(
+                    wfp.cbegin(), wfp.cend(), out.begin() + 1ll,
+                    std::plus<RealType>{});
+                assert(out(0ll) == 0.0);
                 return (bottom_rate - out).eval();
             }
             const RealType bottom_pressure, bottom_rate;
