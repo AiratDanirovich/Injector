@@ -176,27 +176,6 @@ namespace GPN
                 }
 
                 template <typename HistoryRecord_t>
-                const auto &get_RFP(const HistoryRecord_t &record) const
-                {
-                    return Base::rfp;
-                }
-                template <typename HistoryRecord_t>
-                const auto &get_WFP(const HistoryRecord_t &record) const
-                {
-                    return Base::wfp;
-                }
-                template <typename HistoryRecord_t>
-                const auto &get_verticle_cement_flow(const HistoryRecord_t &record) const
-                {
-                    return Base::verticle_flux_in_cement;
-                }
-                template <typename HistoryRecord_t>
-                const auto &get_verticle_well_flow(const HistoryRecord_t &record) const
-                {
-                    return Base::verticle_flux_in_well;
-                }
-
-                template <typename HistoryRecord_t>
                 RealType get_total_bottomhole_rate(
                     const HistoryRecord_t &record,
                     const auto &collector_pressure) const
@@ -209,18 +188,11 @@ namespace GPN
                     const HistoryRecord_t &record,
                     const auto &collector_pressure)
                 {
-                    this->set_flux(set_RFP(record, collector_pressure));
-                    // set verticle flux
-                    flow_axes1_value.col(0ll) = get_verticle_well_flow(record);
-                    flow_axes1_value.col(1ll) = 0.0;
-                    flow_axes1_value.col(2ll) = get_verticle_cement_flow(record);
-                    // set radial flux
-                    static_assert(Grid2D_t::l_margin == 3ll);
-
-                    flow_axes2_value.col(0ll) = 0.0;
-                    flow_axes2_value.col(1ll) = get_WFP(record);
-                    flow_axes2_value.col(2ll) = get_WFP(record);
-                    flow_axes2_value.col(3ll) = get_RFP(record);
+                    Base::set_flux(set_RFP(record, collector_pressure));
+                    Base::set_well_flow_field(
+                        Base::get_verticle_well_flow(record),
+                        Base::get_verticle_cement_flow(record),
+                        Base::get_WFP(record), Base::get_RFP(record));
                 }
 
                 const RealType z_ref() const
@@ -247,8 +219,6 @@ namespace GPN
                     return well_pressure_profile(record, collector_pressure).log_vals * is_permeable.log_vals;
                 }
 
-                FaceValuesContainer flow_axes1_value, flow_axes2_value;
-                const cptr<Grid2D_t> grid2D_rocks;
                 const cptr<History_t> history;
                 const Fluid_t &fluid;
                 const Properties::Rocks::RocksProps<Grid2D_t> &
@@ -266,7 +236,7 @@ namespace GPN
                 {
                     const auto rate{record.rate};
                     const auto weight{fluid.density * Gravity::value()};
-                    const auto dz{grid2D_rocks->first_coord().mesh_nodes - z_ref()};
+                    const auto dz{Base::grid2D_rocks->first_coord().mesh_nodes - z_ref()};
                     const RealType term1{(PI * (weight * dz - collector_pressure.col(0ll))).sum()};
                     assert(!std::isnan(rate) && !std::isinf(rate));
                     const auto out{(rate - term1) / PI.sum()};

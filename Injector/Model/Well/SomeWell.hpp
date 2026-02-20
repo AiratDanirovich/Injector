@@ -109,6 +109,27 @@ namespace GPN
                 }
                 return out;
             }
+
+            template <typename HistoryRecord_t>
+            const auto &get_RFP(const HistoryRecord_t &record) const
+            {
+                return Base::rfp;
+            }
+            template <typename HistoryRecord_t>
+            const auto &get_WFP(const HistoryRecord_t &record) const
+            {
+                return Base::wfp;
+            }
+            template <typename HistoryRecord_t>
+            const auto &get_verticle_cement_flow(const HistoryRecord_t &record) const
+            {
+                return Base::verticle_flux_in_cement;
+            }
+            template <typename HistoryRecord_t>
+            const auto &get_verticle_well_flow(const HistoryRecord_t &record) const
+            {
+                return Base::verticle_flux_in_well;
+            }
         };
     } // Wells
 } // GPN
