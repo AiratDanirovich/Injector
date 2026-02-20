@@ -21,16 +21,6 @@ namespace GPN
                     : cur_state{cur_state}
                 {
                 }
-                // State1D(
-                //     State_Container &&cur_state)
-                //     : cur_state{std::move(cur_state)}
-                // {
-                // }
-                // State1D(
-                //     State_Container cur_state)
-                //     : cur_state{cur_state}
-                // {
-                // }
 
                 template <typename StructuredGrid1D_t>
                 static auto FillWithZeros(

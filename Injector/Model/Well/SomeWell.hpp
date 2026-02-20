@@ -148,7 +148,7 @@ namespace GPN
                 return flow_axes1_value.col(0ll);
             }
 
-            const auto cumulative_well_rate() const
+            const StepPropertyContainer cumulative_well_rate() const
             {
                 const auto wfp{WFP()};
                 StepPropertyContainer out{StepPropertyContainer::Zero(wfp.size() + 1ll)};
@@ -156,7 +156,7 @@ namespace GPN
                     wfp.cbegin(), wfp.cend(), out.begin() + 1ll,
                     std::plus<RealType>{});
                 assert(out(0ll) == 0.0);
-                return (bottom_rate - out).eval();
+                return bottom_rate - out;
             }
             const RealType bottom_pressure, bottom_rate;
 
