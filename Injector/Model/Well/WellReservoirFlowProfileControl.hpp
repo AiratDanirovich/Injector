@@ -5,6 +5,7 @@
 #include <Injector/Grids/Defines.h>
 
 #include <Injector/Model/Well/DefaultWellNmerics.hpp>
+#include <Injector/Model/Well/SomeWell.hpp>
 
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Properties/Logs.hpp>
