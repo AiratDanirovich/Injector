@@ -163,6 +163,7 @@ namespace GPN
 
                 template <typename HistoryRecord_t>
                 void set_well_flow_field(
+                    double t, RealType t_step,
                     const HistoryRecord_t &record,
                     const auto &collector_pressure)
                 {
@@ -172,6 +173,7 @@ namespace GPN
                         Base::set_RFP(
                             well_pres_prof, collector_pressure));
                     Base::set_well_flow_field(
+                        t, t_step,
                         Base::get_verticle_well_flow(record),
                         Base::get_verticle_cement_flow(record),
                         Base::get_WFP(record), Base::get_RFP(record),

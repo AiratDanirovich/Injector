@@ -163,6 +163,7 @@ namespace GPN
 
                 template <typename HistoryRecord_t>
                 void set_well_flow_field(
+                    double t, RealType t_step, 
                     const HistoryRecord_t &record,
                     const auto &collector_pressure)
                 {
@@ -172,6 +173,7 @@ namespace GPN
                     const auto vert_well_flow_{get_verticle_well_flow(record)};
                     const auto well_p{hydrostatic_factory.create(std::numeric_limits<RealType>::quiet_NaN())};
                     Base::set_well_flow_field(
+                        t, t_step,
                         vert_well_flow_,
                         vert_cem_flow_,
                         wfp_, rfp_, 

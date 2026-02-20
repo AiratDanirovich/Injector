@@ -27,12 +27,27 @@ namespace GPN
                 Solution(const auto history)
                 {
                     times.reserve(history->size());
-                    states.reserve(history->size());
+                    bottom_pressure.reserve(history->size());
+                    bottom_rate.reserve(history->size());
+
+                    rfp.reserve(history->size());
+                    wfp.reserve(history->size());
+                    verticle_cement_flow.reserve(history->size());
+                    verticle_well_flow.reserve(history->size());
+                    cumulative_well_rate.reserve(history->size());
+                    well_pressure.reserve(history->size());
                 }
 
-                std::vector<RealType> times;
-                std::vector<EqSolver::State::State1D> states;
+                std::vector<RealType> times, bottom_pressure, bottom_rate;
+                std::vector<EqSolver::State::State1D>
+                    rfp, wfp,
+                    verticle_cement_flow,
+                    verticle_well_flow,
+                    cumulative_well_rate,
+                    well_pressure;
             };
+
+            Solution solution;
 
             SomeWell(
                 const Properties::Rocks::RocksProps<Grid2D_t> &
@@ -56,6 +71,7 @@ namespace GPN
                   is_permeable{rock_field_props.base_hydrodynamics.is_permeable},
                   bottom_pressure{0.0},
                   bottom_rate{0.0},
+                  solution{history},
                   well_pressure{StepPropertyContainer::Constant(grid2D_rocks->first_coord().mesh_size(), 0.0)}
             {
                 static_assert(Grid2D_t::l_margin == 3ll);
@@ -67,6 +83,7 @@ namespace GPN
             }
 
             void set_well_flow_field(
+                double t, RealType t_step,
                 const auto &vert_well_flow,
                 const auto &vert_cem_flow,
                 const auto &wfp,
@@ -89,6 +106,24 @@ namespace GPN
                 flow_axes2_value.col(1ll) = wfp;
                 flow_axes2_value.col(2ll) = wfp;
                 flow_axes2_value.col(3ll) = rfp;
+#pragma region PUSH-TO-SOLUTION
+                {
+                    // const auto mid_time{history->get_current_record().mid_time};
+                    // if ((t < mid_time) && (t + t_step > mid_time))
+                    // {
+                    //     /*Properties::Pressure<Grid2D_t>*/
+                    //     solution.times.push_back(t + t_step / 2.0);
+                    //     solution.bottom_pressure.push_back(bottom_pressure);
+                    //     solution.bottom_rate.push_back(bottom_rate);
+                    //     solution.rfp.emplace_back(RFP());
+                    //     solution.wfp.emplace_back(WFP());
+                    //     solution.verticle_cement_flow.emplace_back(verticle_cement_flow());
+                    //     solution.verticle_well_flow.emplace_back(verticle_well_flow());
+                    //     solution.cumulative_well_rate.emplace_back(cumulative_well_rate());
+                    //     solution.well_pressure.emplace_back(well_pressure);
+                    // }
+                }
+#pragma endregion
             }
 
             const RealType z_ref() const
@@ -114,7 +149,7 @@ namespace GPN
                 return flow_axes1_value.col(0ll);
             }
 
-            const auto well_rate() const
+            const auto cumulative_well_rate() const
             {
                 const auto wfp{WFP()};
                 auto out{StepPropertyContainer::Zero(wfp.size() + 1ll)};
