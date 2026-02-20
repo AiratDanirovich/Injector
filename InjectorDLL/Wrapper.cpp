@@ -106,22 +106,9 @@ struct WrapperFactory
             r_max_step{data["grid"]["r_log_grid"]["r_max_step"].get<RealType>()},
             z_minor_step{data["grid"]["z_minor_step"].get<RealType>()}; // m
         /*history*/
-        const std::string t_unit = data["history"]["t_unit"].get<std::string>();
-        RealType factor{1.0};
-        if (t_unit == "d")
-            factor = 24 * 60 * 60;
-        else if (t_unit == "h")
-            factor = 60 * 60;
-        else if (t_unit == "m")
-            factor = 60;
-        else if (t_unit == "s")
-            factor = 1;
-        else
-            throw std::runtime_error("Incorrect unit of time.");
-
         const RealType
-            start_time{factor * data["history"]["start_time"].get<RealType>()};
-        RealType t_minor_step{factor * data["history"]["t_minor_step"].get<RealType>()};
+            start_time{read_start_time(data)};
+        const RealType t_minor_step{read_minor_step(data)};
         /*temperatures*/
         // const VR well_rates = data["history"]["dynamic"]["well_rate"].get<VR>(); // m^3/s
         // const VR inlet_temperatures = data["history"]["dynamic"]["inlet_temperature"].get<VR>();
@@ -136,9 +123,6 @@ struct WrapperFactory
 
         cout << "Simulation is started." << endl;
         cout << "Please wait..." << endl;
-
-        const auto t_start{chrono::high_resolution_clock::now()};
-
 #pragma region
         // z-refiner
         const auto z_stencils{Grids::Factory::generate_dual_grid_stencils_from_steps(
