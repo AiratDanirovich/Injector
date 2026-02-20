@@ -55,7 +55,7 @@ namespace GPN
             {
                 const StepPropertyContainer RFP{well.get_RFP(history_record)};
                 // calculate current pressure in well and cement-sandwich
-                const auto rock_P{((auxillary_term.colwise() * RFP).colwise() + ext_pressure.log_vals).eval()};
+                rock_P = ((auxillary_term.colwise() * RFP).colwise() + ext_pressure.log_vals).eval();
 
                 GridNodeValues2D out{GridNodeValues2D::Zero(first_size, second_size)};
                 out.rightCols(second_size - Grid2D_t::l_margin+1ll) = rock_P;
@@ -71,10 +71,18 @@ namespace GPN
 
                 Base::set_time(time_step, history_record);
             }
+            
+            const auto &get_rock_pressure() const
+            {
+                return rock_P;
+            }
 
         private:
             const CellNodesContainer2D auxillary_term;
             const ptrdiff_t first_size, second_size;
+
+            CellNodesContainer2D rock_P;
+
 
             static CellNodesContainer2D set_auxillary_term(
                 const auto &fluid, const auto &ext_pressure, 
