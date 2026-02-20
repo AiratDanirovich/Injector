@@ -178,7 +178,7 @@ namespace GPN
                     Base::set_well_flow_field(
                         vert_well_flow_,
                         vert_cem_flow_,
-                        wfp_, rfp_);
+                        wfp_, rfp_, 100E5, 0.0);
                 }
 
             protected:

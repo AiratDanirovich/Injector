@@ -311,7 +311,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             rates_factory.set_flow_field(cur_time, step);
             const auto record{history->get_current_record()};
             const auto collector_pressure{ptr_pressure_field->get_rock_pressure()};
-            const RealType P_bot{well->P_bot(record, collector_pressure)};
+            const RealType P_bot{well->bottom_pressure};
             const RealType P_bot_solver{pressure_field.get_solver()->solver->P_bot()};
             const auto P_well{well->well_pressure_profile(record, collector_pressure)};
             {

@@ -310,10 +310,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             rates_factory.set_flow_field(cur_time, step);
             const auto record{history->get_current_record()};
             const auto collector_pressure{ptr_pressure_field->get_rock_pressure()};
-            const RealType P_bot{well->P_bot(record, collector_pressure)};
+            const RealType P_bot{well->bottom_pressure};
             const auto P_well{well->well_pressure_profile(record, collector_pressure)};
             CHECK_THAT(P_bot, WithinRel(record.pressure, exact_tol));
-            CHECK(well->P_bot(record, collector_pressure) == history->pressure());
+            CHECK(well->bottom_pressure == history->pressure());
 #pragma region VERIFY-PRESSURE-PROBLEM-MATRIX
             {
                 const auto &A{pressure_field.get_solver()->get_problem_matrix()};

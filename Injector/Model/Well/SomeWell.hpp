@@ -51,7 +51,9 @@ namespace GPN
                   history{history},
                   PI{set_productivity_index(rock_field_props, grid2D_rocks)},
                   rock_field_props{rock_field_props},
-                  is_permeable{rock_field_props.base_hydrodynamics.is_permeable}
+                  is_permeable{rock_field_props.base_hydrodynamics.is_permeable},
+                  bottom_pressure{0.0},
+                  bottom_rate{0.0}
             {
                 static_assert(Grid2D_t::l_margin == 3ll);
 
@@ -65,8 +67,13 @@ namespace GPN
                 const auto &vert_well_flow,
                 const auto &vert_cem_flow,
                 const auto &wfp,
-                const auto &rfp)
+                const auto &rfp,
+                const auto p_bot,
+                const auto q_bot)
             {
+                const_cast<RealType&>(bottom_pressure) = p_bot;
+                const_cast<RealType&>(bottom_rate) = q_bot;
+
                 // set verticle flux
                 flow_axes1_value.col(0ll) = vert_well_flow;
                 flow_axes1_value.col(1ll) = 0.0;
@@ -84,6 +91,7 @@ namespace GPN
                 return history->z_ref;
             }
 
+#pragma region WELL-PARAMS-OF-INTEREST
             const auto RFP() const
             {
                 return flow_axes2_value.col(3ll);
@@ -101,6 +109,9 @@ namespace GPN
                 return flow_axes1_value.col(0ll);
             }
 
+            const RealType bottom_pressure, bottom_rate;
+#pragma endregion
+
             FaceValuesContainer flow_axes1_value, flow_axes2_value;
             const cptr<Grid2D_t> grid2D_rocks;
             const StepPropertyContainer PI;
@@ -108,6 +119,7 @@ namespace GPN
             const Properties::Rocks::RocksProps<Grid2D_t> &
                 rock_field_props;
             const Logs::IsPermeable &is_permeable;
+
 
         protected:
             static auto set_productivity_index(

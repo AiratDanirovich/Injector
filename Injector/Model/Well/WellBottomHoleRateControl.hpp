@@ -167,14 +167,6 @@ namespace GPN
                 }
 
                 template <typename HistoryRecord_t>
-                RealType get_total_bottomhole_rate(
-                    const HistoryRecord_t &record,
-                    const auto &collector_pressure) const
-                {
-                    return record.rate;
-                }
-
-                template <typename HistoryRecord_t>
                 void set_well_flow_field(
                     const HistoryRecord_t &record,
                     const auto &collector_pressure)
@@ -183,12 +175,14 @@ namespace GPN
                         well_pressure_profile(record, collector_pressure).log_vals};
                     Base::set_flux(
                         Base::set_RFP(
-                            well_pres_prof, 
+                            well_pres_prof,
                             collector_pressure));
                     Base::set_well_flow_field(
                         Base::get_verticle_well_flow(record),
                         Base::get_verticle_cement_flow(record),
-                        Base::get_WFP(record), Base::get_RFP(record));
+                        Base::get_WFP(record), Base::get_RFP(record),
+                        P_bot(record, collector_pressure),
+                        get_total_bottomhole_rate(record, collector_pressure));
                 }
 
                 template <typename HistoryRecord_t>
@@ -215,6 +209,7 @@ namespace GPN
                 const Logs::HydrostaticPressureFactory<Fluid_t, typename Grid2D_t::Axes1Coordinate_t>
                     hydrostatic_factory;
 
+            protected:
                 template <typename HistoryRecord_t>
                 const RealType P_bot(
                     const HistoryRecord_t &record,
@@ -227,6 +222,14 @@ namespace GPN
                     assert(!std::isnan(rate) && !std::isinf(rate));
                     const auto out{(rate - term1) / Base::PI.sum()};
                     return out;
+                }
+
+                template <typename HistoryRecord_t>
+                RealType get_total_bottomhole_rate(
+                    const HistoryRecord_t &record,
+                    const auto &collector_pressure) const
+                {
+                    return record.rate;
                 }
             };
         } // BotHoleRateControl
