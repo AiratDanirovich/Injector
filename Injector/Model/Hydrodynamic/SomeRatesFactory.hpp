@@ -67,10 +67,10 @@ namespace GPN
                 pressure_field->set_pressure_field(t_step, get_history_record());
                 // set the flow in all cells of the well,
                 // taking RFP and WFP into account
-                well->set_well_flow_field(get_history_record(), pressure_field->get_rock_pressure());
+                well->set_well_flow_field(t, t_step, get_history_record(), pressure_field->get_rock_pressure());
 
                 const auto &P{get_pressure_field()};
-                
+
                 for (auto col{Grid2D_t::l_margin + 1ll}; col < second_size; ++col)
                 {
                     for (auto row{0ll}; row < P.rows(); ++row)
@@ -113,8 +113,7 @@ namespace GPN
 
                 for (auto col{Grid2D_t::l_margin + 1ll}, count{0ll}; col < second_size; ++col, ++count)
                     axes2_value.col(col) = collector_rates(count, col, P); // = well->rfp
-                
-                
+
                 if ((t < mid_time) && (t + t_step > mid_time))
                 {
                     /*Properties::Pressure<Grid2D_t>*/

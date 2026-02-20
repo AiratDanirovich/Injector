@@ -292,7 +292,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     for (auto i{0ll}; i < history->size(); ++i)
     {
         const auto r{history->get_record(i)};
-        const auto rfp{well->get_RFP(r)};
+        const auto rfp{well->RFP()};
 
         pressure_field.set_pressure_field(0.0, r);
 

@@ -52,8 +52,8 @@ namespace GPN
                         grid2D.first_coord().mesh_size(),
                         grid2D.second_coord().mesh_size()};
 
-                    for (std::ptrdiff_t j = 0; j < cur_state.outerSize(); ++j)
-                        for (std::ptrdiff_t i = 0; i < cur_state.innerSize(); ++i)
+                    for (std::ptrdiff_t j{0ll}; j < cur_state.outerSize(); ++j)
+                        for (std::ptrdiff_t i{0ll}; i < cur_state.innerSize(); ++i)
                         {
                             cur_state(i, j) = f(
                                 i, //grid2D.first_coord.coordinate(i),
