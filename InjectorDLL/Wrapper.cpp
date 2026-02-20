@@ -301,7 +301,10 @@ struct WrapperFactory
         const auto &[times, states] = solver.solution();
 //        this->time = times;
 
+        // saved pressure
         const auto &[p_times, p_states] = ptr_rates_factory->solution;
+        // saved rates in layers
+        const auto &[q_times, q_states] = ptr_rates_factory->rates;
 
         if (!fs::is_directory("output") || !fs::exists("output")) // Check if src folder exists
         {
@@ -310,6 +313,10 @@ struct WrapperFactory
         if (!fs::is_directory("output/pressure") || !fs::exists("output/pressure")) // Check if src folder exists
         {
             fs::create_directory("output/pressure"); // create src folder
+        }
+        if (!fs::is_directory("output/rate") || !fs::exists("output/rate")) // Check if src folder exists
+        {
+            fs::create_directory("output/rate"); // create src folder
         }
 
         try
@@ -333,7 +340,7 @@ struct WrapperFactory
 
                 if (core_logs.is_permeable(z) == 1.0)
                 {
-                    {
+                    { // temperature in layers
                         ofstream f{std::string{"output/t_layer_"} + std::to_string(layer_id) + std::string{".csv"}};
 
                         // print time ids
@@ -364,7 +371,7 @@ struct WrapperFactory
 
                         f.close();
                     }
-                    {
+                    { // pressure in layers
                         ofstream f{std::string{"output/pressure/p_layer_"} + std::to_string(layer_id) + std::string{".csv"}};
 
                         // print time ids
@@ -392,6 +399,32 @@ struct WrapperFactory
                         }
                         // print prepared data
                         f << out_pp.format(commaFmt) << '\n';
+                        f.close();
+                    }
+                    
+                    {   // rates in layers
+                        ofstream f{std::string{"output/rate/q_layer_"} + std::to_string(layer_id) + std::string{".csv"}};
+
+                        // print time ids
+                        for (auto t{0ll}; t < (ptrdiff_t)q_times.size(); ++t)
+                            f << sep << t;
+                        f << '\n';
+
+                        // print time moments
+                        f << sep << transfer_to_eigen(q_times).transpose().format(commaFmt) << '\n';
+
+                        // prepare data to print
+                        const auto& grid_r{grid_rocks_r};
+                        const auto size_r{grid_r.dual_size()};
+                        GridNodeValues2D out_qq{GridNodeValues2D::Zero(size_r, (ptrdiff_t)q_times.size() + 1ll)};
+                        out_qq.col(0ll) = grid_r.dual_nodes.transpose();
+                        for (auto t{0ll}; t < (ptrdiff_t)q_times.size(); ++t)
+                        {
+                            const auto Q{q_states[t].cur_state.row(z).transpose()};
+                            out_qq.col(t + 1ll) = Q;
+                        }
+                        // print prepared data
+                        f << out_qq.format(commaFmt) << '\n';
                         f.close();
                     }
                     ++layer_id;
