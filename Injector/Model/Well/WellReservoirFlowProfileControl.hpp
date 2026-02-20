@@ -112,6 +112,8 @@ namespace GPN
                 : public CrossFlow_t,
                   public DefaultWellNumerics<0ll>
             {
+                using Base = CrossFlow_t;
+
                 using functor_type = RFPControlFunctorBC<History_t, Grid2D_t>;
                 using hydro_bc_type = RFPControlBC;
                 using grid_type = Grid2D_t;
@@ -164,22 +166,22 @@ namespace GPN
                 template <typename HistoryRecord_t>
                 const auto get_RFP(const HistoryRecord_t &record) const
                 {
-                    return this->rfp * record.rate;
+                    return Base::rfp * record.rate;
                 }
                 template <typename HistoryRecord_t>
                 const auto get_WFP(const HistoryRecord_t &record) const
                 {
-                    return this->wfp * record.rate;
+                    return Base::wfp * record.rate;
                 }
                 template <typename HistoryRecord_t>
                 const auto get_verticle_cement_flow(const HistoryRecord_t &record) const
                 {
-                    return this->verticle_flux_in_cement * record.rate;
+                    return Base::verticle_flux_in_cement * record.rate;
                 }
                 template <typename HistoryRecord_t>
                 const auto get_verticle_well_flow(const HistoryRecord_t &record) const
                 {
-                    return this->verticle_flux_in_well * record.rate;
+                    return Base::verticle_flux_in_well * record.rate;
                 }
 
                 template <typename HistoryRecord_t>
@@ -203,8 +205,6 @@ namespace GPN
                     const HistoryRecord_t &record,
                     const auto &)
                 {
-                    const auto rate{record.rate};
-
                     // set verticle flux
                     flow_axes1_value.col(0ll) = get_verticle_well_flow(record);
                     flow_axes1_value.col(1ll) = 0.0;
