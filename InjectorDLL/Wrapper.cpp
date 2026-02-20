@@ -306,7 +306,7 @@ struct WrapperFactory
         // saved rates in layers
         const auto &[q_times, q_states] = ptr_rates_factory->rates;
         // saved data in well
-        const auto &well_data{well->solution};
+        const auto &well_data{well->solution1D};
         const auto &w_times{well_data.times};
 
         if (!fs::is_directory("output") || !fs::exists("output")) // Check if src folder exists
