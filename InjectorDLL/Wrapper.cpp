@@ -522,7 +522,6 @@ struct WrapperFactory
                 f << out_tt.format(commaFmt) << '\n';
                 f.close();
             }
-            
             // well_pressure
             {
                 const auto size_z{grid_rocks_z.mesh_size()};
@@ -542,6 +541,13 @@ struct WrapperFactory
                     out_tt.col(t + 1ll) = well_data.well_pressure[t].cur_state;
                 // print prepared data
                 f << out_tt.format(commaFmt) << '\n';
+                f.close();
+            }
+            // well point
+            {
+                ofstream f{std::string{"output/well/well_bottom_data.csv"}};
+                // print prepared data
+                f << well->solutionPoint.output().format(commaFmt) << '\n';
                 f.close();
             }
 
