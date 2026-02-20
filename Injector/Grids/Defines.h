@@ -204,5 +204,9 @@ namespace GPN
         {
             virtual RealType operator()(const ptrdiff_t, const ptrdiff_t, const RealType) const = 0;
         };
+        struct ICFunctorBase1D
+        {
+            virtual RealType operator()(const ptrdiff_t, const RealType) const = 0;
+        };
     } // InitialConditions
 } // EqSolver
