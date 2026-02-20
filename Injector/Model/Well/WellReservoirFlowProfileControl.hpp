@@ -109,8 +109,7 @@ namespace GPN
                 typename Grid2D_t,
                 typename CrossFlow_t>
             struct WellReservoirFlowProfileControl
-                : 
-                  public DefaultWellNumerics<0ll>,
+                : public DefaultWellNumerics<0ll>,
                   public SomeWell<Grid2D_t, CrossFlow_t>
             {
                 using Base = SomeWell<Grid2D_t, CrossFlow_t>;
@@ -137,8 +136,7 @@ namespace GPN
                     const cptr<History_t> history,
                     const Fluid_t &,
                     const cptr<Grid2D_t> grid2D_rocks)
-                    : 
-                      Base{well_base, grid2D_rocks},
+                    : Base{well_base, grid2D_rocks},
                       resistivity{set_resistivity(rock_field_props, well_base, grid2D_rocks)},
                       hydro_bc{
                           std::make_shared<const hydro_bc_type>(
@@ -152,27 +150,6 @@ namespace GPN
                 {
                     assert(std::abs(well_base.rfp.sum() - 1.0) < 1e-12);
                     assert(std::abs(well_base.wfp.sum() - 1.0) < 1e-12);
-                }
-
-                template <typename HistoryRecord_t>
-                const auto get_RFP(const HistoryRecord_t &record) const
-                {
-                    return Base::rfp * record.rate;
-                }
-                template <typename HistoryRecord_t>
-                const auto get_WFP(const HistoryRecord_t &record) const
-                {
-                    return Base::wfp * record.rate;
-                }
-                template <typename HistoryRecord_t>
-                const auto get_verticle_cement_flow(const HistoryRecord_t &record) const
-                {
-                    return Base::verticle_flux_in_cement * record.rate;
-                }
-                template <typename HistoryRecord_t>
-                const auto get_verticle_well_flow(const HistoryRecord_t &record) const
-                {
-                    return Base::verticle_flux_in_well * record.rate;
                 }
 
                 template <typename HistoryRecord_t>
@@ -198,17 +175,39 @@ namespace GPN
                 {
                     const auto rfp_{get_RFP(record)};
                     const auto wfp_{get_WFP(record)};
-                    Base::set_well_flow_field(wfp_, rfp_);
-
-                    // set verticle flux
-                    Base::flow_axes1_value.col(0ll) = get_verticle_well_flow(record);
-                    Base::flow_axes1_value.col(1ll) = 0.0;
-                    Base::flow_axes1_value.col(2ll) = get_verticle_cement_flow(record);
+                    const auto vert_cem_flow_{get_verticle_cement_flow(record)};
+                    const auto vert_well_flow_{get_verticle_well_flow(record)};
+                    Base::set_well_flow_field(
+                        vert_well_flow_,
+                        vert_cem_flow_,
+                        wfp_, rfp_);
                 }
 
                 const cptr<History_t> history;
                 const Properties::Rocks::RocksProps<Grid2D_t> &
                     rock_field_props;
+
+            protected:
+                template <typename HistoryRecord_t>
+                const auto get_RFP(const HistoryRecord_t &record) const
+                {
+                    return Base::rfp * record.rate;
+                }
+                template <typename HistoryRecord_t>
+                const auto get_WFP(const HistoryRecord_t &record) const
+                {
+                    return Base::wfp * record.rate;
+                }
+                template <typename HistoryRecord_t>
+                const auto get_verticle_cement_flow(const HistoryRecord_t &record) const
+                {
+                    return Base::verticle_flux_in_cement * record.rate;
+                }
+                template <typename HistoryRecord_t>
+                const auto get_verticle_well_flow(const HistoryRecord_t &record) const
+                {
+                    return Base::verticle_flux_in_well * record.rate;
+                }
 
             private:
                 static auto set_resistivity(
