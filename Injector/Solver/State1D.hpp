@@ -16,8 +16,18 @@ namespace GPN
                 using State_Container =
                     Eigen::ArrayX<RealType>;
 
+                // State1D(
+                //     const State_Container &cur_state)
+                //     : cur_state{cur_state}
+                // {
+                // }
+                // State1D(
+                //     State_Container &&cur_state)
+                //     : cur_state{std::move(cur_state)}
+                // {
+                // }
                 State1D(
-                    const State_Container &cur_state)
+                    State_Container cur_state)
                     : cur_state{cur_state}
                 {
                 }

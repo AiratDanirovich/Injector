@@ -108,20 +108,20 @@ namespace GPN
                 flow_axes2_value.col(3ll) = rfp;
 #pragma region PUSH-TO-SOLUTION
                 {
-                    // const auto mid_time{history->get_current_record().mid_time};
-                    // if ((t < mid_time) && (t + t_step > mid_time))
-                    // {
-                    //     /*Properties::Pressure<Grid2D_t>*/
-                    //     solution.times.push_back(t + t_step / 2.0);
-                    //     solution.bottom_pressure.push_back(bottom_pressure);
-                    //     solution.bottom_rate.push_back(bottom_rate);
-                    //     solution.rfp.emplace_back(RFP());
-                    //     solution.wfp.emplace_back(WFP());
-                    //     solution.verticle_cement_flow.emplace_back(verticle_cement_flow());
-                    //     solution.verticle_well_flow.emplace_back(verticle_well_flow());
-                    //     solution.cumulative_well_rate.emplace_back(cumulative_well_rate());
-                    //     solution.well_pressure.emplace_back(well_pressure);
-                    // }
+                    const auto mid_time{history->get_current_record().mid_time};
+                    if ((t < mid_time) && (t + t_step > mid_time))
+                    {
+                        solution.times.push_back(t + t_step / 2.0);
+                        solution.bottom_pressure.push_back(bottom_pressure);
+                        solution.bottom_rate.push_back(bottom_rate);
+                        solution.rfp.emplace_back(RFP());
+                        solution.wfp.emplace_back(WFP());
+                        solution.verticle_cement_flow.emplace_back(verticle_cement_flow());
+                        solution.verticle_well_flow.emplace_back(verticle_well_flow());
+                        const auto temp{cumulative_well_rate()};
+                    //    solution.cumulative_well_rate.emplace_back(cumulative_well_rate());
+                        // solution.well_pressure.emplace_back(well_pressure);
+                    }
                 }
 #pragma endregion
             }
@@ -149,14 +149,14 @@ namespace GPN
                 return flow_axes1_value.col(0ll);
             }
 
-            const auto cumulative_well_rate() const
+            const Eigen::ArrayX<RealType> cumulative_well_rate() const
             {
                 const auto wfp{WFP()};
                 auto out{StepPropertyContainer::Zero(wfp.size() + 1ll)};
-                std::partial_sum(
-                    wfp.cbegin(), wfp.cend(), out.begin() + 1ll,
-                    std::plus<RealType>{});
-                assert(out(0ll) == 0.0);
+                // std::partial_sum(
+                //     wfp.cbegin(), wfp.cend(), out.begin() + 1ll,
+                //     std::plus<RealType>{});
+                // assert(out(0ll) == 0.0);
                 return (bottom_rate - out).eval();
             }
             const RealType bottom_pressure, bottom_rate;
