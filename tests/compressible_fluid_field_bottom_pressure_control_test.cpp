@@ -310,10 +310,10 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             rates_factory.set_flow_field(cur_time, step);
             const auto record{history->get_current_record()};
             const auto collector_pressure{ptr_pressure_field->get_rock_pressure()};
-            const RealType P_bot{well->P_bot(record, collector_pressure)};
+            const RealType P_bot{well->bottom_pressure};
             const auto P_well{well->well_pressure_profile(record, collector_pressure)};
             CHECK_THAT(P_bot, WithinRel(record.pressure, exact_tol));
-            CHECK(well->P_bot(record, collector_pressure) == history->pressure());
+            CHECK(well->bottom_pressure == history->pressure());
 #pragma region VERIFY-PRESSURE-PROBLEM-MATRIX
             {
                 const auto &A{pressure_field.get_solver()->get_problem_matrix()};
@@ -487,7 +487,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
                 }
             }
 #pragma endregion
-            const auto rfp{well->get_RFP(history->get_current_record())};
+            const auto rfp{well->RFP()};
             const auto Q{rfp.sum()};
 #pragma region CHECK-PRESSURE
             const auto &P{pressure_field.current_pressure().values()};
@@ -559,13 +559,13 @@ TEST_CASE("Solver", "SelfSimilarCyl")
             CHECK(flux2.rows() == grid_z.mesh_size());
             CHECK(flux2.cols() == grid_r.dual_size());
             const auto &mobility2{pressure_field.face_mobility.face_vals_axes2};
-            const auto wfp{well->get_WFP(history->get_current_record())};
+            const auto wfp{well->WFP()};
             //        std::cout << "wfp:\n" << wfp.transpose() << std::endl;
             CHECK(wfp.rows() == grid_z.mesh_size());
             CHECK_THAT(rfp.sum(), WithinRel(wfp.sum(), exact_tol));
-            const auto cement_flow{well->get_verticle_cement_flow(history->get_current_record())};
+            const auto cement_flow{well->verticle_cement_flow()};
             CHECK(cement_flow.rows() == grid_z.dual_size());
-            const auto well_flow{well->get_verticle_well_flow(history->get_current_record())};
+            const auto well_flow{well->verticle_well_flow()};
             CHECK(well_flow.rows() == grid_z.dual_size());
             RealType well_loss_cum_sum{0.0};
             RealType well_accum_cum_sum{0.0};
