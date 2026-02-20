@@ -333,7 +333,7 @@ struct WrapperFactory
 
                 if (core_logs.is_permeable(z) == 1.0)
                 {
-                    {
+                    { // temperature in layers
                         ofstream f{std::string{"output/t_layer_"} + std::to_string(layer_id) + std::string{".csv"}};
 
                         // print time ids
@@ -364,7 +364,7 @@ struct WrapperFactory
 
                         f.close();
                     }
-                    {
+                    {   // pressure in layers
                         ofstream f{std::string{"output/pressure/p_layer_"} + std::to_string(layer_id) + std::string{".csv"}};
 
                         // print time ids
@@ -392,6 +392,37 @@ struct WrapperFactory
                         }
                         // print prepared data
                         f << out_pp.format(commaFmt) << '\n';
+                        f.close();
+                    }
+                    
+                    {   // rates in layers
+                        ofstream f{std::string{"output/rate/q_layer_"} + std::to_string(layer_id) + std::string{".csv"}};
+
+                        // // print time ids
+                        // f << sep;
+                        // for (auto t{0ll}; t < (ptrdiff_t)p_times.size(); ++t)
+                        //     f << sep << t;
+                        // f << '\n';
+
+                        // // print time moments
+                        // f << sep << sep << transfer_to_eigen(p_times).transpose().format(commaFmt) << '\n';
+
+                        // // prepare data to print
+                        // GridNodeValues2D out_pp{GridNodeValues2D::Zero(size, (ptrdiff_t)times.size() + 2ll)};
+                        // out_pp.col(0ll) = grid_r.dual_nodes.transpose();
+                        // out_pp.col(1ll) = grid.transpose();
+                        // for (auto t{0ll}; t < (ptrdiff_t)p_times.size(); ++t)
+                        // {
+                        //     MeshNodesContainer out_p{MeshNodesContainer::Zero(size)};
+                        //     const auto P{p_states[t].cur_state.row(z).transpose()};
+                        //     out_p.head(3ll) = P.head(3ll);
+                        //     out_p.tail(size - 3ll) = P.tail(size - 3ll);
+                        //     out_p(3ll) = out_p(2ll);
+
+                        //     out_pp.col(t + 2ll) = out_p;
+                        // }
+                        // // print prepared data
+                        // f << out_pp.format(commaFmt) << '\n';
                         f.close();
                     }
                     ++layer_id;
