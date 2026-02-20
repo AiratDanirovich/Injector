@@ -53,7 +53,7 @@ namespace GPN
                 const RealType time_step, 
                 const HistoryRecord_t &history_record)
             {
-                const StepPropertyContainer RFP{well.get_RFP(history_record)};
+                const StepPropertyContainer RFP{well.RFP()};
                 // calculate current pressure in well and cement-sandwich
                 rock_P = ((auxillary_term.colwise() * RFP).colwise() + ext_pressure.log_vals).eval();
 

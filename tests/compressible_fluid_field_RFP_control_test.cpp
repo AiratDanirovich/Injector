@@ -442,7 +442,7 @@ TEST_CASE("CompressibleFluid", "RFP_control")
 #pragma region VERIFY-PRESSURE-PROBLEM-RHS
             {
                 const auto &rhs{pressure_field.get_solver()->get_problem_rhs()};
-                const auto rfp{well->get_RFP(history->get_current_record())};
+                const auto rfp{well->RFP()};
 
                 for (auto row{0ll}; row < grid_rocks_z.mesh_size(); ++row)
                 {
@@ -485,7 +485,7 @@ TEST_CASE("CompressibleFluid", "RFP_control")
             }
 #pragma endregion
 
-            const auto rfp{well->get_RFP(history->get_current_record())};
+            const auto rfp{well->RFP()};
 #pragma region CHECK-PRESSURE
             const auto &P{pressure_field.current_pressure().values()};
             CHECK(rfp.rows() == grid_z.mesh_size());
@@ -577,13 +577,13 @@ TEST_CASE("CompressibleFluid", "RFP_control")
             CHECK(flux2.rows() == grid_z.mesh_size());
             CHECK(flux2.cols() == grid_r.dual_size());
             const auto &mobility2{pressure_field.face_mobility.face_vals_axes2};
-            const auto wfp{well->get_WFP(history->get_current_record())};
+            const auto wfp{well->WFP()};
             CHECK(wfp.rows() == grid_z.mesh_size());
             CHECK_THAT(wfp.sum(), WithinRel(Q, exact_tol));
             CHECK_THAT(rfp.sum(), WithinRel(wfp.sum(), exact_tol));
-            const auto cement_flow{well->get_verticle_cement_flow(history->get_current_record())};
+            const auto cement_flow{well->verticle_cement_flow()};
             CHECK(cement_flow.rows() == grid_z.dual_size());
-            const auto well_flow{well->get_verticle_well_flow(history->get_current_record())};
+            const auto well_flow{well->verticle_well_flow()};
             CHECK(well_flow.rows() == grid_z.dual_size());
             RealType well_loss_cum_sum{0.0};
 #pragma region HORIZONTAL-RATES
