@@ -109,10 +109,12 @@ namespace GPN
                 typename Grid2D_t,
                 typename CrossFlow_t>
             struct WellReservoirFlowProfileControl
-                : public CrossFlow_t,
-                  public DefaultWellNumerics<0ll>
+                : 
+                  public DefaultWellNumerics<0ll>,
+                  public SomeWell<Grid2D_t, CrossFlow_t>
             {
-                using Base = CrossFlow_t;
+                using Base_SW = SomeWell<Grid2D_t, CrossFlow_t>;
+                using Base = Base_SW;
 
                 using functor_type = RFPControlFunctorBC<History_t, Grid2D_t>;
                 using hydro_bc_type = RFPControlBC;
@@ -136,7 +138,8 @@ namespace GPN
                     const cptr<History_t> history,
                     const Fluid_t &,
                     const cptr<Grid2D_t> grid2D_rocks)
-                    : CrossFlow_t{well_base},
+                    : 
+                      Base_SW{well_base, grid2D_rocks},
                       resistivity{set_resistivity(rock_field_props, well_base, grid2D_rocks)},
                       hydro_bc{
                           std::make_shared<const hydro_bc_type>(
@@ -154,8 +157,7 @@ namespace GPN
                               grid2D_rocks->first_coord().mesh_size(),
                               Grid2D_t::l_margin + 1ll)},
                       history{history},
-                      rock_field_props{rock_field_props},
-                      grid2D_rocks{grid2D_rocks}
+                      rock_field_props{rock_field_props}
                 {
                     assert(std::abs(well_base.rfp.sum() - 1.0) < 1e-12);
                     assert(std::abs(well_base.wfp.sum() - 1.0) < 1e-12);
@@ -203,15 +205,16 @@ namespace GPN
                 template <typename HistoryRecord_t>
                 void set_well_flow_field(
                     const HistoryRecord_t &record,
-                    const auto &)
+                    const auto &collector_pressure)
                 {
+                    Base_SW::set_well_flow_field(record, collector_pressure);
+
                     // set verticle flux
                     flow_axes1_value.col(0ll) = get_verticle_well_flow(record);
                     flow_axes1_value.col(1ll) = 0.0;
                     flow_axes1_value.col(2ll) = get_verticle_cement_flow(record);
                     // set radial flux
                     const auto temp{get_WFP(record)};
-                    static_assert(Grid2D_t::l_margin == 3ll);
                     flow_axes2_value.col(0ll) = 0.0;
                     flow_axes2_value.col(1ll) = temp;
                     flow_axes2_value.col(2ll) = temp;
@@ -219,7 +222,6 @@ namespace GPN
                 }
 
                 FaceValuesContainer flow_axes1_value, flow_axes2_value;
-                const cptr<Grid2D_t> grid2D_rocks;
                 const cptr<History_t> history;
                 const Properties::Rocks::RocksProps<Grid2D_t> &
                     rock_field_props;
