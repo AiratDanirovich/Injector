@@ -150,20 +150,14 @@ namespace GPN
                     const cptr<History_t> history,
                     const Fluid_t &fluid,
                     const cptr<Grid2D_t> grid2D_rocks)
-                    : Base{well_base, grid2D_rocks},
+                    : Base{rock_field_props, well_base, grid2D_rocks},
                       size{grid2D_rocks->first_coord().mesh_size()},
-                      PI{set_productivity_index(rock_field_props, grid2D_rocks)},
                       is_permeable{rock_field_props.base_hydrodynamics.is_permeable},
                       history{history},
                       fluid{fluid},
                       rock_field_props{rock_field_props},
                       hydrostatic_factory{history->z_ref, fluid, grid2D_rocks->first_coord()}
                 {
-                    assert(std::all_of(PI.cbegin(), PI.cend(), [](const RealType v)
-                                       { return v >= 0.0; }));
-                    assert(std::any_of(PI.cbegin(), PI.cend(), [](const RealType v)
-                                       { return v > 0.0; }));
-
                     const_cast<ptr<const hydro_bc_type> &>(hydro_bc) =
                         std::make_shared<const hydro_bc_type>(
                             grid2D_rocks,
@@ -171,7 +165,7 @@ namespace GPN
                                 history,
                                 rock_field_props.base_hydrodynamics.ext_pressure,
                                 hydrostatic_factory,
-                                PI,
+                                Base::PI,
                                 grid2D_rocks));
                 }
 
@@ -224,7 +218,6 @@ namespace GPN
                 const Properties::Rocks::RocksProps<Grid2D_t> &
                     rock_field_props;
                 const std::ptrdiff_t size;
-                const StepPropertyContainer PI;
                 const Logs::IsPermeable &is_permeable;
                 const Logs::HydrostaticPressureFactory<Fluid_t, typename Grid2D_t::Axes1Coordinate_t>
                     hydrostatic_factory;
@@ -237,9 +230,9 @@ namespace GPN
                     const auto rate{record.rate};
                     const auto weight{fluid.density * Gravity::value()};
                     const auto dz{Base::grid2D_rocks->first_coord().mesh_nodes - z_ref()};
-                    const RealType term1{(PI * (weight * dz - collector_pressure.col(0ll))).sum()};
+                    const RealType term1{(Base::PI * (weight * dz - collector_pressure.col(0ll))).sum()};
                     assert(!std::isnan(rate) && !std::isinf(rate));
-                    const auto out{(rate - term1) / PI.sum()};
+                    const auto out{(rate - term1) / Base::PI.sum()};
                     return out;
                 }
 
@@ -251,34 +244,10 @@ namespace GPN
                 {
                     return Logs::RFPFactory::create_from_container<Logs::RFP>(
                         StepPropertyContainer{(
-                                                  PI * (well_pressure_profile(record, collector_pressure).log_vals -
+                                                  Base::PI * (well_pressure_profile(record, collector_pressure).log_vals -
                                                         collector_pressure.col(0ll)))
                                                   .eval()},
                         is_permeable);
-                }
-
-                static auto set_productivity_index(
-                    const Properties::Rocks::RocksProps<Grid2D_t> &rock_field_props,
-                    const ptr<const Grid2D_t> grid2D_rocks)
-                {
-                    // center of cell next to the well
-                    const auto r3{grid2D_rocks->second_coord().mesh_nodes(0ll)};
-                    // sandface
-                    const auto r2_face{grid2D_rocks->second_coord().dual_nodes(0ll)};
-                    const auto two_pi{2.0 * std::numbers::pi_v<RealType>};
-                    const auto is_permeable{rock_field_props.base_hydrodynamics.is_permeable.log_vals};
-
-                    Eigen::ArrayX<RealType> out{
-                        two_pi / std::log(r3 / r2_face) *
-                        rock_field_props.mobility_axes2.col(Grid2D_t::l_margin) *
-                        grid2D_rocks->first_coord().volumes()};
-
-                    for (auto row{0ll}; row < grid2D_rocks->first_coord().mesh_size(); ++row)
-                    {
-                        if (is_permeable(row) == 0.0)
-                            out(row) = 0.0;
-                    }
-                    return out;
                 }
             };
         } // BotHoleRateControl

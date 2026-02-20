@@ -136,7 +136,7 @@ namespace GPN
                     const cptr<History_t> history,
                     const Fluid_t &,
                     const cptr<Grid2D_t> grid2D_rocks)
-                    : Base{well_base, grid2D_rocks},
+                    : Base{rock_field_props, well_base, grid2D_rocks},
                       resistivity{set_resistivity(rock_field_props, well_base, grid2D_rocks)},
                       hydro_bc{
                           std::make_shared<const hydro_bc_type>(

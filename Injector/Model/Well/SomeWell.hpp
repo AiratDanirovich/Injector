@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 
 #include <Injector/Grids/Defines.h>
+#include <Injector/Model/Collector.hpp>
 
 #include <Injector/Solver/State1D.hpp>
 
@@ -31,6 +32,8 @@ namespace GPN
             };
 
             SomeWell(
+                const Properties::Rocks::RocksProps<Grid2D_t> &
+                    rock_field_props,
                 const CrossFlow_t &well_base,
                 const cptr<Grid2D_t> grid2D_rocks)
                 : Base{well_base},
@@ -42,9 +45,15 @@ namespace GPN
                   flow_axes2_value{
                       FaceValuesContainer::Zero(
                           grid2D_rocks->first_coord().mesh_size(),
-                          Grid2D_t::l_margin + 1ll)}
+                          Grid2D_t::l_margin + 1ll)},
+                  PI{set_productivity_index(rock_field_props, grid2D_rocks)}
             {
                 static_assert(Grid2D_t::l_margin == 3ll);
+
+                assert(std::all_of(PI.cbegin(), PI.cend(), [](const RealType v)
+                                   { return v >= 0.0; }));
+                assert(std::any_of(PI.cbegin(), PI.cend(), [](const RealType v)
+                                   { return v > 0.0; }));
             }
 
             void set_well_flow_field(
@@ -84,6 +93,7 @@ namespace GPN
 
             FaceValuesContainer flow_axes1_value, flow_axes2_value;
             const cptr<Grid2D_t> grid2D_rocks;
+            const StepPropertyContainer PI;
 
         protected:
             static auto set_productivity_index(
