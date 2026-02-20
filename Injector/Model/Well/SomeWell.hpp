@@ -34,7 +34,7 @@ namespace GPN
                     wfp.reserve(history->size());
                     verticle_cement_flow.reserve(history->size());
                     verticle_well_flow.reserve(history->size());
-                    cumulative_well_rate.reserve(history->size());
+                //    cumulative_well_rate.reserve(history->size());
                     well_pressure.reserve(history->size());
                 }
 
@@ -43,7 +43,7 @@ namespace GPN
                     rfp, wfp,
                     verticle_cement_flow,
                     verticle_well_flow,
-                    cumulative_well_rate,
+                //    cumulative_well_rate,
                     well_pressure;
             };
 
@@ -118,7 +118,7 @@ namespace GPN
                         solution.wfp.emplace_back(WFP());
                         solution.verticle_cement_flow.emplace_back(verticle_cement_flow());
                         solution.verticle_well_flow.emplace_back(verticle_well_flow());
-                        solution.cumulative_well_rate.emplace_back(cumulative_well_rate());
+                    //    solution.cumulative_well_rate.emplace_back(cumulative_well_rate());
                         solution.well_pressure.emplace_back(well_pressure);
                     }
                 }

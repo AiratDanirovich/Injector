@@ -298,13 +298,16 @@ struct WrapperFactory
 
         solver_manager.run(t_minor_step);
 
+        // saved temperature in computation domain
         const auto &[times, states] = solver.solution();
-//        this->time = times;
 
-        // saved pressure
+        // saved pressure in layers
         const auto &[p_times, p_states] = ptr_rates_factory->solution;
         // saved rates in layers
         const auto &[q_times, q_states] = ptr_rates_factory->rates;
+        // saved data in well
+        const auto &well_data{well->solution};
+        const auto &w_times{well_data.times};
 
         if (!fs::is_directory("output") || !fs::exists("output")) // Check if src folder exists
         {
@@ -317,6 +320,10 @@ struct WrapperFactory
         if (!fs::is_directory("output/rate") || !fs::exists("output/rate")) // Check if src folder exists
         {
             fs::create_directory("output/rate"); // create src folder
+        }
+        if (!fs::is_directory("output/well") || !fs::exists("output/well")) // Check if src folder exists
+        {
+            fs::create_directory("output/well"); // create src folder
         }
 
         try
@@ -429,6 +436,113 @@ struct WrapperFactory
                     }
                     ++layer_id;
                 }
+            }
+
+            // well rfp
+            {
+                const auto size_z{grid_rocks_z.mesh_size()};
+                ofstream f{std::string{"output/well/rfp.csv"}};
+                // print time ids
+                for (auto t{0ll}; t < (ptrdiff_t)w_times.size(); ++t)
+                    f << sep << t;
+                f << '\n';
+
+                // print time moments
+                f << sep << transfer_to_eigen(w_times).transpose().format(commaFmt) << '\n';
+
+                // prepare data to print
+                GridNodeValues2D out_tt{GridNodeValues2D::Zero(size_z, (ptrdiff_t)w_times.size() + 1ll)};
+                out_tt.col(0ll) = grid_rocks_z.mesh_nodes;
+                for (auto t{0ll}; t < (ptrdiff_t)w_times.size(); ++t)
+                    out_tt.col(t + 1ll) = well_data.rfp[t].cur_state;
+                // print prepared data
+                f << out_tt.format(commaFmt) << '\n';
+                f.close();
+            }
+            // well wfp
+            {
+                const auto size_z{grid_rocks_z.mesh_size()};
+                ofstream f{std::string{"output/well/wfp.csv"}};
+                // print time ids
+                for (auto t{0ll}; t < (ptrdiff_t)w_times.size(); ++t)
+                    f << sep << t;
+                f << '\n';
+
+                // print time moments
+                f << sep << transfer_to_eigen(w_times).transpose().format(commaFmt) << '\n';
+
+                // prepare data to print
+                GridNodeValues2D out_tt{GridNodeValues2D::Zero(size_z, (ptrdiff_t)w_times.size() + 1ll)};
+                out_tt.col(0ll) = grid_rocks_z.mesh_nodes;
+                for (auto t{0ll}; t < (ptrdiff_t)w_times.size(); ++t)
+                    out_tt.col(t + 1ll) = well_data.wfp[t].cur_state;
+                // print prepared data
+                f << out_tt.format(commaFmt) << '\n';
+                f.close();
+            }
+            // well verticle_cement_flow
+            {
+                const auto size_z{grid_rocks_z.dual_size()};
+                ofstream f{std::string{"output/well/verticle_cement_flow.csv"}};
+                // print time ids
+                for (auto t{0ll}; t < (ptrdiff_t)w_times.size(); ++t)
+                    f << sep << t;
+                f << '\n';
+
+                // print time moments
+                f << sep << transfer_to_eigen(w_times).transpose().format(commaFmt) << '\n';
+
+                // prepare data to print
+                GridNodeValues2D out_tt{GridNodeValues2D::Zero(size_z, (ptrdiff_t)w_times.size() + 1ll)};
+                out_tt.col(0ll) = grid_rocks_z.dual_nodes;
+                for (auto t{0ll}; t < (ptrdiff_t)w_times.size(); ++t)
+                    out_tt.col(t + 1ll) = well_data.verticle_cement_flow[t].cur_state;
+                // print prepared data
+                f << out_tt.format(commaFmt) << '\n';
+                f.close();
+            }
+            // well verticle_well_flow
+            {
+                const auto size_z{grid_rocks_z.dual_size()};
+                ofstream f{std::string{"output/well/verticle_well_flow.csv"}};
+                // print time ids
+                for (auto t{0ll}; t < (ptrdiff_t)w_times.size(); ++t)
+                    f << sep << t;
+                f << '\n';
+
+                // print time moments
+                f << sep << transfer_to_eigen(w_times).transpose().format(commaFmt) << '\n';
+
+                // prepare data to print
+                GridNodeValues2D out_tt{GridNodeValues2D::Zero(size_z, (ptrdiff_t)w_times.size() + 1ll)};
+                out_tt.col(0ll) = grid_rocks_z.dual_nodes;
+                for (auto t{0ll}; t < (ptrdiff_t)w_times.size(); ++t)
+                    out_tt.col(t + 1ll) = well_data.verticle_well_flow[t].cur_state;
+                // print prepared data
+                f << out_tt.format(commaFmt) << '\n';
+                f.close();
+            }
+            
+            // well_pressure
+            {
+                const auto size_z{grid_rocks_z.mesh_size()};
+                ofstream f{std::string{"output/well/well_pressure.csv"}};
+                // print time ids
+                for (auto t{0ll}; t < (ptrdiff_t)w_times.size(); ++t)
+                    f << sep << t;
+                f << '\n';
+
+                // print time moments
+                f << sep << transfer_to_eigen(w_times).transpose().format(commaFmt) << '\n';
+
+                // prepare data to print
+                GridNodeValues2D out_tt{GridNodeValues2D::Zero(size_z, (ptrdiff_t)w_times.size() + 1ll)};
+                out_tt.col(0ll) = grid_rocks_z.mesh_nodes;
+                for (auto t{0ll}; t < (ptrdiff_t)w_times.size(); ++t)
+                    out_tt.col(t + 1ll) = well_data.well_pressure[t].cur_state;
+                // print prepared data
+                f << out_tt.format(commaFmt) << '\n';
+                f.close();
             }
 
             const auto size_z{grid_z.mesh_size()};
