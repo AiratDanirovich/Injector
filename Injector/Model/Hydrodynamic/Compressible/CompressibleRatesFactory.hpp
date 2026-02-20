@@ -50,7 +50,7 @@ namespace GPN
                 assert(face_mobility.face_vals_axes1.rows() == first_size - 1ll);
                 assert(face_mobility.face_vals_axes1.cols() == second_size - Grid2D_t::l_margin);
                 assert(face_mobility.face_vals_axes2.rows() == first_size);
-                assert(face_mobility.face_vals_axes2.cols() == second_size - Grid2D_t::l_margin);
+                assert(face_mobility.face_vals_axes2.cols() == second_size - Grid2D_t::l_margin - 1ll);
 
                 for (auto col{Grid2D_t::l_margin + 1ll}, count{0ll}; col < second_size; ++col, ++count)
                 {
