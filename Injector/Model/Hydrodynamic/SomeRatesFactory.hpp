@@ -47,8 +47,9 @@ namespace GPN
                   first_size{
                       grid2D_rocks->grid2D->first_coord().mesh_size()},
                   second_size{
-                      grid2D_rocks->grid2D->second_coord().mesh_size()},
-                  second_size_rock{grid2D_rocks->grid2D->second_coord().mesh_size() - Grid2D_t::l_margin - 1ll}
+                      grid2D_rocks->grid2D->second_coord().mesh_size()}
+                 //     ,
+                //  second_size_rock{grid2D_rocks->grid2D->second_coord().mesh_size() - Grid2D_t::l_margin - 1ll}
             {
             }
 
@@ -57,7 +58,7 @@ namespace GPN
             /// @param t_step step to the next time moment
             template <typename Functor_t>
             void set_flow_field(
-                double t, RealType t_step, const Functor_t &&collector_rates)
+                double t, RealType t_step, Functor_t &&collector_rates)
             {
                 // this method only works at FixedRate injection
                 assert((history->regime() == InjectorRegimes::FixedRate) ||
@@ -70,11 +71,21 @@ namespace GPN
                 // taking RFP and WFP into account
                 well->set_well_flow_field(get_history_record(), pressure_field->get_rock_pressure());
 
+                const auto &P{get_pressure_field()};
+                
+                for (auto col{Grid2D_t::l_margin + 1ll}; col < second_size; ++col)
+                {
+                    for (auto row{0ll}; row < P.rows(); ++row)
+                    {
+                        assert(!std::isnan(P.value(row, col - 1ll)) && !std::isinf(P.value(row, col - 1ll)));
+                        assert(!std::isnan(P.value(row, col)) && !std::isinf(P.value(row, col)));
+                    }
+                }
+
                 const auto mid_time{history->get_current_record().mid_time};
                 if ((t < mid_time) && (t + t_step > mid_time))
                 {
                     /*Properties::Pressure<Grid2D_t>*/
-                    const auto &P{get_pressure_field()};
                     solution.times.push_back(t + t_step / 2.0);
                     solution.states.emplace_back(P.values());
                 }
@@ -102,13 +113,8 @@ namespace GPN
                     for (auto col{0ll}; col < axes2_value.leftCols(Grid2D_t::l_margin + 1ll).cols(); ++col)
                         assert(!std::isnan(axes2_value(row, col)) && !std::isinf(axes2_value(row, col)));
 
-                // face values of mobility are not defined at the domain boundaries
-                const auto second_size_rock{second_size - Grid2D_t::l_margin - 1ll};
-
-                for (auto col{Grid2D_t::l_margin + 1ll}, count{0ll}; count < second_size_rock; ++col, ++count)
-                {
-                    axes2_value.col(col) = collector_rates(count, col); // = well->rfp
-                }
+                for (auto col{Grid2D_t::l_margin + 1ll}, count{0ll}; col < second_size; ++col, ++count)
+                    axes2_value.col(col) = collector_rates(count, col, P); // = well->rfp
 
                 // volumetric flow field in two directions is calculated,
                 // once the pressure field is calculated
@@ -200,7 +206,7 @@ namespace GPN
             Solution rates;
 
         protected:
-            const ptrdiff_t first_size, second_size, second_size_rock;
+            const ptrdiff_t first_size, second_size;
 
             cptr<FaceProperties::HeatFlowField> heat_flow_field;
             cptr<FaceProperties::ReservoirFlowField> volumetric_flow_field;

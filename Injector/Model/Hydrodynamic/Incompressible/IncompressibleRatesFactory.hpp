@@ -52,7 +52,7 @@ namespace GPN
                 const auto& rfp{well->rfp};
                 Base::set_flow_field(
                     t, t_step,
-                    [&rfp](const ptrdiff_t /*count*/, const ptrdiff_t /*col*/)
+                    [&rfp](const ptrdiff_t /*count*/, const ptrdiff_t /*col*/, const auto &/*P*/)
                     {
                         return rfp;
                     });

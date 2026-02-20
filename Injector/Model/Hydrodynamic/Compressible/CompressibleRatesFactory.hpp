@@ -31,7 +31,6 @@ namespace GPN
             using Base::get_pressure_field;
             using Base::history;
             using Base::second_size;
-            using Base::second_size_rock;
             using Base::solution;
 
             CompressibleRatesFactory(
@@ -51,9 +50,9 @@ namespace GPN
                 assert(face_mobility.face_vals_axes1.rows() == first_size - 1ll);
                 assert(face_mobility.face_vals_axes1.cols() == second_size - Grid2D_t::l_margin);
                 assert(face_mobility.face_vals_axes2.rows() == first_size);
-                assert(face_mobility.face_vals_axes2.cols() == second_size_rock);
+                assert(face_mobility.face_vals_axes2.cols() == second_size - Grid2D_t::l_margin);
 
-                for (auto col{Grid2D_t::l_margin + 1ll}, count{0ll}; count < second_size_rock; ++col, ++count)
+                for (auto col{Grid2D_t::l_margin + 1ll}, count{0ll}; col < second_size; ++col, ++count)
                 {
                     for (auto row{0ll}; row < mobility_factor.rows(); ++row)
                         assert(!std::isnan(mobility_factor(row, count)) && !std::isinf(mobility_factor(row, count)));
@@ -66,28 +65,17 @@ namespace GPN
             void set_flow_field(
                 double t, RealType t_step)
             {
-                const auto &P{get_pressure_field()};
                 const auto &mob_factor{mobility_factor};
-
-                for (auto col{Grid2D_t::l_margin + 1ll}, count{0ll}; count < second_size_rock; ++col, ++count)
-                {
-                    for (auto row{0ll}; row < mobility_factor.rows(); ++row)
-                    {
-                        assert(!std::isnan(P.value(row, col - 1ll)) && !std::isinf(P.value(row, col - 1ll)));
-                        assert(!std::isnan(P.value(row, col)) && !std::isinf(P.value(row, col)));
-                    }
-                }
 
                 Base::set_flow_field(
                     t, t_step,
-                    [&mob_factor, &P](const ptrdiff_t count, const ptrdiff_t col)
+                    [&mob_factor](const ptrdiff_t count, const ptrdiff_t col, const auto &P)
                     {
-                        return mob_factor.col(count) * (P.col(col - 1ll) - P.col(col));
+                        return (mob_factor.col(count) * (P.col(col - 1ll) - P.col(col))).eval();
                     });
             }
             
         protected:
-            //    const FaceProperties::Mobility<Grid2D_t> &face_mobility;
             const FaceValuesContainer mobility_factor;
 
         private:
