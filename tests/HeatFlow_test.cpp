@@ -18,10 +18,11 @@
 #include <Injector/Model/Phases/FluidFactory.hpp>
 #include <Injector/Model/Collector.hpp>
 #include <Injector/Model/Well/Well.hpp>
+#include <Injector/Model/Well/WellHoles.hpp>
+#include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/WellReservoirFlowProfileControl.hpp>
 #include <Injector/Model/Well/WellBottomHolePressureControl.hpp>
 #include <Injector/Model/Well/WellBottomHoleRateControl.hpp>
-#include <Injector/Model/Well/WellFactory.hpp>
 #include <Injector/Model/Well/CrossFlow.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleRatesFactory.hpp>
 #include <Injector/Model/Hydrodynamic/Compressible/CompressibleFluid.hpp>
@@ -67,7 +68,7 @@ using namespace GPN::Wells::BotHoleRateControl;
 using namespace GPN::EqSolver;
 using namespace GPN::EqSolver::FullImplicit;
 
-TEST_CASE("Solver", "SelfSimilarCyl")
+TEST_CASE("HeatFlow_test")
 {
     ifstream f("heatflow_test_data.json");
     REQUIRE(f.is_open());
@@ -105,7 +106,7 @@ TEST_CASE("Solver", "SelfSimilarCyl")
     //  const ptrdiff_t rNodes{data["grid"]["rNodes"]};
     /*history*/
     const auto t_minor_step{read_minor_step(data)};
-    const auto start_time{data["history"]["start_time"].get<RealType>()};
+    const auto start_time{read_start_time(data)};
     /*temperatures*/
     /*completion*/
     // z-refiner
