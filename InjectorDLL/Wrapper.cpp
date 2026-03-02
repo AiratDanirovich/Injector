@@ -727,7 +727,7 @@ Wrapper::Wrapper(const json &data)
     else if (control_type == "bottomhole_rate")
     {
         std::cout << "Bottomhole rate is used as well control condition...\n";
-        using Well_t = GPN::Wells::BotHoleRateControl::WellBottomHoleRateControl<History, Grids::CylinderGridRock, CrossFlows>;
+        using Well_t = GPN::Wells::BotHoleRateControl::WellBottomHoleRateControl         <History, PhasePropertiesJT, Grids::CylinderGridRock, CrossFlows>;
         WrapperFactory<Well_t>::choose_well(data);
     }
     else
